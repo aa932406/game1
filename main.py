@@ -45,7 +45,7 @@ class GameBindPlugin(Star):
         self.system_config = {
             # 积分系统
             "points": {
-                "recharge_ratio": 10000,  # 1积分=10000元宝
+                "recharge_ratio": 1000000,  # 1积分=100w钻石
                 # 签到奖励（积分）
                 "sign_rewards": {
                     1: 1,      # 第1天：1积分
