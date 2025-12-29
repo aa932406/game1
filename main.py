@@ -1238,39 +1238,39 @@ class GameBindPlugin(Star):
             yield event.plain_result(f"❌ 连接失败\nAPI连接失败：{str(e)}\n请检查API地址和网络配置")
     
     # ========== API调用方法 ==========
-async def _get_account_info(self, passport: str) -> Optional[dict]:
-    """调用API查询账号信息"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            params = {
-                "action": "search",
-                "passport": passport,
-                "page": 1,
-                "pageSize": 1
-            }
-            
-            async with session.get(
-                self.api_config["base_url"],
-                params=params,
-                timeout=aiohttp.ClientTimeout(total=self.api_config["timeout"])
-            ) as response:
-                if response.status == 200:
-                    result = await response.json()
-                    if result.get("success") and result.get('data', {}).get('total', 0) > 0:
-                        player = result['data']['players'][0]
-                        
-                        # 安全获取所有字段，处理 null 值
-                        return {
-                            "passport": player.get('passport', passport),
-                            "gold_pay": player.get('cash_gold') or 0,  # null 或 0 都转为 0
-                            "gold_pay_total": player.get('total_recharge') or 0,  # 同上
-                            "cid": player.get('cid'),
-                            "name": player.get('name')
-                        }
-    except Exception as e:
-        logger.error(f"查询账号异常：{e}")
-    
-    return None
+    async def _get_account_info(self, passport: str) -> Optional[dict]:
+        """调用API查询账号信息"""
+        try:
+            async with aiohttp.ClientSession() as session:
+                params = {
+                    "action": "search",
+                    "passport": passport,
+                    "page": 1,
+                    "pageSize": 1
+                }
+                
+                async with session.get(
+                    self.api_config["base_url"],
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=self.api_config["timeout"])
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        if result.get("success") and result.get('data', {}).get('total', 0) > 0:
+                            player = result['data']['players'][0]
+                            
+                            # 安全获取所有字段，处理 null 值
+                            return {
+                                "passport": player.get('passport', passport),
+                                "gold_pay": player.get('cash_gold') or 0,  # null 或 0 都转为 0
+                                "gold_pay_total": player.get('total_recharge') or 0,  # 同上
+                                "cid": player.get('cid'),
+                                "name": player.get('name')
+                            }
+        except Exception as e:
+            logger.error(f"查询账号异常：{e}")
+        
+        return None
     
     async def _execute_account_recharge(self, passport: str, amount: float, remark: str) -> dict:
         """调用API为账号执行充值"""
