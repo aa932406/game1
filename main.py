@@ -360,20 +360,20 @@ class GameBindPlugin(Star):
             return
         
         # 保存绑定
-self.bindings[qq_id] = {
-    "game_account": game_account,
-    "account_name": account_info.get("passport", game_account) if account_info else game_account,  # 添加空值检查
-    "bind_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    "qq_id": qq_id
-}
-self._save_json(self.bind_file, self.bindings)
-
-# 安全获取账号信息，避免 NoneType 错误
-account_name = account_info.get("passport", game_account) if account_info else game_account
-gold_pay = account_info.get('gold_pay', 0) if account_info else 0
-gold_pay_total = account_info.get('gold_pay_total', 0) if account_info else 0
-
-content = f"""✅ 绑定成功！
+        self.bindings[qq_id] = {
+            "game_account": game_account,
+            "account_name": account_info.get("passport", game_account) if account_info else game_account,  # 添加空值检查
+            "bind_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "qq_id": qq_id
+        }
+        self._save_json(self.bind_file, self.bindings)
+        
+        # 安全获取账号信息，避免 NoneType 错误
+        account_name = account_info.get("passport", game_account) if account_info else game_account
+        gold_pay = account_info.get('gold_pay', 0) if account_info else 0
+        gold_pay_total = account_info.get('gold_pay_total', 0) if account_info else 0
+        
+        content = f"""✅ 绑定成功！
 
 游戏账号：{account_name}
 当前余额：{gold_pay:,} 钻石
