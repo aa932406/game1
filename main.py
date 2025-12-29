@@ -1238,7 +1238,7 @@ class GameBindPlugin(Star):
             yield event.plain_result(f"❌ 连接失败\nAPI连接失败：{str(e)}\n请检查API地址和网络配置")
     
     # ========== API调用方法 ==========
-    async def _get_account_info(self, passport: str) -> Optional[dict]:
+async def _get_account_info(self, passport: str) -> Optional[dict]:
     """调用API查询账号信息"""
     try:
         async with aiohttp.ClientSession() as session:
@@ -1256,24 +1256,14 @@ class GameBindPlugin(Star):
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    if result.get("success") and result['data']['total'] > 0:
-                        # 获取第一个匹配的账号
+                    if result.get("success") and result.get('data', {}).get('total', 0) > 0:
                         player = result['data']['players'][0]
                         
-                        # 处理 cash_gold 为 null 的情况
-                        cash_gold = player.get('cash_gold')
-                        if cash_gold is None:
-                            cash_gold = 0  # 将 null 转换为 0
-                        
-                        # 同样处理 total_recharge
-                        total_recharge = player.get('total_recharge')
-                        if total_recharge is None:
-                            total_recharge = 0
-                        
+                        # 安全获取所有字段，处理 null 值
                         return {
-                            "passport": player.get('passport'),
-                            "gold_pay": cash_gold,  # 使用处理后的值
-                            "gold_pay_total": total_recharge,  # 使用处理后的值
+                            "passport": player.get('passport', passport),
+                            "gold_pay": player.get('cash_gold') or 0,  # null 或 0 都转为 0
+                            "gold_pay_total": player.get('total_recharge') or 0,  # 同上
                             "cid": player.get('cid'),
                             "name": player.get('name')
                         }
