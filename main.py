@@ -150,7 +150,7 @@ class GameBindPlugin(Star):
         """获取用户积分信息"""
         if qq_id not in self.user_points:
             self.user_points[qq_id] = {
-                "points": 0,          # 当前积分（元宝余额）
+                "points": 0,          # 当前积分（钻石余额）
                 "total_earned": 0,    # 累计获得积分
                 "total_spent": 0,     # 累计消耗积分
                 "first_sign_date": None,
@@ -268,7 +268,7 @@ class GameBindPlugin(Star):
         help_text += """
 
 💎 规则：
-• 1积分 = 10000元宝
+• 1积分 = 100w钻石
 • 签到获得积分
 • 积分用于充值游戏账号
 • 没有积分无法充值"""
@@ -325,7 +325,7 @@ class GameBindPlugin(Star):
         """绑定PHP游戏账号"""
         parts = event.message_str.strip().split()
         if len(parts) < 2:
-            yield event.plain_result("❌ 格式错误\n正确格式：/绑定账号 游戏账号\n例如：/绑定账号 xhl2511686")
+            yield event.plain_result("❌ 格式错误\n正确格式：/绑定账号 游戏账号\n例如：/绑定账号 账号")
             return
         
         game_account = parts[1]
@@ -372,8 +372,8 @@ class GameBindPlugin(Star):
         content = f"""✅ 绑定成功！
 
 游戏账号：{account_name}
-当前余额：{account_info.get('gold_pay', 0):,} 元宝
-累计充值：{account_info.get('gold_pay_total', 0):,} 元宝
+当前余额：{account_info.get('gold_pay', 0):,} 钻石
+累计充值：{account_info.get('gold_pay_total', 0):,} 钻石
 绑定时间：{self.bindings[qq_id]['bind_time']}"""
         
         yield event.plain_result(content)
@@ -399,8 +399,8 @@ class GameBindPlugin(Star):
 连续签到：{user_points['continuous_days']} 天
 
 💎 积分用途：
-• 1积分 = {recharge_ratio:,}元宝
-• 可兑换：{user_points['points'] * recharge_ratio:,}元宝
+• 1积分 = {recharge_ratio:,}钻石
+• 可兑换：{user_points['points'] * recharge_ratio:,}钻石
 • 使用 /积分充值 命令兑换"""
         
         if user_points["last_sign_date"]:
@@ -482,8 +482,8 @@ class GameBindPlugin(Star):
 累计获得：{user_points['total_earned']} 积分
 
 💎 积分价值：
-• 可兑换：{total_reward * recharge_ratio:,} 元宝
-• 总可兑换：{user_points['points'] * recharge_ratio:,} 元宝
+• 可兑换：{total_reward * recharge_ratio:,} 钻石
+• 总可兑换：{user_points['points'] * recharge_ratio:,} 钻石
 
 ⏰ 签到时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"""
         
@@ -495,7 +495,7 @@ class GameBindPlugin(Star):
         """使用积分充值游戏账号"""
         parts = event.message_str.strip().split()
         if len(parts) < 2:
-            yield event.plain_result("❌ 格式错误\n正确格式：/积分充值 <积分数量> [备注]\n例如：/积分充值 10 兑换元宝")
+            yield event.plain_result("❌ 格式错误\n正确格式：/积分充值 <积分数量> [备注]\n例如：/积分充值 10")
             return
         
         try:
@@ -524,7 +524,7 @@ class GameBindPlugin(Star):
             yield event.plain_result(f"❌ 积分不足\n需要积分：{points_to_use}\n当前积分：{user_points['points']}\n\n💡 获取积分：每日签到，多签多得")
             return
         
-        # 计算充值金额（1积分=10000元宝）
+        # 计算充值金额（1积分=100w钻石）
         recharge_ratio = self.system_config["points"]["recharge_ratio"]
         recharge_amount = points_to_use * recharge_ratio
         
@@ -561,7 +561,7 @@ class GameBindPlugin(Star):
 
 游戏账号：{account_name}
 消耗积分：{points_to_use} 积分
-充值金额：{recharge_amount:,} 元宝
+充值金额：{recharge_amount:,} 钻石
 充值备注：{remark}
 
 📊 账户信息：
@@ -657,7 +657,7 @@ class GameBindPlugin(Star):
 赠送对象：QQ {target_qq}
 游戏账号：{account_name}
 消耗积分：{points_to_use} 积分（您的积分）
-充值金额：{recharge_amount:,} 元宝
+充值金额：{recharge_amount:,} 钻石
 充值备注：{remark}
 
 📊 对方账户：
@@ -709,8 +709,8 @@ class GameBindPlugin(Star):
         content = f"""🎮 账号信息
 
 游戏账号：{account_info.get('passport', '未知')}
-当前余额：{account_info.get('gold_pay', 0):,} 元宝
-累计充值：{account_info.get('gold_pay_total', 0):,} 元宝"""
+当前余额：{account_info.get('gold_pay', 0):,} 钻石
+累计充值：{account_info.get('gold_pay_total', 0):,} 钻石"""
         
         # 添加额外信息
         if show_extra_info and account_info.get('name'):
@@ -822,7 +822,7 @@ class GameBindPlugin(Star):
 连续签到：{user_points['continuous_days']} 天
 
 💎 积分价值：
-• 可兑换：{user_points['points'] * recharge_ratio:,} 元宝"""
+• 可兑换：{user_points['points'] * recharge_ratio:,} 钻石"""
         
         if user_points["first_sign_date"]:
             content += f"\n首次签到：{user_points['first_sign_date']}"
@@ -877,7 +877,7 @@ class GameBindPlugin(Star):
 📊 用户当前状态：
 总积分：{user_points['points']} 积分
 累计获得：{user_points['total_earned']} 积分
-可兑换：{user_points['points'] * recharge_ratio:,} 元宝
+可兑换：{user_points['points'] * recharge_ratio:,} 钻石
 
 操作管理员：{admin_qq}
 操作时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"""
@@ -1163,7 +1163,7 @@ class GameBindPlugin(Star):
 
 原账号：{old_account}
 新账号：{account_name}
-当前余额：{account_info.get('gold_pay', 0):,} 元宝
+当前余额：{account_info.get('gold_pay', 0):,} 钻石
 原绑定：{old_bind_time}
 新绑定：{self.bindings[qq_id]['bind_time']}"""
         
