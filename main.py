@@ -319,7 +319,7 @@ class GameBindPlugin(Star):
         else:
             yield event.plain_result("❌ 设置失败，请重试")
     
-    # ========== 绑定功能 ==========
+       # ========== 绑定功能 ==========
     @filter.command("绑定账号")
     async def bind_account_cmd(self, event: AstrMessageEvent):
         """绑定PHP游戏账号"""
@@ -359,16 +359,17 @@ class GameBindPlugin(Star):
             yield event.plain_result("❌ 验证失败，网络连接异常，请稍后重试")
             return
         
-        # 保存绑定
+        # 保存绑定 - 安全处理 None
+        account_name_safe = account_info.get("passport", game_account) if account_info else game_account
         self.bindings[qq_id] = {
             "game_account": game_account,
-            "account_name": account_info.get("passport", game_account) if account_info else game_account,  # 添加空值检查
+            "account_name": account_name_safe,
             "bind_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "qq_id": qq_id
         }
         self._save_json(self.bind_file, self.bindings)
         
-        # 安全获取账号信息，避免 NoneType 错误
+        # 安全获取账号信息，双重保障
         account_name = account_info.get("passport", game_account) if account_info else game_account
         gold_pay = account_info.get('gold_pay', 0) if account_info else 0
         gold_pay_total = account_info.get('gold_pay_total', 0) if account_info else 0
