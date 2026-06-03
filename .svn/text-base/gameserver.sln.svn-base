@@ -1,0 +1,65 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gameserver", "gameserver\gameserver.vcproj", "{BA424359-6C5F-402D-97E8-2E5C43FCF661}"
+	ProjectSection(ProjectDependencies) = postProject
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2} = {047F0609-06FC-4E66-A60B-B327C75F5AF2}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gateserver", "gateserver\gateserver.vcproj", "{C7E2AC6B-B771-4C1F-8431-7E1436581EBE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2} = {047F0609-06FC-4E66-A60B-B327C75F5AF2}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "globalserver", "globalserver\globalserver.vcproj", "{463BDA5C-174C-4556-87BD-DA9E848A9D24}"
+	ProjectSection(ProjectDependencies) = postProject
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2} = {047F0609-06FC-4E66-A60B-B327C75F5AF2}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dbserver", "dbserver\dbserver.vcproj", "{63531053-5054-41A3-9D65-67EC21702631}"
+	ProjectSection(ProjectDependencies) = postProject
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2} = {047F0609-06FC-4E66-A60B-B327C75F5AF2}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libanswer", "libanswer\libanswer.vcproj", "{047F0609-06FC-4E66-A60B-B327C75F5AF2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4E26B047-1676-4671-B4BC-A4C184D36B2B} = {4E26B047-1676-4671-B4BC-A4C184D36B2B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "share", "share\share.vcproj", "{4E26B047-1676-4671-B4BC-A4C184D36B2B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BA424359-6C5F-402D-97E8-2E5C43FCF661}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BA424359-6C5F-402D-97E8-2E5C43FCF661}.Debug|Win32.Build.0 = Debug|Win32
+		{BA424359-6C5F-402D-97E8-2E5C43FCF661}.Release|Win32.ActiveCfg = Release|Win32
+		{BA424359-6C5F-402D-97E8-2E5C43FCF661}.Release|Win32.Build.0 = Release|Win32
+		{C7E2AC6B-B771-4C1F-8431-7E1436581EBE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C7E2AC6B-B771-4C1F-8431-7E1436581EBE}.Debug|Win32.Build.0 = Debug|Win32
+		{C7E2AC6B-B771-4C1F-8431-7E1436581EBE}.Release|Win32.ActiveCfg = Release|Win32
+		{C7E2AC6B-B771-4C1F-8431-7E1436581EBE}.Release|Win32.Build.0 = Release|Win32
+		{463BDA5C-174C-4556-87BD-DA9E848A9D24}.Debug|Win32.ActiveCfg = Debug|Win32
+		{463BDA5C-174C-4556-87BD-DA9E848A9D24}.Debug|Win32.Build.0 = Debug|Win32
+		{463BDA5C-174C-4556-87BD-DA9E848A9D24}.Release|Win32.ActiveCfg = Release|Win32
+		{463BDA5C-174C-4556-87BD-DA9E848A9D24}.Release|Win32.Build.0 = Release|Win32
+		{63531053-5054-41A3-9D65-67EC21702631}.Debug|Win32.ActiveCfg = Debug|Win32
+		{63531053-5054-41A3-9D65-67EC21702631}.Debug|Win32.Build.0 = Debug|Win32
+		{63531053-5054-41A3-9D65-67EC21702631}.Release|Win32.ActiveCfg = Release|Win32
+		{63531053-5054-41A3-9D65-67EC21702631}.Release|Win32.Build.0 = Release|Win32
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2}.Debug|Win32.Build.0 = Debug|Win32
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2}.Release|Win32.ActiveCfg = Release|Win32
+		{047F0609-06FC-4E66-A60B-B327C75F5AF2}.Release|Win32.Build.0 = Release|Win32
+		{4E26B047-1676-4671-B4BC-A4C184D36B2B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4E26B047-1676-4671-B4BC-A4C184D36B2B}.Debug|Win32.Build.0 = Debug|Win32
+		{4E26B047-1676-4671-B4BC-A4C184D36B2B}.Release|Win32.ActiveCfg = Release|Win32
+		{4E26B047-1676-4671-B4BC-A4C184D36B2B}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
