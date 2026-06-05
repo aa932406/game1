@@ -27,6 +27,7 @@
 #include "CharAuction.h"
 #include "CharSoul.h"
 #include "CharWing.h"
+#include "CharWish.h"
 #include "CharDraw.h"
 #include "CharExchange.h"
 #include "CharMysteryGift.h"
@@ -34,6 +35,11 @@
 #include "CharPortal.h"
 #include "CharTitle.h"
 #include "CharHallOfFame.h"
+#include "MagicBox.h"
+#include "FlopDraw.h"
+#include "MoneyRewardTask.h"
+#include "Vplan.h"
+#include "NationalDayHd.h"
 
 #include "Trade.h"
 #include "PlayerMail.h"
@@ -519,6 +525,10 @@ protected:
 private:
 	CExtSystemMgr	m_ExtSysMgr;
 
+	friend class CExtFlopDraw;
+public:				CExtFlopDraw&			GetFlopDraw() { return m_extFlopDraw; }
+private:			CExtFlopDraw			m_extFlopDraw;
+
 /*
 * EXT_SYS_WMF
 * ���������ϵͳ������֮��
@@ -626,6 +636,10 @@ private:			CExtCharPortal			m_extCharPortal;
 public:				CExtCharTitle&		GetCharTitle() { return m_extCharTitle; }
 private:			CExtCharTitle			m_extCharTitle;
 
+	friend class CExtCharWish;
+public:				CExtCharWish&			GetCharWish() { return m_extCharWish; }
+private:			CExtCharWish			m_extCharWish;
+
 	friend class CExtCharWing;
 public:				CExtCharWing&			GetCharWing() { return m_extCharWing; }
 private:			CExtCharWing			m_extCharWing;
@@ -633,6 +647,20 @@ private:			CExtCharWing			m_extCharWing;
 	friend class CExtCharSoul;
 public:				CExtCharHallOfFame&		GetCharHallOfFame() { return m_extCharHallOfFame; }
 private:			CExtCharHallOfFame		m_extCharHallOfFame;
+
+	friend class CMoneyRewardTask;
+public:				CMoneyRewardTask&		GetMoneyRewardTask() { return m_extMoneyRewardTask; }
+private:			CMoneyRewardTask		m_extMoneyRewardTask;
+
+	friend class CExtMagicBox;
+public:				CExtMagicBox&			GetMagicBox() { return m_extMagicBox; }
+private:			CExtMagicBox			m_extMagicBox;
+
+	friend class CVplan;
+	friend class CNationalDayHd;
+public:				CVplan&				GetVplan() { return m_extVplan; }
+private:			CVplan				m_extVplan;
+	CNationalDayHd				m_CNationalDayHd;
 
 /*
 * EXT_SYS_ZK

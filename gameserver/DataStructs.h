@@ -283,6 +283,8 @@ enum CurrencyChangeReason
 	GCR_BUY_TITLE					= 2074,
 	GCR_MYSTERY_GIFT_BUY			= 2075,
 	GCR_MYSTERY_SHOP_BUY			= 2076,
+	GCR_NATIONAL_UNLOCK_REWARD	= 2077,
+	GCR_NATIONAL_BUY_LEVEL		= 2078,
 
 	//==================================================================================
 //Ԫ��
@@ -411,7 +413,12 @@ enum ITEM_ADD_REASON
 	IACR_DOUBLE_ELEVEN_WISH_GIFT		= 119,
 	IACR_DOUBLE_ELEVEN_XIAO_FEI_SUM_GIFT	= 120,
 	IACR_MYSTERY_SHOP_BUY_GET		= 121,
-	};
+
+	IACR_VPALN_GIFT			= 301,
+	IACR_YY_VIP			= 302,
+	IACR_YY_DA_TING		= 303,
+	IACR_XUN_LEI			= 304,
+	IACR_SG_GAME_APP		= 305,	};
 
 enum ITEM_DEL_REASON
 {
@@ -420,7 +427,7 @@ enum ITEM_DEL_REASON
  	IDCR_BAG_USE					= 2,	// ����  ʹ��
  	IDCR_ADD_GEM					= 3,	// ��Ƕ
  	IDCR_FLY						= 4,	// ����
- 	IDCR_DUNGEON					= 5,	// ����  ����
+	IDCR_GET_NATIONAL_REWARD		= 5,
  	IDCR_COMBINE					= 6,	// �ϲ�
 	IDCR_VICEGENERAL_USE_EXP_PILL	= 7,	// �佫ʹ�þ���
 	IDCR_EQUIP_UPSTAR				= 8,	// װ������
@@ -1450,6 +1457,78 @@ struct ShowIcon
 };
 typedef std::list<ShowIcon> IconStateList;
 
+
+// V计划图标结构
+struct VplanIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
+struct XunLeiIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
+struct YYVipIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
+struct LuDaShiIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
+struct SgDownLoadIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
+struct SwVipIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
+struct SwVipBarIconStu
+{
+	int32_t nId;
+	int8_t  nState;
+	int32_t nLeftTime;
+	int8_t  nIconLeft;
+	int32_t nIconRight;
+	int8_t  nEffects;
+};
+
 #define MAX_FAMILY_TASK_COUNT 10				//��������������
 
 enum HD_ID
@@ -1469,6 +1548,7 @@ enum HD_ID
 	SCORE_SHOP			= 26,		// �����̳�
 	THREE_PET_ICON		= 27,		// �������ͼ��
 	VIP_CARD_ICON		= 28,		// vip�����
+	VPLAN_ICON			= 28,		// V计划图标
 	CHOU_JIANG_ICON		= 29,		// �齱
 	QI_FU_ICON			= 30,		// ����
 	TOTAL_CHONG_ZHI		= 31,		// �����ۼƳ�ֵ

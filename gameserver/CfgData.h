@@ -243,6 +243,60 @@ private:
 	CfgTitleMap		m_TitleMap;
 };
 
+// 许愿配置
+struct CfgWishReward
+{
+	int32_t			nTime;		// 所需时间
+	MemChrBagVector	vReward;	// 奖励
+};
+typedef std::map<int32_t, std::list<CfgWishReward>> CfgWishRewardMap;
+
+class CfgWishRewardTable
+{
+public:
+	CfgWishRewardTable(){}
+	~CfgWishRewardTable(){}
+
+	void Add( int32_t nItemId, const CfgWishReward& stu )
+	{
+		m_mRewards[nItemId].push_back( stu );
+	}
+
+	const CfgWishReward* GetReward( int32_t nItemId, int32_t nTime ) const
+	{
+		CfgWishRewardMap::const_iterator findIter = m_mRewards.find( nItemId );
+		if ( findIter == m_mRewards.end() )
+			return NULL;
+
+		const CfgWishReward* pReward = NULL;
+		for ( std::list<CfgWishReward>::const_iterator iter = findIter->second.begin(); iter != findIter->second.end(); ++iter )
+		{
+			if ( iter->nTime > nTime )
+				break;
+			pReward = &(*iter);
+		}
+		return pReward;
+	}
+
+	int32_t GetLeftTime( int32_t nItemId, int32_t nStartTime ) const
+	{
+		CfgWishRewardMap::const_iterator findIter = m_mRewards.find( nItemId );
+		if ( findIter == m_mRewards.end() )
+			return 0;
+
+		if ( findIter->second.empty() )
+			return 0;
+
+		int32_t nTime = nStartTime + findIter->second.back().nTime - Answer::DayTime::now();
+		if ( nTime < 0 )
+			return 0;
+		return nTime;
+	}
+
+private:
+	CfgWishRewardMap	m_mRewards;
+};
+
 typedef std::map<std::pair<int32_t,int32_t>, CfgCarrierAttr> CfgCarrierAttrMap;
 
 class CfgCarrierTable
@@ -1831,6 +1885,248 @@ public:
 private:
 	CfgItemCombiMap	m_mItemCombi;
 };
+
+// ħ�з���
+struct CfgMagicBoxCombi
+{
+	CfgMagicBoxCombi()
+	{
+		m_nId		= 0;
+		m_nCombiType	= 0;
+		m_nCostPoint	= 0;
+		m_nMoney		= 0;
+		m_nRate		= 0;
+		m_nTotalRate	= 0;
+		m_bNeedActive	= 0;
+		m_bBroadcast	= 0;
+	}
+	int32_t				m_nId;
+	int32_t				m_nCombiType;	// 0=��ͨ, 1/2=��Ʒ, 3=װ��
+	ItemDataList		m_lCostItem;	// ���Ĳ���
+	int32_t				m_nCostPoint;	// ���Ļ���
+	int32_t				m_nMoney;		// ���Ľ��
+	MemChrBagVector		m_vGiveItem;	// ��������
+	MemChrBagVector		m_vBackItem;	// ʧ�ܷ�����
+	MemChrBagVector		m_vSpecialItems;	// ������Ŀ
+	std::vector<Int32Vector> m_vProbability;	// ���ʾ���
+	int32_t				m_nRate;		// �ɹ�����
+	int32_t				m_nTotalRate;	// �ɹ��ܸ���
+	int8_t				m_bNeedActive;	// �Ƿ���Ҫ����
+	int8_t				m_bBroadcast;	// �Ƿ��㲥
+};
+typedef std::map<int32_t, CfgMagicBoxCombi> CfgMagicBoxCombiMap;
+
+class CfgMagicBoxTable
+{
+public:
+	CfgMagicBoxTable(){}
+	~CfgMagicBoxTable(){}
+	void Add( const CfgMagicBoxCombi& item ) { m_mMagicBox[item.m_nId] = item; }
+	const CfgMagicBoxCombi* Get( int32_t nId ) const
+	{
+		CfgMagicBoxCombiMap::const_iterator it = m_mMagicBox.find( nId );
+		if ( it != m_mMagicBox.end() ) return &it->second;
+		return NULL;
+	}
+private:
+	CfgMagicBoxCombiMap m_mMagicBox;
+};
+
+// V计划配置
+// 国庆活动配置
+struct NationalDayTaskCfg
+{
+	NationalDayTaskCfg() { memset(this, 0, sizeof(*this)); }
+	int32_t nType;
+	int32_t nId;
+	int32_t nNeedValue;
+	int32_t nSocre;
+	int32_t nParam;
+};
+typedef std::map<std::pair<int,int>, NationalDayTaskCfg> NationalDayTaskCfgMap;
+
+struct NationalDayLevelCfg
+{
+	NationalDayLevelCfg() { memset(this, 0, sizeof(*this)); }
+	int32_t nLevel;
+	int32_t nScore;
+	int32_t nUnlockCost;
+	int32_t nBuyCost;
+	MemChrBagVector vGeneralReward;
+	MemChrBag vSeniorReward;
+	int32_t nGongGaoId;
+};
+typedef std::map<int, NationalDayLevelCfg> NationalDayLevelCfgMap;
+
+struct CfgVplan
+{
+	CfgVplan()
+	{
+		nType = 0;
+		nLevel = 0;
+	}
+	int32_t		nType;
+	int32_t		nLevel;
+	MemChrBag	EveryDayReward;
+	MemChrBag	LevelReward;
+};
+typedef std::map<int32_t, CfgVplan> CfgVplanMap;
+
+struct CfgYYVip
+{
+	CfgYYVip()
+	{
+		nType = 0;
+		nLevel = 0;
+	}
+	int32_t		nType;
+	int32_t		nLevel;
+	MemChrBag	Gift;
+};
+typedef std::map<int32_t, CfgYYVip> CfgYYVipMap;
+
+struct CfgXunLei
+{
+	CfgXunLei()
+	{
+		nLevel = 0;
+	}
+	int32_t		nLevel;
+	MemChrBag	Reward;
+};
+typedef std::map<int32_t, CfgXunLei> CfgXunLeiMap;
+
+struct CfgLuDaShi
+{
+	CfgLuDaShi()
+	{
+		nLevel = 0;
+	}
+	int32_t		nLevel;
+	MemChrBag	Gift;
+};
+typedef std::map<int32_t, CfgLuDaShi> CfgLuDaShiMap;
+
+struct CfgSwVipReward
+{
+	CfgSwVipReward()
+	{
+		nIndex = 0;
+		nType = 0;
+		nLevel = 0;
+		nNeedLoginDays = 0;
+		nCondition = 0;
+		nParam = 0;
+	}
+	int32_t		nIndex;
+	int32_t		nType;
+	int32_t		nLevel;
+	int32_t		nNeedLoginDays;
+	int32_t		nCondition;
+	int32_t		nParam;
+	MemChrBag	Reward;
+};
+typedef std::map<int32_t, CfgSwVipReward> CfgSwVipRewardMap;
+
+struct CfgYYGameApp
+{
+	CfgYYGameApp()
+	{
+		nIndex = 0;
+		nNeedLevel = 0;
+	}
+	int32_t		nIndex;
+	int32_t		nNeedLevel;
+	MemChrBag	Reward;
+};
+typedef std::map<int32_t, CfgYYGameApp> CfgYYGameAppMap;
+
+struct CfgSgGameApp
+{
+	CfgSgGameApp()
+	{
+		nIndex = 0;
+		nNeedLevel = 0;
+	}
+	int32_t		nIndex;
+	int32_t		nNeedLevel;
+	MemChrBag	Reward;
+};
+typedef std::map<int32_t, CfgSgGameApp> CfgSgGameAppMap;
+// 金币奖励任务配置
+struct ShenWeiTaskCfg
+{
+	ShenWeiTaskCfg()
+	{
+		nIndex = 0;
+		nTaskId = 0;
+		nDoubleCost = 0;
+	}
+	int32_t		nIndex;
+	int32_t		nTaskId;
+	int32_t		nDoubleCost;
+};
+typedef std::map<int32_t, ShenWeiTaskCfg> ShenWeiTaskCfgMap;
+
+struct BackEquipTask
+{
+	BackEquipTask()
+	{
+		nId = 0;
+		nRandGold = 0;
+		nGetCurr = 0;
+		nStar = 0;
+	}
+	int32_t			nId;
+	Int32Vector		Equips;
+	MemChrBagVector	Items;
+	int32_t			nRandGold;
+	int32_t			nGetCurr;
+	int32_t			nStar;
+};
+typedef std::map<int32_t, BackEquipTask> BackEquipTaskMap;
+
+// 翻牌抽奖配置
+struct FlopDrawCfg
+{
+	FlopDrawCfg()
+	{
+		m_nId		= 0;
+		m_nType		= 0;
+		m_nRate		= 0;
+		m_GongGaoId	= 0;
+	}
+	int32_t				m_nId;
+	int32_t				m_nType;
+	MemChrBag			m_Item;
+	int32_t				m_nRate;
+	int32_t				m_GongGaoId;
+};
+typedef std::map<int32_t, FlopDrawCfg> FlopDrawCfgMap;
+
+class CfgFlopDrawTable
+{
+public:
+	CfgFlopDrawTable() { CleanUp(); }
+	~CfgFlopDrawTable(){}
+
+	void CleanUp() { m_mFlopDrawCfg.clear(); }
+
+	void Add( const FlopDrawCfg& cfg ) { m_mFlopDrawCfg[cfg.m_nId] = cfg; }
+
+	const FlopDrawCfg* GetFlopDrawCfg( int32_t nId ) const
+	{
+		FlopDrawCfgMap::const_iterator iter = m_mFlopDrawCfg.find( nId );
+		if ( iter != m_mFlopDrawCfg.end() ) return &iter->second;
+		return NULL;
+	}
+
+	const FlopDrawCfgMap& GetAll() const { return m_mFlopDrawCfg; }
+
+private:
+	FlopDrawCfgMap m_mFlopDrawCfg;
+};
+
 
 struct CfgBagSlotOpenTime 
 {
@@ -4245,6 +4541,8 @@ public:
 	const CfgEquipTable&			GetEquipTable() const;
 	const CfgItemGemTable&			GetItemGemTable() const;
 	const CfgItemCombiTable&		GetItemCombiTable() const;
+	const CfgMagicBoxTable*		GetMagicBoxTable() const { return &m_cfgMagicBox; }
+	const CfgFlopDrawTable*		GetFlopDrawTable() const { return &m_cfgFlopDraw; }
 	const CfgBagSlotOpenTimeTable&	GetBagSlotOpenTimeTable() const;
 	const CfgPetTable&				GetPetTable() const;
 	const CfgPetEggTable&			GetPetEggTable() const;
@@ -4299,8 +4597,36 @@ public:
 	FunctionOpenCfgMap&			GetOpenFunctionTable();
 	FunctionOpenCfg*			GetOpenFunctionCfg( int32_t FunctionId );
 	CfgMoLingRuQinMapInfo*		GetMLRQMapInfo( int32_t MapId );
+	// 金币奖励任务
+	void				InitMoneyRewardTask( TaskStateInfo (*pTask)[9], int32_t nLevel );
+	int32_t				RandPdbfTask( int32_t nLevel );
+	const BackEquipTask*		GetBackEquipTask( int32_t nId );
+	int32_t				GetEquipBackTaskId( int32_t nLevel, int32_t nRandTimes );
+	const ShenWeiTaskCfg*		GetShenWeiTaskCfg( int32_t nIndex );
+	int32_t				RandXiangYaoTaskId( int32_t nLevel, bool bBest );
+	int32_t				getXiangYaoStart( int32_t nTaskId );
+	int32_t				InitXuWuTask( int32_t nLevel, int32_t nParam );
+	int32_t				InitXinMoTask( int32_t nLevel, int32_t nParam );
+	int32_t				RandQuality( int32_t nCurrentQuality );
+
 	CfgItemGiftVector*			getPetGift(int32_t id);
-	CfgPlantEventEffect*		GetPlantEvent( int32_t EventId );
+
+	// V计划配置访问器
+
+	// 国庆活动访问器
+	const NationalDayTaskCfg*	GetNationalDayTaskCfg( int32_t nType, int32_t nId ) const;
+	const NationalDayLevelCfg*	GetNationalDayLevelCfg( int32_t nLevel ) const;
+	const NationalDayTaskCfgMap*	GetNationalDayTaskCfgMap() const;
+	const NationalDayLevelCfgMap*	GetNationalDayLevelCfgMap() const;
+	void				InitNationalDayTask();
+	const CfgVplanMap*		GetCfgVplanMap() const;
+	const CfgYYVipMap*		GetCfgYYVipMap() const;
+	const CfgXunLeiMap*		GetXunLeiTable() const;
+	const CfgLuDaShiMap*	GetLaDaShiHuiYuanMap() const;
+	const CfgSwVipRewardMap*	GetSwVipRewardMap() const;
+	const CfgSwVipRewardMap*	GetSwVipBarRewardMap() const;
+	const CfgYYGameAppMap*	GetYYGameAppMap() const;
+	const CfgSgGameAppMap*	GetSgGameAppMap() const;	CfgPlantEventEffect*		GetPlantEvent( int32_t EventId );
 	CfgZYZHMap&					GetZYZHList();
 	CfgZiYuanZhaoHui*			GetZiYuanZhaoHui( int32_t Index );
 	CfgEquipExchange*			GetEquipExchange( int8_t Level );
@@ -4418,6 +4744,8 @@ private:
 
 	void InitItemGemTable();				// ��ʼ����ʯ��
 	void InitItemCombiTable();				// ��ʼ���ϳɱ�
+	void InitMagicBoxTable();
+	void InitFlopDrawTable();				// 初始化翻牌抽奖配置表				// ��ʼ��ħ�б�
 	void InitBagSlotOpenTimeTable();		// ��ʼ����������ʱ���
 	void InitPlayerInitPetTable();			// ��ʼ������Я�������
 	void InitPetPackageTable();				// ��ʼ����������
@@ -4557,6 +4885,10 @@ private:
 	CfgEquipTable			m_cfgEquip;					// װ����
 	CfgItemGemTable			m_cfgItemGem;				// ��ʯ��
 	CfgItemCombiTable		m_cfgItemCombi;				// �ϳɱ�
+	CfgMagicBoxTable		m_cfgMagicBox;
+	CfgFlopDrawTable		m_cfgFlopDraw;
+	ShenWeiTaskCfgMap		m_cfgShenWeiTask;
+	BackEquipTaskMap		m_cfgBackEquipTask;				// 翻牌抽奖配置				// ħ�з���
 	CfgBagSlotOpenTimeTable	m_cfgBagSlotOpenTime;		// ��������ʱ���
 	CfgPetTable				m_cfgPetTable;				// ���ޱ�
 	CfgPetEggTable			m_cfgPetEggTable;			// ���޵���
@@ -4639,7 +4971,8 @@ private:
 	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
 	SevenTaskTable			m_SevenTaskTable;
 	CfgCarrierTable			m_cfgCarrierTable;
-	CfgWingTable			m_cfgWing;		// 护送配置表
+	CfgWingTable			m_cfgWing;
+	CfgWishRewardTable		m_cfgWishRewardTable;		// 护送配置表
 	CfgDrawTable				m_cfgDrawTable;			// 抽卡配置表
 	CfgExchangeTable			m_cfgExchangeTable;		// 兑换配置表
 	CfgGuardPrivilegeMap	m_GuardPrivilegeMap;
@@ -4672,6 +5005,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const SevenTaskTable*			GetSevenTaskTable();
 
 	const CfgBlacketMarketTable*	GetBlacketMarketTable();
+	const CfgWishRewardTable*	GetWishRewardTable() const { return &m_cfgWishRewardTable; }
 	const CfgWingTable*		GetWingTable() const { return &m_cfgWing; }
 	const CfgCarrierTable*		GetCarrierTable() const { return &m_cfgCarrierTable; }
 	const CfgDrawTable*			GetDrawTable() const { return &m_cfgDrawTable; }

@@ -5505,6 +5505,424 @@ public:
 	int32_t		m_HuanHua;
 };
 
+struct CharWishInfo
+{
+	CharWishInfo()
+	{
+		nId = 0;
+		nItemId = 0;
+		nStartTime = 0;
+		nGetReward = 0;
+	}
+	int32_t		nId;
+	int32_t		nItemId;
+	int32_t		nStartTime;
+	std::string	strInfo;
+	int32_t		nGetReward;
+};
+
+// 许愿数据
+class CharWishDBData : public IDataStruct
+{
+public:
+	CharWishDBData() { CleanUp(); }
+	virtual ~CharWishDBData(){}
+
+	std::list<CharWishInfo>	lstWishs;
+
+	void CleanUp()
+	{
+		lstWishs.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		snprintf( szSQL, sizeof( szSQL ), "%d|%s|%s", (int32_t)lstWishs.size(), "", "" );
+		sqls.push_back( szSQL );
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt32( (int32_t)lstWishs.size() );
+		for ( std::list<CharWishInfo>::iterator iter = lstWishs.begin(); iter != lstWishs.end(); ++iter )
+		{
+			packet->writeInt32( iter->nId );
+			packet->writeInt32( iter->nItemId );
+			packet->writeInt32( iter->nStartTime );
+			packet->writeUTF8( iter->strInfo );
+			packet->writeInt32( iter->nGetReward );
+		}
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket ) return;
+		int32_t nCount = inPacket->readInt32();
+		for ( int32_t i = 0; i < nCount; ++i )
+		{
+			CharWishInfo info;
+			info.nId = inPacket->readInt32();
+			info.nItemId = inPacket->readInt32();
+			info.nStartTime = inPacket->readInt32();
+			info.strInfo = inPacket->readUTF8(true);
+			info.nGetReward = inPacket->readInt32();
+			lstWishs.push_back( info );
+		}
+	}
+};
+
+struct TaskStateInfo
+{
+	TaskStateInfo()
+	{
+		TaskId = 0;
+		TaskState = 0;
+	}
+	int32_t		TaskId;
+	int8_t		TaskState;
+};
+
+// 金币奖励任务数据
+class MoneyRewardTaskData : public IDataStruct
+{
+public:
+	MoneyRewardTaskData() { CleanUp(); }
+	virtual ~MoneyRewardTaskData(){}
+
+	int32_t		m_FinishTimes;
+	int8_t		m_IsGetReward;
+	int32_t		m_TaskId;
+	int32_t		m_Star;
+	int32_t		m_RandStarTimes;
+	int32_t		m_PdbfFinishTimes;
+	int32_t		m_EquipBackTaskId;
+	int32_t		m_EquipBackTaskFinishTimes;
+	int32_t		m_RandEquipBackTaskStarTimes;
+	int32_t		m_JieBiaoTimes;
+	int32_t		m_YaBiaoTimes;
+	int8_t		m_TrailerQuality;
+	int32_t		m_EndTime;
+	int32_t		m_XiangYaoFinishTimes;
+	int32_t		m_RefreshTimes;
+	std::string	m_MoneyRewardTaskInfo;
+	std::string	m_XiangYaoTask;
+	std::string	m_ShenWeiTask;
+
+	void CleanUp()
+	{
+		m_FinishTimes = 0;
+		m_IsGetReward = 0;
+		m_TaskId = 0;
+		m_Star = 0;
+		m_RandStarTimes = 0;
+		m_PdbfFinishTimes = 0;
+		m_EquipBackTaskId = 0;
+		m_EquipBackTaskFinishTimes = 0;
+		m_RandEquipBackTaskStarTimes = 0;
+		m_JieBiaoTimes = 0;
+		m_YaBiaoTimes = 0;
+		m_TrailerQuality = 0;
+		m_EndTime = 0;
+		m_XiangYaoFinishTimes = 0;
+		m_RefreshTimes = 0;
+		m_MoneyRewardTaskInfo.clear();
+		m_XiangYaoTask.clear();
+		m_ShenWeiTask.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		snprintf( szSQL, sizeof( szSQL ), "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s|%s|%s",
+			m_FinishTimes, m_IsGetReward, m_TaskId, m_Star, m_RandStarTimes,
+			m_PdbfFinishTimes, m_EquipBackTaskId, m_EquipBackTaskFinishTimes, m_RandEquipBackTaskStarTimes,
+			m_JieBiaoTimes, m_YaBiaoTimes, m_TrailerQuality, m_EndTime,
+			m_XiangYaoFinishTimes, m_RefreshTimes,
+			m_MoneyRewardTaskInfo.c_str(), m_XiangYaoTask.c_str(), m_ShenWeiTask.c_str() );
+		sqls.push_back( szSQL );
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt32( m_FinishTimes );
+		packet->writeInt8( m_IsGetReward );
+		packet->writeInt32( m_TaskId );
+		packet->writeInt32( m_Star );
+		packet->writeInt32( m_RandStarTimes );
+		packet->writeInt32( m_PdbfFinishTimes );
+		packet->writeInt32( m_EquipBackTaskId );
+		packet->writeInt32( m_EquipBackTaskFinishTimes );
+		packet->writeInt32( m_RandEquipBackTaskStarTimes );
+		packet->writeInt32( m_JieBiaoTimes );
+		packet->writeInt32( m_YaBiaoTimes );
+		packet->writeInt8( m_TrailerQuality );
+		packet->writeInt32( m_EndTime );
+		packet->writeInt32( m_XiangYaoFinishTimes );
+		packet->writeInt32( m_RefreshTimes );
+		packet->writeUTF8( m_MoneyRewardTaskInfo );
+		packet->writeUTF8( m_XiangYaoTask );
+		packet->writeUTF8( m_ShenWeiTask );
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket ) return;
+		m_FinishTimes = inPacket->readInt32();
+		m_IsGetReward = inPacket->readInt8();
+		m_TaskId = inPacket->readInt32();
+		m_Star = inPacket->readInt32();
+		m_RandStarTimes = inPacket->readInt32();
+		m_PdbfFinishTimes = inPacket->readInt32();
+		m_EquipBackTaskId = inPacket->readInt32();
+		m_EquipBackTaskFinishTimes = inPacket->readInt32();
+		m_RandEquipBackTaskStarTimes = inPacket->readInt32();
+		m_JieBiaoTimes = inPacket->readInt32();
+		m_YaBiaoTimes = inPacket->readInt32();
+		m_TrailerQuality = inPacket->readInt8();
+		m_EndTime = inPacket->readInt32();
+		m_XiangYaoFinishTimes = inPacket->readInt32();
+		m_RefreshTimes = inPacket->readInt32();
+		m_MoneyRewardTaskInfo = inPacket->readUTF8(true);
+		m_XiangYaoTask = inPacket->readUTF8(true);
+		m_ShenWeiTask = inPacket->readUTF8(true);
+	}
+};
+
+
+// V计划数据
+class CVplanData : public IDataStruct
+{
+public:
+	CVplanData() { CleanUp(); }
+	virtual ~CVplanData(){}
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 ) {}
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 ) { return true; }
+	virtual void PackageData( Answer::NetPacket* packet ) {}
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 ) {}
+
+	int32_t		m_VplanType;
+	int32_t		m_VplanLevel;
+	int32_t		m_SwVipLevel;
+	int8_t		m_fromLYGameApp;
+	int32_t		m_YYLevel;
+	int32_t		m_YYVipLevel;
+	int32_t		m_YySuperLevel;
+	int32_t		m_SgHallLevel;
+	std::string	m_strSGPf;
+	int32_t		m_XlNxLevel;
+	int32_t		m_PlatformVip;
+	int32_t		m_PlatformSuperVip;
+
+	void CleanUp()
+	{
+		m_VplanType = 0;
+		m_VplanLevel = 0;
+		m_SwVipLevel = 0;
+		m_fromLYGameApp = 0;
+		m_YYLevel = 0;
+		m_YYVipLevel = 0;
+		m_YySuperLevel = 0;
+		m_SgHallLevel = 0;
+		m_strSGPf.clear();
+		m_XlNxLevel = 0;
+		m_PlatformVip = 0;
+		m_PlatformSuperVip = 0;
+	}
+};
+
+
+// 国庆活动数据
+class NationalDayData : public IDataStruct
+{
+public:
+	NationalDayData() { CleanUp(); }
+	virtual ~NationalDayData(){}
+	virtual void CleanUp()
+	{
+		m_Level = 0;
+		m_Exp = 0;
+		m_UnLockReward = 0;
+		m_OrdinaryReward = 0;
+		m_SeniorReward = 0;
+		m_NationalInfo.clear();
+	}
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		bzero(szSQL, MAX_SQL_LENGTH);
+		snprintf(szSQL, MAX_SQL_LENGTH-1,
+			"INSERT INTO `mem_char_guo_qing` (`cid`,`level`,`exp`,`lock`,`ordinary_reward`,`senior_reward`,`national_info`) VALUES (%lld,%d,%d,%d,%d,%d,'%s') ON DUPLICATE KEY UPDATE `level`=%d,`exp`=%d,`lock`=%d,`ordinary_reward`=%d,`senior_reward`=%d,`national_info`='%s'",
+			nCid, m_Level, m_Exp, m_UnLockReward, m_OrdinaryReward, m_SeniorReward, m_NationalInfo.c_str(),
+			m_Level, m_Exp, m_UnLockReward, m_OrdinaryReward, m_SeniorReward, m_NationalInfo.c_str());
+		std::string sqlStr(szSQL);
+		sqls.push_back(sqlStr);
+	}
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		bzero(szSQL, MAX_SQL_LENGTH);
+		snprintf(szSQL, MAX_SQL_LENGTH-1, "SELECT * FROM `mem_char_guo_qing` WHERE `cid`=%lld", nCid);
+		Answer::MySqlQuery result(db.query(szSQL));
+		while ( !result.eof() )
+		{
+			m_Level = result.getIntValue("level", 0);
+			m_Exp = result.getIntValue("exp", 0);
+			m_UnLockReward = result.getIntValue("lock", 0);
+			m_OrdinaryReward = result.getIntValue("ordinary_reward", 0);
+			m_SeniorReward = result.getIntValue("senior_reward", 0);
+			m_NationalInfo = result.getStringValue("national_info", "");
+			result.nextRow();
+		}
+		return true;
+	}
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( !packet ) return;
+		packet->writeInt32(m_Level);
+		packet->writeInt32(m_Exp);
+		packet->writeInt32(m_UnLockReward);
+		packet->writeInt32(m_OrdinaryReward);
+		packet->writeInt32(m_SeniorReward);
+		packet->writeUTF8(m_NationalInfo);
+	}
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( !inPacket ) return;
+		m_Level = inPacket->readInt32();
+		m_Exp = inPacket->readInt32();
+		m_UnLockReward = inPacket->readInt32();
+		m_OrdinaryReward = inPacket->readInt32();
+		m_SeniorReward = inPacket->readInt32();
+		m_NationalInfo = inPacket->readUTF8(true);
+	}
+
+	int32_t		m_Level;
+	int32_t		m_Exp;
+	int32_t		m_UnLockReward;
+	int32_t		m_OrdinaryReward;
+	int32_t		m_SeniorReward;
+	std::string	m_NationalInfo;
+};
+
+// 翻牌抽奖数据
+class CFlopDraw : public IDataStruct
+{
+public:
+	CFlopDraw() { CleanUp(); }
+	virtual ~CFlopDraw(){}
+
+	std::map<int, std::map<int,int>>	m_FlopDrawRecordMap;
+
+	void CleanUp()
+	{
+		m_FlopDrawRecordMap.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		snprintf( szSQL, sizeof( szSQL ), "%d", (int32_t)m_FlopDrawRecordMap.size() );
+		sqls.push_back( szSQL );
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt32( (int32_t)m_FlopDrawRecordMap.size() );
+		for ( std::map<int, std::map<int,int>>::iterator iter = m_FlopDrawRecordMap.begin(); iter != m_FlopDrawRecordMap.end(); ++iter )
+		{
+			packet->writeInt32( iter->first );
+			packet->writeInt32( (int32_t)iter->second.size() );
+			for ( std::map<int,int>::iterator itInner = iter->second.begin(); itInner != iter->second.end(); ++itInner )
+			{
+				packet->writeInt32( itInner->first );
+				packet->writeInt32( itInner->second );
+			}
+		}
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket ) return;
+		int32_t nCount = inPacket->readInt32();
+		for ( int32_t i = 0; i < nCount; ++i )
+		{
+			int32_t nType = inPacket->readInt32();
+			int32_t nInnerCount = inPacket->readInt32();
+			std::map<int,int> innerMap;
+			for ( int32_t j = 0; j < nInnerCount; ++j )
+			{
+				int32_t nKey = inPacket->readInt32();
+				int32_t nVal = inPacket->readInt32();
+				innerMap[nKey] = nVal;
+			}
+			m_FlopDrawRecordMap[nType] = innerMap;
+		}
+	}
+};
+
+// 魔盒数据
+class MagicBoxDBData : public IDataStruct
+{
+public:
+	MagicBoxDBData() { CleanUp(); }
+	virtual ~MagicBoxDBData(){}
+
+	int32_t			nCombiPoints;
+	int32_t			nLastReviveTime;
+	std::string		strActiveScrolls;
+	std::string		strSuccessIds;
+
+	void CleanUp()
+	{
+		nCombiPoints = 0;
+		nLastReviveTime = 0;
+		strActiveScrolls.clear();
+		strSuccessIds.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		snprintf( szSQL, sizeof( szSQL ), "%d|%d|%s|%s", nCombiPoints, nLastReviveTime, strActiveScrolls.c_str(), strSuccessIds.c_str() );
+		sqls.push_back( szSQL );
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt32( nCombiPoints );
+		packet->writeInt32( nLastReviveTime );
+		packet->writeUTF8( strActiveScrolls );
+		packet->writeUTF8( strSuccessIds );
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket ) return;
+		nCombiPoints = inPacket->readInt32();
+		nLastReviveTime = inPacket->readInt32();
+		strActiveScrolls = inPacket->readUTF8(true);
+		strSuccessIds = inPacket->readUTF8(true);
+	}
+};
 class PlayerDBData : public IDataStruct
 {
 public:
@@ -5550,6 +5968,7 @@ public:
 		m_WorshipData.CleanUp();
 		m_JueWeiData.CleanUp();
 		m_CharWingDBData.CleanUp();
+
 		m_CGoblinData.CleanUp();
 		m_WuHunShopDBData.CleanUp();
 	m_BossKilledReward.CleanUp();
@@ -5856,6 +6275,12 @@ public:
 	WorshipDBData				m_WorshipData;
 	CJueWeiData					m_JueWeiData;
 CharWingDBData		m_CharWingDBData;
+CharWishDBData		m_WishDBData;
+MagicBoxDBData		m_MagicBoxDBData;
+CFlopDraw		m_CFlopDraw;
+MoneyRewardTaskData		m_MoneyRewardTaskData;
+CVplanData			m_VplanData;
+NationalDayData				m_NationalDayData;
 CGoblinData	m_CGoblinData;
 	WuHunShopDBData		m_WuHunShopDBData;
 	BossKilledRewardDBData	m_BossKilledReward;

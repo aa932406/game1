@@ -494,7 +494,13 @@ enum MSG_CM_CODE
 	CM_ASK_VAR_VICTORY_INFO						= 516,			//����սʤ�����Ϣ
 	CM_GET_VAR_VICTORY_REWARD					= 517,			//����սʤ������
 	//ɱ��ͳ��
-	CM_ASK_KILL_MONSTER_COUNT					= 600,			//����ɱ����Ϣ
+	// 国庆活动
+	CM_ASK_NATIONAL_DAY_INFO		= 620,
+	CM_ASK_NATIONAL_DAY_EXP		= 621,
+	CM_ASK_NATIONAL_DAY_REWARD		= 622,
+	CM_ASK_NATIONAL_DAY_BUY_LEVEL	= 623,
+
+	CM_ASK_KILL_MONSTER_COUNT				= 600,			//����ɱ����Ϣ
 	/*
 	* CM_WMF	700~899
 	*/
@@ -1223,6 +1229,9 @@ enum MSG_SM_CODE
 	//��ʾ��Ϣ
 	SM_GM_BROADCAST						= 11477,		// GM��̨���͹���
 
+// 国庆活动
+SM_NATIONAL_DAY_LEVEL_INFO		= 10308,
+SM_NATIONAL_DAY_HD_INFO			= 10309,
 	SM_SEND_NOTICE_PARAM		= 11478,		//������ʾ��Ϣ����
 	//��θ��
 	SM_SEND_DWW_INFO					= 11479,		//���ʹ�θ����Ϣ

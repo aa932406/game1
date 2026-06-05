@@ -12524,4 +12524,137 @@ CreateWuHun* CfgData::GetCreateWuHun( int32_t nId )
 const CfgBlacketMarketTable* CfgData::GetBlacketMarketTable()
 {
     return &m_BlacketMarketTable;
+}void CfgData::InitMagicBoxTable()
+{
+	// TODO: 从数据表加载魔盒配置
+}
+void CfgData::InitFlopDrawTable()
+{
+	// TODO: 从数据表加载翻牌抽奖配置
+}
+const CfgFlopDrawTable& CfgData::GetFlopDrawTable() const
+{
+	return m_cfgFlopDraw;
+}
+
+
+// ========== 金币奖励任务配置存根 ==========
+void CfgData::InitMoneyRewardTask( TaskStateInfo (*pTask)[9], int32_t nLevel )
+{
+	// TODO: 从配置表加载金币奖励任务
+}
+
+int32_t CfgData::RandPdbfTask( int32_t nLevel )
+{
+	return 0;
+}
+
+const BackEquipTask* CfgData::GetBackEquipTask( int32_t nId )
+{
+	BackEquipTaskMap::const_iterator iter = m_cfgBackEquipTask.find( nId );
+	if ( iter != m_cfgBackEquipTask.end() )
+		return &iter->second;
+	return NULL;
+}
+
+int32_t CfgData::GetEquipBackTaskId( int32_t nLevel, int32_t nRandTimes )
+{
+	return 0;
+}
+
+const ShenWeiTaskCfg* CfgData::GetShenWeiTaskCfg( int32_t nIndex )
+{
+	ShenWeiTaskCfgMap::const_iterator iter = m_cfgShenWeiTask.find( nIndex );
+	if ( iter != m_cfgShenWeiTask.end() )
+		return &iter->second;
+	return NULL;
+}
+
+int32_t CfgData::RandXiangYaoTaskId( int32_t nLevel, bool bBest )
+{
+	return 0;
+}
+
+int32_t CfgData::getXiangYaoStart( int32_t nTaskId )
+{
+	return 0;
+}
+
+int32_t CfgData::InitXuWuTask( int32_t nLevel, int32_t nFlag )
+{
+	return 0;
+}
+
+int32_t CfgData::InitXinMoTask( int32_t nLevel, int32_t nFlag )
+{
+	return 0;
+}
+
+
+// ========== V计划配置存根 ==========
+const CfgVplanMap* CfgData::GetCfgVplanMap() const
+{
+	return &m_cfgVplan;
+}
+
+const CfgYYVipMap* CfgData::GetCfgYYVipMap() const
+{
+	return &m_cfgYYVip;
+}
+
+const CfgXunLeiMap* CfgData::GetXunLeiTable() const
+{
+	return &m_cfgXunLei;
+}
+
+const CfgLuDaShiMap* CfgData::GetLaDaShiHuiYuanMap() const
+{
+	return &m_cfgLuDaShi;
+}
+
+const CfgSwVipRewardMap* CfgData::GetSwVipRewardMap() const
+{
+	return &m_cfgSwVipReward;
+}
+
+const CfgSwVipRewardMap* CfgData::GetSwVipBarRewardMap() const
+{
+	return &m_cfgSwVipBar;
+}
+
+const CfgYYGameAppMap* CfgData::GetYYGameAppMap() const
+{
+	return &m_cfgYYGameApp;
+}
+
+const CfgSgGameAppMap* CfgData::GetSgGameAppMap() const
+{
+	return &m_cfgSgGameApp;
+}
+// ========== NationalDay config getters ==========
+const NationalDayTaskCfg* CfgData::GetNationalDayTaskCfg( int32_t nType, int32_t nId ) const
+{
+	std::pair<int,int> key( nType, nId );
+	NationalDayTaskCfgMap::const_iterator it = m_NationalDayTaskCfgMap.find( key );
+	if ( it != m_NationalDayTaskCfgMap.end() )
+		return &it->second;
+	return NULL;
+}
+
+const NationalDayLevelCfg* CfgData::GetNationalDayLevelCfg( int32_t nLevel ) const
+{
+	NationalDayLevelCfgMap::const_iterator it = m_NationalDayLevelCfgMap.find( nLevel );
+	if ( it != m_NationalDayLevelCfgMap.end() )
+		return &it->second;
+	return NULL;
+}
+
+const NationalDayTaskCfgMap* CfgData::GetNationalDayTaskCfgMap() const
+{
+	return &m_NationalDayTaskCfgMap;
+}
+
+const NationalDayLevelCfgMap* CfgData::GetNationalDayLevelCfgMap() const
+{
+	return &m_NationalDayLevelCfgMap;
 }

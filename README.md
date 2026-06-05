@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (22/88)
+### 已移植模块 (24/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -55,6 +55,8 @@ make
 | **CExtCharTitle** (称号) | `CharTitle.cpp/.h` | ~853 | 28 方法，含穿戴/卸下/幻化/属性加成/定时检查/隐藏恢复 |
 | **CExtCharWing** (翅膀) | `CharWing.cpp/.h` | ~411 | 15 方法，含升级/幸运值/技能切换/属性加成/每日清空
 | **CExtMagicBox** (魔盒) | `MagicBox.cpp/.h` | ~792 | 23 方法，含物品合成/饰品合成/装备合成/分解/合成点/卷轴激活/广播
+| **CVplan** (V计划) | `Vplan.cpp/.h` | ~810 | 50+ 方法，含V计划核心/迅雷/YY语音/鲁大师/SG游戏/神武VIP 6子系统
+| **CNationalDayHd** (国庆活动) | `NationalDayHd.cpp/.h` | ~537 | 20+ 方法，含任务追踪/等级系统/奖励系统，8种任务类型
 
 ### 数据层变更
 
@@ -65,9 +67,9 @@ make
 | `DataStructs.h` | 添加 IACR_AUCTION_BUY/CANCEL/SELECT_ITEM, IDCR_SELECT_ITEM/DISCARD, GCR/GCC/MCR_AUTO_USE, GCR_MYSTERY_GIFT_BUY, GCR_MYSTERY_SHOP_REFRESH/BUY, IACR_MYSTERY_SHOP_BUY_GET, IDCR_MYSTERY_SHOP_BUY_COST |
 | `share/DataStruct.h` | 添加 ExchangeRecord 结构体 + ExchangeDBData 类; 添加 MysteryShop 结构体 + MysteryShopDBData 类; 添加 MagicBoxDBData 类; 添加 CharWishInfo 结构体 + CharWishDBData 类 (SaveToSqlString/LoadFromDB/PackageData/UnPackageData) |
 | `share/PDUDefine.h` | 添加 CM_MAGIC_BOX 协议 (725-729) 和 SM_MAGIC_BOX 协议 (11797-11799) 以及 CM_WISH 协议 (950-952) 和 SM_WISH 协议 (12040-12041) |
-| `Player.h` | 集成 CharDraw/CharExchange/CharMysteryGift/CharMysteryShop/MagicBox/Wish 模块声明 |
+| `Player.h` | 集成 CharDraw/CharExchange/CharMysteryGift/CharMysteryShop/MagicBox/Wish/Vplan/NationalDayHd 模块声明 |
 
-### 待移植模块 (剩余 ~62 个)
+### 待移植模块 (剩余 ~60 个)
 
 以下是从反编译代码中识别出的 `CExtSystemBase` 派生类模块：
 
@@ -109,7 +111,6 @@ make
 | 38 | MingGeExt | `CMingGeExt.cpp` | — | 命格 |
 | 39 | MoneyRewardTask | `CMoneyRewardTask.cpp` | ~2,560 | 金币奖励任务 |
 | 40 | MonthlyChouJiang | `CMonthlyChouJiang.cpp` | — | 月卡抽奖 |
-| 41 | NationalDayHd | `CNationalDayHd.cpp` | — | 国庆活动 |
 | 42 | ObjAttrs | `CObjAttrs.cpp` | — | 对象属性 |
 | 43 | ObjCarrier | `CObjCarrier.cpp` | — | 对象载具 |
 | 44 | ObjState | `CObjState.cpp` | — | 对象状态 |
@@ -126,7 +127,6 @@ make
 | 55 | TestServerReward | `CTestServerReward.cpp` | — | 测试服奖励 |
 | 56 | TreasureMap | `CTreasureMap.cpp` | — | 藏宝图 |
 | 57 | VipClub | `CVipClub.cpp` | — | Vip俱乐部 |
-| 58 | Vplan | `CVplan.cpp` | ~2,418 | V计划 |
 | 59 | Wan360 | `CWan360.cpp` | — | 360平台 |
 | 60 | WuHunShop | `CWuHunShop.cpp` | — | 武魂商店 |
 | 61 | XinMaiMap | `CXinMaiMap.cpp` | — | 心法地图 |
