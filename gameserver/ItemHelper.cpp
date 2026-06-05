@@ -89,3 +89,70 @@ MemChrBagVector CItemHelper::parseItemString(int32_t id, const std::string &strI
 
 	return items;
 }
+
+MemChrBagVector CItemHelper::parseItemVectorString(const std::string &strItems)
+{
+	MemChrBagVector items;
+
+	if (!strItems.empty())
+	{
+		StringVector items_receive = StringUtility::split(strItems, "|");
+		for (StringVector::iterator it = items_receive.begin(); it != items_receive.end(); ++it)
+		{
+			StringVector item = StringUtility::split(*it, ":");
+			if (item.size() == 3)
+			{
+				MemChrBag itemData = {};
+				itemData.itemId			= atoi(item[0].c_str());
+				itemData.itemClass		= atoi(item[1].c_str());
+				itemData.itemCount		= atoi(item[2].c_str());
+				items.push_back(itemData);
+			}
+			else if ( item.size() == 4 )
+			{
+				MemChrBag itemData = {};
+				itemData.itemId			= atoi(item[0].c_str());
+				itemData.itemClass		= atoi(item[1].c_str());
+				itemData.itemCount		= atoi(item[2].c_str());
+				itemData.bind			= atoi(item[3].c_str());
+				items.push_back(itemData);
+			}
+			else if ( item.size() == 5 )
+			{
+				MemChrBag itemData = {};
+				itemData.itemId			= atoi(item[0].c_str());
+				itemData.itemClass		= atoi(item[1].c_str());
+				itemData.itemCount		= atoi(item[2].c_str());
+				itemData.bind			= atoi(item[3].c_str());
+				itemData.endTime		= atoi(item[4].c_str());
+				items.push_back(itemData);
+			}
+		}
+	}
+
+	return items;
+}
+
+std::list<ItemData> CItemHelper::parseItemDataListString(const std::string &strItems)
+{
+	std::list<ItemData> items;
+
+	if (!strItems.empty())
+	{
+		StringVector items_receive = StringUtility::split(strItems, "|");
+		for (StringVector::iterator it = items_receive.begin(); it != items_receive.end(); ++it)
+		{
+			StringVector item = StringUtility::split(*it, ":");
+			if (item.size() >= 3)
+			{
+				ItemData itemData;
+				itemData.m_nId		= atoi(item[0].c_str());
+				itemData.m_nClass	= atoi(item[1].c_str());
+				itemData.m_nCount	= atoi(item[2].c_str());
+				items.push_back(itemData);
+			}
+		}
+	}
+
+	return items;
+}

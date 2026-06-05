@@ -206,6 +206,8 @@ public:
 		return vAddExp[idx];
 	}
 
+
+
 private:
 	Int32Vector vLevel;
 	Int32Vector vAddExp;
@@ -3148,6 +3150,31 @@ struct CfgKaiFuHuoDongData
 
 typedef std::map<int32_t,CfgKaiFuHuoDongData>   KaiFuHuoDongCfg;
 
+struct LevelRefinCfg
+{
+	int32_t	LV;
+	std::vector<int32_t>	vNeedGold;
+	std::vector<int32_t>	nLevelUp;
+	int32_t	nLimit;
+	int32_t	nGongGaoId;
+};
+typedef std::map<int32_t, LevelRefinCfg>   LevelRefinCfgMap;
+
+// ===== BossKilledReward Config =====
+struct BossKilledReward
+{
+	int32_t			id;
+	int8_t			type;
+	int32_t			number;
+	int32_t			start;
+	int32_t			end;
+	int32_t			notice;
+	int32_t			index;
+	std::list<int32_t>	BossList;
+	MemChrBagVector		Rewars;
+};
+typedef std::map<int8_t, BossKilledReward> BossKilledRewardMap;
+
 class ChouJiangConfig
 {
 public:
@@ -3475,6 +3502,85 @@ public:
 	CfgOutLinkFestivalList m_lFestival;
 };
 
+// ===== SevenDayTask Config Structs =====
+struct SevenTaskCfg
+{
+    int32_t nIndex;
+    int32_t nType;
+    int32_t nCondition;
+    MemChrBag Item;
+    int32_t nStartDay;
+    int32_t nEndDay;
+};
+
+typedef std::map<int32_t, SevenTaskCfg> SevenTaskCfgMap;
+
+struct SevenTaskSumReward
+{
+    int32_t nIndex;
+    int32_t nFinishCount;
+    MemChrBag Item;
+    int32_t nGongGaoId;
+};
+
+typedef std::map<int32_t, SevenTaskSumReward> SevenTaskSumRewardMap;
+
+class SevenTaskTable
+{
+public:
+    SevenTaskTable() {}
+    ~SevenTaskTable() {}
+
+    void AddTaskCfg( const SevenTaskCfg& cfg )
+    {
+        m_TaskCfgMap[cfg.nIndex] = cfg;
+    }
+
+    void AddSumReward( const SevenTaskSumReward& cfg )
+    {
+        m_SumRewardMap[cfg.nIndex] = cfg;
+    }
+
+    const SevenTaskCfg* GetSevenTaskCfg( int32_t nId ) const
+    {
+        SevenTaskCfgMap::const_iterator it = m_TaskCfgMap.find( nId );
+        if ( it != m_TaskCfgMap.end() )
+        {
+            return &(it->second);
+        }
+        return NULL;
+    }
+
+    const SevenTaskSumReward* GetSevenTaskSumReward( int32_t nId ) const
+    {
+        SevenTaskSumRewardMap::const_iterator it = m_SumRewardMap.find( nId );
+        if ( it != m_SumRewardMap.end() )
+        {
+            return &(it->second);
+        }
+        return NULL;
+    }
+
+    const SevenTaskCfgMap& GetSevenTaskCfgMap() const
+    {
+        return m_TaskCfgMap;
+    }
+
+    const SevenTaskSumRewardMap& GetSevenTaskSumRewardMap() const
+    {
+        return m_SumRewardMap;
+    }
+
+    int32_t GetSumRewardCount() const
+    {
+        return (int32_t)m_SumRewardMap.size();
+    }
+
+private:
+    SevenTaskCfgMap         m_TaskCfgMap;
+    SevenTaskSumRewardMap   m_SumRewardMap;
+};
+
 // ===== TianLing Config Structs =====
 struct TianLingCfg
 {
@@ -3509,6 +3615,93 @@ struct SunAndMoonCfg
 typedef std::map<int32_t, SunAndMoonCfg> SunAndMoonCfgMap;
 
 
+struct RateItem
+{
+	int32_t	nItemId;
+	int32_t	nItemClass;
+	int32_t	nItemCount;
+	int32_t	nRate;
+	int8_t	nBind;
+	int32_t	nGongGaoId;
+};
+typedef std::list<RateItem> RateItemList;
+
+// WuHun Config
+struct WuHunItem
+{
+	WuHunItem() { CleanUp(); }
+	void CleanUp()
+	{
+		nId = 0;
+		nLv = 0;
+		nType = 0;
+		nQuality1 = 0;
+		nGainCondition = 0;
+		nTalentId = 0;
+		nTalentLevel = 0;
+		nAuction = 0;
+		nPrice = 0;
+		nOverlay = 0;
+		nGrade = 0;
+		nQuality = 0;
+		nDressLevel = 0;
+		nNeedQuality = 0;
+		lAttrList.clear();
+	}
+
+	int32_t		nId;
+	int32_t		nLv;
+	int32_t		nType;
+	int32_t		nQuality1;
+	int32_t		nGainCondition;
+	AddAttrList	lAttrList;
+	int32_t		nTalentId;
+	int32_t		nTalentLevel;
+	std::string	sName;
+	int32_t		nAuction;
+	int32_t		nPrice;
+	int32_t		nOverlay;
+	int32_t		nGrade;
+	int32_t		nQuality;
+	int32_t		nDressLevel;
+	int32_t		nNeedQuality;
+};
+typedef std::map<int32_t, WuHunItem> WuHunItemMap;
+
+struct CreateWuHun
+{
+	CreateWuHun() { CleanUp(); }
+	void CleanUp()
+	{
+		nId = 0;
+		nLv = 0;
+		nType = 0;
+		nNpcID = 0;
+		nWuHunID = 0;
+		GetItemRate.clear();
+		GetItemRate2.clear();
+		ConstItem.clear();
+		SpecialCost.m_nId = 0;
+		SpecialCost.m_nClass = 0;
+		SpecialCost.m_nCount = 0;
+	}
+
+	int32_t		nId;
+	int32_t		nLv;
+	int32_t		nType;
+	RateItemList	GetItemRate;
+	RateItemList	GetItemRate2;
+	int32_t		nNpcID;
+	int32_t		nWuHunID;
+	ItemData		SpecialCost;
+	ItemDataList	ConstItem;
+};
+typedef std::map<int32_t, CreateWuHun> CreateWuHunMap;
+
+
+
+
+
 class CfgData
 {
 public:
@@ -3523,6 +3716,9 @@ public:
 	const int32_t getServerStartTime();
 	const int32_t getServerStartDayTime();
 	const int32_t getServerDiffTime();
+	int32_t getServerType() const;
+	bool isUniteServer() const;
+	int32_t getServerDiffDay( int32_t serverType ) const;
 
 	const CfgActivityTable&	getAllActivity();
 	CfgActivity*			getActivity(int32_t id);
@@ -3695,6 +3891,11 @@ public:
 	CfgEverydayChongZhi*		GetEveryDayChongZhiCfg( int8_t Index );
 	CTouZiCfg&					GetTouZhiCfg();
 	KaiFuHuoDongCfg&			GetKaiFuHuoDongCfg();
+	LevelRefinCfg*				GetRefining( int32_t nLevel );
+	LevelRefinCfgMap&			GetRefiningTable();
+	void						InitBossKilledReward();
+	const BossKilledReward*		GetBossKilledReward( int8_t nType ) const;
+	const BossKilledRewardMap&	GetBossKilledRewardMap() const { return m_BossKilledRewardMap; }
 	CfgHuoYueDu*				GetHuoYueDuCfg( int32_t Index );
 	HuoYueDuTable&				GetHuoYueDuTable();
 	CfgHuoYueDuReward*			GetHuoYueDuReward( int32_t Index );
@@ -3711,6 +3912,9 @@ public:
 	CfgTotalChongZhi*			GetTotalChongZhiCfg( int8_t Index );
 	int32_t						GetHuanHuaNeedRoleLevel( int32_t Points );
 	WarVictoryHd*				GetWarVictoryHdCfg( int8_t Index );
+
+	WuHunItem*			GetWuHunItem( int32_t nId );
+	CreateWuHun*		GetCreateWuHun( int32_t nId );
 private:
 	void getExParams(cfgParams& params,const std::string& str);
 
@@ -4011,13 +4215,15 @@ private:
 	SpeciaEquipCfgMap		 m_SpeciaEquipCfgMap;
 	TianLingCfgMap		m_TianLingCfgMap;
 	ZhanHunCfgMap		m_ZhanHunCfgMap;
-	SunAndMoonCfgMap	m_SunAndMoonCfgMap;
-
-	CfgBlacketMarketTable		m_BlacketMarketTable;
-	CfgOutLinkFestivalTable		m_OutLinkFestivalTable;
-	CfgGuardPrivilegeMap	 m_GuardPrivilegeMap;
-	int32_t					 m_nGuardPrivilegeStartTime;
-	int32_t					 m_nGuardPrivilegeEndTime;
+	SunAndMoonCfgMap	m_SunAndMoonCfgMap;	CfgBlacketMarketTable	m_BlacketMarketTable;
+	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
+	SevenTaskTable			m_SevenTaskTable;
+	CfgGuardPrivilegeMap	m_GuardPrivilegeMap;
+	int32_t					m_nGuardPrivilegeStartTime;
+	int32_t					m_nGuardPrivilegeEndTime;
+	BossKilledRewardMap		m_BossKilledRewardMap;
+	WuHunItemMap			m_WuHunItemMap;
+	CreateWuHunMap			m_CreateWuHunMap;
 public:
 	// ZongHeYunYingHD
 	const CfgZongHeYunYingHD*	GetZongHeYunYingHDCfg();
@@ -4037,6 +4243,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const SunAndMoonCfgMap&	GetSunAndMoonCfgMap();
 
 	const CfgOutLinkFestivalTable*	GetOutLinkFestivalTable();
+	const SevenTaskTable*			GetSevenTaskTable();
 
 	const CfgBlacketMarketTable*	GetBlacketMarketTable();
 private:

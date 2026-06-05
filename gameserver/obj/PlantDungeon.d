@@ -25,3 +25,30 @@ obj/PlantDungeon.o: PlantDungeon.cpp stdafx.h \
  Pet.h ../share/DataStruct.h MapEvent.h MonsterBuff.h PlantDungeon.h \
  Plant.h
 	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX PlantDungeon.cpp -o obj/PlantDungeon.o
+PlantDungeon.o: PlantDungeon.cpp stdafx.h \
+ ../libanswer/include/libanswer.h ../libanswer/include/stdafx.h \
+ ../libanswer/include/Application.h ../libanswer/include/Logger.h \
+ ../libanswer/include/ArrayList.h ../libanswer/include/SpinLock.h \
+ ../libanswer/include/SafeQueue.h ../libanswer/include/Mutex.h \
+ ../libanswer/include/Condition.h ../libanswer/include/Database.h \
+ /usr/include/mysql/mysql.h /usr/include/mysql/field_types.h \
+ /usr/include/mysql/my_list.h /usr/include/mysql/mysql_com.h \
+ /usr/include/mysql/my_command.h /usr/include/mysql/my_compress.h \
+ /usr/include/mysql/mysql_version.h /usr/include/mysql/mysql_time.h \
+ /usr/include/mysql/errmsg.h ../libanswer/include/DayTime.h \
+ ../libanswer/include/DBCFile.h ../libanswer/include/DBPool.h \
+ ../libanswer/include/BlockingQueue.h ../libanswer/include/InetAddress.h \
+ ../libanswer/include/Inifile.h ../libanswer/include/MD5.h \
+ ../libanswer/include/NetPacket.h ../libanswer/include/NetPacketPool.h \
+ ../libanswer/include/ObjectPool.h ../libanswer/include/Random.h \
+ ../libanswer/include/RwLock.h ../libanswer/include/Singleton.h \
+ ../libanswer/include/StringUtility.h \
+ ../libanswer/include/TcpConnection.h ../libanswer/include/TcpServer.h \
+ ../libanswer/include/TcpService.h ../libanswer/include/TcpClient.h \
+ ../libanswer/include/Thread.h ../libanswer/include/Zip.h \
+ ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
+ ../share/Type.h DataStructs.h Dungeon.h Map.h CfgData.h actStructs.h \
+ Tile.h DropItem.h Entity.h ObjPet.h Unit.h Buff.h ../share/Attribute.h \
+ Pet.h ../share/DataStruct.h MapEvent.h MonsterBuff.h PlantDungeon.h \
+ Plant.h
+	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX PlantDungeon.cpp -o obj/PlantDungeon.o

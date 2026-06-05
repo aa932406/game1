@@ -3,6 +3,7 @@
 
 #include "Shared.h"
 #include "libanswer.h"
+
 #include <vector>
 #include <map>
 #include <list>
@@ -1037,11 +1038,230 @@ public:
 	}
 
 public:
-	int32_t					m_TouZiValues;			//等级投资金额
-	int32_t					m_MoonCardStartTime;	//月卡投资时间
-	RecordMap				m_MoonCardRecord;		//月卡投资领取记录
-	RecordMap				m_LevelUpRecord;		//等级投资领取记录
+	int32_t					m_TouZiValues;			//碌脠录露脥露脳脢陆冒露卯
+	int32_t					m_MoonCardStartTime;	//脭脗驴篓脥露脳脢脢卤录盲
+	RecordMap				m_MoonCardRecord;		//脭脗驴篓脥露脳脢脕矛脠隆录脟脗录
+	RecordMap				m_LevelUpRecord;		//碌脠录露脥露脳脢脕矛脠隆录脟脗录
 };
+
+//========================================================================================================================================
+class CKunData : public IDataStruct
+{
+public:
+	CKunData(){ CleanUp(); }
+	virtual ~CKunData(){}
+
+	void CleanUp()
+	{
+		m_nBuyTime = 0;
+		m_nLianHuaTime = 0;
+		m_nKunLevel = 0;
+		m_nExp = 0;
+		bzero( m_LingZhuPos, sizeof( m_LingZhuPos ) );
+		bzero( m_LingZhuBag, sizeof( m_LingZhuBag ) );
+		bzero( m_DanTian, sizeof( m_DanTian ) );
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		for ( int32_t i = 0; i < 100; ++i )
+		{
+			bzero( szSQL, sizeof( szSQL ) );
+			snprintf( szSQL, sizeof( szSQL ) - 1,
+				"INSERT INTO `mem_chr_kun_bag` (`cid`, `slot`, `nId`, `nCount`) VALUES (%lld, %d,%d,%d) ON DUPLICATE KEY UPDATE `nId`=%d, `nCount`=%d",
+				nCid,
+				i,
+				m_LingZhuBag[i].nId,
+				m_LingZhuBag[i].nCount,
+				m_LingZhuBag[i].nId,
+				m_LingZhuBag[i].nCount );
+			sqls.push_back( szSQL );
+		}
+
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof( szSQL ) - 1,
+			"INSERT INTO `mem_chr_kun` (`cid`, `buy_times`, `lian_hua_time`, `kun_level`, `exp`,`dan_tian`, `ling_zhu_pos`) VALUES (%lld, %d,%d,%d,%d,'%s','%s') ON DUPLICATE KEY UPDATE `buy_times`=%d, `lian_hua_time`=%d,`kun_level`=%d, `exp`=%d, `dan_tian`='%s',`ling_zhu_pos`='%s'",
+			nCid,
+			m_nBuyTime,
+			m_nLianHuaTime,
+			m_nKunLevel,
+			m_nExp,
+			getDanTianString().c_str(),
+			getLingZhuPosString().c_str(),
+			m_nBuyTime,
+			m_nLianHuaTime,
+			m_nKunLevel,
+			m_nExp,
+			getDanTianString().c_str(),
+			getLingZhuPosString().c_str() );
+		sqls.push_back( szSQL );
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof( szSQL ) - 1, "SELECT * FROM `mem_chr_kun_bag` WHERE `cid`=%lld", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+		while ( !result.eof() )
+		{
+			int32_t slot = result.getIntValue( "slot" );
+			if ( slot >= 0 && slot < 100 )
+			{
+				m_LingZhuBag[slot].nId = result.getIntValue( "nId" );
+				m_LingZhuBag[slot].nCount = result.getIntValue( "nCount" );
+			}
+			result.nextRow();
+		}
+
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof( szSQL ) - 1, "SELECT * FROM `mem_chr_kun` WHERE `cid`=%lld", nCid );
+		Answer::MySqlQuery resultMain = db.query( szSQL );
+		while ( !resultMain.eof() )
+		{
+			m_nBuyTime = resultMain.getIntValue( "buy_times" );
+			m_nLianHuaTime = resultMain.getIntValue( "lian_hua_time" );
+			m_nKunLevel = resultMain.getIntValue( "kun_level" );
+			m_nExp = resultMain.getIntValue( "exp" );
+
+			{
+				std::string strLingZhuPos = resultMain.getStringValue( "ling_zhu_pos" );
+				if ( !strLingZhuPos.empty() )
+				{
+					StringVector vStr = Answer::StringUtility::split( strLingZhuPos, "|" );
+					for ( StringVector::iterator it = vStr.begin(); it != vStr.end(); ++it )
+					{
+						StringVector tv = Answer::StringUtility::split( *it, ":" );
+						if ( tv.size() == 2 )
+						{
+							int32_t nId = atoi( tv[0].c_str() );
+							if ( nId >= 0 && nId < 20 )
+							{
+								m_LingZhuPos[nId] = atoi( tv[1].c_str() );
+							}
+						}
+					}
+				}
+			}
+
+			{
+				std::string strDanTian = resultMain.getStringValue( "dan_tian" );
+				if ( !strDanTian.empty() )
+				{
+					StringVector vStr = Answer::StringUtility::split( strDanTian, "|" );
+					for ( StringVector::iterator it = vStr.begin(); it != vStr.end(); ++it )
+					{
+						StringVector tv = Answer::StringUtility::split( *it, ":" );
+						if ( tv.size() == 4 )
+						{
+							int32_t nId = atoi( tv[0].c_str() );
+							if ( nId >= 0 && nId < 6 )
+							{
+								m_DanTian[nId].nMid = atoi( tv[1].c_str() );
+								m_DanTian[nId].nId = atoi( tv[2].c_str() );
+								m_DanTian[nId].nEndTime = atoi( tv[3].c_str() );
+							}
+						}
+					}
+				}
+			}
+
+			resultMain.nextRow();
+		}
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet )
+		{
+			return;
+		}
+
+		packet->writeInt32( m_nBuyTime );
+		packet->writeInt32( m_nLianHuaTime );
+		packet->writeInt32( m_nKunLevel );
+		packet->writeInt32( m_nExp );
+
+		for ( int32_t i = 0; i < 6; ++i )
+		{
+			packet->writeInt32( m_DanTian[i].nMid );
+			packet->writeInt32( m_DanTian[i].nId );
+			packet->writeInt32( m_DanTian[i].nEndTime );
+		}
+
+		for ( int32_t i = 0; i < 100; ++i )
+		{
+			packet->writeInt32( m_LingZhuBag[i].nId );
+			packet->writeInt32( m_LingZhuBag[i].nCount );
+		}
+
+		for ( int32_t i = 0; i < 20; ++i )
+		{
+			packet->writeInt32( m_LingZhuPos[i] );
+		}
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket )
+		{
+			return;
+		}
+
+		m_nBuyTime = inPacket->readInt32();
+		m_nLianHuaTime = inPacket->readInt32();
+		m_nKunLevel = inPacket->readInt32();
+		m_nExp = inPacket->readInt32();
+
+		for ( int32_t i = 0; i < 6; ++i )
+		{
+			m_DanTian[i].nMid = inPacket->readInt32();
+			m_DanTian[i].nId = inPacket->readInt32();
+			m_DanTian[i].nEndTime = inPacket->readInt32();
+		}
+
+		for ( int32_t i = 0; i < 100; ++i )
+		{
+			m_LingZhuBag[i].nId = inPacket->readInt32();
+			m_LingZhuBag[i].nCount = inPacket->readInt32();
+		}
+
+		for ( int32_t i = 0; i < 20; ++i )
+		{
+			m_LingZhuPos[i] = inPacket->readInt32();
+		}
+	}
+
+	std::string getLingZhuPosString()
+	{
+		std::stringstream ss;
+		for ( int32_t i = 0; i < 20; ++i )
+		{
+			ss << i << ":" << m_LingZhuPos[i] << "|";
+		}
+		return ss.str();
+	}
+
+	std::string getDanTianString()
+	{
+		std::stringstream ss;
+		for ( int32_t i = 0; i < 6; ++i )
+		{
+			ss << i << ":" << m_DanTian[i].nMid << ":" << m_DanTian[i].nId << ":" << m_DanTian[i].nEndTime << "|";
+		}
+		return ss.str();
+	}
+
+public:
+	int32_t			m_nBuyTime;
+	int32_t			m_nLianHuaTime;
+	int32_t			m_nKunLevel;
+	int32_t			m_nExp;
+	struct { int32_t nId; int32_t nCount; } m_LingZhuBag[100];
+	struct { int32_t nMid; int32_t nId; int32_t nEndTime; } m_DanTian[6];
+	int32_t			m_LingZhuPos[20];
+};
+
 //========================================================================================================================================
 class MemChrBagData : public IDataStruct
 {
@@ -1456,12 +1676,12 @@ public:
 	}
 
 public:
-	int32_t	nFinishTimes;			// 当前完成几次了
-	int32_t	nTaskId;				// 当前任务ID
-	int8_t	nStar;					// 当前星级
-	int8_t	nState;					// 当前任务状态 2 可接 3 已接 4 可提交
-	int32_t	nKills;					// 已经杀了几个了
-	int32_t	nRefreshStarTimes;		// 刷星次数
+	int32_t	nFinishTimes;			// 碌卤脟掳脥锚鲁脡录赂麓脦脕脣
+	int32_t	nTaskId;				// 碌卤脟掳脠脦脦帽ID
+	int8_t	nStar;					// 碌卤脟掳脨脟录露
+	int8_t	nState;					// 碌卤脟掳脠脦脦帽脳麓脤卢 2 驴脡陆脫 3 脪脩陆脫 4 驴脡脤谩陆禄
+	int32_t	nKills;					// 脪脩戮颅脡卤脕脣录赂赂枚脕脣
+	int32_t	nRefreshStarTimes;		// 脣垄脨脟麓脦脢媒
 };
 //========================================================================================================================================
 
@@ -2604,7 +2824,7 @@ public:
 		bzero( szSQL, sizeof( szSQL ) );
 		snprintf( szSQL, sizeof(szSQL)-1, "SELECT * FROM `sys_user_prevent_wallow` WHERE `uid`= %d AND `sid`= %d", nUid, nSid );
 		Answer::MySqlQuery result = db.query(szSQL);
-		//没有记录
+		//脙禄脫脨录脟脗录
 		if (result.eof())
 		{
 			data.sid		= nSid;
@@ -2952,13 +3172,13 @@ public:
 		}
 	}
 public:
-	uint8_t			m_Quality;										//坐骑品质(等阶)
-	int32_t			m_LuckyPoint;									//幸运值
-	uint8_t			m_SkillLatticeCount;							//开启的技能格子数量
-	int32_t			m_EatMountHeart;								//以吃坐骑之心个数
+	uint8_t			m_Quality;										//脳酶脝茂脝路脰脢(碌脠陆脳)
+	int32_t			m_LuckyPoint;									//脨脪脭脣脰碌
+	uint8_t			m_SkillLatticeCount;							//驴陋脝么碌脛录录脛脺赂帽脳脫脢媒脕驴
+	int32_t			m_EatMountHeart;								//脪脭鲁脭脳酶脝茂脰庐脨脛赂枚脢媒
 	uint8_t			m_nMountState;
 	uint8_t			m_CurRide;
-	std::map<uint8_t,uint8_t>	 m_SkillMap;						//<uint8_t 技能类型,uint8_t 技能等级>
+	std::map<uint8_t,uint8_t>	 m_SkillMap;						//<uint8_t 录录脛脺脌脿脨脥,uint8_t 录录脛脺碌脠录露>
 };
 //========================================================================================================================================
 class OperateLimitDBData : public IDataStruct
@@ -3093,6 +3313,121 @@ public:
 };
 //========================================================================================================================================
 
+
+class CSevenDayData : public IDataStruct
+{
+public:
+    CSevenDayData(){ CleanUp(); }
+    virtual ~CSevenDayData(){}
+
+    void CleanUp()
+    {
+        m_OpenTime = 0;
+        m_RewardState.clear();
+        m_SumRewardState = 0;
+    }
+
+public:
+    virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+    {
+        bzero( szSQL, sizeof( szSQL ) );
+        snprintf( szSQL, sizeof( szSQL ) - 1,
+            "INSERT INTO `mem_chr_seven_task` (cid,open_time,reward_state,sum_reward_state) VALUES (%lld,%d,'%s',%d) on duplicate key update open_time =%d,reward_state='%s',sum_reward_state=%d",
+            nCid,
+            m_OpenTime,
+            GetRewardStateString().c_str(),
+            m_SumRewardState,
+            m_OpenTime,
+            GetRewardStateString().c_str(),
+            m_SumRewardState );
+        sqls.push_back( szSQL );
+    }
+
+    virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+    {
+        bzero( szSQL, sizeof( szSQL ) );
+        snprintf( szSQL, sizeof( szSQL ) - 1, "SELECT * FROM `mem_chr_seven_task` WHERE `Cid`=%lld", nCid );
+        Answer::MySqlQuery result = db.query( szSQL );
+        while ( !result.eof() )
+        {
+            m_OpenTime = result.getIntValue( "open_time" );
+            m_SumRewardState = result.getIntValue( "sum_reward_state" );
+            std::string RewardString = result.getStringValue( "reward_state" );
+            SaveRewardState( RewardString );
+            result.nextRow();
+        }
+        return true;
+    }
+
+    virtual void PackageData( Answer::NetPacket* packet )
+    {
+        if ( NULL == packet )
+        {
+            return;
+        }
+        int32_t nSize = m_RewardState.size();
+        packet->writeInt32( nSize );
+        for ( std::map<int32_t, int32_t>::iterator it = m_RewardState.begin(); it != m_RewardState.end(); ++it )
+        {
+            packet->writeInt32( it->first );
+            packet->writeInt32( it->second );
+        }
+        packet->writeInt32( m_OpenTime );
+        packet->writeInt32( m_SumRewardState );
+    }
+
+    virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+    {
+        if ( NULL == inPacket )
+        {
+            return;
+        }
+        int32_t nSize = inPacket->readInt32();
+        for ( int32_t i = 0; i < nSize; ++i )
+        {
+            int32_t nId = inPacket->readInt32();
+            int32_t nState = inPacket->readInt32();
+            m_RewardState[nId] = nState;
+        }
+        m_OpenTime = inPacket->readInt32();
+        m_SumRewardState = inPacket->readInt32();
+    }
+
+    std::string GetRewardStateString()
+    {
+        std::stringstream ss;
+        for ( std::map<int32_t, int32_t>::iterator it = m_RewardState.begin(); it != m_RewardState.end(); ++it )
+        {
+            ss << it->first << ":" << it->second << "|";
+        }
+        return ss.str();
+    }
+
+    void SaveRewardState( std::string p_String )
+    {
+        if ( p_String.empty() )
+        {
+            return;
+        }
+        StringVector ItemVector = Answer::StringUtility::split( p_String, "|" );
+        for ( StringVector::iterator it = ItemVector.begin(); it != ItemVector.end(); ++it )
+        {
+            StringVector tv = Answer::StringUtility::split( *it, ":" );
+            if ( tv.size() == 2 )
+            {
+                int32_t nId = atoi( tv[0].c_str() );
+                int32_t nState = atoi( tv[1].c_str() );
+                m_RewardState[nId] = nState;
+            }
+        }
+    }
+
+public:
+    int32_t                 m_OpenTime;
+    std::map<int32_t, int32_t> m_RewardState;
+    int32_t                 m_SumRewardState;
+};
+//========================================================================================================================================
 //========================================================================================================================================
 class MemPetDBData
 {
@@ -3654,13 +3989,13 @@ public:
 	}
 
 public:
-	PetId_t		nPetId;							// 宠物ID
-	int8_t		bStartIllusion;					// 初灵修炼状态
-	int8_t		nAttrType;						// 增加属性
-	int32_t		nAttrValue;						// 增加值
-	int32_t		nOnlineTime;					// 在线时间
-	int32_t		nLeftTime;						// 初灵修炼结束时间（加速机制导致需要计算剩余时间）
-	int16_t		nBuyExpTimes;					// 今日购买经验值次数
+	PetId_t		nPetId;							// 鲁猫脦茂ID
+	int8_t		bStartIllusion;					// 鲁玫脕茅脨脼脕露脳麓脤卢
+	int8_t		nAttrType;						// 脭枚录脫脢么脨脭
+	int32_t		nAttrValue;						// 脭枚录脫脰碌
+	int32_t		nOnlineTime;					// 脭脷脧脽脢卤录盲
+	int32_t		nLeftTime;						// 鲁玫脕茅脨脼脕露陆谩脢酶脢卤录盲拢篓录脫脣脵禄煤脰脝碌录脰脗脨猫脪陋录脝脣茫脢拢脫脿脢卤录盲拢漏
+	int16_t		nBuyExpTimes;					// 陆帽脠脮鹿潞脗貌戮颅脩茅脰碌麓脦脢媒
 };
 //========================================================================================================================================
 
@@ -3731,8 +4066,8 @@ public:
 	}
 
 public:
-	int32_t		nTimes;						// 膜拜次数
-	std::string	strCharList;				// 膜拜列表
+	int32_t		nTimes;						// 脛陇掳脻麓脦脢媒
+	std::string	strCharList;				// 脛陇掳脻脕脨卤铆
 };
 //========================================================================================================================================
 
@@ -3803,8 +4138,8 @@ public:
 	}
 
 public:
-	int32_t	nLevel;				// 等级
-	int64_t	nSoul;				// 魂力
+	int32_t	nLevel;				// 碌脠录露
+	int64_t	nSoul;				// 禄锚脕娄
 };
 //========================================================================================================================================
 
@@ -4409,12 +4744,378 @@ struct CGoblinData
 		m_WingEquipRefiningMap.clear();
 		m_VipEquipPosLevelMap.clear();
 	}
+
+	void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof(szSQL) );
+		std::string sGoblinInfo = GetGoblinInfoString();
+		std::string sShouHuInfo = GetShouHuRefiningString();
+		std::string sWingPolish = GetWingEquipPolishString();
+		std::string sMoFu = GetMoFuString();
+		std::string sWingRefine = GetWingEquipRefiningString();
+		std::string sVipPos = GetVipPosString();
+		snprintf( szSQL, sizeof(szSQL) - 1,
+			"INSERT INTO `mem_chr_goblin` (`cid`,`goblin_info`,`shou_hu_info`,`wing_equip_polish`,`mo_fu`,`wing_refining`,`vip_pos`) "
+			"VALUES (%lld,'%s','%s','%s','%s','%s','%s') "
+			"ON DUPLICATE KEY UPDATE `goblin_info`='%s',`shou_hu_info`='%s',wing_equip_polish='%s',mo_fu='%s',`wing_refining`='%s',`vip_pos`='%s'",
+			nCid,
+			sGoblinInfo.c_str(), sShouHuInfo.c_str(), sWingPolish.c_str(), sMoFu.c_str(), sWingRefine.c_str(), sVipPos.c_str(),
+			sGoblinInfo.c_str(), sShouHuInfo.c_str(), sWingPolish.c_str(), sMoFu.c_str(), sWingRefine.c_str(), sVipPos.c_str() );
+		sqls.push_back( std::string(szSQL) );
+	}
+
+	bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int64_t nUid, int32_t nSid, CharId_t nCid )
+	{
+		bzero( szSQL, sizeof(szSQL) );
+		snprintf( szSQL, sizeof(szSQL) - 1, "SELECT * FROM `mem_chr_goblin` WHERE `cid`=%lld", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+		while ( !result.eof() )
+		{
+			std::string sGoblinInfo = result.getStringValue( "goblin_info" );
+			std::string sShouHuInfo = result.getStringValue( "shou_hu_info" );
+			std::string sWingPolish = result.getStringValue( "wing_equip_polish" );
+			std::string sMoFu = result.getStringValue( "mo_fu" );
+			std::string sWingRefine = result.getStringValue( "wing_refining" );
+			std::string sVipPos = result.getStringValue( "vip_pos" );
+			ParesGoblinInfoString( sGoblinInfo );
+			ParesShouHuRefiningString( sShouHuInfo );
+			ParesWingEquipPolishString( sWingPolish );
+			ParesMoFuString( sMoFu );
+			ParesWingEquipRefiningString( sWingRefine );
+			ParesVipPosString( sVipPos );
+			result.nextRow();
+		}
+		return true;
+	}
+
+	void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt8( (int8_t)m_GoblinInfoMap.size() );
+		for ( std::map<int32_t, GoblinInfo>::iterator it = m_GoblinInfoMap.begin(); it != m_GoblinInfoMap.end(); ++it )
+		{
+			packet->writeInt32( it->first );
+			packet->writeInt32( it->second.GoblinLevel );
+			packet->writeInt32( it->second.GoblinRes );
+		}
+		packet->writeInt8( (int8_t)m_ShouHuRefiningLeveMap.size() );
+		for ( std::map<int32_t,int32_t>::iterator it = m_ShouHuRefiningLeveMap.begin(); it != m_ShouHuRefiningLeveMap.end(); ++it )
+		{
+			packet->writeInt32( it->first );
+			packet->writeInt32( it->second );
+		}
+		packet->writeInt8( (int8_t)m_WingEquipPolishMap.size() );
+		for ( std::map<int32_t,int32_t>::iterator it = m_WingEquipPolishMap.begin(); it != m_WingEquipPolishMap.end(); ++it )
+		{
+			packet->writeInt32( it->first );
+			packet->writeInt32( it->second );
+		}
+		packet->writeInt8( (int8_t)m_MoFuZhuNengMap.size() );
+		for ( std::map<int32_t,int32_t>::iterator it = m_MoFuZhuNengMap.begin(); it != m_MoFuZhuNengMap.end(); ++it )
+		{
+			packet->writeInt32( it->first );
+			packet->writeInt32( it->second );
+		}
+		packet->writeInt8( (int8_t)m_WingEquipRefiningMap.size() );
+		for ( std::map<int32_t,int32_t>::iterator it = m_WingEquipRefiningMap.begin(); it != m_WingEquipRefiningMap.end(); ++it )
+		{
+			packet->writeInt32( it->first );
+			packet->writeInt32( it->second );
+		}
+		packet->writeInt8( (int8_t)m_VipEquipPosLevelMap.size() );
+		for ( std::map<int32_t,int32_t>::iterator it = m_VipEquipPosLevelMap.begin(); it != m_VipEquipPosLevelMap.end(); ++it )
+		{
+			packet->writeInt32( it->first );
+			packet->writeInt32( it->second );
+		}
+	}
+
+	void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid )
+	{
+		if ( NULL == inPacket ) return;
+		int8_t nSize = inPacket->readInt8();
+		for ( int8_t i = 0; i < nSize; ++i )
+		{
+			int32_t nType = inPacket->readInt32();
+			m_GoblinInfoMap[nType].GoblinLevel = inPacket->readInt32();
+			m_GoblinInfoMap[nType].GoblinRes = inPacket->readInt32();
+		}
+		nSize = inPacket->readInt8();
+		for ( int8_t i = 0; i < nSize; ++i )
+		{
+			int32_t nType = inPacket->readInt32();
+			m_ShouHuRefiningLeveMap[nType] = inPacket->readInt32();
+		}
+		nSize = inPacket->readInt8();
+		for ( int8_t i = 0; i < nSize; ++i )
+		{
+			int32_t nSlot = inPacket->readInt32();
+			m_WingEquipPolishMap[nSlot] = inPacket->readInt32();
+		}
+		nSize = inPacket->readInt8();
+		for ( int8_t i = 0; i < nSize; ++i )
+		{
+			int32_t nSlot = inPacket->readInt32();
+			m_MoFuZhuNengMap[nSlot] = inPacket->readInt32();
+		}
+		nSize = inPacket->readInt8();
+		for ( int8_t i = 0; i < nSize; ++i )
+		{
+			int32_t nSlot = inPacket->readInt32();
+			m_WingEquipRefiningMap[nSlot] = inPacket->readInt32();
+		}
+		nSize = inPacket->readInt8();
+		for ( int8_t i = 0; i < nSize; ++i )
+		{
+			int32_t nSlot = inPacket->readInt32();
+			m_VipEquipPosLevelMap[nSlot] = inPacket->readInt32();
+		}
+	}
+
+private:
+	std::string GetGoblinInfoString() const
+	{
+		std::stringstream ss;
+		for ( std::map<int32_t,GoblinInfo>::const_iterator it = m_GoblinInfoMap.begin(); it != m_GoblinInfoMap.end(); ++it )
+		{
+			ss << it->first << ":" << it->second.GoblinLevel << ":" << it->second.GoblinRes << "|";
+		}
+		return ss.str();
+	}
+
+	void ParesGoblinInfoString( const std::string& str )
+	{
+		if ( str.empty() ) return;
+		StringVector vStr = Answer::StringUtility::split( str, "|" );
+		for ( size_t i = 0; i < vStr.size(); ++i )
+		{
+			StringVector tv = Answer::StringUtility::split( vStr[i], ":" );
+			if ( tv.size() == 3 )
+			{
+				int32_t nType = atoi( tv[0].c_str() );
+				m_GoblinInfoMap[nType].GoblinLevel = atoi( tv[1].c_str() );
+				m_GoblinInfoMap[nType].GoblinRes = atoi( tv[2].c_str() );
+			}
+		}
+	}
+
+	std::string GetShouHuRefiningString() const
+	{
+		std::stringstream ss;
+		for ( std::map<int32_t,int32_t>::const_iterator it = m_ShouHuRefiningLeveMap.begin(); it != m_ShouHuRefiningLeveMap.end(); ++it )
+		{
+			ss << it->first << ":" << it->second << "|";
+		}
+		return ss.str();
+	}
+
+	void ParesShouHuRefiningString( const std::string& str )
+	{
+		if ( str.empty() ) return;
+		StringVector vStr = Answer::StringUtility::split( str, "|" );
+		for ( size_t i = 0; i < vStr.size(); ++i )
+		{
+			StringVector tv = Answer::StringUtility::split( vStr[i], ":" );
+			if ( tv.size() == 2 )
+			{
+				int32_t nType = atoi( tv[0].c_str() );
+			m_ShouHuRefiningLeveMap[nType] = atoi( tv[1].c_str() );
+			}
+		}
+	}
+
+	std::string GetWingEquipPolishString() const
+	{
+		std::stringstream ss;
+		for ( std::map<int32_t,int32_t>::const_iterator it = m_WingEquipPolishMap.begin(); it != m_WingEquipPolishMap.end(); ++it )
+		{
+			ss << it->first << ":" << it->second << "|";
+		}
+		return ss.str();
+	}
+
+	void ParesWingEquipPolishString( const std::string& str )
+	{
+		if ( str.empty() ) return;
+		StringVector vStr = Answer::StringUtility::split( str, "|" );
+		for ( size_t i = 0; i < vStr.size(); ++i )
+		{
+			StringVector tv = Answer::StringUtility::split( vStr[i], ":" );
+			if ( tv.size() == 2 )
+			{
+				int32_t nSlot = atoi( tv[0].c_str() );
+			m_WingEquipPolishMap[nSlot] = atoi( tv[1].c_str() );
+			}
+		}
+	}
+
+	std::string GetMoFuString() const
+	{
+		std::stringstream ss;
+		for ( std::map<int32_t,int32_t>::const_iterator it = m_MoFuZhuNengMap.begin(); it != m_MoFuZhuNengMap.end(); ++it )
+		{
+			ss << it->first << ":" << it->second << "|";
+		}
+		return ss.str();
+	}
+
+	void ParesMoFuString( const std::string& str )
+	{
+		if ( str.empty() ) return;
+		StringVector vStr = Answer::StringUtility::split( str, "|" );
+		for ( size_t i = 0; i < vStr.size(); ++i )
+		{
+			StringVector tv = Answer::StringUtility::split( vStr[i], ":" );
+			if ( tv.size() == 2 )
+			{
+				int32_t nSlot = atoi( tv[0].c_str() );
+			m_MoFuZhuNengMap[nSlot] = atoi( tv[1].c_str() );
+			}
+		}
+	}
+
+	std::string GetWingEquipRefiningString() const
+	{
+		std::stringstream ss;
+		for ( std::map<int32_t,int32_t>::const_iterator it = m_WingEquipRefiningMap.begin(); it != m_WingEquipRefiningMap.end(); ++it )
+		{
+			ss << it->first << ":" << it->second << "|";
+		}
+		return ss.str();
+	}
+
+	void ParesWingEquipRefiningString( const std::string& str )
+	{
+		if ( str.empty() ) return;
+		StringVector vStr = Answer::StringUtility::split( str, "|" );
+		for ( size_t i = 0; i < vStr.size(); ++i )
+		{
+			StringVector tv = Answer::StringUtility::split( vStr[i], ":" );
+			if ( tv.size() == 2 )
+			{
+				int32_t nSlot = atoi( tv[0].c_str() );
+			m_WingEquipRefiningMap[nSlot] = atoi( tv[1].c_str() );
+			}
+		}
+	}
+
+	std::string GetVipPosString() const
+	{
+		std::stringstream ss;
+		for ( std::map<int32_t,int32_t>::const_iterator it = m_VipEquipPosLevelMap.begin(); it != m_VipEquipPosLevelMap.end(); ++it )
+		{
+			ss << it->first << ":" << it->second << "|";
+		}
+		return ss.str();
+	}
+
+	void ParesVipPosString( const std::string& str )
+	{
+		if ( str.empty() ) return;
+		StringVector vStr = Answer::StringUtility::split( str, "|" );
+		for ( size_t i = 0; i < vStr.size(); ++i )
+		{
+			StringVector tv = Answer::StringUtility::split( vStr[i], ":" );
+			if ( tv.size() == 2 )
+			{
+				int32_t nSlot = atoi( tv[0].c_str() );
+			m_VipEquipPosLevelMap[nSlot] = atoi( tv[1].c_str() );
+			}
+		}
+	}
+
+public:
 	std::map<int32_t, GoblinInfo>	m_GoblinInfoMap;
 	std::map<int32_t, int32_t>	m_ShouHuRefiningLeveMap;
 	std::map<int32_t, int32_t>	m_WingEquipPolishMap;
 	std::map<int32_t, int32_t>	m_MoFuZhuNengMap;
 	std::map<int32_t, int32_t>	m_WingEquipRefiningMap;
 	std::map<int32_t, int32_t>	m_VipEquipPosLevelMap;
+};
+
+
+struct WuHunShopDBData
+{
+	WuHunShopDBData() { CleanUp(); }
+
+	void CleanUp()
+	{
+		memset(m_WuHun, 0, sizeof(m_WuHun));
+	}
+
+	void PackageData( Answer::NetPacket *packet )
+	{
+		for ( int32_t i = 0; i < 5; ++i )
+		{
+			for ( int32_t j = 0; j < 16; ++j )
+			{
+				packet->writeInt32( m_WuHun[i][j] );
+			}
+		}
+	}
+
+	void UnPackageData( Answer::NetPacket *inPacket, CharId_t nCid = 0 )
+	{
+		for ( int32_t i = 0; i < 5; ++i )
+		{
+			for ( int32_t j = 0; j < 16; ++j )
+			{
+				m_WuHun[i][j] = inPacket->readInt32();
+			}
+		}
+	}
+
+	int32_t m_WuHun[5][16];
+};
+
+
+
+struct BossKilledRewardDBData : public IDataStruct
+{
+	std::string	RewardString;
+
+	BossKilledRewardDBData(){ CleanUp(); }
+	virtual ~BossKilledRewardDBData(){}
+
+	virtual void CleanUp()
+	{
+		RewardString.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		if ( !RewardString.empty() )
+		{
+			bzero( szSQL, sizeof( szSQL ) );
+			snprintf( szSQL, sizeof( szSQL ) - 1,
+				"REPLACE INTO mem_chr_boss_killed_reward(cid,reward_string) VALUES(%lld,'%s')",
+				nCid, RewardString.c_str() );
+			sqls.push_back( szSQL );
+		}
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof( szSQL ) - 1,
+			"SELECT reward_string FROM mem_chr_boss_killed_reward WHERE cid=%lld", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+		if ( !result.eof() )
+		{
+			RewardString = result.getStringValue( "reward_string" );
+		}
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		packet->writeUTF8( RewardString );
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		RewardString = inPacket->readUTF8( true );
+	}
 };
 
 class PlayerDBData : public IDataStruct
@@ -4462,6 +5163,8 @@ public:
 		m_WorshipData.CleanUp();
 		m_JueWeiData.CleanUp();
 		m_CGoblinData.CleanUp();
+		m_WuHunShopDBData.CleanUp();
+	m_BossKilledReward.CleanUp();
 		m_ChouJinagData.CleanUp();
 		m_SoulData.CleanUp();
 		m_ScoreShopData.CleanUp();
@@ -4469,6 +5172,8 @@ public:
 		m_TouZiData.CleanUp();
 		m_HuoYueDuData.CleanUp();
 		m_AchievementData.CleanUp();
+		m_CSevenDayData.CleanUp();
+		m_KunData.CleanUp();
 	}
 
 public:
@@ -4511,6 +5216,10 @@ public:
 		m_TouZiData.SaveToSqlString(sqls,szSQL,nCid );
 		m_HuoYueDuData.SaveToSqlString(sqls,szSQL,nCid);
 		m_AchievementData.SaveToSqlString( sqls, szSQL, nCid );
+		m_CSevenDayData.SaveToSqlString( sqls, szSQL, nCid );
+		m_KunData.SaveToSqlString( sqls, szSQL, nCid );
+		m_CGoblinData.SaveToSqlString( sqls, szSQL, nCid );
+		m_BossKilledReward.SaveToSqlString( sqls, szSQL, nCid );
 	}
 
 	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
@@ -4567,6 +5276,10 @@ public:
 		m_TouZiData.LoadFromDB(db,szSQL,nUid,nSid,nCid);
 		m_HuoYueDuData.LoadFromDB(db,szSQL,nUid,nSid,nCid);
 		m_AchievementData.LoadFromDB( db, szSQL, nUid, nSid, nCid );
+		m_CSevenDayData.LoadFromDB( db, szSQL, nUid, nSid, nCid );
+		m_KunData.LoadFromDB( db, szSQL, nUid, nSid, nCid );
+		m_CGoblinData.LoadFromDB( db, szSQL, nUid, nSid, nCid );
+		m_BossKilledReward.LoadFromDB( db, szSQL, nUid, nSid, nCid );
 		return true;
 	}
 
@@ -4617,6 +5330,11 @@ public:
 		m_TouZiData.PackageData( packet );
 		m_HuoYueDuData.PackageData(packet);
 		m_AchievementData.PackageData(packet);
+		m_CSevenDayData.PackageData( packet );
+		m_KunData.PackageData( packet );
+		m_CGoblinData.PackageData( packet );
+		m_WuHunShopDBData.PackageData( packet );
+	m_BossKilledReward.PackageData( packet );
 	}
 
 	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
@@ -4668,6 +5386,11 @@ public:
 		m_TouZiData.UnPackageData( inPacket, nCid );
 		m_HuoYueDuData.UnPackageData(inPacket,nCid );
 		m_AchievementData.UnPackageData(inPacket,nCid);
+		m_CSevenDayData.UnPackageData( inPacket, nCid );
+		m_KunData.UnPackageData( inPacket, nCid );
+		m_CGoblinData.UnPackageData( inPacket, nCid );
+		m_WuHunShopDBData.UnPackageData( inPacket, nCid );
+	m_BossKilledReward.UnPackageData( inPacket, nCid );
 	}
 
 	void LoadUseSpecialInfo( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
@@ -4743,6 +5466,8 @@ public:
 	WorshipDBData				m_WorshipData;
 	CJueWeiData					m_JueWeiData;
 CGoblinData	m_CGoblinData;
+	WuHunShopDBData		m_WuHunShopDBData;
+	BossKilledRewardDBData	m_BossKilledReward;
 		ChouJiangData				m_ChouJinagData;
 	SoulDBData					m_SoulData;
 	ScoreShopData				m_ScoreShopData;
@@ -4750,6 +5475,8 @@ CGoblinData	m_CGoblinData;
 	TouZiData					m_TouZiData;
 	CHuoYueDuData				m_HuoYueDuData;
 	AchievementData				m_AchievementData;
+	CSevenDayData				m_CSevenDayData;
+	CKunData				m_KunData;
 };
 
 struct PlayerDBSql 

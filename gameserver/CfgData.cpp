@@ -5493,6 +5493,24 @@ const int32_t CfgData::getServerDiffTime()
 	return DayTime::daydiff(m_startServerTime);
 }
 
+int32_t CfgData::getServerType() const
+{
+	// Default: main server
+	return 0;
+}
+
+bool CfgData::isUniteServer() const
+{
+	// Default: not a united server
+	return false;
+}
+
+int32_t CfgData::getServerDiffDay( int32_t serverType ) const
+{
+	// Returns days since server start
+	return DayTime::daydiff(m_startServerTime);
+}
+
 //void CfgData::fetchKingdom()
 //{
 //	CDBCFile KingdomFile(0);
@@ -8448,6 +8466,60 @@ void CfgData::InitBossKilledReward()
     }
 }
 
+void CfgData::InitLevelRefiningTable()
+{
+	CDBCFile TabFile(0);
+	bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/LvRefining.txt");
+	if ( ret == false )
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/LvRefining.txt failed, please check!!!");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	for ( int32_t i = 0; i < iBaseTableCount; ++i )
+	{
+		LevelRefinCfg stu;
+		stu.LV				= TabFile.GetInt( i, "LV", 0 );
+		stu.nLimit			= TabFile.GetInt( i, "limit", 0 );
+		stu.nGongGaoId		= TabFile.GetInt( i, "Notice", 0 );
+
+		std::string sGold = TabFile.GetString( i, "Gold", "" );
+		StringVector vGold;
+		Answer::StringUtility::split( &vGold, sGold, "|", 0 );
+		for ( size_t j = 0; j < vGold.size(); ++j )
+		{
+			stu.vNeedGold.push_back( atoi( vGold[j].c_str() ) );
+		}
+
+		std::string sLvUp = TabFile.GetString( i, "LvUp", "" );
+		StringVector vLvUp;
+		Answer::StringUtility::split( &vLvUp, sLvUp, "|", 0 );
+		for ( size_t j = 0; j < vLvUp.size(); ++j )
+		{
+			stu.nLevelUp.push_back( atoi( vLvUp[j].c_str() ) );
+		}
+
+		m_RefiningTable[stu.LV] = stu;
+	}
+}
+
+LevelRefinCfg* CfgData::GetRefining( int32_t nLevel )
+{
+	LevelRefinCfgMap::iterator it = m_RefiningTable.find( nLevel );
+	if ( it != m_RefiningTable.end() )
+	{
+		return &it->second;
+	}
+	return NULL;
+}
+
+LevelRefinCfgMap& CfgData::GetRefiningTable()
+{
+	return m_RefiningTable;
+}
+
 void CfgData::InitBuyGiftTable()
 {
     CDBCFile TabFile(0);
@@ -10700,6 +10772,74 @@ void CfgData::InitShouHuRefining()
     }
 }
 
+void CfgData::InitSevenTaskTable()
+{
+    // Parse SevenTask tasks
+    CDBCFile TabFile(0);
+    bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/SevenDayGod.txt");
+    if (ret == false)
+    {
+        LOG_ERROR( "open ./ServerConfig/Tables/SevenDayGod.txt failed, please check!!!" );
+        return;
+    }
+
+    int32_t iBaseTableCount = TabFile.GetRecordsNum();
+    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+    if (iBaseColumnCount <= 0)
+    {
+        return;
+    }
+
+    for (int32_t i = 0; i < iBaseTableCount; ++i)
+    {
+        SevenTaskCfg cfg = {};
+        int32_t nIdx = 0;
+        cfg.nIndex       = TabFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        cfg.nType        = TabFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        cfg.nCondition   = TabFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        // Award format: itemId:itemClass:count:bind
+        std::string awardStr = TabFile.Search_Posistion(i, nIdx)->pString; ++nIdx;
+        CfgData::parasItemData( cfg.Item, awardStr );
+        cfg.nStartDay    = TabFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        cfg.nEndDay      = TabFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        ++nIdx; // skip Desc
+        m_SevenTaskTable.AddTaskCfg( cfg );
+    }
+
+    // Parse SevenTask sum rewards
+    CDBCFile SumFile(0);
+    ret = SumFile.OpenFromTXT("./ServerConfig/Tables/SevenTaskSumReward.txt");
+    if (ret == false)
+    {
+        LOG_ERROR( "open ./ServerConfig/Tables/SevenTaskSumReward.txt failed, please check!!!" );
+        return;
+    }
+
+    iBaseTableCount = SumFile.GetRecordsNum();
+    iBaseColumnCount = SumFile.GetFieldsNum();
+    if (iBaseColumnCount <= 0)
+    {
+        return;
+    }
+
+    for (int32_t i = 0; i < iBaseTableCount; ++i)
+    {
+        SevenTaskSumReward cfg = {};
+        int32_t nIdx = 0;
+        cfg.nIndex         = SumFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        cfg.nFinishCount   = SumFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        std::string awardStr = SumFile.Search_Posistion(i, nIdx)->pString; ++nIdx;
+        CfgData::parasItemData( cfg.Item, awardStr );
+        cfg.nGongGaoId     = SumFile.Search_Posistion(i, nIdx)->iValue; ++nIdx;
+        m_SevenTaskTable.AddSumReward( cfg );
+    }
+}
+
+const SevenTaskTable* CfgData::GetSevenTaskTable()
+{
+    return &m_SevenTaskTable;
+}
+
 void CfgData::InitShunWangTable()
 {
     CDBCFile TabFile(0);
@@ -11801,77 +11941,215 @@ void CfgData::InitWishRewardTable()
 
 void CfgData::InitWuHunCreateTable()
 {
-    CDBCFile TabFile(0);
-    bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/WuHunMake.txt");
-    if (ret == false)
-    {
-        LOG_ERROR("open ./ServerConfig/Tables/WuHunMake.txt failed, please check!!!");
-        return;
-    }
+	CDBCFile TabFile(0);
+	bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/WuHunMake.txt");
+	if (ret == false)
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/WuHunMake.txt failed, please check!!!");
+		return;
+	}
 
-    int32_t iBaseTableCount = TabFile.GetRecordsNum();
-    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
-    if (iBaseColumnCount <= 0)
-    {
-        return;
-    }
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+	{
+		return;
+	}
 
-    for (int32_t i = 0; i < iBaseTableCount; ++i)
-    {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/WuHunMake.txt
-    }
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CreateWuHun stu;
+		TabFile.GetRecordData(i);
+		stu.nId = TabFile.GetIntValue(0, 0);
+		stu.nLv = TabFile.GetIntValue(1, 0);
+		stu.nType = TabFile.GetIntValue(2, 0);
+
+		std::string strNeedItem = TabFile.GetStringValue(3, "");
+		if (!strNeedItem.empty() && strNeedItem != "-1")
+		{
+			StringVector items = Answer::StringUtility::split(strNeedItem, "|");
+			for (StringVector::iterator it = items.begin(); it != items.end(); ++it)
+			{
+				RateItem rate;
+				StringVector tv = Answer::StringUtility::split(*it, ":");
+				if (tv.size() >= 3)
+				{
+					rate.nItemId = atoi(tv[0].c_str());
+					rate.nItemClass = (int8_t)atoi(tv[1].c_str());
+					rate.nItemCount = atoi(tv[2].c_str());
+					rate.nRate = 10000;
+					stu.ConstItem.push_back(rate);
+				}
+			}
+		}
+
+		std::string strGainItem = TabFile.GetStringValue(4, "");
+		if (!strGainItem.empty() && strGainItem != "-1")
+		{
+			StringVector items = Answer::StringUtility::split(strGainItem, "|");
+			int32_t nTotalRate = 0;
+			for (StringVector::iterator it = items.begin(); it != items.end(); ++it)
+			{
+				RateItem rate;
+				StringVector tv = Answer::StringUtility::split(*it, ":");
+				if (tv.size() >= 3)
+				{
+					rate.nItemId = atoi(tv[0].c_str());
+					rate.nItemClass = (int8_t)atoi(tv[1].c_str());
+					rate.nItemCount = atoi(tv[2].c_str());
+					if (tv.size() >= 5)
+					{
+						rate.nRate = atoi(tv[4].c_str());
+						rate.nBind = (int8_t)atoi(tv[3].c_str());
+						if (tv.size() >= 6)
+						{
+							rate.nGongGaoId = atoi(tv[5].c_str());
+						}
+					}
+					nTotalRate += rate.nRate;
+					rate.nRate = nTotalRate;
+					stu.GetItemRate.push_back(rate);
+				}
+			}
+		}
+
+		stu.nNpcID = TabFile.GetIntValue(5, 0);
+		stu.nWuHunID = TabFile.GetIntValue(6, 0);
+
+		std::string strNeedItem1 = TabFile.GetStringValue(8, "");
+		if (!strNeedItem1.empty() && strNeedItem1 != "-1")
+		{
+			StringVector items = Answer::StringUtility::split(strNeedItem1, "|");
+			for (StringVector::iterator it = items.begin(); it != items.end(); ++it)
+			{
+				RateItem rate;
+				StringVector tv = Answer::StringUtility::split(*it, ":");
+				if (tv.size() >= 3)
+				{
+					rate.nItemId = atoi(tv[0].c_str());
+					rate.nItemClass = (int8_t)atoi(tv[1].c_str());
+					rate.nItemCount = atoi(tv[2].c_str());
+					if (tv.size() >= 4)
+					{
+						rate.nRate = atoi(tv[3].c_str());
+					}
+					stu.SpecialCost.m_nId = rate.nItemId;
+					stu.SpecialCost.m_nClass = rate.nItemClass;
+					stu.SpecialCost.m_nCount = rate.nItemCount;
+				}
+			}
+		}
+
+		std::string strGainItem1 = TabFile.GetStringValue(9, "");
+		if (!strGainItem1.empty() && strGainItem1 != "-1")
+		{
+			StringVector items = Answer::StringUtility::split(strGainItem1, "|");
+			int32_t nTotalRate = 0;
+			for (StringVector::iterator it = items.begin(); it != items.end(); ++it)
+			{
+				RateItem rate;
+				StringVector tv = Answer::StringUtility::split(*it, ":");
+				if (tv.size() >= 3)
+				{
+					rate.nItemId = atoi(tv[0].c_str());
+					rate.nItemClass = (int8_t)atoi(tv[1].c_str());
+					rate.nItemCount = atoi(tv[2].c_str());
+					if (tv.size() >= 5)
+					{
+						rate.nRate = atoi(tv[4].c_str());
+						rate.nBind = (int8_t)atoi(tv[3].c_str());
+					}
+					nTotalRate += rate.nRate;
+					rate.nRate = nTotalRate;
+					stu.GetItemRate2.push_back(rate);
+				}
+			}
+		}
+
+		m_CreateWuHunMap[stu.nId] = stu;
+	}
 }
 
 void CfgData::InitWuHunItemTable()
 {
-    CDBCFile TabFile(0);
-    bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/WuHun.txt");
-    if (ret == false)
-    {
-        LOG_ERROR("open ./ServerConfig/Tables/WuHun.txt failed, please check!!!");
-        return;
-    }
+	CDBCFile TabFile(0);
+	bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/WuHun.txt");
+	if (ret == false)
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/WuHun.txt failed, please check!!!");
+		return;
+	}
 
-    int32_t iBaseTableCount = TabFile.GetRecordsNum();
-    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
-    if (iBaseColumnCount <= 0)
-    {
-        return;
-    }
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+	{
+		return;
+	}
 
-    for (int32_t i = 0; i < iBaseTableCount; ++i)
-    {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/WuHun.txt
-    }
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		WuHunItem stu;
+		TabFile.GetRecordData(i);
+		stu.nId = TabFile.GetIntValue(0, 0);
+		stu.nLv = TabFile.GetIntValue(1, 0);
+		stu.nType = TabFile.GetIntValue(2, 0);
+		stu.nQuality1 = TabFile.GetIntValue(3, 0);
+		stu.nGainCondition = TabFile.GetIntValue(4, 0);
+
+		std::string strAttr = TabFile.GetStringValue(5, "");
+		if (!strAttr.empty() && strAttr != "-1")
+		{
+			StringVector tv = Answer::StringUtility::split(strAttr, "|");
+			for (StringVector::iterator it = tv.begin(); it != tv.end(); ++it)
+			{
+				StringVector av = Answer::StringUtility::split(*it, ":");
+				if (av.size() == 2)
+				{
+					AddAttribute attr;
+					attr.m_nAddAttrType = (uint8_t)atoi(av[0].c_str());
+					attr.m_nAddAttrValue = atoi(av[1].c_str());
+					stu.lAttrList.push_back(attr);
+				}
+			}
+		}
+
+		stu.nTalentId = TabFile.GetIntValue(6, 0);
+		stu.nTalentLevel = TabFile.GetIntValue(7, 0);
+		stu.sName = TabFile.GetStringValue(8, "");
+		stu.nAuction = TabFile.GetIntValue(13, 0);
+		stu.nPrice = TabFile.GetIntValue(15, 0);
+		stu.nOverlay = TabFile.GetIntValue(16, 0);
+		stu.nGrade = TabFile.GetIntValue(17, 0);
+		stu.nQuality = TabFile.GetIntValue(19, 0);
+		stu.nDressLevel = TabFile.GetIntValue(20, 0);
+		stu.nNeedQuality = TabFile.GetIntValue(3, 0);
+
+		m_WuHunItemMap[stu.nId] = stu;
+	}
 }
 
 void CfgData::InitWuHunShopTable()
 {
-    CDBCFile TabFile(0);
-    bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/MysterShop.txt");
-    if (ret == false)
-    {
-        LOG_ERROR("open ./ServerConfig/Tables/MysterShop.txt failed, please check!!!");
-        return;
-    }
+	CDBCFile TabFile(0);
+	bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/MysterShop.txt");
+	if (ret == false)
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/MysterShop.txt failed, please check!!!");
+		return;
+	}
 
-    int32_t iBaseTableCount = TabFile.GetRecordsNum();
-    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
-    if (iBaseColumnCount <= 0)
-    {
-        return;
-    }
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+	{
+		return;
+	}
 
-    for (int32_t i = 0; i < iBaseTableCount; ++i)
-    {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/MysterShop.txt
-    }
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		TabFile.GetRecordData(i);
+	}
 }
 
 void CfgData::InitXianYaoTaskTable()
@@ -12222,9 +12500,28 @@ const SpeciaEquipCfg* CfgData::GetSpeciaEquipCfg( int32_t nId )
     return NULL;
 }
 
+
+WuHunItem* CfgData::GetWuHunItem( int32_t nId )
+{
+	WuHunItemMap::iterator iter = m_WuHunItemMap.find( nId );
+	if ( iter != m_WuHunItemMap.end() )
+	{
+		return &( iter->second );
+	}
+	return NULL;
+}
+
+CreateWuHun* CfgData::GetCreateWuHun( int32_t nId )
+{
+	CreateWuHunMap::iterator iter = m_CreateWuHunMap.find( nId );
+	if ( iter != m_CreateWuHunMap.end() )
+	{
+		return &( iter->second );
+	}
+	return NULL;
+}
+
 const CfgBlacketMarketTable* CfgData::GetBlacketMarketTable()
 {
     return &m_BlacketMarketTable;
 }
-
-

@@ -184,7 +184,7 @@ int32_t CGuardPrivilege::onDBGetReward( Answer::NetPacket *inPacket )
     if ( nOldRecord == nNewRecord )
         return 10002;
 
-    if ( !m_pPlayer->GetBag().AddItem( pReward->vReward, ICR_GUARD_PRIVILEGE_REWARD ) )
+    if ( !m_pPlayer->GetBag().AddItem( pReward->vReward, (ITEM_ADD_REASON)IACR_GUARD_PRIVILEGE_REWARD ) )
         return 10002;
 
     m_pPlayer->GetOperateLimit().UpdateLimitCount( nRecord, nNewRecord );

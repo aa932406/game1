@@ -32,5 +32,6 @@ obj/KaiFuHuoDong.o: KaiFuHuoDong.cpp stdafx.h \
  Fighting.h JueWei.h ShangCheng.h ChouJiang.h QiFu.h DailyActivity.h \
  Vip.h ScoreShop.h FunctionOpen.h ExpBall.h YunYingHD.h TouZi.h \
  HuoYueDu.h GuanWei.h WarVictory.h GameService.h User.h ActivityManager.h \
- Activity.h NpcActivity.h Npc.h
+ Activity.h NpcActivity.h Npc.h Timer.h ItemHelper.h MapManager.h \
+ MapRunner.h Monster.h PoolManager.h DBService.h
 	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX KaiFuHuoDong.cpp -o obj/KaiFuHuoDong.o

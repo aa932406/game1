@@ -76,6 +76,7 @@ protected:
 	virtual void	addPlayer( Player* player );
 	virtual void	removePlayer( Player* player, bool islogout );
 	virtual void	onTimeEnd();
+	virtual void	onWarEnd();
 	virtual Answer::NetPacket*	packetActivityScore();
 
 private:

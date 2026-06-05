@@ -251,6 +251,9 @@ void CCampWar::removePlayer( Player* player, bool islogout )
 		return;
 	}
 
+	// Reset player's PK mode when leaving the camp war
+	player->setPkMode( PK_MODE_FREE, true );
+
 	PlayerScoreMap::iterator iter = m_mPlayerScore.find( player->getCid() );
 	if ( iter == m_mPlayerScore.end() )
 	{
@@ -464,6 +467,12 @@ void CCampWar::addPlayerScore( Player* player, int32_t nPoint, int32_t nKillCoun
 	}
 
 	SendPlayerActivityScore( player, getLeftTime() );
+
+	// Check if any player reached the winning threshold (2000 points)
+	if ( score.nPoints > 1999 )
+	{
+		onWarEnd();
+	}
 }
 
 void CCampWar::addRewards()
@@ -804,6 +813,15 @@ void CCampWar::onTimeEnd()
 	broadcastActivityResult();
 
 	CActivity::onTimeEnd();
+}
+
+void CCampWar::onWarEnd()
+{
+	// Called when a player reaches the winning score threshold
+	addRewards();
+	m_nState = AS_END;
+	delayKickAll( 0 );
+	broadcastActivityResult();
 }
 
 void CCampWar::broadcastActivityResult()
