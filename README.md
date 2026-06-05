@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (32/88)
+### 已移植模块 (33/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -63,6 +63,7 @@ make
 | **CYaBiao** (押镖) | `YaBiao.cpp/.h` | ~16 | 4 方法 (析构/ready/start/timeEnd)，CActivity子类
 | **CShenWei** (神威) | `ShenWei.cpp/.h` | ~42 | 5 方法 (OnDaySwitch/AddCharAttr/GetRankAttr/GetShenWeiLevel)，CExtSystemBase子类
 | **CRongHe** (融合) | `RongHe.cpp/.h` | ~130 | 15 方法 (OnRongLian/装备熔炼/拆卸/回收)，CExtSystemBase子类
+| **CGuiGuDaoRen** (鬼谷道人) | `GuiGuDaoRen.cpp/.h` | ~450 | 19 方法 (物品回收/装备回收/排行榜/每日重置/融合记录)，Answer::Singleton 全局单继
 
 ### 数据层变更
 
@@ -75,7 +76,7 @@ make
 | `share/PDUDefine.h` | 添加 CM_MAGIC_BOX 协议 (725-729) 和 SM_MAGIC_BOX 协议 (11797-11799) 以及 CM_WISH 协议 (950-952) 和 SM_WISH 协议 (12040-12041) |
 | `Player.h` | 集成 CharDraw/CharExchange/CharMysteryGift/CharMysteryShop/MagicBox/Wish/Vplan/NationalDayHd 模块声明 |
 
-### 待移植模块 (剩余 ~51 个)
+### 待移植模块 (剩余 ~50 个)
 
 以下是从反编译代码中识别出的 `CExtSystemBase` 派生类模块：
 
@@ -107,7 +108,6 @@ make
 | 29 | FestivalDoubleEleven | `CFestivalDoubleEleven.cpp` | ~10,725 | **双十一活动（最大模块）** |
 | 30 | FlopDraw | `CFlopDraw.cpp` | — | 翻牌抽奖 |
 | 31 | GMBackstate | `CGMBackstate.cpp` | — | GM后台 |
-| 32 | GuiGuDaoRen | `CGuiGuDaoRen.cpp` | — | 鬼谷道人 |
 | 33 | HttpRequest | `CHttpRequest.cpp` | — | HTTP请求 |
 | 34 | KiaFuRecharge | `CKiaFuRecharge.cpp` | — | 开服充值 |
 | 35 | KunExt | `CKunExt.cpp` | — | 鲲系统 |

@@ -649,6 +649,11 @@ enum MSG_CM_CODE
 	CM_RONG_HE_DISMANTLING			= 946,		// 拆卸
 	CM_RONG_HE_ITEM_RECOVERY	= 947,		// 物品回收
 	CM_RONG_HE_ONE_KEY_RECOVERY	= 948,		// 一键回收
+	CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT	= 949,		// 鬼谷道人询问物品回收次数
+	CM_GUI_GU_DAO_REN_BACK_ITEM			= 950,		// 鬼谷道人物品回收
+	CM_GUI_GU_DAO_REN_ASK_BACK_EQUIP_COUNT	= 951,		// 鬼谷道人询问装备回收次数
+	CM_GUI_GU_DAO_REN_BACK_EQUIP			= 952,		// 鬼谷道人装备回收
+	CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK	= 953,		// 鬼谷道人装备回收排行榜
 
 	/*
 	* CM_WXJ	900~998
@@ -1293,9 +1298,15 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	SM_SEND_OPEN_GEM_HOLE				= 11712,	// ���ͱ�ʯ������Ϣ
 	SM_EQUIP_POS_LEVEL_INFO				= 11713,	// 装备部位等级信息
 	SM_SHENYAO_POS_LEVEL_INFO				= 11714,	// 神爻部位等级信息
-	SM_EQUIP_STRENGTHEN_INFO				= 11715,	// 装备强化信息
+	SM_EQUIP_STRENGTHEN_INFO				= 11715,
+	SM_RONG_HE_SEND_ALL_INFO			= 11716,		// 融合信息广播
+	SM_RONG_HE_SEND_ONE_INFO			= 11717,		// 单条融合信息
+	SM_RONG_HE_RESULT				= 11718,		// 融合结果
+	SM_GUI_GU_DAO_REN_ITEM_COUNT		= 11719,		// 鬼谷道人物品回收计数
 	// ����
-	SM_SEND_CURRENCY_INFO				= 11720,	// ���ͻ�����Ϣ
+	SM_SEND_CURRENCY_INFO				= 11720,
+	SM_GUI_GU_DAO_REN_EQUIP_COUNT		= 11721,		// 鬼谷道人装备回收计数
+	SM_GUI_GU_DAO_REN_EQUIP_RANK		= 11722,		// 鬼谷道人装备回收排行
 
 	// ����
 	SM_SEND_PET_INFO					= 11730,	// ���ͻ�����Ϣ

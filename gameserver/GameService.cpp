@@ -25,6 +25,7 @@
 #include "GMBackstage.h"
 #include "FestivalDoubleEleven.h"
 #include "RankMirror.h"
+#include "GuiGuDaoRen.h"
 #include <string>
 using namespace Answer;
 using namespace std;
@@ -145,6 +146,7 @@ int32_t GameService::getLine()
 void GameService::onNewMinuteCome(int32_t minute)
 {
 	FESTIVAL_DOUBLE_ELEVEN->OnNewMinute( minute );
+	GUI_GU_DAO_REN.OnNewMinute( minute );
 	
 	if (m_line == GAME_SERVICE_LINE_SOCIAL)
 	{
@@ -1354,6 +1356,31 @@ void GameService::onGameNetpacket(int16_t cgindex, Answer::NetPacket *inPacket)
 	{
 		return;
 	}
+
+	// 鬼谷道人协议分发（全局单例，无需 per-player 注册）
+	ProcId_t proc = inPacket->getProc();
+	if ( proc >= CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT && proc <= CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK )
+	{
+		User *user = m_users[cgindex];
+		if ( user != NULL )
+		{
+			Player *player = user->getPlayer();
+			if ( player != NULL )
+			{
+				switch ( proc )
+				{
+				case CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT:	GUI_GU_DAO_REN.OnAskBackItemCount( player, inPacket ); break;
+				case CM_GUI_GU_DAO_REN_BACK_ITEM:			GUI_GU_DAO_REN.OnBackItem( player, inPacket ); break;
+				case CM_GUI_GU_DAO_REN_ASK_BACK_EQUIP_COUNT:	GUI_GU_DAO_REN.OnAskBackEquipCount( player, inPacket ); break;
+				case CM_GUI_GU_DAO_REN_BACK_EQUIP:			GUI_GU_DAO_REN.OnBackEquipCount( player, inPacket ); break;
+				case CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK:	GUI_GU_DAO_REN.OnAskEquipBackRank( player, inPacket ); break;
+				}
+				inPacket->destroy();
+				return;
+			}
+		}
+	}
+
 	User *user = m_users[cgindex];
 	if (user != NULL)
 	{
