@@ -24,6 +24,7 @@
 #include "KaiFuHuoDong.h"
 #include "GMBackstage.h"
 #include "FestivalDoubleEleven.h"
+#include "RankMirror.h"
 #include <string>
 using namespace Answer;
 using namespace std;
@@ -75,6 +76,7 @@ void GameService::onNetPacket(Answer::NetPacket *inPacket)
 			case IM_SOCIAL_SINGLE_GAME_SEND_SYSTEM_MAIL2:	onSocialSendSystemMail2(inPacket);		break;
 			case IM_SOCIAL_ALL_GAME_CHANGE_OWNER:			onSocialChangeOwner(inPacket);			break;
 			case IM_SOCIAL_ALL_GAME_KAI_FU_HUO_DAO_RANK:	KAI_FU_HUO_DONG.RecvRank( inPacket );	break;
+			case IM_SOCIAL_ALL_GAME_UPDATE_RANK:			RANK_MIRROR.OnSocialUpdateRank( inPacket );	break;
 			default: break;
 			}
 		}

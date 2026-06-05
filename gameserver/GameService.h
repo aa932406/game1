@@ -1,7 +1,7 @@
 #pragma once
 //////////////////////////////////////////////////////////////////////////
 //author:zxj			modify Time: 2012 -7-7
-//description:游戏线程处理中心
+//description:锟斤拷戏锟竭程达拷锟斤拷锟斤拷锟斤拷
 //////////////////////////////////////////////////////////////////////////
 #include <list>
 #include <vector>
@@ -46,7 +46,7 @@ public:
 
 	void AddPlayer(Player *player);
 	void removePlayer(Player *player);
-	Player* getPlayer( CharId_t cid, int32_t nRunnerId, bool bCheck = true );	// 只有同一线程能直接取用，不同线程需投递消息 bCheck 是否进行同线检测
+	Player* getPlayer( CharId_t cid, int32_t nRunnerId, bool bCheck = true );	// 只锟斤拷同一锟竭筹拷锟斤拷直锟斤拷取锟矫ｏ拷锟斤拷同锟竭筹拷锟斤拷投锟斤拷锟斤拷息 bCheck 锟角凤拷锟斤拷锟酵拷呒锟斤拷
 
 	void addPet( CObjPet *pPet );
 	void removePet( CObjPet *pPet );
@@ -83,7 +83,7 @@ private:
 	void onSocialNetpacket(Answer::NetPacket *inPacket);
 	void onEnterGame(int16_t cgindex, Answer::NetPacket *inPacket);
 	void onEnterGameRobot(int16_t cgindex, Answer::NetPacket *inPacket);
-	void onGameNetpacket(int16_t cgindex, Answer::NetPacket *inPacket); //存放来自social 和 flash Client的数据包
+	void onGameNetpacket(int16_t cgindex, Answer::NetPacket *inPacket); //锟斤拷锟斤拷锟斤拷锟絪ocial 锟斤拷 flash Client锟斤拷锟斤拷锟捷帮拷
 
 	void sendSocialAddPlayer(Player *player);
 	void sendSocialRemovePlayer(Player *player);
@@ -96,6 +96,7 @@ private:
 	void onSocialSendSystemMail( Answer::NetPacket* inPacket );
 	void onSocialSendSystemMail2( Answer::NetPacket* inPacket );
 	void onSocialChangeOwner( Answer::NetPacket* inPacket );
+	void onSocialUpdateRank( Answer::NetPacket* inPacket );
 
 	void requestPetRankInfo();
 

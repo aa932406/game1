@@ -77,7 +77,7 @@ int32_t CShenWei::GetRankAttr( int64_t Exp )
 	}
 
 	CharId_t cid = m_pPlayer->getCid();
-	int32_t nWeiWangIndex = CRankMirror::instance()->GetWeiWangIndex( cid );
+	int32_t nWeiWangIndex = RANK_MIRROR.GetWeiWangIndex( cid );
 
 	switch ( nWeiWangIndex )
 	{

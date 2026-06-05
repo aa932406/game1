@@ -1497,6 +1497,7 @@ enum MSG_IM_CODE
 	IM_SOCIAL_ALL_GAME_UPDATE_FAMILY,					// ���°�����Ϣ
 	IM_SOCIAL_ALL_GAME_CHANGE_OWNER,					// ���װ�����������
 	IM_SOCIAL_ALL_GAME_KAI_FU_HUO_DAO_RANK,				// ͬ����������а�
+	IM_SOCIAL_ALL_GAME_UPDATE_RANK,					// ͬ�����а���Ϣ
 	IM_SOCIAL_ALL_GAME_MAX,
 
 	IM_SOCIAL_SINGLE_GAME_MIN,
