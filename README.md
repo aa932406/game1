@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (19/19)
+### 已移植模块 (21/21)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -50,6 +50,10 @@ make
 | **CExtCharExchange** (兑换) | `CharExchange.cpp/.h` | ~321 | 11 方法，含 DB 存取/兑换逻辑/记录管理 |
 | **CExtCharMysteryGift** (神秘礼物) | `CharMysteryGift.cpp/.h` | ~273 | 15 方法，含领取礼包/广播/状态管理 |
 | **CExtCharMysteryShop** (神秘商店) | `CharMysteryShop.cpp/.h` | ~526 | 15 方法，含商店查询/购买/刷新/加权随机商品/广播 |
+| **CExtCharJueWei** (爵位) | `JueWei.cpp/.h` | ~510 | 16 方法，含爵位升级/属性加成/社交推送/公告 |
+| **CExtCharPortal** (传送门) | `CharPortal.cpp/.h` | ~346 | 15 方法，含传送门交互/状态同步 |
+| **CExtCharTitle** (称号) | `CharTitle.cpp/.h` | ~853 | 28 方法，含穿戴/卸下/幻化/属性加成/定时检查/隐藏恢复 |
+| **CExtCharWing** (翅膀) | `CharWing.cpp/.h` | ~411 | 15 方法，含升级/幸运值/技能切换/属性加成/每日清空
 
 ### 数据层变更
 
@@ -61,7 +65,7 @@ make
 | `share/DataStruct.h` | 添加 ExchangeRecord 结构体 + ExchangeDBData 类; 添加 MysteryShop 结构体 + MysteryShopDBData 类 (SaveToSqlString/LoadFromDB/PackageData/UnPackageData) |
 | `Player.h` | 集成 CharDraw/CharExchange/CharMysteryGift/CharMysteryShop 模块声明 |
 
-### 待移植模块 (剩余 ~67 个)
+### 待移植模块 (剩余 ~63 个)
 
 以下是从反编译代码中识别出的 `CExtSystemBase` 派生类模块：
 
@@ -78,15 +82,11 @@ make
 | 9 | ExtCharAuction | `CExtCharAuction.cpp` | — | 拍卖行 |
 | 10 | ExtCharFamily | `CExtCharFamily.cpp` | — | 军团 |
 | 11 | ExtCharHallOfFame | `CExtCharHallOfFame.cpp` | — | 名人堂 |
-| 12 | ExtCharJueWei | `CExtCharJueWei.cpp` | — | 爵位 |
-| 13 | ExtCharPet | `CExtCharPet.cpp` | ~2,498 | 宠物 |
-| 14 | ExtCharPortal | `CExtCharPortal.cpp` | — | 传送门 |
-| 15 | ExtCharSkill | `CExtCharSkill.cpp` | ~2,498 | 技能 |
-| 16 | ExtCharTeam | `CExtCharTeam.cpp` | — | 队伍 |
-| 17 | ExtCharTeamDungeon | `CExtCharTeamDungeon.cpp` | — | 队伍副本 |
-| 18 | ExtCharTitle | `CExtCharTitle.cpp` | — | 称号 |
-| 19 | ExtCharWing | `CExtCharWing.cpp` | — | 翅膀 |
-| 20 | ExtCharWish | `CExtCharWish.cpp` | — | 许愿 |
+| 12 | ExtCharPet | `CExtCharPet.cpp` | ~2,498 | 宠物 |
+| 13 | ExtCharSkill | `CExtCharSkill.cpp` | ~2,498 | 技能 |
+| 14 | ExtCharTeam | `CExtCharTeam.cpp` | — | 队伍 |
+| 15 | ExtCharTeamDungeon | `CExtCharTeamDungeon.cpp` | — | 队伍副本 |
+| 16 | ExtCharWish | `CExtCharWish.cpp` | — | 许愿 |
 | 21 | ExtCharWorship | `CExtCharWorship.cpp` | — | 膜拜 |
 | 22 | ExtChrTaskCycle | `CExtChrTaskCycle.cpp` | — | 循环任务 |
 | 23 | ExtCurrency | `CExtCurrency.cpp` | — | 货币 |
