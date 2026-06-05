@@ -20,6 +20,7 @@
 #include "KaiFuBoss.h"
 #include "UltimateChallenge.h"
 #include "RongLian.h"
+#include "YaBiao.h"
 #include <algorithm>
 
 using namespace Answer;
@@ -64,6 +65,7 @@ void CActivityManager::Init()
 		case ATI_KAI_FU_BOSS:		pActivity = new CKaiFuBoss( cfgActivity );						break;
 		case ATI_ULTIMATE_CHALLENGE:	pActivity = new CUltimateChallenge( cfgActivity );				break;
 		case ATI_RONG_LIAN:			pActivity = new CRongLian( cfgActivity );						break;
+		case ATI_YA_BIAO:			pActivity = new CYaBiao( cfgActivity );							break;
 		default: break;
 		}
 		if ( pActivity != NULL )
