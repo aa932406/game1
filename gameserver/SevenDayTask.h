@@ -7,6 +7,7 @@
 class CSevenDayTask : public CExtSystemBase
 {
 public:
+    CSevenDayTask() {}
     CSevenDayTask( Player* pPlayer ) { m_pPlayer = pPlayer; }
     virtual ~CSevenDayTask() {}
 

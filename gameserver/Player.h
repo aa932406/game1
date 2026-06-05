@@ -40,6 +40,7 @@
 #include "MoneyRewardTask.h"
 #include "Vplan.h"
 #include "NationalDayHd.h"
+#include "SevenDayTask.h"
 
 #include "Trade.h"
 #include "PlayerMail.h"
@@ -658,9 +659,11 @@ private:			CExtMagicBox			m_extMagicBox;
 
 	friend class CVplan;
 	friend class CNationalDayHd;
+	friend class CSevenDayTask;
 public:				CVplan&				GetVplan() { return m_extVplan; }
 private:			CVplan				m_extVplan;
 	CNationalDayHd				m_CNationalDayHd;
+	CSevenDayTask				m_SevenDayTask;
 
 /*
 * EXT_SYS_ZK
