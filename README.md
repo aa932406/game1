@@ -81,7 +81,6 @@ make
 | 3 | CardGroupBoxManager | `CCardGroupBoxManager.cpp` | — | 卡牌礼盒管理器 |
 | 4 | CharWuHun | `CCharWuHun.cpp` | — | 武魂系统 |
 | 5 | DaTingReward | `CDaTingReward.cpp` | — | 大厅奖励 |
-| 6 | DaZheQuan | `CDaZheQuan.cpp` | — | 打折券 |
 | 7 | DropItemGroup | `CDropItemGroup.cpp` | — | 掉落组 |
 | 8 | EquipBack | `CEquipBack.cpp` | — | 装备回购 |
 | 9 | ExtCharAuction | `CExtCharAuction.cpp` | — | 拍卖行 |

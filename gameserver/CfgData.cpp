@@ -8832,16 +8832,40 @@ void CfgData::InitDaZheQuanTable()
 
     int32_t iBaseTableCount = TabFile.GetRecordsNum();
     int32_t iBaseColumnCount = TabFile.GetFieldsNum();
-    if (iBaseColumnCount <= 0)
+    if (iBaseColumnCount < 4)
     {
         return;
     }
 
     for (int32_t i = 0; i < iBaseTableCount; ++i)
     {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/ItemDiscount.txt
+        DaZheQuan cfg = {};
+        cfg.nIndex = TabFile.ReadInt32(i, "id", 0);
+        cfg.nCurrencyType = TabFile.ReadInt32(i, "currency_type", 0);
+        cfg.nCurrencyValues = TabFile.ReadInt32(i, "currency_values", 0);
+        
+        // Parse items: format "itemId,itemClass,count,bind|..."
+        std::string strItems = TabFile.ReadString(i, "items", "");
+        if ( !strItems.empty() )
+        {
+            StringVector itemList = StringUtility::split( strItems, "|" );
+            for ( size_t j = 0; j < itemList.size(); ++j )
+            {
+                StringVector itemParts = StringUtility::split( itemList[j], "," );
+                if ( itemParts.size() >= 3 )
+                {
+                    MemChrBag item = {};
+                    item.itemId = atoi( itemParts[0].c_str() );
+                    item.itemClass = atoi( itemParts[1].c_str() );
+                    item.itemCount = atoi( itemParts[2].c_str() );
+                    if ( itemParts.size() >= 4 )
+                        item.bind = atoi( itemParts[3].c_str() );
+                    cfg.Items.push_back( item );
+                }
+            }
+        }
+        
+        m_DaZheQuanMap[cfg.nIndex] = cfg;
     }
 }
 
@@ -12657,4 +12681,12 @@ const NationalDayTaskCfgMap* CfgData::GetNationalDayTaskCfgMap() const
 const NationalDayLevelCfgMap* CfgData::GetNationalDayLevelCfgMap() const
 {
 	return &m_NationalDayLevelCfgMap;
+}
+
+const DaZheQuan* CfgData::GetDaZheQuanCfg( int32_t nIndex ) const
+{
+	DaZheQuanMap::const_iterator it = m_DaZheQuanMap.find( nIndex );
+	if ( it != m_DaZheQuanMap.end() )
+		return &it->second;
+	return NULL;
 }

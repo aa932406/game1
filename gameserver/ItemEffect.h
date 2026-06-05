@@ -149,7 +149,7 @@ public:
 private:
 	int32_t m_addon;
 };
-//vipÌåÑé¿¨
+//vipï¿½ï¿½ï¿½é¿¨
 class ItemVipCard	
 	:public ItemEffect
 {
@@ -177,7 +177,7 @@ private:
 	int32_t m_month;
 	int32_t m_record;
 };
-//×Ô¶¯Ê¹ÓÃµÄ³èÎïÀñ°ü
+//ï¿½Ô¶ï¿½Ê¹ï¿½ÃµÄ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 class CAutoPetGift
 	: public ItemEffect
 {
@@ -354,6 +354,21 @@ public:
 
 private:
 	int32_t  m_DungeonId;
+};
+
+class DaZheQuanEffect
+	: public ItemEffect
+{
+public:
+	DaZheQuanEffect();
+	virtual ~DaZheQuanEffect();
+
+public:
+	virtual int32_t effect(Player &launcher, Unit &target,int32_t count = 0);
+	virtual bool parseEffect(int32_t id, const std::string &strEffect);
+
+private:
+	int32_t m_Index;
 };
 
 class SuperExchange

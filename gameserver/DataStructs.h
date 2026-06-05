@@ -285,6 +285,7 @@ enum CurrencyChangeReason
 	GCR_MYSTERY_SHOP_BUY			= 2076,
 	GCR_NATIONAL_UNLOCK_REWARD	= 2077,
 	GCR_NATIONAL_BUY_LEVEL		= 2078,
+	GCR_DA_ZHE_QUAN			= 2079,
 
 	//==================================================================================
 //Ԫ��
@@ -418,7 +419,9 @@ enum ITEM_ADD_REASON
 	IACR_YY_VIP			= 302,
 	IACR_YY_DA_TING		= 303,
 	IACR_XUN_LEI			= 304,
-	IACR_SG_GAME_APP		= 305,	};
+	IACR_SG_GAME_APP		= 305,
+	IACR_DA_ZHE_QUAN		= 306,
+};
 
 enum ITEM_DEL_REASON
 {
@@ -514,7 +517,8 @@ enum ItemEffectType
 	IET_FAMOLY_LIGHT_WINE			= 105,	// �����Ҿ�
 	IET_LEVEL_UP					= 106,	// ������
 	IET_JIU_SHU_CARD				= 135,	// ���꿨
-	IET_HUN_LI_UP				    = 136,	// ����������
+	IET_HUN_LI_UP			    = 136,	// 结婚戒指升级
+	IET_DA_ZHE_QUAN			    = 137,	// 打折券
 };
 
 

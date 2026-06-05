@@ -1046,6 +1046,50 @@ bool HunLiLevelUp::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 
+DaZheQuanEffect::DaZheQuanEffect()
+	: m_Index(0)
+{
+
+}
+
+DaZheQuanEffect::~DaZheQuanEffect()
+{
+
+}
+
+int32_t DaZheQuanEffect::effect(Player &launcher, Unit &target,int32_t count)
+{
+	const DaZheQuan* pCfg = CFG_DATA.GetDaZheQuanCfg( m_Index );
+	if ( NULL == pCfg || pCfg->nCurrencyValues <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( launcher.GetBag().GetFreeSlotCount() < (int32_t)pCfg->Items.size() )
+	{
+		return ERR_BAG_IS_FULL;
+	}
+
+	if ( !launcher.DecCurrency( (CURRENCY_TYPE)pCfg->nCurrencyType, pCfg->nCurrencyValues, GCR_DA_ZHE_QUAN, 0 ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	if ( !launcher.GetBag().AddItem( pCfg->Items, IACR_DA_ZHE_QUAN ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	return ERR_OK;
+}
+
+bool DaZheQuanEffect::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Index = atoi( strEffect.c_str() );
+	return m_Index > 0;
+}
+
+
 ItemEffectManager::ItemEffectManager()
 {
 
@@ -1101,6 +1145,7 @@ void ItemEffectManager::init()
 		case IET_LEVEL_UP:				itemEffect = new UpLevel;				break;
 		case IET_JIU_SHU_CARD:			itemEffect = new JiuShuCard;			break;
 		case IET_HUN_LI_UP:				itemEffect = new HunLiLevelUp;			break;
+		case IET_DA_ZHE_QUAN:			itemEffect = new DaZheQuanEffect;				break;
 		default: break;
 		}
 

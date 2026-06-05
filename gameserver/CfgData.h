@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "Shared.h"
+#include "../share/DataStruct.h"
 #include "actStructs.h"
 
 struct AddAttribute
@@ -4241,6 +4242,16 @@ struct SevenTaskSumReward
 
 typedef std::map<int32_t, SevenTaskSumReward> SevenTaskSumRewardMap;
 
+// 打折券配置
+struct DaZheQuan
+{
+	int32_t nIndex;
+	int32_t nCurrencyType;
+	int32_t nCurrencyValues;
+	MemChrBagVector Items;
+};
+typedef std::map<int32_t, DaZheQuan> DaZheQuanMap;
+
 class SevenTaskTable
 {
 public:
@@ -4970,6 +4981,7 @@ private:
 	SunAndMoonCfgMap	m_SunAndMoonCfgMap;	CfgBlacketMarketTable	m_BlacketMarketTable;
 	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
 	SevenTaskTable			m_SevenTaskTable;
+	DaZheQuanMap			m_DaZheQuanMap;
 	CfgCarrierTable			m_cfgCarrierTable;
 	CfgWingTable			m_cfgWing;
 	CfgWishRewardTable		m_cfgWishRewardTable;		// 护送配置表
@@ -5002,6 +5014,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const SunAndMoonCfgMap&	GetSunAndMoonCfgMap();
 
 	const CfgOutLinkFestivalTable*	GetOutLinkFestivalTable();
+	const DaZheQuan*			GetDaZheQuanCfg( int32_t nIndex ) const;
 	const SevenTaskTable*			GetSevenTaskTable();
 
 	const CfgBlacketMarketTable*	GetBlacketMarketTable();
