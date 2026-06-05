@@ -630,9 +630,21 @@ enum MSG_CM_CODE
 	CM_HALL_OF_FAME_CLEAR_CD					= 852,			// ��CD
 	CM_HALL_OF_FAME_INFO						= 853,			// ���������Ϣ
 
+	// 称号系统
+	CM_TITLE_DRESS								= 860,			// 穿戴称号
+	CM_TITLE_UN_DRESS							= 861,			// 卸下称号
+
+	// 翅膀系统
+	CM_WING_INFO								= 862,			// 翅膀信息
+	CM_WING_UP_LEVEL							= 863,			// 翅膀升级
+	CM_WING_HUAN_HUA							= 864,			// 翅膀幻化
+
 	/*
 	* CM_WXJ	900~998
 	*/
+
+	CM_JUE_WEI_REQUEST_INFO		= 666,		// 请求爵位信息
+	CM_JUE_WEI_LEVEL_UP			= 667,		// 爵位升级
 
 	CM_GAME_MAX,
 	
@@ -1178,8 +1190,8 @@ enum MSG_SM_CODE
 	SM_SEND_JUE_WEI_DONATE_MONEY		= 11445,		//���;�λ���׵�ͭǮ
 	SM_SEND_JUE_WEI_RANK				= 11446,		//���;�λ��������
 	SM_SEND_JUE_TOTAL_RANK				= 11447,		//���;�λ�����а�
-	SM_SEND_JUE_WEI_GONG_GAO			= 11448,		//����
-
+	SM_SEND_JUE_WEI_GONG_GAO			= 11448,		//= 11448,		//����
+	SM_SEND_JUE_WEI_LEVEL_INFO		= 11449,		// 新爵位等级信息
 	//����
 	SM_SEND_DA_TI_READY_START			= 11450,		//׼����ʼ
 	SM_SEND_DA_TI_RANK					= 11451,		//�������а�
@@ -1200,7 +1212,9 @@ enum MSG_SM_CODE
 	SM_SEND_ADD_GLOBAL_CHOU_JIANG_RECORD= 11468,		//����һ��ȫ���齱��¼
 	SM_SEND_SCORE_SHOP_LIMIT_INFO		= 11469,		//�̳�������Ϣ
 	SM_SEND_ALL_CHOU_JIANG_ITEM			= 11470,		//���ͳ齱������Ϣ
-	SM_SEND_CHOU_JIANG_ITEM_CHANGE		= 11471,		//���ͳ齱������Ʒ�ı�
+	SM_SEND_CHOU_JIANG_ITEM_CHANGE		= 11471,		//发送抽奖记录物品的改变
+	// 翅膀系统
+	SM_SEND_WING_INFO					= 11474,		// 翅膀信息
 	SM_SEND_CHOU_JIANG_GONG_GAO			= 11472,		//���ͳ齱����
 	SM_SEND_GET_ITEM					= 11473,		//�齱�鵽����Ʒ
 	//����ϵͳ
@@ -1208,7 +1222,8 @@ enum MSG_SM_CODE
 	SM_SEND_QI_FU_SUCCESS				= 11476,		//���������ɹ�
 	//��ʾ��Ϣ
 	SM_GM_BROADCAST						= 11477,		// GM��̨���͹���
-	SM_SEND_NOTICE_PARAM				= 11478,		//������ʾ��Ϣ����
+
+	SM_SEND_NOTICE_PARAM		= 11478,		//������ʾ��Ϣ����
 	//��θ��
 	SM_SEND_DWW_INFO					= 11479,		//���ʹ�θ����Ϣ
 	//���������
@@ -1326,6 +1341,9 @@ enum MSG_SM_CODE
 	SM_HALL_OF_FAME_INFO				= 11910,	// �����ý�����Ϣ
 	SM_HALL_OF_FAME_BATTLE				= 11911,	// ������ս�����
 	SM_HALL_OF_FAME_RANK_INFO			= 11912,	// ���������а�
+
+	// 称号系统
+	SM_SEND_TITLE_INFO				= 11920,	// 称号信息
 
 	/*
 	* SM_WXJ	11900~11999

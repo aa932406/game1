@@ -33,6 +33,7 @@ public:
 private:
 	int32_t			m_Rank;
 	int64_t			m_DonateMoney;
+	int32_t			m_nJueWei;
 	int32_t			m_FinishLogin;
 };
 

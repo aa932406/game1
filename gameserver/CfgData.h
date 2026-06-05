@@ -155,6 +155,94 @@ struct CfgCarrierAttr
 	int32_t nLevel;
 	std::vector<AttrAddon> vAttr;
 };
+// 翅膀配置
+struct WingCfg
+{
+	int32_t				Level;			// 翅膀等级
+	ItemDataList		ConstItems;		// 升级所需材料
+	int32_t				StartPoints;	// 最低幸运值
+	int32_t				SuccessPoints;	// 成功幸运值（>=此值必成功）
+	int32_t				MaxPoints;		// 最大幸运值
+	int32_t				Rate;			// 成功率（万分比）
+	int32_t				FailAddPoints;	// 失败增加的幸运值
+	int32_t				SkillId;		// 技能ID
+	int32_t				SkillLevel;		// 技能等级
+	int32_t				IsClear;		// 是否每日清空幸运值
+	int32_t				GongGaoId;		// 公告ID
+	AttrAddonVector		AddonVector;	// 属性加成
+};
+typedef std::map<int32_t, WingCfg> WingCfgMap;
+
+class CfgWingTable
+{
+public:
+	CfgWingTable(){}
+	~CfgWingTable(){}
+
+	void AddWingCfg( const WingCfg& stu )
+	{
+		m_WingCfgMap[stu.Level] = stu;
+	}
+
+	const WingCfg* GetWingCfg( int32_t level ) const
+	{
+		WingCfgMap::const_iterator iter = m_WingCfgMap.find( level );
+		if ( iter != m_WingCfgMap.end() )
+		{
+			return &iter->second;
+		}
+		return NULL;
+	}
+
+private:
+	WingCfgMap		m_WingCfgMap;
+};
+
+// 称号配置
+struct CfgTitle
+{
+	CfgTitle() {}
+
+	int32_t			nId;			// 称号ID
+	int32_t			nType;			// 称号类型
+	Int32Vector		vParams;		// 参数
+	std::string		sPlatform;		// 平台
+	int32_t			nJob;			// 职业
+	int32_t			nSex;			// 性别
+	int32_t			nSpecial;		// 是否特殊称号
+	int32_t			nPriority;		// 优先级
+	AttrAddonVector	vGetAttr;		// 获得属性
+	AttrAddonVector	vDressAttr;		// 穿戴属性
+};
+typedef std::map<int32_t, CfgTitle> CfgTitleMap;
+
+class CfgTitleTable
+{
+public:
+	CfgTitleTable(){}
+	~CfgTitleTable(){}
+
+	void AddTitle( const CfgTitle& stu )
+	{
+		m_TitleMap[stu.nId] = stu;
+	}
+
+	const CfgTitle* GetTitle( int32_t nId ) const
+	{
+		CfgTitleMap::const_iterator iter = m_TitleMap.find( nId );
+		if ( iter != m_TitleMap.end() )
+		{
+			return &iter->second;
+		}
+		return NULL;
+	}
+
+	const CfgTitleMap* GetTitleMap() const { return &m_TitleMap; }
+
+private:
+	CfgTitleMap		m_TitleMap;
+};
+
 typedef std::map<std::pair<int32_t,int32_t>, CfgCarrierAttr> CfgCarrierAttrMap;
 
 class CfgCarrierTable
@@ -4550,7 +4638,8 @@ private:
 	SunAndMoonCfgMap	m_SunAndMoonCfgMap;	CfgBlacketMarketTable	m_BlacketMarketTable;
 	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
 	SevenTaskTable			m_SevenTaskTable;
-	CfgCarrierTable			m_cfgCarrierTable;		// 护送配置表
+	CfgCarrierTable			m_cfgCarrierTable;
+	CfgWingTable			m_cfgWing;		// 护送配置表
 	CfgDrawTable				m_cfgDrawTable;			// 抽卡配置表
 	CfgExchangeTable			m_cfgExchangeTable;		// 兑换配置表
 	CfgGuardPrivilegeMap	m_GuardPrivilegeMap;
@@ -4583,6 +4672,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const SevenTaskTable*			GetSevenTaskTable();
 
 	const CfgBlacketMarketTable*	GetBlacketMarketTable();
+	const CfgWingTable*		GetWingTable() const { return &m_cfgWing; }
 	const CfgCarrierTable*		GetCarrierTable() const { return &m_cfgCarrierTable; }
 	const CfgDrawTable*			GetDrawTable() const { return &m_cfgDrawTable; }
 	const CfgExchangeTable*		GetExchangeTable() const { return &m_cfgExchangeTable; }

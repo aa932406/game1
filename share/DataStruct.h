@@ -4393,16 +4393,19 @@ public:
 	virtual ~CJueWeiData(){}
 	void CleanUp()
 	{
-		m_DonateMoney = 0;		
+		m_DonateMoney = 0;
+		m_nJueWei = 0;
 	}
 	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
 	{
 		bzero( szSQL, sizeof( szSQL ) );
 		snprintf( szSQL, sizeof( szSQL ) - 1,
-			"INSERT `mem_chr_jue_wei`(CharId,DonateMoney) VALUES (%lld,%lld) ON DUPLICATE KEY UPDATE DonateMoney=%lld",
+			"INSERT `mem_chr_jue_wei`(CharId,DonateMoney,JueWei) VALUES (%lld,%lld,%d) ON DUPLICATE KEY UPDATE DonateMoney=%lld,JueWei=%d",
 			nCid,
 			m_DonateMoney,
-			m_DonateMoney															
+			m_nJueWei,
+			m_DonateMoney,
+			m_nJueWei
 			);
 		sqls.push_back( szSQL );
 	}
@@ -4414,6 +4417,7 @@ public:
 		while(!result.eof())
 		{
 			m_DonateMoney= result.getInt64Value("DonateMoney");
+			m_nJueWei = result.getIntValue("JueWei");
 			result.nextRow();
 		}
 		return true;
@@ -4421,13 +4425,16 @@ public:
 	virtual void PackageData( Answer::NetPacket* packet )
 	{
 		packet->writeInt64( m_DonateMoney );
+		packet->writeInt32( m_nJueWei );
 	}
 	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
 	{
 		m_DonateMoney = inPacket->readInt64();
+		m_nJueWei = inPacket->readInt32();
 	}
 public:
 	int64_t m_DonateMoney;
+	int32_t m_nJueWei;
 };
 
 //========================================================================================================================================
@@ -5215,6 +5222,112 @@ struct MysteryShop
 typedef std::list<MysteryShop> MysteryShopList;
 
 //========================================================================================================================================
+// 传送门数据结构
+struct PortalInfo
+{
+	int32_t		nId;
+	int32_t		nMapId;
+	int32_t		nPosX;
+	int32_t		nPosY;
+	int32_t		nDungeon;
+	int32_t		nStartTime;
+	int32_t		nDuration;
+	int8_t		bClose;
+};
+typedef std::list<PortalInfo> PortalInfoList;
+
+class PortalDBData : public IDataStruct
+{
+public:
+	PortalDBData() { CleanUp(); }
+	virtual ~PortalDBData() {}
+
+	virtual void CleanUp()
+	{
+		lstPortal.clear();
+		nPortalId = 0;
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid )
+	{
+		for ( PortalInfoList::iterator iter = lstPortal.begin(); iter != lstPortal.end(); ++iter )
+		{
+			bzero( szSQL, MAX_SQL_LENGTH );
+			snprintf( szSQL, MAX_SQL_LENGTH - 1,
+				"INSERT INTO `mem_char_portal` (`cid`,`id`,`map`,`x`,`y`,`dungeon`,`time`,`duration`,`close`) VALUES (%lld,%d,%d,%d,%d,%d,%d,%d,%d) ON DUPLICATE KEY UPDATE `map`=%d,`x`=%d,`y`=%d,`dungeon`=%d,`time`=%d,`duration`=%d,`close`=%d",
+				nCid, iter->nId, iter->nMapId, iter->nPosX, iter->nPosY, iter->nDungeon, iter->nStartTime, iter->nDuration, iter->bClose,
+				iter->nMapId, iter->nPosX, iter->nPosY, iter->nDungeon, iter->nStartTime, iter->nDuration, iter->bClose );
+			sqls.push_back( std::string( szSQL ) );
+		}
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid )
+	{
+		bzero( szSQL, MAX_SQL_LENGTH );
+		snprintf( szSQL, MAX_SQL_LENGTH - 1, "SELECT * FROM `mem_char_portal` WHERE `cid`=%lld AND `close`=0 ORDER BY `time`", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+		while ( !result.eof() )
+		{
+			PortalInfo info;
+			memset( &info, 0, sizeof( info ) );
+			info.nId = result.getIntValue( "id", 0 );
+			info.nMapId = result.getIntValue( "map", 0 );
+			info.nPosX = result.getIntValue( "x", 0 );
+			info.nPosY = result.getIntValue( "y", 0 );
+			info.nDungeon = result.getIntValue( "dungeon", 0 );
+			info.nStartTime = result.getIntValue( "time", 0 );
+			info.nDuration = result.getIntValue( "duration", 0 );
+			lstPortal.push_back( info );
+			nPortalId = info.nId;
+			result.nextRow();
+		}
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt32( (int32_t)lstPortal.size() );
+		for ( PortalInfoList::iterator iter = lstPortal.begin(); iter != lstPortal.end(); ++iter )
+		{
+			packet->writeInt32( iter->nId );
+			packet->writeInt32( iter->nMapId );
+			packet->writeInt32( iter->nPosX );
+			packet->writeInt32( iter->nPosY );
+			packet->writeInt32( iter->nDungeon );
+			packet->writeInt32( iter->nStartTime );
+			packet->writeInt32( iter->nDuration );
+			packet->writeInt8( iter->bClose );
+		}
+		packet->writeInt32( nPortalId );
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid )
+	{
+		if ( NULL == inPacket ) return;
+		int32_t nSize = inPacket->readInt32();
+		for ( int32_t i = 0; i < nSize; ++i )
+		{
+			PortalInfo info;
+			memset( &info, 0, sizeof( info ) );
+			info.nId = inPacket->readInt32();
+			info.nMapId = inPacket->readInt32();
+			info.nPosX = inPacket->readInt32();
+			info.nPosY = inPacket->readInt32();
+			info.nDungeon = inPacket->readInt32();
+			info.nStartTime = inPacket->readInt32();
+			info.nDuration = inPacket->readInt32();
+			info.bClose = inPacket->readInt8();
+			lstPortal.push_back( info );
+		}
+		nPortalId = inPacket->readInt32();
+	}
+
+	PortalInfoList	lstPortal;
+	int32_t			nPortalId;
+};
+
+//========================================================================================================================================
 class MysteryShopDBData : public IDataStruct
 {
 public:
@@ -5315,6 +5428,83 @@ public:
 	MysteryShopList	lstShop;
 };
 
+class CharWingDBData : public IDataStruct
+{
+public:
+	CharWingDBData(){ CleanUp(); }
+	virtual ~CharWingDBData(){}
+
+	void CleanUp()
+	{
+		m_Level		= 0;
+		m_Luck		= 0;
+		m_HuanHua	= 0;
+	}
+
+public:
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof(szSQL)-1, 
+			"INSERT INTO `mem_char_wing` (cid,`Level`,`Luck`,`HuanHua`) VALUES (%lld,%d,%d,%d) ON DUPLICATE KEY UPDATE `Level`=%d,`Luck`=%d,`HuanHua`=%d",
+			nCid,
+			m_Level,
+			m_Luck,
+			m_HuanHua,
+			m_Level,
+			m_Luck,
+			m_HuanHua
+			);
+		sqls.push_back( szSQL );
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof( szSQL ) - 1, "SELECT * FROM `mem_char_wing` WHERE `cid`=%lld", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+
+		while(!result.eof())
+		{
+			m_Level		= result.getIntValue("Level");
+			m_Luck		= result.getIntValue("Luck");
+			m_HuanHua	= result.getIntValue("HuanHua");
+
+			return true;
+		}
+		return false;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet )
+		{
+			return;
+		}
+
+		packet->writeInt32( m_Level );
+		packet->writeInt32( m_Luck );
+		packet->writeInt32( m_HuanHua );
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket )
+		{
+			return;
+		}
+
+		m_Level		= inPacket->readInt32();
+		m_Luck		= inPacket->readInt32();
+		m_HuanHua	= inPacket->readInt32();
+	}
+
+public:
+	int32_t		m_Level;
+	int32_t		m_Luck;
+	int32_t		m_HuanHua;
+};
+
 class PlayerDBData : public IDataStruct
 {
 public:
@@ -5359,6 +5549,7 @@ public:
 		m_FamilyData.CleanUp();
 		m_WorshipData.CleanUp();
 		m_JueWeiData.CleanUp();
+		m_CharWingDBData.CleanUp();
 		m_CGoblinData.CleanUp();
 		m_WuHunShopDBData.CleanUp();
 	m_BossKilledReward.CleanUp();
@@ -5407,6 +5598,7 @@ public:
 		m_FamilyData.SaveToSqlString( sqls, szSQL, nCid );
 		m_WorshipData.SaveToSqlString( sqls, szSQL, nCid );
 		m_JueWeiData.SaveToSqlString( sqls, szSQL, nCid );
+		m_CharWingDBData.SaveToSqlString( sqls, szSQL, nCid );
 		m_ChouJinagData.SaveToSqlString( sqls, szSQL, nCid );
 		m_SoulData.SaveToSqlString( sqls, szSQL, nCid );
 		m_ScoreShopData.SaveToSqlString(sqls,szSQL,nCid );
@@ -5663,6 +5855,7 @@ public:
 	CharFamilyDBData			m_FamilyData;
 	WorshipDBData				m_WorshipData;
 	CJueWeiData					m_JueWeiData;
+CharWingDBData		m_CharWingDBData;
 CGoblinData	m_CGoblinData;
 	WuHunShopDBData		m_WuHunShopDBData;
 	BossKilledRewardDBData	m_BossKilledReward;
@@ -5677,6 +5870,7 @@ CGoblinData	m_CGoblinData;
 	CSevenDayData				m_CSevenDayData;
 	CKunData				m_KunData;
 	MysteryShopDBData			m_MysteryShopDBData;
+	PortalDBData				m_PortalDBData;
 };
 
 struct PlayerDBSql 

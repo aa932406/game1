@@ -26,10 +26,13 @@
 #include "CharCarrier.h"
 #include "CharAuction.h"
 #include "CharSoul.h"
+#include "CharWing.h"
 #include "CharDraw.h"
 #include "CharExchange.h"
 #include "CharMysteryGift.h"
 #include "CharMysteryShop.h"
+#include "CharPortal.h"
+#include "CharTitle.h"
 #include "CharHallOfFame.h"
 
 #include "Trade.h"
@@ -113,6 +116,7 @@ public:
 
 public:
 	static void initNetPacketHandlers();
+	static int32_t enterDungeon( Player* player, int32_t nDungeonId, ProcId_t nProc, int32_t nBuffId, int32_t nLevel, int8_t nHard, int8_t nQuality, int32_t nEvent );
 	void init( PlayerDBData& dbData );
 
 	int16_t getGateIndex() const;
@@ -614,7 +618,17 @@ public:				CExtCharMysteryGift&		GetCharMysteryGift();
 
 	friend class CExtCharMysteryShop;
 private:			CExtCharMysteryShop		m_extCharMysteryShop;
-public:				CExtCharMysteryShop&		GetCharMysteryShop();
+public:				CExtCharMysteryShop&		GetCharMysteryShop();	friend class CExtCharPortal;
+public:				CExtCharPortal&		GetCharPortal() { return m_extCharPortal; }
+private:			CExtCharPortal			m_extCharPortal;
+
+	friend class CExtCharTitle;
+public:				CExtCharTitle&		GetCharTitle() { return m_extCharTitle; }
+private:			CExtCharTitle			m_extCharTitle;
+
+	friend class CExtCharWing;
+public:				CExtCharWing&			GetCharWing() { return m_extCharWing; }
+private:			CExtCharWing			m_extCharWing;
 
 	friend class CExtCharSoul;
 public:				CExtCharHallOfFame&		GetCharHallOfFame() { return m_extCharHallOfFame; }
