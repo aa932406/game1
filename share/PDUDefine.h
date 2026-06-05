@@ -644,6 +644,11 @@ enum MSG_CM_CODE
 	CM_WING_INFO								= 862,			// 翅膀信息
 	CM_WING_UP_LEVEL							= 863,			// 翅膀升级
 	CM_WING_HUAN_HUA							= 864,			// 翅膀幻化
+	CM_RONG_HE_RONG_LIAN			= 944,		// 融合
+	CM_RONG_HE_EQUIP_RONG_LIAN		= 945,		// 装备熔炼
+	CM_RONG_HE_DISMANTLING			= 946,		// 拆卸
+	CM_RONG_HE_ITEM_RECOVERY	= 947,		// 物品回收
+	CM_RONG_HE_ONE_KEY_RECOVERY	= 948,		// 一键回收
 
 	/*
 	* CM_WXJ	900~998

@@ -286,6 +286,7 @@ enum CurrencyChangeReason
 	GCR_NATIONAL_UNLOCK_REWARD	= 2077,
 	GCR_NATIONAL_BUY_LEVEL		= 2078,
 	GCR_DA_ZHE_QUAN			= 2079,
+	GCR_RONG_HE_HUI_SHOU		= 2080,
 
 	//==================================================================================
 //Ԫ��
@@ -475,6 +476,10 @@ enum ITEM_DEL_REASON
 	IDCR_SELECT_ITEM			= 44,
 	IDCR_DISCARD				= 45,
 	IDCR_MYSTERY_SHOP_BUY_COST	= 46,
+	IDCR_RONG_HE_COST		= 47,
+	IDCR_RONG_HE_GET		= 48,
+	IDCR_EQUIP_RONG_HE		= 49,
+	IDCR_EQUIP_RONG_HE_DIS	= 50,
 	};
 
 enum ItemEffectType

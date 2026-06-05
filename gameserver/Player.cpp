@@ -8203,6 +8203,9 @@ void Player::InitExtSystems()
 	m_extShenWei.Init( this );
 	m_ExtSysMgr.Register( &m_extShenWei );
 
+	m_extRongHe.Init( this );
+	m_ExtSysMgr.Register( &m_extRongHe );
+
 	/*
 	* EXT_INIT_ZK
 	* �쿪����ϵͳע�������֮��

@@ -10588,10 +10588,76 @@ void CfgData::InitRongHeCfg()
 
     for (int32_t i = 0; i < iBaseTableCount; ++i)
     {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/ItemMix.txt
+        RongHeCfg stu;
+        stu.CleanUp();
+        stu.nIndex = TabFile.Search_Posistion(i, 0)->iValue;
+
+        // Parse CostItem: "id:class:count"
+        std::string costStr = TabFile.Search_Posistion(i, 1)->pString;
+        parseItemData(stu.nCostItem, costStr);
+
+        // Parse GiveItem: item1|item2|... each item is "id:class:count:bind:attr1:attr2:..."
+        std::string giveStr = TabFile.Search_Posistion(i, 2)->pString;
+        if (!giveStr.empty())
+        {
+            StringVector vItems = StringUtility::split(giveStr, "|");
+            for (size_t j = 0; j < vItems.size(); ++j)
+            {
+                RongHeItem item;
+                item.CleanUp();
+                StringVector v = StringUtility::split(vItems[j], ":");
+                if (v.size() >= 4)
+                {
+                    item.item.itemClass = atoi(v[0].c_str());
+                    item.item.itemId = atoi(v[1].c_str());
+                    item.item.itemCount = atoi(v[2].c_str());
+                    item.item.bind = atoi(v[3].c_str());
+                    // nRate, nRate2, nSuccess, nRecord, nGongGaoId are encoded in GiveItem string
+                    // Format from lookup: the GiveItem column is complex
+                    // For now use the rate from the GiveItem string position 8-13
+                    if (v.size() >= 9)
+                    {
+                        item.nRate = atoi(v[8].c_str());
+                        item.nRate2 = atoi(v[9].c_str());
+                    }
+                    if (v.size() >= 11)
+                    {
+                        item.nSuccess = atoi(v[10].c_str());
+                    }
+                    if (v.size() >= 12)
+                    {
+                        item.nRecord = atoi(v[11].c_str());
+                    }
+                    if (v.size() >= 13)
+                    {
+                        item.nGongGaoId = atoi(v[12].c_str());
+                    }
+                    stu.lRongHeItemList.push_back(item);
+                }
+            }
+        }
+
+        // Calculate max rates from the list
+        stu.nMaxRate = 0;
+        stu.nMaxRate2 = 0;
+        for (RongHeItemList::iterator it = stu.lRongHeItemList.begin(); it != stu.lRongHeItemList.end(); ++it)
+        {
+            stu.nMaxRate += it->nRate;
+            stu.nMaxRate2 += it->nRate2;
+        }
+
+        m_RongHeCfgMap[stu.nIndex] = stu;
     }
+}
+
+const RongHeCfg* CfgData::GetRongHeCfg( int32_t nIndex ) const
+{
+	RongHeCfgMap::const_iterator it = m_RongHeCfgMap.find( nIndex );
+	if ( it != m_RongHeCfgMap.end() )
+	{
+		return &(it->second);
+	}
+	return NULL;
 }
 
 void CfgData::InitScoreShopTable()

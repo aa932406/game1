@@ -5613,6 +5613,7 @@ public:
 	std::string	m_MoneyRewardTaskInfo;
 	std::string	m_XiangYaoTask;
 	std::string	m_ShenWeiTask;
+	std::string	m_RongHeEquipData;
 
 	void CleanUp()
 	{
@@ -5634,6 +5635,7 @@ public:
 		m_MoneyRewardTaskInfo.clear();
 		m_XiangYaoTask.clear();
 		m_ShenWeiTask.clear();
+		m_RongHeEquipData.clear();
 	}
 
 	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
@@ -5643,7 +5645,7 @@ public:
 			m_PdbfFinishTimes, m_EquipBackTaskId, m_EquipBackTaskFinishTimes, m_RandEquipBackTaskStarTimes,
 			m_JieBiaoTimes, m_YaBiaoTimes, m_TrailerQuality, m_EndTime,
 			m_XiangYaoFinishTimes, m_RefreshTimes,
-			m_MoneyRewardTaskInfo.c_str(), m_XiangYaoTask.c_str(), m_ShenWeiTask.c_str() );
+			m_MoneyRewardTaskInfo.c_str(), m_XiangYaoTask.c_str(), m_ShenWeiTask.c_str(), m_RongHeEquipData.c_str() );
 		sqls.push_back( szSQL );
 	}
 

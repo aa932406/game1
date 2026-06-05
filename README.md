@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (29/88)
+### 已移植模块 (31/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -61,6 +61,8 @@ make
 | **CDaZheQuan** (打折券) | ItemEffect handler | ~20 | 2 方法 (effect/parseEffect)，物品效果子系统
 | **CRongLian** (熔炼活动) | `RongLian.cpp/.h` | ~18 | 3 方法 (析构/broadcastStart/sendPlayerScore)，CActivity子类
 | **CYaBiao** (押镖) | `YaBiao.cpp/.h` | ~16 | 4 方法 (析构/ready/start/timeEnd)，CActivity子类
+| **CShenWei** (神威) | `ShenWei.cpp/.h` | ~42 | 5 方法 (OnDaySwitch/AddCharAttr/GetRankAttr/GetShenWeiLevel)，CExtSystemBase子类
+| **CRongHe** (融合) | `RongHe.cpp/.h` | ~130 | 15 方法 (OnRongLian/装备熔炼/拆卸/回收)，CExtSystemBase子类
 
 ### 数据层变更
 
@@ -73,7 +75,7 @@ make
 | `share/PDUDefine.h` | 添加 CM_MAGIC_BOX 协议 (725-729) 和 SM_MAGIC_BOX 协议 (11797-11799) 以及 CM_WISH 协议 (950-952) 和 SM_WISH 协议 (12040-12041) |
 | `Player.h` | 集成 CharDraw/CharExchange/CharMysteryGift/CharMysteryShop/MagicBox/Wish/Vplan/NationalDayHd 模块声明 |
 
-### 待移植模块 (剩余 ~55 个)
+### 待移植模块 (剩余 ~52 个)
 
 以下是从反编译代码中识别出的 `CExtSystemBase` 派生类模块：
 
@@ -119,8 +121,6 @@ make
 | 44 | ObjState | `CObjState.cpp` | — | 对象状态 |
 | 45 | RankMirror | `CRankMirror.cpp` | — | 排行榜镜像 |
 | 46 | RefreshMonster | `CRefreshMonster.cpp` | — | 刷新怪物 |
-| 47 | RongHe | `CRongHe.cpp` | — | 融合 |
-| 50 | ShenWei | `CShenWei.cpp` | — | 神威 |
 | 51 | ShiZhuang | `CShiZhuang.cpp` | — | 时装 |
 | 52 | SqiderQueen | `CSqiderQueen.cpp` | — | 蜘蛛女王 |
 | 53 | SuperTeHui | `CSuperTeHui.cpp` | — | 超级特惠 |

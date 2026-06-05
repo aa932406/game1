@@ -4272,6 +4272,59 @@ struct CfgCachet
 };
 typedef std::map<int32_t, CfgCachet> CachetCfgMap;
 
+// 融合物品
+struct RongHeItem
+{
+	RongHeItem() { CleanUp(); }
+	void CleanUp()
+	{
+		memset(&item, 0, sizeof(item));
+		nRate = 0;
+		nRate2 = 0;
+		nSuccess = 0;
+		nRecord = 0;
+		nGongGaoId = 0;
+	}
+	MemChrBag	item;		// GiveItem
+	int32_t		nRate;		// Rate (weight)
+	int32_t		nRate2;		// Rate2 (鬼谷道人修正权重)
+	int32_t		nSuccess;	// Success (result success value)
+	int32_t		nRecord;	// Record (0=no record, >0=record)
+	int32_t		nGongGaoId;	// GongGaoId (broadcast if >0)
+};
+typedef std::list<RongHeItem> RongHeItemList;
+
+// 融合配置
+struct RongHeCfg
+{
+	RongHeCfg() { CleanUp(); }
+	void CleanUp()
+	{
+		nIndex = 0;
+		memset(&nCostItem, 0, sizeof(nCostItem));
+		lRongHeItemList.clear();
+		nMaxRate = 0;
+		nMaxRate2 = 0;
+	}
+	int32_t			nIndex;		// Index
+	ItemData		nCostItem;		// CostItem (parsed from string)
+	RongHeItemList	lRongHeItemList;	// GiveItem list
+	int32_t			nMaxRate;		// MaxRate
+	int32_t			nMaxRate2;		// MaxRate2 (鬼谷道人)
+};
+typedef std::map<int32_t, RongHeCfg> RongHeCfgMap;
+
+// 装备熔炼信息
+struct RongLianInfo
+{
+	RongLianInfo()
+		: nItemId(0), nCount(0), nEquipId(0) {}
+	int32_t	nItemId;
+	int32_t	nCount;
+	int32_t	nEquipId;
+};
+typedef std::map<int32_t, RongLianInfo> RongLianInfoMap;
+
 class SevenTaskTable
 {
 public:
@@ -5002,6 +5055,7 @@ private:
 	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
 	SevenTaskTable			m_SevenTaskTable;
 	DaZheQuanMap			m_DaZheQuanMap;
+	RongHeCfgMap			m_RongHeCfgMap;
 	CachetCfgMap			m_CachetCfg;
 	CfgCarrierTable			m_cfgCarrierTable;
 	CfgWingTable			m_cfgWing;
@@ -5037,6 +5091,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const CfgOutLinkFestivalTable*	GetOutLinkFestivalTable();
 	const DaZheQuan*			GetDaZheQuanCfg( int32_t nIndex ) const;
 	const CfgCachet*			GetCfgCachet( int32_t nLevel ) const;
+	const RongHeCfg*			GetRongHeCfg( int32_t nIndex ) const;
 	int32_t					GetCachetLevel( int64_t nHonor ) const;
 	const SevenTaskTable*			GetSevenTaskTable();
 
