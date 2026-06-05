@@ -11,19 +11,19 @@
 #include "RandHelper.h"
 #include "EquipRansom.h"
 
-#define USUAL_ITEM		1  //Ê¹ÓÃÆÕÍ¨ÎïÆ·
-#define SPECIAL_ITEM	2  //Ê¹ÓÃÌØÊâÎïÆ·
+#define USUAL_ITEM		1  //Ê¹ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½Æ·
+#define SPECIAL_ITEM	2  //Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·
 
-#define SPECIAL_STAT	9					//ÌØÊâµÄÐÇ¼¶,9¼¶ÒÔºó²»ÄÜÓÃÆÕÍ¨²ÄÁÏ
-#define NEED_GONG_GAO_STAT 6				//6ÐÇÒª¹«¸æ
-#define XIANG_QIAN_GONG_GAO_GEM_LEVEL	5	//±¦Ê¯µÄ×î´óµÈ¼¶
+#define SPECIAL_STAT	9					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¼ï¿½,9ï¿½ï¿½ï¿½Ôºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½
+#define NEED_GONG_GAO_STAT 6				//6ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+#define XIANG_QIAN_GONG_GAO_GEM_LEVEL	5	//ï¿½ï¿½Ê¯ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½
 int32_t GemOpenNeedStarLevel[GEM_SLOT_NUM] = { 4, 5, 6 };
 #define MAX_SUIT_EQUIP	 120
 enum ERR_EQUIP
 {
-	ERR_EQUIP_UPGRADE_FAIL		= 1,	// ×°±¸Éý½×Ê§°Ü
-	ERR_EQUIP_UPQUALITY_FAIL	= 2,	// ×°±¸ÉýÆ·Ê§°Ü
-	ERR_EQUIP_UPSTAR_FAIL		= 3,	// ×°±¸ÉýÐÇÊ§°Ü
+	ERR_EQUIP_UPGRADE_FAIL		= 1,	// ×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
+	ERR_EQUIP_UPQUALITY_FAIL	= 2,	// ×°ï¿½ï¿½ï¿½ï¿½Æ·Ê§ï¿½ï¿½
+	ERR_EQUIP_UPSTAR_FAIL		= 3,	// ×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 };
 
 using namespace Answer;
@@ -41,12 +41,15 @@ void CExtEquip::OnCleanUp()
 {
 	bzero( m_vMemEquip, sizeof( m_vMemEquip ) );
 	bzero( m_vMemGem, sizeof( m_vMemGem ) );
+	bzero( m_vMemStrengthen, sizeof( m_vMemStrengthen ) );
+	bzero( m_vMemPosLevel, sizeof( m_vMemPosLevel ) );
+	bzero( m_vShenYaoEquipPos, sizeof( m_vShenYaoEquipPos ) );
 
-	m_lstDirty.clear();										// ÔàÊý¾Ý
+	m_lstDirty.clear();										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	m_nEquipGoalStarLevel	= 0;							// Ì××°Ç¿»¯µÈ¼¶
-	m_nEquipGoalGemLevel	= 0;							// Ì××°±¦Ê¯µÈ¼¶
-	m_mEquipSuit.clear();									// Ì××°ÊýÁ¿
+	m_nEquipGoalStarLevel	= 0;							// ï¿½ï¿½×°Ç¿ï¿½ï¿½ï¿½È¼ï¿½
+	m_nEquipGoalGemLevel	= 0;							// ï¿½ï¿½×°ï¿½ï¿½Ê¯ï¿½È¼ï¿½
+	m_mEquipSuit.clear();									// ï¿½ï¿½×°ï¿½ï¿½ï¿½ï¿½
 }
 
 void CExtEquip::OnLoadFromDB( const PlayerDBData& dbData )
@@ -88,6 +91,19 @@ void CExtEquip::GetInterestsProtocol( ProcIdList& procList )
 	procList.push_back ( CM_NEW_REMOVE_GEM );
 	procList.push_back ( CM_OPQN_GEM_HOLE );
 	procList.push_back ( CM_ACHIEVEMENT_UP_XUN_ZHANG );
+	procList.push_back ( CM_BACK_EQUIP );
+	procList.push_back ( CM_EQUIP_STREN_GHTHEN );
+	procList.push_back ( CM_EQUIP_UP_PHASE );
+	procList.push_back ( CM_EQUIP_UP_POS );
+	procList.push_back ( CM_GEM_ADD );
+	procList.push_back ( CM_GEM_LEVEL_UP );
+	procList.push_back ( CM_GEM_OPEN_HOLE );
+	procList.push_back ( CM_GEM_REMOVE );
+	procList.push_back ( CM_MOFU_DUIHUAN );
+	procList.push_back ( CM_MOFU_HUISHOU );
+	procList.push_back ( CM_RELIEVE_BIND );
+	procList.push_back ( CM_SHENYAO_POS_LEVEL_UP );
+	procList.push_back ( CM_XINMO_EQUIP_HUISHOU );
 }
 
 int32_t CExtEquip::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -113,6 +129,19 @@ int32_t CExtEquip::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
 	case CM_NEW_REMOVE_GEM:			return  OnNewEquipRemoveGem( inPacket );
 	case CM_OPQN_GEM_HOLE:			return  OnNewEquipOpenHole( inPacket );
 	case CM_ACHIEVEMENT_UP_XUN_ZHANG: return onUpXunZhangLevel( inPacket );
+	case CM_BACK_EQUIP:			return onBackEquip( inPacket );
+	case CM_EQUIP_STREN_GHTHEN:	return onEquipStrenGthen( inPacket );
+	case CM_EQUIP_UP_PHASE:		return onEquipUpPhase( inPacket );
+	case CM_EQUIP_UP_POS:		return onEquipUpPos( inPacket );
+	case CM_GEM_ADD:			return onGemAdd( inPacket );
+	case CM_GEM_LEVEL_UP:		return onGemLevelUp( inPacket );
+	case CM_GEM_OPEN_HOLE:		return onGemOpenHole( inPacket );
+	case CM_GEM_REMOVE:			return onGemRemove( inPacket );
+	case CM_MOFU_DUIHUAN:		return onMoFuDuiHuan( inPacket );
+	case CM_MOFU_HUISHOU:		return onMoFuHuiShou( inPacket );
+	case CM_RELIEVE_BIND:		return onRelieveBind( inPacket );
+	case CM_SHENYAO_POS_LEVEL_UP:	return onShenYaoPosLevelUp( inPacket );
+	case CM_XINMO_EQUIP_HUISHOU:	return OnXinMoEquipHuiShou( inPacket );
 	default:	break;
 	}
 	return ERR_OK;
@@ -587,7 +616,7 @@ int32_t CExtEquip::onEquipUpStar( NetPacket *inPacket )
 		}
 		else if ( SPECIAL_STAT == equip.star )
 		{
-			//9Éý¼¶Ê§°Ü,×°±¸Ê²Ã´¶¼Ã»¸Ä±ä
+			//9ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½,×°ï¿½ï¿½Ê²Ã´ï¿½ï¿½Ã»ï¿½Ä±ï¿½
 			GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, equip.star );
 			return ERR_SYETEM_ERR;
 		}
@@ -1030,7 +1059,7 @@ int32_t CExtEquip::onEquipAddGem( NetPacket *inPacket )
 
 	checkEquipGoalGemLevel();
 	m_pPlayer->recalcAttr();
-	SendGemInfo( nEquipPos, nGemSlot );
+	SendGemInfo( nEquipPos, (int8_t)nGemSlot );
 	
 	LogEquipAddGem equipAddGemLog = {};
 
@@ -1107,7 +1136,7 @@ bool CExtEquip::checkCombiItemList( ItemDataList& NeedItemList, Int32Vector& vSl
 	bool IsSucceed = false;
 	int32_t isize = vSlot.size();
 	ItemDataList::iterator it = NeedItemList.begin();
-	int32_t ItemIndex = 0;	//µÚ¼¸¸öÎïÆ·
+	int32_t ItemIndex = 0;	//ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ï¿½Æ·
 	for ( ; it != NeedItemList.end(); ++it )
 	{
 		ItemIndex++;
@@ -1122,7 +1151,7 @@ bool CExtEquip::checkCombiItemList( ItemDataList& NeedItemList, Int32Vector& vSl
 			{
 				return false;
 			}
-			//ÅÐ¶ÏÊÇ·ñÓÐÖØ¸´µÄid
+			//ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½id
 			Int32Vector::iterator Slotit = SlotID.begin();
 			for ( ; Slotit != SlotID.end(); ++Slotit )
 			{
@@ -1136,7 +1165,7 @@ bool CExtEquip::checkCombiItemList( ItemDataList& NeedItemList, Int32Vector& vSl
 			if ( bagItem.itemId != it->m_nId 
 				|| bagItem.itemClass != it->m_nClass 
 				|| bagItem.itemCount <= 0
-				|| bagItem.endTime != 0 )		// ÏÞÊ±µÀ¾ß²»²ÎÓëºÏ³É
+				|| bagItem.endTime != 0 )		// ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ß²ï¿½ï¿½ï¿½ï¿½ï¿½Ï³ï¿½
 			{
 				continue;
 			}
@@ -1174,14 +1203,14 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
  			return ERR_SYETEM_ERR;
  		}
  	
- 		// ½ÓÊÕÍøÂçÊý¾Ý
+ 		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  		int32_t nId			= inPacket->readInt32();
  		int32_t nTimes		= inPacket->readInt32();
  	
  		Int32Vector vSlot;
  		m_pPlayer->queryBagInfo( inPacket, vSlot );
  		int8_t AutoBuy		= inPacket->readInt8();
- 		// ²ÎÊýÅÐ¶¨
+ 		// ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
  		if ( nTimes <= 0 )
  		{
  			return ERR_SYETEM_ERR;
@@ -1193,7 +1222,7 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
  			return ERR_SYETEM_ERR;
  		}
  	
-		// ½ðÇ®¼ì²â
+		// ï¿½ï¿½Ç®ï¿½ï¿½ï¿½
 		if ( pCfgItemCombi->m_nMoney < 0 )
 		{
 			return ERR_SYETEM_ERR;
@@ -1272,7 +1301,7 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
 
 		int32_t nGiveBind   = nBindTimes * nGiveCount;
 		int32_t nGiveUnBind = nUnBindTimes * nGiveCount;
-		// Ìí¼ÓÉ¾³ý±³°üµÀ¾ß
+		// ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		MemChrBagVector addVt;
 		if ( nGiveBind > 0 )
 		{
@@ -1954,6 +1983,9 @@ void CExtEquip::AddCharAttr()
 {
 	addEquipAttr();
 	addGemAttr();
+	AddStrengthenAttr();
+	addPosLevelAttr();
+	addShenYaoPosAttr();
 	//addSuitAttr();
 }
 
@@ -2053,7 +2085,7 @@ void CExtEquip::addEquipAttr()
 			continue;
 		}
 
-		// Ö÷ÊôÐÔ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for ( int32_t j = 0; j < MAX_EQUIP_BASE_ATTR_COUNT; ++j )
 		{
 			if ( pCfgEquip->m_vAttr[j].addon > 0 )
@@ -2068,7 +2100,7 @@ void CExtEquip::addEquipAttr()
 			}
 		}
 
-		// ¸½¼ÓÊôÐÔ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if ( equip.addAttr > 0 )
 		{
 			int32_t nAddCount = EQUIP_MANAGER.GetAddAttrCount( pCfgEquip->m_nQuality );
@@ -2107,7 +2139,7 @@ void CExtEquip::addSuitAttr()
 	{
 		return;
 	}
-	// Ç¿»¯Ì××°
+	// Ç¿ï¿½ï¿½ï¿½ï¿½×°
 	const CfgEquipGoal* pGoalStar = CFG_DATA.GetEquipTable().GetEquipGoal( EQUIP_GOAL_STAR, m_nEquipGoalStarLevel );
 	if ( pGoalStar != NULL )
 	{
@@ -2119,7 +2151,7 @@ void CExtEquip::addSuitAttr()
 			}
 		}
 	}
-	// ±¦Ê¯Ì××°
+	// ï¿½ï¿½Ê¯ï¿½ï¿½×°
 	const CfgEquipGoal* pGoalGem = CFG_DATA.GetEquipTable().GetEquipGoal( EQUIP_GOAL_GEM, m_nEquipGoalGemLevel );
 	if ( pGoalGem != NULL )
 	{
@@ -2131,7 +2163,7 @@ void CExtEquip::addSuitAttr()
 			}
 		}
 	}
-	// ×°±¸Ì××°
+	// ×°ï¿½ï¿½ï¿½ï¿½×°
 	EquipSuitMap::iterator iter = m_mEquipSuit.begin();
 	EquipSuitMap::iterator eiter = m_mEquipSuit.end();
 	for ( ; iter != eiter; ++iter )
@@ -2836,7 +2868,7 @@ void CExtEquip::EquipOpenGemHoelGongGao( int32_t EquipBaseId, int8_t HoleIndex, 
 
 void CExtEquip::GetDropEquip( Player *pKiller, int32_t DropCount, int32_t DropRate, MemChrBagVector &DropItemVt, int32_t Mid  )
 {
-// 	if ( NULL == pKiller ) // ±»¹ÖÎï´òËÀ»áÎª¿Õ
+// 	if ( NULL == pKiller ) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½
 // 	{
 // 		return;
 // 	}
@@ -3164,22 +3196,22 @@ void CExtEquip::GetEquipInfo( int32_t& HoleCount, int32_t& BattleGemCount, int32
 		}
 		switch ( pCfgEquip->m_nQuality )
 		{	
-		case IQ_GREEN:	// Á¼Æ·
+		case IQ_GREEN:	// ï¿½ï¿½Æ·
 			{
 				EquipQualityBattle += 1;
 				break;
 			}
-		case IQ_BLUE:	// ÉÏÆ·
+		case IQ_BLUE:	// ï¿½ï¿½Æ·
 			{
 				EquipQualityBattle += 2;
 				break;
 			}
-		case IQ_PURPLE:	// ¾«Æ·
+		case IQ_PURPLE:	// ï¿½ï¿½Æ·
 			{
 				EquipQualityBattle += 3;
 				break;
 			}
-		case IQ_GOLD:	// ¼«Æ·
+		case IQ_GOLD:	// ï¿½ï¿½Æ·
 			{
 				EquipQualityBattle += 4;
 				break;
@@ -3278,4 +3310,1269 @@ int32_t CExtEquip::HaveStarEquipCount( int32_t Star )
 		}
 	}
 	return Count;
+}
+
+// ========== ï¿½ï¿½ï¿½Â°æ±¾ CExtEquip ï¿½Â·ï¿½ï¿½ï¿½ ==========
+
+void CExtEquip::loadGemString( const std::string& strGem )
+{
+	if ( strGem.empty() )
+	{
+		return;
+	}
+	StringVector vStr = StringUtility::split( strGem, "|" );
+	for ( size_t i = 0; i + 3 < vStr.size(); i += 4 )
+	{
+		int8_t nPos = (int8_t)atoi( vStr[i].c_str() );
+		int8_t nSlot = (int8_t)atoi( vStr[i+1].c_str() );
+		int32_t nGemId = atoi( vStr[i+2].c_str() );
+		if ( nPos >= 0 && nPos < EQUIP_SLOT_TOTAL_NUM && nSlot >= 0 && nSlot < GEM_SLOT_NUM )
+		{
+			m_vMemGem[nPos][nSlot] = nGemId;
+		}
+	}
+}
+
+void CExtEquip::loadPosLevelString( const std::string& strPos )
+{
+	if ( strPos.empty() )
+	{
+		return;
+	}
+	StringVector vStr = StringUtility::split( strPos, "|" );
+	for ( size_t i = 0; i + 2 < vStr.size(); i += 3 )
+	{
+		int8_t nPos = (int8_t)atoi( vStr[i].c_str() );
+		int32_t nLevel = atoi( vStr[i+1].c_str() );
+		if ( nPos >= 0 && nPos < EQUIP_SLOT_TOTAL_NUM )
+		{
+			m_vMemPosLevel[nPos] = nLevel;
+		}
+	}
+}
+
+void CExtEquip::LoadStrengthenString( const std::string& strStrengthen )
+{
+	if ( strStrengthen.empty() )
+	{
+		return;
+	}
+	StringVector vStr = StringUtility::split( strStrengthen, "|" );
+	for ( size_t i = 0; i + 2 < vStr.size(); i += 3 )
+	{
+		int8_t nPos = (int8_t)atoi( vStr[i].c_str() );
+		int32_t nLevel = atoi( vStr[i+1].c_str() );
+		if ( nPos >= 0 && nPos < EQUIP_SLOT_TOTAL_NUM )
+		{
+			m_vMemStrengthen[nPos] = nLevel;
+		}
+	}
+}
+
+void CExtEquip::LoadShenYaoString( const std::string& strShenYao )
+{
+	if ( strShenYao.empty() )
+	{
+		return;
+	}
+	StringVector vStr = StringUtility::split( strShenYao, "|" );
+	for ( size_t i = 0; i + 2 < vStr.size(); i += 3 )
+	{
+		int8_t nIdx = (int8_t)atoi( vStr[i].c_str() );
+		int32_t nLevel = atoi( vStr[i+1].c_str() );
+		if ( nIdx >= 0 && nIdx < 3 )
+		{
+			m_vShenYaoEquipPos[nIdx] = nLevel;
+		}
+	}
+}
+
+std::string CExtEquip::saveGemString() const
+{
+	std::stringstream ss;
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		for ( int8_t j = 0; j < GEM_SLOT_NUM; ++j )
+		{
+			if ( m_vMemGem[i][j] > 0 )
+			{
+				ss << "|" << (int32_t)i << "|" << (int32_t)j << "|" << m_vMemGem[i][j] << "|" << 0;
+			}
+		}
+	}
+	return ss.str();
+}
+
+std::string CExtEquip::savePosLevelString() const
+{
+	std::stringstream ss;
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		if ( m_vMemPosLevel[i] > 0 )
+		{
+			ss << "|" << (int32_t)i << "|" << m_vMemPosLevel[i] << "|" << 0;
+		}
+	}
+	return ss.str();
+}
+
+std::string CExtEquip::saveStrengthenString() const
+{
+	std::stringstream ss;
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		if ( m_vMemStrengthen[i] > 0 )
+		{
+			ss << "|" << (int32_t)i << "|" << m_vMemStrengthen[i] << "|" << 0;
+		}
+	}
+	return ss.str();
+}
+
+std::string CExtEquip::saveShenYaoString() const
+{
+	std::stringstream ss;
+	for ( int8_t i = 0; i < 3; ++i )
+	{
+		if ( m_vShenYaoEquipPos[i] > 0 )
+		{
+			ss << "|" << (int32_t)i << "|" << m_vShenYaoEquipPos[i] << "|" << 0;
+		}
+	}
+	return ss.str();
+}
+
+int32_t CExtEquip::GetEquipAllGemLevel() const
+{
+	int32_t nTotal = 0;
+	for ( int32_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		for ( int32_t j = 0; j < GEM_SLOT_NUM; ++j )
+		{
+			if ( m_vMemGem[i][j] > 0 )
+			{
+				const CfgItemGem* pGem = CFG_DATA.GetItemGemTable().GetItemGem( m_vMemGem[i][j] );
+				if ( pGem != NULL )
+				{
+					nTotal += pGem->m_nGemLevel;
+				}
+			}
+		}
+	}
+	return nTotal;
+}
+
+int32_t CExtEquip::GetEquipAllUpPosLevel() const
+{
+	int32_t nTotal = 0;
+	for ( int32_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		nTotal += m_vMemPosLevel[i];
+	}
+	return nTotal;
+}
+
+int32_t CExtEquip::GetEquipSlotPlace( int8_t nSlot ) const
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return -1;
+	}
+	return m_vMemEquip[nSlot].srcId > 0 ? nSlot : -1;
+}
+
+int32_t CExtEquip::GetEquipStar( int8_t nSlot ) const
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return 0;
+	}
+	const MemChrBag& curEquip = m_vMemEquip[nSlot];
+	if ( curEquip.srcId <= 0 )
+	{
+		return 0;
+	}
+	MemEquip equip = EQUIP_MANAGER.GetMemEquip( curEquip.srcId );
+	if ( equip.base != curEquip.itemId )
+	{
+		return 0;
+	}
+	return equip.star;
+}
+
+int32_t CExtEquip::GetEquipSuitId( int8_t nSlot ) const
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return 0;
+	}
+	const CfgEquip* pEquip = CFG_DATA.GetEquipTable().GetEquip( m_vMemEquip[nSlot].itemId );
+	if ( pEquip == NULL )
+	{
+		return 0;
+	}
+	return pEquip->m_nSuitId;
+}
+
+int32_t CExtEquip::GetEquipType( int8_t nSlot ) const
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return -1;
+	}
+	const CfgEquip* pEquip = CFG_DATA.GetEquipTable().GetEquip( m_vMemEquip[nSlot].itemId );
+	if ( pEquip == NULL )
+	{
+		return -1;
+	}
+	return pEquip->m_nType;
+}
+
+int32_t CExtEquip::GetGemOpenLevel() const
+{
+	int32_t nMinStar = 99999;
+	for ( int32_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		const MemChrBag& curEquip = m_vMemEquip[i];
+		if ( curEquip.srcId <= 0 )
+		{
+			return 0;
+		}
+		MemEquip equip = EQUIP_MANAGER.GetMemEquip( curEquip.srcId );
+		if ( equip.base != curEquip.itemId || equip.star < nMinStar )
+		{
+			nMinStar = equip.star;
+		}
+	}
+	return nMinStar;
+}
+
+int32_t CExtEquip::GetGongMingSuitId() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::CheckGongMingSuitBuff() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetMaxPolishLevel() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetMaxRefiningLevel() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetMoFuSuitLevel( int32_t nSuitId ) const
+{
+	const CfgMoFuSuit* pCfg = CFG_DATA.GetMoFuSuit( nSuitId );
+	if ( NULL == pCfg )
+	{
+		return 0;
+	}
+
+	return 0;
+}
+
+int32_t CExtEquip::GetQualityCount( int8_t nQuality ) const
+{
+	int32_t nCount = 0;
+	for ( int32_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		const MemChrBag& curEquip = m_vMemEquip[i];
+		if ( curEquip.srcId <= 0 )
+		{
+			continue;
+		}
+		const CfgEquip* pEquip = CFG_DATA.GetEquipTable().GetEquip( curEquip.itemId );
+		if ( pEquip != NULL && pEquip->m_nQuality == nQuality )
+		{
+			nCount++;
+		}
+	}
+	return nCount;
+}
+
+int32_t CExtEquip::getStrenGthenLevel( int8_t nSlot ) const
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return 0;
+	}
+	return m_vMemStrengthen[nSlot];
+}
+
+int32_t CExtEquip::GetTeJieValue( int32_t nSlot ) const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetWeaponBless() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetWingEquipCount3SuitId() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetWingEquipCount6SuitId() const
+{
+	return 0;
+}
+
+int32_t CExtEquip::GetCount6SuitId() const
+{
+	int32_t nCount = 0;
+	EquipSuitMap::const_iterator iter = m_mEquipSuit.begin();
+	for ( ; iter != m_mEquipSuit.end(); ++iter )
+	{
+		if ( iter->second >= 6 )
+		{
+			nCount++;
+		}
+	}
+	return nCount;
+}
+
+int32_t CExtEquip::GetCount12SuitId() const
+{
+	int32_t nCount = 0;
+	EquipSuitMap::const_iterator iter = m_mEquipSuit.begin();
+	for ( ; iter != m_mEquipSuit.end(); ++iter )
+	{
+		if ( iter->second >= 12 )
+		{
+			nCount++;
+		}
+	}
+	return nCount;
+}
+
+int32_t CExtEquip::GetAddGemCount() const
+{
+	int32_t nCount = 0;
+	for ( int32_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		for ( int32_t j = 0; j < GEM_SLOT_NUM; ++j )
+		{
+			if ( m_vMemGem[i][j] > 0 )
+			{
+				nCount++;
+			}
+		}
+	}
+	return nCount;
+}
+
+int32_t CExtEquip::HaveQualityGradeEquipCount( int32_t nQuality, int32_t nGrade ) const
+{
+	int32_t nCount = 0;
+	for ( int32_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		if ( m_vMemEquip[i].srcId <= 0 )
+		{
+			continue;
+		}
+		const CfgEquip* pEquip = CFG_DATA.GetEquipTable().GetEquip( m_vMemEquip[i].itemId );
+		if ( pEquip != NULL && pEquip->m_nQuality == nQuality && pEquip->m_nGrade >= nGrade )
+		{
+			nCount++;
+		}
+	}
+	return nCount;
+}
+
+int32_t CExtEquip::GetGongMingBuffBattle() const
+{
+	return 0;
+}
+
+bool CExtEquip::IsAllPosLevel() const
+{
+	return false;
+}
+
+bool CExtEquip::IsAllPosTop() const
+{
+	return false;
+}
+
+int32_t CExtEquip::SetWeaponBless( int32_t nVal )
+{
+	return 0;
+}
+
+void CExtEquip::checkGongMingSuit()
+{
+}
+
+int32_t CExtEquip::CheckSuitId( int32_t nSuitId ) const
+{
+	EquipSuitMap::const_iterator iter = m_mEquipSuit.find( nSuitId );
+	if ( iter != m_mEquipSuit.end() )
+	{
+		return iter->second;
+	}
+	return 0;
+}
+
+void CExtEquip::clearGemInfo()
+{
+	bzero( m_vMemGem, sizeof( m_vMemGem ) );
+}
+
+void CExtEquip::broadcastItemCombi( int32_t nItemId, int8_t nItemClass )
+{
+	CombiGongGao( nItemId, nItemClass );
+}
+
+void CExtEquip::broadcastGemLevelUp( int8_t nEquipSlot, int8_t nHolePos, int32_t nGemId )
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_EQUIP_UP_STAR );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	packet->writeInt8( XIANG_QIAN_GEM );
+	packet->writeInt64( m_pPlayer->getCid() );
+	packet->writeUTF8( m_pPlayer->getName() );
+	packet->writeInt64( m_vMemEquip[nEquipSlot].srcId );
+	packet->writeInt32( m_vMemEquip[nEquipSlot].itemId );
+	packet->writeInt32( nGemId );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.worldBroadcast( packet );
+}
+
+std::vector<int32_t> CExtEquip::getCanDropEquipSlots() const
+{
+	std::vector<int32_t> vSlots;
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		if ( i == EQUIP_SLOT_XUNZHANG )
+		{
+			continue;
+		}
+		const MemChrBag& curEquip = m_vMemEquip[i];
+		if ( curEquip.srcId > 0 && curEquip.itemClass == IC_EQUIP )
+		{
+			vSlots.push_back( i );
+		}
+	}
+	return vSlots;
+}
+
+void CExtEquip::SendPosLevelInfo()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_EQUIP_POS_LEVEL_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	int32_t nOldOffset = packet->getWOffset();
+	int8_t nCount = 0;
+	packet->writeInt8( nCount );
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		if ( m_vMemPosLevel[i] > 0 )
+		{
+			packet->writeInt8( i );
+			packet->writeInt32( m_vMemPosLevel[i] );
+			nCount++;
+		}
+	}
+	int32_t nNewOffset = packet->getWOffset();
+	packet->setWOffset( nOldOffset );
+	packet->writeInt8( nCount );
+	packet->setWOffset( nNewOffset );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+}
+
+void CExtEquip::SendShenYaoPosLevelInfo()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SHENYAO_POS_LEVEL_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	for ( int8_t i = 0; i < 3; ++i )
+	{
+		packet->writeInt8( i );
+		packet->writeInt32( m_vShenYaoEquipPos[i] );
+	}
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+}
+
+void CExtEquip::SendStrenGthenInfo()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_EQUIP_STRENGTHEN_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	int32_t nOldOffset = packet->getWOffset();
+	int8_t nCount = 0;
+	packet->writeInt8( nCount );
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		if ( m_vMemStrengthen[i] > 0 )
+		{
+			packet->writeInt8( i );
+			packet->writeInt32( m_vMemStrengthen[i] );
+			nCount++;
+		}
+	}
+	int32_t nNewOffset = packet->getWOffset();
+	packet->setWOffset( nOldOffset );
+	packet->writeInt8( nCount );
+	packet->setWOffset( nNewOffset );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+}
+
+void CExtEquip::PackageShenYaoPosLevelUp( Answer::NetPacket* packet ) const
+{
+	if ( NULL == packet )
+	{
+		return;
+	}
+	for ( int8_t i = 0; i < 3; ++i )
+	{
+		packet->writeInt8( i );
+		packet->writeInt32( m_vShenYaoEquipPos[i] );
+	}
+}
+
+void CExtEquip::updateEquipGem( int8_t nSlot, int32_t nGemId, int8_t nHoleIndex )
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return;
+	}
+	if ( nHoleIndex < 0 || nHoleIndex >= EQUIP_GEM_COUNT )
+	{
+		return;
+	}
+	MemEquip equip = EQUIP_MANAGER.GetMemEquip( m_vMemEquip[nSlot].srcId );
+	if ( equip.base != m_vMemEquip[nSlot].itemId )
+	{
+		return;
+	}
+	equip.GemHole[nHoleIndex] = nGemId;
+	++equip.nFlag;
+	EQUIP_MANAGER.UpdateMemEquip( equip );
+}
+
+void CExtEquip::updateEquipStar( int8_t nSlot, int32_t nStar )
+{
+	if ( nSlot < 0 || nSlot >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return;
+	}
+	MemEquip equip = EQUIP_MANAGER.GetMemEquip( m_vMemEquip[nSlot].srcId );
+	if ( equip.base != m_vMemEquip[nSlot].itemId )
+	{
+		return;
+	}
+	equip.star = nStar;
+	++equip.nFlag;
+	EQUIP_MANAGER.UpdateMemEquip( equip );
+	addDirty( nSlot );
+	checkEquipGoalStarLevel();
+	m_pPlayer->recalcAttr();
+}
+
+void CExtEquip::AddStrengthenAttr()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		int32_t nLevel = m_vMemStrengthen[i];
+		if ( nLevel <= 0 )
+		{
+			continue;
+		}
+		const CfgEquipStrengthen* pCfg = CFG_DATA.GetEquipStrengthen( i, nLevel );
+		if ( NULL == pCfg )
+		{
+			continue;
+		}
+		for ( int32_t j = 0; j < MAX_EQUIP_ADD_ATTR_COUNT; ++j )
+		{
+			if ( pCfg->m_vAddAttr[j].addon > 0 )
+			{
+				m_pPlayer->AddAttrValue( (CObjAttrs::Index_T)pCfg->m_vAddAttr[j].index, pCfg->m_vAddAttr[j].addon );
+			}
+		}
+	}
+}
+
+void CExtEquip::addPosLevelAttr()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	for ( int8_t i = 0; i < EQUIP_SLOT_TOTAL_NUM; ++i )
+	{
+		int32_t nLevel = m_vMemPosLevel[i];
+		if ( nLevel <= 0 )
+		{
+			continue;
+		}
+		const CfgEquipUpPos* pCfg = CFG_DATA.GetEquipUpPos( i, nLevel );
+		if ( NULL == pCfg )
+		{
+			continue;
+		}
+		for ( int32_t j = 0; j < MAX_EQUIP_ADD_ATTR_COUNT; ++j )
+		{
+			if ( pCfg->m_vAddAttr[j].addon > 0 )
+			{
+				m_pPlayer->AddAttrValue( (CObjAttrs::Index_T)pCfg->m_vAddAttr[j].index, pCfg->m_vAddAttr[j].addon );
+			}
+		}
+	}
+}
+
+void CExtEquip::addShenYaoPosAttr()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	for ( int8_t i = 0; i < 3; ++i )
+	{
+		int32_t nLevel = m_vShenYaoEquipPos[i];
+		if ( nLevel <= 0 )
+		{
+			continue;
+		}
+		const CfgShenYaoEquip* pCfg = CFG_DATA.GetShenYaoEquipTable().GetShenYaoEquip( i, nLevel );
+		if ( NULL == pCfg )
+		{
+			continue;
+		}
+		for ( int32_t j = 0; j < MAX_EQUIP_ADD_ATTR_COUNT; ++j )
+		{
+			if ( pCfg->m_vAddAttr[j].addon > 0 )
+			{
+				m_pPlayer->AddAttrValue( (CObjAttrs::Index_T)pCfg->m_vAddAttr[j].index, pCfg->m_vAddAttr[j].addon );
+			}
+		}
+	}
+}
+
+int32_t CExtEquip::onBackEquip( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	if ( m_pPlayer->getMapId() == 50001 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	// TODO: fix queryBagInfo signature
+	// m_pPlayer->queryBagInfo( inPacket );
+	int32_t nCount = 0;
+	std::map<int32_t, int32_t> mCurrMap;
+	std::vector<int32_t> vRemoveSlot;
+
+	for ( int32_t i = 0; i < MAX_BAG_SLOT_NUM; ++i )
+	{
+		MemChrBag bagItem = m_pPlayer->GetBag().GetSlotData( i );
+		if ( bagItem.itemClass != IC_EQUIP || bagItem.itemId <= 0 )
+		{
+			continue;
+		}
+		const CfgEquip* pCfgEquip = CFG_DATA.GetEquipTable().GetEquip( bagItem.itemId );
+		if ( NULL == pCfgEquip )
+		{
+			continue;
+		}
+		if ( pCfgEquip->m_BackType >= 0 && pCfgEquip->m_BackValue > 0 )
+		{
+			mCurrMap[pCfgEquip->m_BackType] += pCfgEquip->m_BackValue * bagItem.itemCount;
+			vRemoveSlot.push_back( i );
+			nCount++;
+		}
+	}
+
+	if ( nCount <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	for ( size_t i = 0; i < vRemoveSlot.size(); ++i )
+	{
+		m_pPlayer->GetBag().CleanSlot( vRemoveSlot[i], IDCR_DISCARD );
+	}
+
+	float fRate = 1.0f;
+	for ( std::map<int32_t, int32_t>::iterator it = mCurrMap.begin(); it != mCurrMap.end(); ++it )
+	{
+		int32_t nValue = (int32_t)(it->second * fRate);
+		if ( nValue > 0 )
+		{
+			m_pPlayer->AddCurrency( (CURRENCY_TYPE)it->first, nValue, GCR_BACK_EQUIP );
+		}
+	}
+
+	m_pPlayer->GetTask().updateTaskCount( 0 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nCount );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onEquipStrenGthen( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t nPos = inPacket->readInt32();
+	if ( nPos < 0 || nPos >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	Int32Vector vSlot;
+	m_pPlayer->queryBagInfo( inPacket, vSlot );
+
+	int32_t nCurLevel = m_vMemStrengthen[nPos];
+	const CfgEquipStrengthen* pCfg = CFG_DATA.GetEquipStrengthen( nPos, nCurLevel + 1 );
+	if ( NULL == pCfg )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( !m_pPlayer->GetBag().RemoveItem( pCfg->m_CostItem, IDCR_EQUIP_STRENGTHEN ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	m_vMemStrengthen[nPos]++;
+	m_pPlayer->recalcAttr();
+
+	if ( pCfg->m_nGongGaoId > 0 )
+	{
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		if ( NULL != packet )
+		{
+			packet->writeInt32( pCfg->m_nGongGaoId );
+			packet->writeUTF8( m_pPlayer->getName() );
+			packet->writeInt64( m_pPlayer->getCid() );
+			packet->writeInt32( nPos );
+			packet->writeInt32( m_vMemStrengthen[nPos] );
+			packet->setSize( packet->getWOffset() );
+			GAME_SERVICE.worldBroadcast( packet );
+		}
+	}
+
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nPos );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onEquipUpPhase( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int8_t nBagType = inPacket->readInt8();
+	int32_t nPos = inPacket->readInt32();
+
+
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onEquipUpPos( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t nPos = inPacket->readInt32();
+	int8_t nAutoBuy = inPacket->readInt8();
+	int8_t nBaoHu = inPacket->readInt8();
+
+	Int32Vector vSlot;
+	m_pPlayer->queryBagInfo( inPacket, vSlot );
+
+	if ( nPos < 0 || nPos >= EQUIP_SLOT_TOTAL_NUM )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t nCurLevel = m_vMemPosLevel[nPos];
+	const CfgEquipUpPos* pCfg = CFG_DATA.GetEquipUpPos( nPos, nCurLevel + 1 );
+	if ( NULL == pCfg )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( m_pPlayer->getLevel() < pCfg->m_nNeedLevel )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t BindCount = 0;
+	int32_t UnBindCount = 0;
+
+	if ( nAutoBuy > 0 )
+	{
+		int32_t nBuyCount = 0;
+		ItemData costItem = pCfg->m_CostItem;
+		int32_t nItemCount = m_pPlayer->GetBag().GetItemCount( vSlot, costItem.m_nClass, costItem.m_nId );
+		if ( nItemCount < costItem.m_nCount )
+		{
+			nBuyCount = costItem.m_nCount - nItemCount;
+			costItem.m_nCount = nItemCount;
+		}
+		int32_t nCostGold = 0;
+		if ( nBuyCount > 0 )
+		{
+			CfgGameShop* pShop = CFG_DATA.GetGameShopItem( costItem.m_nClass, costItem.m_nId );
+			if ( NULL == pShop )
+			{
+				return ERR_INVALID_DATA;
+			}
+			nCostGold = nBuyCount * pShop->Price;
+			if ( m_pPlayer->GetCurrency( CURRENCY_GOLD ) < nCostGold )
+			{
+				return ERR_INVALID_DATA;
+			}
+		}
+		if ( costItem.m_nCount > 0 && !m_pPlayer->GetBag().RemoveItem( costItem, IDCR_EQUIP_UP_POS, BindCount, UnBindCount ) )
+		{
+			return ERR_INVALID_DATA;
+		}
+		if ( nCostGold > 0 )
+		{
+			m_pPlayer->DecCurrency( CURRENCY_GOLD, nCostGold, GCR_EQUIP_UP_POS_AUTO_BUY );
+		}
+	}
+	else
+	{
+		if ( !m_pPlayer->GetBag().RemoveItem( pCfg->m_CostItem, IDCR_EQUIP_UP_POS, BindCount, UnBindCount ) )
+		{
+			return ERR_INVALID_DATA;
+		}
+	}
+
+	bool bSuccess = false;
+	int32_t nRand = RANDOM.generate( 1, pCfg->m_nTotalRate );
+	if ( nRand <= pCfg->m_nRate )
+	{
+		bSuccess = true;
+	}
+
+	if ( bSuccess )
+	{
+		m_vMemPosLevel[nPos]++;
+		m_pPlayer->recalcAttr();
+		if ( pCfg->m_nGongGaoId > 0 )
+		{
+			NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+			if ( NULL != packet )
+			{
+				packet->writeInt32( pCfg->m_nGongGaoId );
+				packet->writeUTF8( m_pPlayer->getName() );
+				packet->writeInt64( m_pPlayer->getCid() );
+				packet->writeInt32( nPos );
+				packet->writeInt32( m_vMemPosLevel[nPos] );
+				packet->setSize( packet->getWOffset() );
+				GAME_SERVICE.worldBroadcast( packet );
+			}
+		}
+		m_pPlayer->GetTask().updateTaskCount( 0 /* TC_EQUIP_UP_POS */ );
+		m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( 0 /* HYDT_EQUIP_POS_UP */ );
+		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	}
+	else
+	{
+		if ( nBaoHu <= 0 && m_vMemPosLevel[nPos] > 0 )
+		{
+			m_vMemPosLevel[nPos]--;
+		}
+		m_pPlayer->recalcAttr();
+		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_INVALID_DATA );
+	}
+
+	return ERR_OK;
+}
+
+
+// ========== å®Œå–„ç‰ˆè£…å¤‡ç³»ç»Ÿæ–¹æ³• ==========
+
+int32_t CExtEquip::onGemLevelUp( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	int32_t nGemSlot = inPacket->readInt32();
+	int32_t nBagSlot = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS || nGemSlot < 0 || nGemSlot >= MAX_GEM_SLOT )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nCurGemId = m_vMemGem[nEquipPos][nGemSlot];
+	if ( nCurGemId <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	const CfgGemLevelUp* pCfgGemLevelUp = CFG_DATA.GetGemLevelUpTable().GetGemLevelUp( nCurGemId );
+	if ( NULL == pCfgGemLevelUp )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check and deduct cost items
+	if ( pCfgGemLevelUp->nNeedItemId > 0 )
+	{
+		Int32Vector vSlot;
+		m_pPlayer->queryBagInfoByItemId( pCfgGemLevelUp->nNeedItemId, pCfgGemLevelUp->nNeedItemCount, vSlot );
+		if ( vSlot.empty() )
+		{
+			return ERR_SYETEM_ERR;
+		}
+		ItemData itemData = {};
+		itemData.m_nId = pCfgGemLevelUp->nNeedItemId;
+		itemData.m_nClass = IC_NORMAL;
+		itemData.m_nCount = pCfgGemLevelUp->nNeedItemCount;
+		if ( !m_pPlayer->GetBag().RemoveItem( vSlot, itemData, IDCR_EQUIP_GEM_LEVEL_UP ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Check and deduct money cost
+	if ( pCfgGemLevelUp->nCostMoney > 0 )
+	{
+		if ( !m_pPlayer->GetCurrency().DecMoneyAndNoBind( pCfgGemLevelUp->nCostMoney, MCR_EQUIP_GEM_LEVEL_UP ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Upgrade gem
+	m_vMemGem[nEquipPos][nGemSlot] = pCfgGemLevelUp->nNextGemId;
+	updateEquipGem( nEquipPos, m_vMemGem[nEquipPos][nGemSlot], nGemSlot );
+	SendGemInfo( nEquipPos, (int8_t)nGemSlot );
+	m_pPlayer->recalcAttr();
+	// Broadcast if needed
+	if ( pCfgGemLevelUp->nBroadId > 0 )
+	{
+		broadcastGemLevelUp( nEquipPos, nGemSlot, pCfgGemLevelUp->nNextGemId );
+	}
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onGemOpenHole( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	int32_t nBagSlot = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Find first free gem slot
+	int32_t nHoleIndex = -1;
+	for ( int32_t i = 0; i < MAX_GEM_SLOT; ++i )
+	{
+		if ( m_vMemGem[nEquipPos][i] <= 0 )
+		{
+			nHoleIndex = i;
+			break;
+		}
+	}
+	if ( nHoleIndex < 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Use item from bag slot as cost for opening hole
+	MemChrBag costItem = m_pPlayer->getBagSlotData( nBagSlot );
+	if ( costItem.itemId > 0 && costItem.itemCount > 0 )
+	{
+		ItemData itemData = {};
+		itemData.m_nId = costItem.itemId;
+		itemData.m_nClass = costItem.itemClass;
+		itemData.m_nCount = 1;
+		Int32Vector vSlot( 1, nBagSlot );
+		if ( !m_pPlayer->GetBag().RemoveItem( vSlot, itemData, IDCR_EQUIP_OPEN_GEM_HOLE ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Mark hole as open (slot is now available for gem insertion)
+	m_vMemGem[nEquipPos][nHoleIndex] = 0;
+	SendGemInfo( nEquipPos, (int8_t)nHoleIndex );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onGemRemove( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	int32_t nGemSlot = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS || nGemSlot < 0 || nGemSlot >= MAX_GEM_SLOT )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nGemId = m_vMemGem[nEquipPos][nGemSlot];
+	if ( nGemId <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Return gem to bag
+	MemChrBag gemBag = {};
+	gemBag.itemId = nGemId;
+	gemBag.itemClass = IC_GEM;
+	gemBag.itemCount = 1;
+	gemBag.bind = IBS_BIND;
+	if ( !m_pPlayer->GetBag().AddItem( gemBag, (ITEM_ADD_REASON)42 ) /* IACR_FROM_GEM */ )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Clear gem slot
+	m_vMemGem[nEquipPos][nGemSlot] = 0;
+	updateEquipGem( nEquipPos, m_vMemGem[nEquipPos][nGemSlot], nGemSlot );
+	SendGemInfo( nEquipPos, (int8_t)nGemSlot );
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onMoFuDuiHuan( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nMoFuId = inPacket->readInt32();
+	int32_t nEquipPos = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	const CfgMoFu* pCfgMoFu = CFG_DATA.GetMoFuTable().GetMoFu( nMoFuId );
+	if ( NULL == pCfgMoFu )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check cost
+	if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, pCfgMoFu->nCostGold, GCR_MOFU_DUIHUAN ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Apply mofu to equipment
+	m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ = nMoFuId;
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onMoFuHuiShou( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Return some resources
+	const CfgMoFu* pCfgMoFu = CFG_DATA.GetMoFuTable().GetMoFu( m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ );
+	if ( NULL != pCfgMoFu && pCfgMoFu->nRecycleItemId > 0 )
+	{
+		MemChrBag recycleBag = {};
+		recycleBag.itemId = pCfgMoFu->nRecycleItemId;
+		recycleBag.itemClass = IC_NORMAL;
+		recycleBag.itemCount = pCfgMoFu->nRecycleItemCount;
+		recycleBag.bind = IBS_BIND;
+	}
+	m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ = 0;
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onRelieveBind( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check gold cost for unbinding
+	int32_t nCostGold = 0 /* TODO: CFG_DATA.GetEquipTable().GetUnbindCost( nEquipPos, m_nEquipLevel[nEquipPos] ) */;
+	if ( nCostGold > 0 )
+	{
+		if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, nCostGold, GCR_RELIEVE_BIND ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	/* TODO: SetEquipBind( nEquipPos, false ) */;
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onShenYaoPosLevelUp( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nPos = inPacket->readInt32();
+	if ( nPos < 0 || nPos >= MAX_SHENYAO_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nCurLevel = m_vShenYaoEquipPos[nPos];
+	const CfgShenYaoEquip* pCfg = CFG_DATA.GetShenYaoEquipTable().GetShenYaoEquip( nPos, nCurLevel + 1 );
+	if ( NULL == pCfg )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check cost
+	if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, pCfg->nCostGold, GCR_SHENYAO_UP ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	m_vShenYaoEquipPos[nPos]++;
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::OnXinMoEquipHuiShou( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Clear all enhancements on this equipment position and return resources
+	m_vMemStrengthen[nEquipPos] = 0;
+	m_vMemPosLevel[nEquipPos] = 0;
+	m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ = 0;
+	for ( int32_t i = 0; i < MAX_GEM_SLOT; ++i )
+	{
+		m_vMemGem[nEquipPos][i] = 0;
+	}
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtEquip::onGemAdd( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipPos = inPacket->readInt32();
+	int32_t nBagSlot = inPacket->readInt32();
+	if ( nEquipPos < 0 || nEquipPos >= MAX_EQUIP_POS )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Get gem from bag
+	MemChrBag bagItem = m_pPlayer->getBagSlotData( nBagSlot );
+	if ( bagItem.itemId <= 0 || bagItem.itemClass != IC_GEM || bagItem.itemCount <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	const CfgItemGem* pGem = CFG_DATA.GetItemGemTable().GetItemGem( bagItem.itemId );
+	if ( NULL == pGem )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Find a free gem slot
+	int32_t nGemSlot = -1;
+	for ( int32_t i = 0; i < MAX_GEM_SLOT; ++i )
+	{
+		if ( m_vMemGem[nEquipPos][i] <= 0 )
+		{
+			nGemSlot = i;
+			break;
+		}
+	}
+	if ( nGemSlot < 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Remove gem from bag
+	ItemData costItem = {};
+	costItem.m_nId = bagItem.itemId;
+	costItem.m_nClass = bagItem.itemClass;
+	costItem.m_nCount = 1;
+	Int32Vector vSlot( 1, nBagSlot );
+	if ( !m_pPlayer->GetBag().RemoveItem( vSlot, costItem, IDCR_GEM_TO_EQUIP ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Insert gem
+	m_vMemGem[nEquipPos][nGemSlot] = bagItem.itemId;
+	updateEquipGem( nEquipPos, bagItem.itemId, (int8_t)nGemSlot );
+	checkEquipGoalGemLevel();
+	SendGemInfo( nEquipPos, (int8_t)nGemSlot );
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
 }

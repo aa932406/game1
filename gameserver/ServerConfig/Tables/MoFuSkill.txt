@@ -1,0 +1,16 @@
+INT	INT	INT	INT	STRING
+Level	SkillTalent	SkillLevel	Active	EffectUrl
+0	5001	1	0	-1
+1	5001	1	0	-1
+2	5001	1	0	-1
+3	5001	1	0	-1
+4	5001	1	0	-1
+5	5001	1	0	-1
+6	5001	1	0	-1
+7	5001	1	1	moshenzhichuiEffect
+8	5001	2	1	moshenzhichuiEffect
+9	5001	3	1	moshenzhichuiEffect1
+10	5001	4	1	moshenzhichuiEffect1
+11	5001	5	1	moshenzhichuiEffect2
+12	5001	6	1	moshenzhichuiEffect2
+13	5001	7	1	moshenzhichuiEffect3

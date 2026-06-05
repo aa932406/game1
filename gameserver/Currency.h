@@ -15,11 +15,12 @@ public:
 	virtual	void	OnUpdate( int64_t curTick );
 	virtual	void	OnLoadFromDB( const PlayerDBData& dbData );
 	virtual	void	OnSaveToDB( PlayerDBData& dbData );
-	virtual void	GetInterestsProtocol( ProcIdList& procList );
-	virtual int32_t	DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inPacket );
+	virtual void	GetInterestsProtocol( ProcIdList& procList );	virtual int32_t	DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inPacket );
 
 private:
-	int32_t			onSocialAddCurrency( Answer::NetPacket *inPacket );
+	int32_t				onSocialAddCurrency( Answer::NetPacket *inPacket );
+	int32_t				OnCurrencyDuiHuan( Answer::NetPacket *inPacket );
+	int32_t				syncGold( Answer::NetPacket *inPacket );
 
 public:
 	int64_t			GetCurrency( CURRENCY_TYPE const nType ) const;

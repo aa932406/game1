@@ -334,7 +334,7 @@ void CExtCharSkill::sendXP()
 		return;
 	}
 
-	// ·¢ËÍ¿Í»§¶ËXP¼¼ÄÜ
+	// ï¿½ï¿½ï¿½Í¿Í»ï¿½ï¿½ï¿½XPï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_XP_INFO );
 	if (NULL == packet)
 	{
@@ -347,13 +347,13 @@ void CExtCharSkill::sendXP()
 	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
-void CExtCharSkill::sendSocialAddXP( int32_t AddXp )				// XPÔö¼Ó
+void CExtCharSkill::sendSocialAddXP( int32_t AddXp )				// XPï¿½ï¿½ï¿½ï¿½
 {
 	if ( NULL == m_pPlayer )
 	{
 		return;
 	}
-	// ½«ÏûÏ¢·¢ËÍµ½µ½Éç»á·þÎñÆ÷
+	// ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_ADD_XP );
 	if (NULL == packet)
 	{
@@ -365,13 +365,13 @@ void CExtCharSkill::sendSocialAddXP( int32_t AddXp )				// XPÔö¼Ó
 	GAME_SERVICE.sendPacket( packet );
 }
 
-void CExtCharSkill::sendSocialStartXP()				// ¿ªÊ¼
+void CExtCharSkill::sendSocialStartXP()				// ï¿½ï¿½Ê¼
 {
 	if ( NULL == m_pPlayer )
 	{
 		return;
 	}
-	// ½«ÏûÏ¢·¢ËÍµ½µ½Éç»á·þÎñÆ÷
+	// ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_START_XP );
 	if (NULL == packet)
 	{
@@ -382,7 +382,7 @@ void CExtCharSkill::sendSocialStartXP()				// ¿ªÊ¼
 	GAME_SERVICE.sendPacket( packet );
 }
 
-void CExtCharSkill::sendSocialEndXP()				// ½áÊø
+void CExtCharSkill::sendSocialEndXP()				// ï¿½ï¿½ï¿½ï¿½
 {
 	if ( NULL == m_pPlayer )
 	{
@@ -399,7 +399,7 @@ void CExtCharSkill::sendSocialEndXP()				// ½áÊø
 		SendXpRecord();
 	}
 
-	// ½«ÏûÏ¢·¢ËÍµ½µ½Éç»á·þÎñÆ÷
+	// ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_END_XP );
 	if ( packet != NULL )
 	{
@@ -409,17 +409,17 @@ void CExtCharSkill::sendSocialEndXP()				// ½áÊø
 		GAME_SERVICE.sendPacket( packet );
 	}
 
-	// ½áÊøºóÇå¿ÕXP
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½XP
 	m_nXPAddExp = 0;
 }
 
-void CExtCharSkill::sendSocialBreakXP()				// Ìø¹ý
+void CExtCharSkill::sendSocialBreakXP()				// ï¿½ï¿½ï¿½ï¿½
 {
 	if ( NULL == m_pPlayer )
 	{
 		return;
 	}
-	// ½«ÏûÏ¢·¢ËÍµ½µ½Éç»á·þÎñÆ÷
+	// ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_BREAK_XP );
 	if (NULL == packet)
 	{
@@ -454,4 +454,258 @@ void CExtCharSkill::startXP( SkillId_t nSkillId )
 	m_nXPAddExp = 0;
 	m_nStartTick = m_pPlayer->getTick();
 	sendSocialStartXP();
+}
+// ========== æ–°ç‰ˆæœ¬æ·»åŠ æ–¹æ³• ==========
+
+void CExtCharSkill::InitSystem()
+{
+}
+
+void CExtCharSkill::initSkills()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+}
+
+void CExtCharSkill::AddCharAttr()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+}
+
+int32_t CExtCharSkill::CallSkillBattle()
+{
+	return 0;
+}
+
+int32_t CExtCharSkill::GetPower()
+{
+	return m_nPower;
+}
+
+int32_t CExtCharSkill::AddPower( int32_t nAddPower )
+{
+	m_nPower += nAddPower;
+	return m_nPower;
+}
+
+int32_t CExtCharSkill::AddSkillPoint( int32_t nAddPoint )
+{
+	m_nSkillPoint += nAddPoint;
+	return m_nSkillPoint;
+}
+
+int32_t CExtCharSkill::AddSkillBookPoint( int32_t nAddPoint )
+{
+	m_nSkillBookPoint += nAddPoint;
+	return m_nSkillBookPoint;
+}
+
+int32_t CExtCharSkill::GetDropMoneyRate()
+{
+	return m_nDropMoneyRate;
+}
+
+void CExtCharSkill::recalDropMoneyRate()
+{
+	m_nDropMoneyRate = 0;
+}
+
+bool CExtCharSkill::CanUseSkillAndMove()
+{
+	return m_bCanUseSkillAndMove;
+}
+
+void CExtCharSkill::addSkillBuffTo( UnitHandle launcher, SkillId_t nSkillId )
+{
+}
+
+void CExtCharSkill::broadcastIntervalEffect( int32_t nSkillId )
+{
+}
+
+void CExtCharSkill::calActiveSkillCD( int32_t nSkillId )
+{
+}
+
+void CExtCharSkill::checkActiveList()
+{
+}
+
+void CExtCharSkill::recalAcviveSkill()
+{
+}
+
+void CExtCharSkill::doSkill( SkillId_t nSkillId )
+{
+}
+
+void CExtCharSkill::doSkillActive()
+{
+}
+
+int32_t CExtCharSkill::activeSkill( SkillId_t nSkill )
+{
+	return 0;
+}
+
+int32_t CExtCharSkill::getActiveSkill( int32_t nSkillId )
+{
+	std::map<int32_t,int32_t>::iterator it = m_mActiveSkills.find( nSkillId );
+	if ( it != m_mActiveSkills.end() )
+	{
+		return it->second;
+	}
+	return 0;
+}
+
+int32_t CExtCharSkill::addActiveSkill( int32_t nSkillId )
+{
+	m_mActiveSkills[nSkillId]++;
+	return m_mActiveSkills[nSkillId];
+}
+
+int32_t CExtCharSkill::getAddonSkill( int32_t nSkillId )
+{
+	std::map<int32_t,int32_t>::iterator it = m_mAddonSkills.find( nSkillId );
+	if ( it != m_mAddonSkills.end() )
+	{
+		return it->second;
+	}
+	return 0;
+}
+
+int32_t CExtCharSkill::addAddonSkill( int32_t nSkillId )
+{
+	m_mAddonSkills[nSkillId]++;
+	return m_mAddonSkills[nSkillId];
+}
+
+void CExtCharSkill::removeAddonSkill( int32_t nSkillId )
+{
+	m_mAddonSkills.erase( nSkillId );
+}
+
+void CExtCharSkill::checkAddonSkills()
+{
+}
+
+void CExtCharSkill::checkSummonSkills()
+{
+}
+
+void CExtCharSkill::CheckSummonBuff()
+{
+}
+
+void CExtCharSkill::CheckSelfTrigBuff()
+{
+}
+
+void CExtCharSkill::CheckHPPecentTrigBuff()
+{
+}
+
+void CExtCharSkill::CheckPhaseDamageTrigBuff()
+{
+}
+
+void CExtCharSkill::checkSkillTrigBuff( SkillId_t nSkillId )
+{
+}
+
+void CExtCharSkill::CheckSkillTrigBuff( SkillId_t nSkillId )
+{
+}
+
+void CExtCharSkill::AddSuitSkillEnergy( int32_t nAddValue )
+{
+	m_nSuitSkillEnergy += nAddValue;
+}
+
+void CExtCharSkill::checkSuitSkillEnergy()
+{
+}
+
+void CExtCharSkill::AddOtherSkill( int32_t nSkillId, int32_t nLevel )
+{
+	m_mAddonSkills[nSkillId] = nLevel;
+}
+
+void CExtCharSkill::addTalentAddon( int32_t nAddonId )
+{
+	m_mTalentAddons[nAddonId]++;
+}
+
+int32_t CExtCharSkill::getTalentAddon( int32_t nAddonId )
+{
+	std::map<int32_t,int32_t>::iterator it = m_mTalentAddons.find( nAddonId );
+	if ( it != m_mTalentAddons.end() )
+	{
+		return it->second;
+	}
+	return 0;
+}
+
+void CExtCharSkill::recalTalentAddon()
+{
+}
+
+void CExtCharSkill::loadTalentPoints( const PlayerDBData& dbData )
+{
+}
+
+void CExtCharSkill::saveTalentPoints( PlayerDBData& dbData )
+{
+}
+
+void CExtCharSkill::SendTalentInfo()
+{
+}
+
+void CExtCharSkill::SendTalentAddon()
+{
+}
+
+void CExtCharSkill::SendlearedSkill()
+{
+}
+
+void CExtCharSkill::UseSkillBook( int32_t nSkillId )
+{
+}
+
+void CExtCharSkill::removeSkillByTalent( int32_t nSkillId )
+{
+}
+
+int32_t CExtCharSkill::onDoUnitSkill( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharSkill::onDoAddonSkill( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharSkill::onAddTalentPoint( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
 }

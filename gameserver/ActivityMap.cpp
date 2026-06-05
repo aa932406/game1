@@ -30,7 +30,7 @@ void CActivityMap::init( const CfgMap &cfgmap )
 void CActivityMap::clear()
 {
 	IMapEvent::clear();
-	//m_pActivity = NULL;	// ÑÓÊ±ÌßÈË
+	//m_pActivity = NULL;	// ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 	m_nStartTick = 0;
 	if ( !m_actMonsters.empty() )
 	{
@@ -78,7 +78,7 @@ bool CActivityMap::IsActivityMap() const
 	{
 		if ( NULL == m_pActivity )
 		{
-			return false;	// »î¶¯Î´¿ªÊ¼
+			return false;	// ï¿½î¶¯Î´ï¿½ï¿½Ê¼
 		}
 	}
 	return true;
@@ -228,7 +228,7 @@ void CActivityMap::onPlayerDie(Player *pDier)
 
 }
 
-// É±ÈËÕß
+// É±ï¿½ï¿½ï¿½ï¿½
 void CActivityMap::onPlayerKilled( Player* pDier, Player *pKiller )
 {
 	if ( NULL == m_pActivity || !m_pActivity->IsRuning() )
@@ -239,7 +239,7 @@ void CActivityMap::onPlayerKilled( Player* pDier, Player *pKiller )
 	m_pActivity->onPlayerKilled( pDier, pKiller );
 }
 
-//¹ÖÎïËÀÍö
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void CActivityMap::onMonsterDie( MonsterActivity *monster )
 {
 	if ( NULL == m_pActivity || NULL == monster || !m_pActivity->IsRuning() )
@@ -290,7 +290,7 @@ void CActivityMap::onMonsterHPEvent( MonsterActivity *monster, int32_t id )
 	}
 }
 
-//¹ÖÎï±»ÈËÉ±
+//ï¿½ï¿½ï¿½ï±»ï¿½ï¿½É±
 void CActivityMap::onMonsterDie(Monster *monster, Player *player)
 {
 	Map::onMonsterDie(monster, player);
@@ -388,7 +388,7 @@ void CActivityMap::checkEvent( CfgMapEvent &mapEvent )
 
 	switch ( mapEvent.trigger_type )
 	{
-	case AETT_TIME_LINE: //Ê±¼äµ½´ï
+	case AETT_TIME_LINE: //Ê±ï¿½äµ½ï¿½ï¿½
 		{
 			if ( !mapEvent.trigger_param.empty() && getTick() - m_nStartTick >= mapEvent.trigger_param[0]*1000 )
 			{
@@ -767,7 +767,7 @@ bool CActivityMap::flashMonster( MonsterWait& waitAddMonster, int64_t curTick )
 
 	if ( waitAddMonster.times >= pCfgActivityMonster->times )
 	{
-		return false;	// Ë¢Íê´ÓÁÐ±íÖÐÉ¾³ý
+		return false;	// Ë¢ï¿½ï¿½ï¿½ï¿½Ð±ï¿½ï¿½ï¿½É¾ï¿½ï¿½
 	}
 	return true;
 }
@@ -858,6 +858,97 @@ void CActivityMap::flashMonster( CfgActivityMonster* pCfgActivityMonster, CfgMon
 	}
 
 	m_actMonsters.push_back( pMonster );
+}
+
+// ========== ï¿½Â·ï¿½ï¿½ï¿½ - ï¿½ï¿½ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â°æ±¾ ==========
+
+bool CActivityMap::CanSitRevive()
+{
+	return true;
+}
+
+bool CActivityMap::SpecialSitRevive( Player* player )
+{
+	if ( NULL == player )
+	{
+		return false;
+	}
+	return Map::OnSitRevive( player );
+}
+
+int32_t CActivityMap::GetTop10Battle()
+{
+	if ( m_CidBattle.empty() )
+	{
+		return 0;
+	}
+
+	std::vector<int32_t> values;
+	for ( std::map<int64_t, int32_t>::iterator iter = m_CidBattle.begin(); iter != m_CidBattle.end(); ++iter )
+	{
+		values.push_back( iter->second );
+	}
+
+	std::sort( values.begin(), values.end(), std::greater<int32_t>() );
+
+	int32_t nCount = 0;
+	int32_t nTotal = 0;
+	int32_t nMax = std::min( (int32_t)values.size(), 10 );
+	for ( int32_t i = 0; i < nMax; ++i )
+	{
+		nTotal += values[i];
+		++nCount;
+	}
+
+	if ( nCount > 0 )
+	{
+		return nTotal / nCount;
+	}
+	return 0;
+}
+
+int32_t CActivityMap::HaveAliveMonster() const
+{
+	int32_t nCount = 0;
+	for ( ActivityMonsterList::const_iterator iter = m_actMonsters.begin(); iter != m_actMonsters.end(); ++iter )
+	{
+		MonsterActivity* pMonster = *iter;
+		if ( pMonster != NULL && !pMonster->isDead() )
+		{
+			++nCount;
+		}
+	}
+	return nCount;
+}
+
+int32_t CActivityMap::HaveAlivePet() const
+{
+	int32_t nCount = 0;
+	// ï¿½ï¿½ï¿½ï¿½ï¿½î¶¯ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½
+	return nCount;
+}
+
+int32_t CActivityMap::GetAlivePlayerCount() const
+{
+	int32_t nCount = 0;
+	for ( PlayerList::const_iterator iter = m_players.begin(); iter != m_players.end(); ++iter )
+	{
+		Player* player = *iter;
+		if ( player != NULL && !player->IsDead() )
+		{
+			++nCount;
+		}
+	}
+	return nCount;
+}
+
+void CActivityMap::OnPlayerRevive( Player* player )
+{
+	if ( NULL == m_pActivity || !m_pActivity->IsRuning() )
+	{
+		return;
+	}
+	// Í¨Öªï¿½î¶¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½çŽ©ï¿½Ò¸ï¿½ï¿½ï¿½
 }
 
 void CActivityMap::addMonsterHPEventInfo( MonsterActivity* pMonster )

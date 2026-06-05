@@ -5,4 +5,4 @@
  ../include/InetAddress.h ../include/TcpProcessor.h \
  ../include/BlockingQueue.h ../include/Condition.h ../include/Thread.h \
  ../include/Zip.h
-	g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpConnection.cpp -o ../obj/TcpConnection.o
+	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpConnection.cpp -o ../obj/TcpConnection.o

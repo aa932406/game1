@@ -31,22 +31,37 @@ private:
 	int32_t			onAddBagSlots( Answer::NetPacket *inPacket );
 	int32_t			onMoveItem( Answer::NetPacket *inPacket );
 	int32_t			onSplitItem( Answer::NetPacket *inPacket );
-	int32_t			onSort( Answer::NetPacket *inPacket );																									// ±³°üÕûÀí
+	int32_t			onSort( Answer::NetPacket *inPacket );																									// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int32_t			onSellItem( Answer::NetPacket *inPacket );
 
 	int32_t			OnAskRansomInfo( Answer::NetPacket *inPacket );
 	int32_t			OnAskSpoilsInfo( Answer::NetPacket *inPacket );
 	int32_t			OnAskRansomItem( Answer::NetPacket *inPacket );
+	// ========== ï¿½ï¿½ï¿½Â°æ±¾ï¿½Ó¿ï¿½ ==========
+	int32_t			onUseItem( Answer::NetPacket *inPacket );
+	int32_t			onPatchUseItem( Answer::NetPacket *inPacket );
+	int32_t			onSelectItem( Answer::NetPacket *inPacket );
+	int32_t			onDiscardItem( Answer::NetPacket *inPacket );
+	int32_t			onUseMutiItem( Answer::NetPacket *inPacket );
+	int32_t			onAddItem( Answer::NetPacket *inPacket );
+	bool			canUseItem( int32_t nSlot, const CfgItem* cfgItem );
+	bool			isAutoUseItem( const CfgItem* cfgItem );
+	bool			autoUseItem( const MemChrBag& item );
+	void			sendUseBroadcast( int32_t nBroadcast, const std::string& p_name, CharId_t cid, int32_t nItemId );
+	void			CleanItemId( int32_t nId, int32_t nReason, int8_t nClass );
+	int32_t			GetItemSlot( int32_t nId, int8_t nClass ) const;
+	int32_t			GetTypeItem( int32_t nType ) const;
+	bool			AddItemsAndMingGe( const MemChrBagVector& vItem, int32_t addReason );
 public:
 	int32_t addBagSlots( int32_t slot,int32_t &buySlots,int32_t& openSlots);
 	int32_t useItem( int32_t slot,int32_t type );
 	int32_t patchUseItem( int32_t slot, int32_t count );
 	void    updateBagSlots(int32_t slots);
 
-	//¸öÈËÉÌµê ¹ºÂòÎïÆ·
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·
 	int32_t buyChrShopItem( CfgChrShop* pCharShop,int32_t id,int32_t count );
 
-	//»Ø¹ºÎïÆ·
+	//ï¿½Ø¹ï¿½ï¿½ï¿½Æ·
 	int32_t buyBackChrShopItem(int32_t index,int32_t itemID,int32_t itemClass);
 
 private:
@@ -56,7 +71,7 @@ private:
 	void	sendGoldCashChange(int32_t type, int32_t addon, BenefitType benefitType);
 	void	RansomGongGao( DropEquipInfo EquipInfo, int32_t Gold );
 
-// Ìí¼ÓÉ¾³ýµÀ¾ß start
+// ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ start
 public:
 	bool	AddAndRemoveItem( const MemChrBagVector &vItem, ITEM_ADD_REASON addReason, const Int32Vector& vSlot, const ItemDataList& lst, ITEM_DEL_REASON delReason );
 	bool	AddAndRemoveItem( const MemChrBagVector &vItem, ITEM_ADD_REASON addReason, const Int32Vector& vSlot, const ItemData& data, ITEM_DEL_REASON delReason );
@@ -78,12 +93,12 @@ public:
 
 	bool	RemoveItem( const ItemData& data, ITEM_DEL_REASON delReason, int32_t& BindCount, int32_t& UnBindCount );
 	bool	removeItem( const ItemData& data, ITEM_DEL_REASON delReason, int32_t& BindCount, int32_t& UnBindCount );
-	//Õâ¸öº¯ÊýÖ»ÔÚºÏ³ÉµÄÊ±ºòÓÃ,²»»áÉ¾³ýÏÞÊ±ÎïÆ·,ÏÈÉ¾³ý°ó¶¨µÄ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ÚºÏ³Éµï¿½Ê±ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Æ·,ï¿½ï¿½É¾ï¿½ï¿½ï¿½ó¶¨µï¿½
 	bool	RemoveCombiItem( const ItemDataList& lst, ITEM_DEL_REASON delReason );
 	bool	removeCombiItem( const ItemDataList& lst, ITEM_DEL_REASON delReason );
-	int32_t	HaveItemCount( const ItemData& data, bool IsBind, bool IsTimeLiness ); //ÊÇ·ñËãÉÏÊ±Ð§ÎïÆ·
-	void	SetSlotData( int32_t slot, const MemChrBag &slotData, int32_t reason = 0, int32_t count = 0 );	// È¡×ßµÄÊ±ºòµ÷ÓÃÕâ¸ö£¬²»»áÉ¾³ý×°±¸Ö÷ÌåÐÅÏ¢
-	void	CleanSlot( int32_t slot, int32_t reason );														// Ïú»ÙµÄÊ±ºòµ÷ÓÃÕâ¸ö£¬»áÖ±½ÓÉ¾³ý×°±¸Ö÷ÌåÐÅÏ¢
+	int32_t	HaveItemCount( const ItemData& data, bool IsBind, bool IsTimeLiness ); //ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½Ê±Ð§ï¿½ï¿½Æ·
+	void	SetSlotData( int32_t slot, const MemChrBag &slotData, int32_t reason = 0, int32_t count = 0 );	// È¡ï¿½ßµï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+	void	CleanSlot( int32_t slot, int32_t reason );														// ï¿½ï¿½ï¿½Ùµï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½É¾ï¿½ï¿½×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 
 private:
 	bool	addItem( const MemChrBagVector &vItem, ITEM_ADD_REASON reason );
@@ -93,7 +108,7 @@ private:
 	bool	removeItem( const ItemDataList& lst, ITEM_DEL_REASON delReason );
 	bool	removeItem( const ItemData& data, ITEM_DEL_REASON delReason );
 	void	setSlotData( int32_t slot, const MemChrBag &slotData, int32_t reason = 0, int32_t count = 0 );
-// Ìí¼ÓÉ¾³ýµÀ¾ß end
+// ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ end
 
 public:
 	void				SendBagInfo();
@@ -101,16 +116,16 @@ public:
 	void				SendBagSellItem();
 	void				SaveDBData( PlayerDBData& dbData );
 	int32_t				GetItemCount( int32_t nId, int8_t nClass ) const;
-	const ChrBagInfo&	GetChrBagInfo() const;																					// »ñÈ¡±³°üÐÅÏ¢
-	int32_t				GetFirstFreeSlot() const;																				// »ñµÃµÚÒ»¸ö¿Õ¸ñÎ»ÖÃ
-	int32_t				GetItemCount( const Int32Vector& vSlot, int8_t nClass, int32_t nId ) const;								// »ñÈ¡µÀ¾ßÊýÁ¿
-	int32_t				GetItemType( const MemChrBag& item ) const;																// »ñÈ¡µÀ¾ßÀàÐÍ
-	bool				IsEmptySlot( const MemChrBag& slot ) const;																// ¿Õ±³°ü¸ñÅÐ¶Ï
-	const MemChrBag&	GetSlotData( int32_t slot ) const;																		// »ñÈ¡±³°ü¸ñÐÅÏ¢
-	int32_t				GetFreeSlotCount() const;																				// »ñÈ¡±³°üÊ£Óà¿Õ¸ñÊýÁ¿
-	bool				IsSlotValid( int32_t slot ) const;																		// ¼ì²âµÀ¾ß¸ñÊÇ·ñ¿ª·Å
-	bool				HasItem( const ItemData& data ) const;																	// ¼ì²âµÀ¾ßÊýÁ¿ÊÇ·ñ´ï±ê
-	bool				HasItem( int32_t nId, int8_t nClass, int32_t nCount ) const;											// ¼ì²âµÀ¾ßÊýÁ¿ÊÇ·ñ´ï±ê
+	const ChrBagInfo&	GetChrBagInfo() const;																					// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+	int32_t				GetFirstFreeSlot() const;																				// ï¿½ï¿½Ãµï¿½Ò»ï¿½ï¿½ï¿½Õ¸ï¿½Î»ï¿½ï¿½
+	int32_t				GetItemCount( const Int32Vector& vSlot, int8_t nClass, int32_t nId ) const;								// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	int32_t				GetItemType( const MemChrBag& item ) const;																// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	bool				IsEmptySlot( const MemChrBag& slot ) const;																// ï¿½Õ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
+	const MemChrBag&	GetSlotData( int32_t slot ) const;																		// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+	int32_t				GetFreeSlotCount() const;																				// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Õ¸ï¿½ï¿½ï¿½ï¿½ï¿½
+	bool				IsSlotValid( int32_t slot ) const;																		// ï¿½ï¿½ï¿½ï¿½ï¿½ß¸ï¿½ï¿½Ç·ñ¿ª·ï¿½
+	bool				HasItem( const ItemData& data ) const;																	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½
+	bool				HasItem( int32_t nId, int8_t nClass, int32_t nCount ) const;											// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½
 	int32_t				GetBagSize() const;
 	int32_t				GetbagFreeSize();
 	void				OnLogout();
@@ -118,24 +133,24 @@ public:
 	void				ForceSendDirty();
 
 private:
-	void				backUpBagData();																								// ±¸·Ý±³°üÊý¾Ý£¨Ìí¼ÓÉ¾³ý²Ù×÷Ö®Ç°ÏÈ±¸·Ý£©
-	void				recoverBagData();																								// »¹Ô­±³°üÊý¾Ý£¨Ìí¼ÓÉ¾³ý²Ù×÷Ê§°ÜºóÊ¹ÓÃ±¸·Ý»¹Ô­Êý¾Ý£©
-	void				addItemChangeLog( int32_t nReason, int32_t nId, int8_t nClass, int64_t nSrcId, int32_t nCount, int8_t nFlag );	// Ìí¼ÓµÀ¾ß±ä¸üÈÕÖ¾
-	void				saveItemChangeLog();																							// ´æ´¢µÀ¾ß±ä¸üÈÕÖ¾
-	void				clearItemChangeLog();																							// Çå³ýµÀ¾ß±ä¸üÈÕÖ¾
-	bool				compairItem( const MemChrBag& bagSlot, const ItemData& data );													// ¼ì²âÊÇ·ñÆ¥Åä
-	bool				compairSlot( const MemChrBag& left, const MemChrBag& right );													// ¼ì²âÊÇ·ñÆ¥Åä
+	void				backUpBagData();																								// ï¿½ï¿½ï¿½Ý±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½È±ï¿½ï¿½Ý£ï¿½
+	void				recoverBagData();																								// ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Üºï¿½Ê¹ï¿½Ã±ï¿½ï¿½Ý»ï¿½Ô­ï¿½ï¿½ï¿½Ý£ï¿½
+	void				addItemChangeLog( int32_t nReason, int32_t nId, int8_t nClass, int64_t nSrcId, int32_t nCount, int8_t nFlag );	// ï¿½ï¿½ï¿½Óµï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½Ö¾
+	void				saveItemChangeLog();																							// ï¿½æ´¢ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½Ö¾
+	void				clearItemChangeLog();																							// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½Ö¾
+	bool				compairItem( const MemChrBag& bagSlot, const ItemData& data );													// ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
+	bool				compairSlot( const MemChrBag& left, const MemChrBag& right );													// ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
 
-	// ÔàÊý¾Ý
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	void				addDirty( int32_t nSlot, int32_t reason, bool bNeedCreate = false );
 	void				checkDirty();
 	void				clearDirty();
 	bool				sendDirty();
 
-	// ´ý´´½¨Êý¾Ý
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	void				checkCreate();
 
-	// ±³°ü×Ô¶¯¿ªÆô
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	void				checkBagOpen();
 
 	void				SendRansomInfo();
@@ -149,17 +164,17 @@ private:
 	void				AddLimitCount( int32_t index, int32_t Count );
 private:
 	ChrBagInfo			m_bagInfo;
-	MemChrBag			m_bagData[MAX_BAG_SLOT_NUM];					// ±³°üÊý¾Ý
+	MemChrBag			m_bagData[MAX_BAG_SLOT_NUM];					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	MemChrBag			m_nullobj;
     MemChrBag			m_sellItemInfo[MAX_SELL_ITEM_COUNT];
 	int64_t				m_lastItemTick[ITEM_CD_GROUP_COUNT];
 
-	MemChrBag			m_bagBackUp[MAX_BAG_SLOT_NUM];					// ±³°ü±¸·Ý
+	MemChrBag			m_bagBackUp[MAX_BAG_SLOT_NUM];					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	LogItemChangeList	m_lstItemChangeLog;
 
-	BagDirtyList		m_lstDirty;										// ÔàÊý¾Ý
-	Int32List			m_lstWaitCreate;								// ´ý´´½¨ÁÐ±í
-	ItemLimitMap		m_ItemLimit;									// ÏÞÖÆÎïÆ·
+	BagDirtyList		m_lstDirty;										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	Int32List			m_lstWaitCreate;								// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
+	ItemLimitMap		m_ItemLimit;									// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·
 	int32_t				m_lastCheckSlotOpen;
 };
 

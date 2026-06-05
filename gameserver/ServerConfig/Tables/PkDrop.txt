@@ -1,0 +1,7 @@
+INT	INT	INT	INT	INT	INT	INT
+PkValues	EquipCount	EquipRate	UsualCountRate	UsualDropRate	OverlayRate	MoneyRate
+20	1	60	10	10	1	0
+50	1	150	20	20	3	0
+100	1	500	30	30	6	0
+300	1	1000	40	40	10	0
+999999	2	1000	50	50	20	0

@@ -31,6 +31,7 @@ public:
 
 private:
 	bool				checkTeamDungeon( const CfgDungeon& cfgDungeon ) const;
+	int32_t				onSocialTeamDungeonCost( Answer::NetPacket* inPacket );
 
 private:
 	int32_t				m_nId;

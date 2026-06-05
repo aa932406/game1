@@ -1,0 +1,122 @@
+STRING	INT	INT	INT	INT	STRING	INT	INT	STRING	STRING	STRING	STRING	STRING	STRING	STRING	INT	STRING	STRING	STRING	INT	STRING	STRING	STRING
+PingTai	Id	Type	Slot	Condition	Reward	IconId	MaxCondition	LoadUrl	Pic1	Pic2	Desc	PicBut	BtnBg	RewardPic	uiType	TitlePic	guanwangUrl	vipUrl	vipShow	QRPic	FAQUrl	CheckBindUrl
+4366	0	1	1	1	567:1:1:1|13:1:1:1|153:1:1:1|9:1:1:1|575:1:2:1	1032	1	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	1	But1	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	1	2	1	1	13:1:1:1|575:1:4:1|9:1:2:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆1天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	2	2	2	2	13:1:2:1|567:1:1:1|507:1:7:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4367Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆2天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	3	2	3	3	13:1:3:1|567:1:2:1|153:1:2:1|16:1:1:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4368Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆3天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	4	2	4	4	13:1:3:1|568:1:1:1|153:1:2:1|16:1:1:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4369Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆4天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	5	2	5	5	13:1:5:1|568:1:1:1|153:1:3:1|505:1:3:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4370Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆5天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	6	2	6	6	13:1:10:1|568:1:1:1|505:1:5:1|647:1:20:1|16:1:2:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4371Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆6天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	7	2	7	7	13:1:10:1|570:1:1:1|505:1:10:1|647:1:30:1|16:1:3:1	1032	9999	http://cgameres.game.yy.com/cgame/lobby4366/4372Gamesc.exe	1	1_1	使用4366游戏大厅，连续登陆7天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	8	3	1	60	13:1:1:1|9:1:1:1|575:1:3:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达60级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	9	3	2	150	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达150级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	10	3	3	230	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达230级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	11	3	4	310	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达310级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	12	3	5	360	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达360级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	13	3	6	410	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达410级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	14	3	7	450	13:1:15:1|568:1:1:1|505:1:25:1|635:1:6:1|601:1:22:1	1032	700	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	1_1	使用4366游戏大厅登陆，且游戏角色达450级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+4366	15	4	1	1	-1	1032	1	http://cgameres.game.yy.com/cgame/lobby4366/4366Gamesc.exe	1	10_1	-1	But4	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	0	1	1	1	567:1:1:1|13:1:1:1|153:1:1:1|9:1:1:1|575:1:2:1	1033	1	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	1	But1	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	1	2	1	1	13:1:1:1|575:1:4:1|9:1:2:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅，连续登陆1天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	2	2	2	2	13:1:2:1|567:1:1:1|507:1:7:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_2	使用特牛游戏大厅，连续登陆2天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	3	2	3	3	13:1:3:1|567:1:2:1|153:1:2:1|16:1:1:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_3	使用特牛游戏大厅，连续登陆3天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	4	2	4	4	13:1:3:1|568:1:1:1|153:1:2:1|16:1:1:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_4	使用特牛游戏大厅，连续登陆4天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	5	2	5	5	13:1:5:1|568:1:1:1|153:1:3:1|505:1:3:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_5	使用特牛游戏大厅，连续登陆5天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	6	2	6	6	13:1:10:1|568:1:1:1|505:1:5:1|647:1:20:1|16:1:2:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_6	使用特牛游戏大厅，连续登陆6天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	7	2	7	7	13:1:10:1|570:1:1:1|505:1:10:1|647:1:30:1|16:1:3:1	1033	9999	http://downcenter.te6.com/room/te6game_syol.exe	2	20_7	使用特牛游戏大厅，连续登陆7天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	8	3	1	60	13:1:1:1|9:1:1:1|575:1:3:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达60级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	9	3	2	150	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达150级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	10	3	3	230	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达230级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	11	3	4	310	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达310级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	12	3	5	360	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达360级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	13	3	6	410	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达410级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	14	3	7	450	13:1:15:1|568:1:1:1|505:1:25:1|635:1:6:1|601:1:22:1	1033	700	http://downcenter.te6.com/room/te6game_syol.exe	2	20_1	使用特牛游戏大厅登陆，且游戏角色达450级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+te6	15	4	1	1	-1	1033	1	http://downcenter.te6.com/room/te6game_syol.exe	2	21_1	-1	But4	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	0	7	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1070	3	-1	5	-1	易乐玩平台VIP等级达到1/2/3即可领取礼包	But5	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	1	7	2	4	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1070	5	-1	5	-1	易乐玩平台VIP等级达到4/5即可领取礼包	But5	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	2	7	3	6	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1070	7	-1	5	-1	易乐玩平台VIP等级达到6/7即可领取礼包	But5	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	3	7	4	8	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1070	8	-1	5	-1	易乐玩平台VIP等级达到8即可领取礼包	But5	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	4	7	5	9	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1070	9	-1	5	-1	易乐玩平台VIP等级达到9即可领取礼包	But5	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	5	6	1	6	5348:1:1:1	1070	9	-1	5	-1	易乐玩平台VIP等级达到6/7即可领取礼包	But6	BtnBg	6	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	6	6	2	7	5349:1:1:1	1070	9	-1	5	-1	易乐玩平台VIP等级达到8即可领取礼包	But6	BtnBg	7	1	dt_1	-1	-1	0	-1	-1	-1
+yilewan	7	6	3	8	5350:1:1:1	1070	9	-1	5	-1	易乐玩平台VIP等级达到9即可领取礼包	But6	BtnBg	8	1	dt_1	-1	-1	0	-1	-1	-1
+pdsso	0	1	1	1	567:1:1:1|13:1:1:1|153:1:1:1|9:1:1:1|575:1:2:1	1076	1	http://dl.pdim.gs/clients/pc/PandaTV/pandagame_guanwang/PandaGame_Setup.exe	10	25_1	1	But1	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pdsso	1	2	1	0	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1|575:1:2:1	1076	9999	http://dl.pdim.gs/clients/pc/PandaTV/pandagame_guanwang/PandaGame_Setup.exe	10	26_1	-1	But5	BtnBg	-1	2	dt_1	-1	-1	0	-1	-1	-1
+ledu	0	1	1	1	567:1:1:1|13:1:1:1|153:1:1:1|9:1:1:1|575:1:2:1	1082	1	http://api.zs.ledu.com/track/download?forward=http%3A%2F%2Fcdn.ledu.com%2Fmwz%2Fleduzhushou%2F00020001%2FLedu_Setup.exe&pos=aide_index	11	27_1	1	But1	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+ledu	1	4	1	1	-1	1082	1	http://api.zs.ledu.com/track/download?forward=http%3A%2F%2Fcdn.ledu.com%2Fmwz%2Fleduzhushou%2F00020001%2FLedu_Setup.exe&pos=aide_index	11	29_1	1	But4	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+swjoy	0	1	1	1	567:1:1:1|13:1:1:1|153:1:1:1|9:1:1:1|575:1:2:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	1	But1	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	1	2	1	1	13:1:1:1|575:1:4:1|9:1:2:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆1天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	2	2	2	2	13:1:2:1|567:1:1:1|507:1:7:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆2天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	3	2	3	3	13:1:3:1|567:1:2:1|153:1:2:1|16:1:1:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆3天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	4	2	4	4	13:1:3:1|568:1:1:1|153:1:2:1|16:1:1:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆4天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	5	2	5	5	13:1:5:1|568:1:1:1|153:1:3:1|505:1:3:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆5天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	6	2	6	6	13:1:10:1|568:1:1:1|505:1:5:1|647:1:20:1|16:1:2:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆6天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	7	2	7	7	13:1:10:1|570:1:1:1|505:1:10:1|647:1:30:1|16:1:3:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅，连续登陆7天可领取	But2	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	8	3	1	60	13:1:1:1|9:1:1:1|575:1:3:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达60级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	9	3	2	150	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达150级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	10	3	3	230	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达230级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	11	3	4	310	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达310级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	12	3	5	360	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达360级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	13	3	6	410	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达410级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+swjoy	14	3	7	450	13:1:15:1|568:1:1:1|505:1:25:1|635:1:6:1|601:1:22:1	1105	1	https://www.swjoy.com/www/jump.do?to=http%3A%2F%2Fdownload.swjoy.com%2Fugame%2FUGameBoxSetup.exe	swjoy_1	swjoy_2	使用顺网大厅登陆，且游戏角色达450级可领取	But3	BtnBg	-1	1	dt_5	-1	-1	0	-1	-1	-1
+liebao_993h	0	7	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1108	1	-1	liebao_993h_1	-1	猎豹会员VIP等级达到1级，可领取每日礼包	But5	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	1	7	2	2	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1108	2	-1	liebao_993h_1	-1	猎豹会员VIP等级达到2级，可领取每日礼包	But5	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	2	7	3	3	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1108	3	-1	liebao_993h_1	-1	猎豹会员VIP等级达到3级，可领取每日礼包	But5	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	3	7	4	4	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1108	4	-1	liebao_993h_1	-1	猎豹会员VIP等级达到4级，可领取每日礼包	But5	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	4	7	5	5	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1108	5	-1	liebao_993h_1	-1	猎豹会员VIP等级达到5级，可领取每日礼包	But5	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	5	8	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1108	5	-1	liebao_993h_1	-1	猎豹会员VIP等级达到1级以上 即可领取礼包	But3	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	6	8	2	2	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1108	5	-1	liebao_993h_1	-1	猎豹会员VIP等级达到2级以上 即可领取礼包	But3	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	7	8	3	3	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1108	5	-1	liebao_993h_1	-1	猎豹会员VIP等级达到3级以上 即可领取礼包	But3	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	8	8	4	4	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1108	5	-1	liebao_993h_1	-1	猎豹会员VIP等级达到4级以上 即可领取礼包	But3	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+liebao_993h	9	8	5	5	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1108	5	-1	liebao_993h_1	-1	猎豹会员VIP等级达到5级以上 即可领取礼包	But3	BtnBg	-1	1	dt_3	http://vip.wan.liebao.cn/	http://vip.wan.liebao.cn/payOpen.html	1	-1	-1	-1
+wan_993h	0	7	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1109	3	-1	wan_993h_1	-1	2345会员VIP等级达到1/2/3可领取每日礼包	But5	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	1	7	2	4	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1109	5	-1	wan_993h_1	-1	2345会员VIP等级达到4/5可领取每日礼包	But5	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	2	7	3	6	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1109	7	-1	wan_993h_1	-1	2345会员VIP等级达到6/7可领取每日礼包	But5	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	3	7	4	8	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1109	9	-1	wan_993h_1	-1	2345会员VIP等级达到8/9可领取每日礼包	But5	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	4	7	5	10	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1109	10	-1	wan_993h_1	-1	2345会员VIP等级达到10可领取每日礼包	But5	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	5	8	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1109	10	-1	wan_993h_1	-1	2345会员VIP等级达到1级以上 即可领取礼包	But3	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	6	8	2	3	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1109	10	-1	wan_993h_1	-1	2345会员VIP等级达到3级以上 即可领取礼包	But3	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	7	8	3	5	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1109	10	-1	wan_993h_1	-1	2345会员VIP等级达到5级以上 即可领取礼包	But3	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	8	8	4	8	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1109	10	-1	wan_993h_1	-1	2345会员VIP等级达到8级以上 即可领取礼包	But3	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+wan_993h	9	8	5	10	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1109	10	-1	wan_993h_1	-1	2345会员VIP等级达到10级 即可领取礼包	But3	BtnBg	-1	1	dt_4	http://wan.2345.com/user.html?tag=lvl	http://wan.2345.com/pay.html	1	-1	-1	-1
+37wan	0	3	1	60	13:1:1:1|9:1:1:1|575:1:3:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达60级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	1	3	2	150	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达150级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	2	3	3	230	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达230级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	3	3	4	310	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达310级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	4	3	5	360	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达360级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	5	3	6	410	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达410级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	6	3	7	450	13:1:15:1|568:1:1:1|505:1:25:1|635:1:6:1|601:1:22:1	1045	700	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	22_1	使用37大厅登陆，且游戏角色达450级可领取	But3	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	7	4	1	1	-1	1045	1	http://d.wanyouxi7.com/37/gamebox/syz/37gamebox.exe	3	23_1	-1	But9	BtnBg	-1	1	dt_7	-1	-1	0	-1	-1	-1
+37wan	8	7	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1045	3	-1	37wan_1	-1	37会员等级达1-3级时可领取	But5	BtnBg	-1	1	dt_7	-1	https://vip.37.com/	1	-1	-1	-1
+37wan	9	7	2	4	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1045	5	-1	37wan_1	-1	37会员等级达4-5级时可领取	But6	BtnBg	-1	1	dt_7	-1	https://vip.37.com/	1	-1	-1	-1
+37wan	10	7	3	6	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1045	8	-1	37wan_1	-1	37会员等级达6-8级时可领取	But7	BtnBg	-1	1	dt_7	-1	https://vip.37.com/	1	-1	-1	-1
+37wan	11	9	1	1	13:1:2:1|9:1:2:1|575:1:3:1|502:1:10:1	1045	9999	-1	37wan_2	30_1	-1	But11	BtnBg	-1	1	dt_7	-1	-1	0	37wan_3	http://lp.37.com/	http://game.syz.syoucn.com/api/37wan/token.php
+pp158	0	1	1	1	567:1:1:1|13:1:1:1|153:1:1:1|9:1:1:1|575:1:2:1	1140	1	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	pp158_2	1	But1	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	1	2	1	1	13:1:1:1|575:1:4:1|9:1:2:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆1天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	2	2	2	2	13:1:2:1|567:1:1:1|507:1:7:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆2天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	3	2	3	3	13:1:3:1|567:1:2:1|153:1:2:1|16:1:1:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆3天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	4	2	4	4	13:1:3:1|568:1:1:1|153:1:2:1|16:1:1:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆4天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	5	2	5	5	13:1:5:1|568:1:1:1|153:1:3:1|505:1:3:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆5天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	6	2	6	6	13:1:10:1|568:1:1:1|505:1:5:1|647:1:20:1|16:1:2:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆6天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	7	2	7	7	13:1:10:1|570:1:1:1|505:1:10:1|647:1:30:1|16:1:3:1	1140	9999	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅，连续登陆7天可领取	But2	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	8	3	1	60	13:1:1:1|9:1:1:1|575:1:3:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达60级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	9	3	2	150	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达150级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	10	3	3	230	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达230级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	11	3	4	310	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达310级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	12	3	5	360	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达360级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	13	3	6	410	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达410级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	14	3	7	450	13:1:15:1|568:1:1:1|505:1:25:1|635:1:6:1|601:1:22:1	1140	700	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	-1	使用PP游戏大厅登陆，且游戏角色达450级可领取	But3	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+pp158	15	4	1	1	-1	1140	1	http://cgameres.game.yy.com/cgame/lobby158/PP158GameSetup.exe	pp158_1	pp158_3	-1	But4	BtnBg	-1	1	dt_1	-1	-1	0	-1	-1	-1
+douyu_993h	0	7	1	1	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1191	2	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到1/2可领取每日礼包	But5	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	1	7	2	3	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1191	4	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到3/4可领取每日礼包	But5	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	2	7	3	5	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1191	6	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到5/6可领取每日礼包	But5	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	3	7	4	7	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1191	8	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到7/8可领取每日礼包	But5	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	4	8	1	1	13:1:1:1|9:1:1:1|575:1:3:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到1级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	5	8	2	2	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到2级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	6	8	3	3	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到3级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	7	8	4	4	13:1:2:1|9:1:2:1|575:1:5:1|16:1:1:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到4级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	8	8	5	5	13:1:3:1|153:1:1:1|502:1:10:1|16:1:2:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到5级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	9	8	6	6	13:1:4:1|158:1:1:1|502:1:40:1|16:1:2:1|601:1:5:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到6级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	10	8	7	7	13:1:6:1|158:1:1:1|502:1:60:1|635:1:4:1|601:1:15:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到7级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	11	8	8	8	13:1:10:1|568:1:1:1|505:1:20:1|635:1:5:1|601:1:18:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到8级以上 即可领取礼包	But3	BtnBg	-1	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1
+douyu_993h	12	6	1	1	5438:1:1:1	1191	99	-1	douyu_993h_1	-1	斗鱼平台VIP等级达到1即可领取	But6	BtnBg	douyu_993h_2	1	dt_8	http://wan.douyu.com/vip/	-1	1	-1	-1	-1

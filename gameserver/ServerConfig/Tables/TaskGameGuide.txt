@@ -1,0 +1,6 @@
+INT	STRING	STRING	STRING
+Index	TitleName	Detial	Effect
+1	[新手宝典]	变强|切割|诅咒	openPanel|moneyRecycleEquipPanel&openPanel|TianLingPanel&openPanel|zuZhouPanel|0
+2	[我要装备]	BOSS|寻宝|神器	openPanel|killBossPanel&openPanel|choujiangPanel&openPanel|shenQiPanel
+3	[我要升级]	野外|BOSS|活跃	NPC|1079&openPanel|killBossPanel&openPanel|huoYueDuPanelUI
+4	[我要元宝]	回收|押镖|挂机	NPC|1076&NPC|1060&NPC|1085

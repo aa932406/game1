@@ -10,6 +10,8 @@ struct FamilyScore
 	FamilyId_t	nFamilyId;
 	std::string	strFamilyName;
 	int32_t		nScore;
+	int32_t		nUsedScore;
+	int32_t		nActivePillar;
 
 	bool operator<( const FamilyScore& _right ) const
 	{
@@ -27,15 +29,23 @@ struct PlayerScore
 {
 	CharId_t	nCharId;
 	FamilyId_t	nFamilyId;
+	std::string	strName;
+	int32_t		nScore;
 	int32_t		nKillCount;
-	int32_t		nExp;
-	int32_t		nMoney;
-	int32_t		nJoinExp;
-	int32_t		nSeconds;
+	int32_t		nTaskId;
+	int32_t		nTaskCount;
 	int64_t		nStartTick;
 	bool		bInActivity;
+
+	bool operator>( const PlayerScore& _right ) const
+	{
+		return nScore > _right.nScore;
+	}
+
+	PlayerScore() : nCharId(0), nFamilyId(0), nScore(0), nKillCount(0),
+		nTaskId(0), nTaskCount(0), nStartTick(0), bInActivity(false) {}
 };
-typedef std::map<CharId_t, PlayerScore> PlayerScoreMap;
+typedef std::list<PlayerScore> PlayerScoreList;
 
 class CFamilyWar
 	: public CActivity
@@ -57,16 +67,25 @@ public:
 	virtual bool		CanUseXP() const;
 	virtual int32_t		HaveRewardCount( Player* Player );
 	virtual void		NotifyActivityInfo( Player* pPlayer = NULL );
+	virtual int32_t		canEnter( Player* player, CActivityMap* pTargetMap ) const;
 
 	bool	CanAddPillarMoney( Player* player ) const;
 	int32_t	AddPillarMoney( int32_t nMoney );
 	void	SendPlayerPillarInfo( Player* player );
 	void	OnFamilyWarResult( FamilyId_t nFamilyId, int16_t nTimes, string FamilyName, string LeadyerName );
 
-
 	FamilyId_t		GetWinFamily();
 	std::string     GetFamilyName();
 	std::string		GetFamilyLeaderName();
+
+	// ========== æ–°ç‰ˆæœ¬æ–¹æ³• ==========
+	void	AdjustMonsterAttr( CfgMonster* cfgMonster );
+	bool	OnChangeMap( Player* player, CActivityMap* pMap, int32_t nX, int32_t nY, int32_t param );
+	bool	OnActivePillar( Player* player, int32_t nIndex );
+	void	OnTaskSubmited( Player* player, int32_t nScore );
+	int32_t	GetActivePillar( FamilyId_t nFamilyId );
+	PlayerScore* getPlayerScore( CharId_t nCharId );
+	FamilyScore* getFamilyScore( FamilyId_t nFamilyId );
 
 protected:
 	virtual void	reset();
@@ -85,8 +104,7 @@ protected:
 	virtual void	broadcastStart();
 	virtual Answer::NetPacket*	packetActivityScore();
 private:
-	void	addPlayerScore( Player* player, int32_t nExp, int32_t nMoney, int32_t nKillCount );
-	void	addPlayerKillCount( Player* Player );
+	void	addPlayerScore( Player* player, int32_t nScore, int32_t nKillCount );
 	void	addFamilyScore( FamilyId_t nFamilyId, const std::string& strFamilyName, int32_t nScore );
 	void	win( FamilyId_t nFamilyId );
 	void	saveFamilyWarResult();
@@ -105,19 +123,33 @@ private:
 	int32_t	getBuffLevel() const;
 	void	FirstFamilyWar( FamilyId_t FamilyId );
 
+	// ========== æ–°ç‰ˆæœ¬æ–¹æ³• ==========
+	void	sendPlayerScoreRankReward();
+	void	sendFamilyScoreRankReward();
+	void	sendActivePillarReward( FamilyId_t nFamilyId );
+	void	sendWinnerReward( FamilyId_t nFamilyId );
+	void	appendPlayerScoreRank( Answer::NetPacket* packet );
+	void	appendFamilyScoreRank( Answer::NetPacket* packet );
+	void	sendPlayerScore( Player* player );
+
 private:
-	MonsterActivity*	m_pSton;				// Õ½ÉñÉñÊ¯
-	MonsterActivity*	m_pPillar;				// Õ½ÉñÖ®Öù
+	MonsterActivity*	m_pSton;			// é˜²å®ˆåŸºçŸ³
+	MonsterActivity*	m_pPillar;			// é˜²å®ˆä¹‹æŸ±
+	MonsterActivity*	m_pTitle;			// ç§°å·æ€ªç‰©
+	MonsterActivity*	m_pBoss;			// Bossæ€ªç‰©
 
-	FamilyId_t			m_nGuidFamily;			// ·ÀÊØ¾üÍÅ
-	int32_t				m_nWinTimes;			// Á¬Ê¤´ÎÊı
-	FamilyScoreList		m_lstFamilyScore;		// ¾üÍÅ»ı·ÖÁĞ±í
-	PlayerScoreMap		m_mPlayerScore;			// Íæ¼Ò»ı·Ö
+	Player*				m_pBuffPlayer;		// æŒæœ‰Buffçš„ç©å®¶
+	int64_t				m_nBuffStartTick;	// Buffå¼€å§‹æ—¶é—´
 
-	std::string			m_FamilyName;			// Ê×½ì¾üÍÅÕ½¾üÍÅÃû×Ö
-	std::string			m_FamilyLeaderName;		// Ê×½ì¾üÍÅ³¤Ãû×Ö
+	FamilyId_t			m_nGuidFamily;		// è·èƒœå®¶æ—
+	int32_t				m_nWinTimes;		// è·èƒœæ¬¡æ•°
+	FamilyScoreList		m_lstFamilyScore;	// å®¶æ—ç§¯åˆ†åˆ—è¡¨
+	PlayerScoreList		m_lstPlayerScore;	// ç©å®¶ç§¯åˆ†åˆ—è¡¨
+	int32_t				m_nActiveState;		// æ´»è·ƒçŠ¶æ€
+	int32_t				m_nActivePillarState; // æŸ±å­æ¿€æ´»çŠ¶æ€(bitmask)
+
+	std::string			m_FamilyName;		// é¦–å±Šå®¶æ—æˆ˜è·èƒœå®¶æ—
+	std::string			m_FamilyLeaderName;	// é¦–å±Šå®¶æ—æˆ˜è·èƒœæ—é•¿
 };
-
-//#define FAMILY_WAR Answer::Singleton<CFamilyWar>::instance()
 
 #endif	//__TPOC_FAMILY_WAR_H__

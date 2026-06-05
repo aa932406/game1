@@ -4,9 +4,10 @@ obj/Task.o: Task.cpp stdafx.h ../libanswer/include/libanswer.h \
  ../libanswer/include/SpinLock.h ../libanswer/include/SafeQueue.h \
  ../libanswer/include/Mutex.h ../libanswer/include/Condition.h \
  ../libanswer/include/Database.h /usr/include/mysql/mysql.h \
- /usr/include/mysql/mysql_version.h /usr/include/mysql/mysql_com.h \
- /usr/include/mysql/mysql_time.h /usr/include/mysql/my_list.h \
- /usr/include/mysql/typelib.h /usr/include/mysql/my_alloc.h \
+ /usr/include/mysql/field_types.h /usr/include/mysql/my_list.h \
+ /usr/include/mysql/mysql_com.h /usr/include/mysql/my_command.h \
+ /usr/include/mysql/my_compress.h /usr/include/mysql/mysql_version.h \
+ /usr/include/mysql/mysql_time.h /usr/include/mysql/errmsg.h \
  ../libanswer/include/DayTime.h ../libanswer/include/DBCFile.h \
  ../libanswer/include/DBPool.h ../libanswer/include/BlockingQueue.h \
  ../libanswer/include/InetAddress.h ../libanswer/include/Inifile.h \
@@ -30,4 +31,4 @@ obj/Task.o: Task.cpp stdafx.h ../libanswer/include/libanswer.h \
  Fighting.h JueWei.h ShangCheng.h ChouJiang.h QiFu.h DailyActivity.h \
  Vip.h ScoreShop.h FunctionOpen.h ExpBall.h YunYingHD.h TouZi.h \
  HuoYueDu.h GuanWei.h WarVictory.h User.h MapManager.h MapRunner.h
-	g++ -c -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX Task.cpp -o obj/Task.o
+	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX Task.cpp -o obj/Task.o

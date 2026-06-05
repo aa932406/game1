@@ -1,0 +1,3 @@
+INT	INT	INT	INT	STRING
+id	activity_id	npc_id	count	region_id
+1	9	373051	1	20012

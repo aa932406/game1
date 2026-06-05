@@ -1,0 +1,10 @@
+INT	STRING	INT
+Id	Dec	Type
+0	玩家<font color="#00afec">#1</font>创建了公会	2
+1	玩家<font color="#00afec">#1</font>退出了公会	2
+2	玩家<font color="#00afec">#1</font>加入了公会	2
+5	<font color="#00afec">#1</font>将玩家<font color="#00afec">#2</font>职位调整为<font color="#00ff00">#3</font>	2
+6	<font color="#00afec">#1</font>将玩家<font color="#00afec">#2</font>踢出公会	2
+7	<font color="#00afec">#1</font>将玩家<font color="#00afec">#2</font>职位解除	2
+8	玩家<font color="#00afec">#1</font>将公会长的职位禅让给玩家<font color="#00afec">#2</font>，望其能带领公会走向辉煌！	2
+9	玩家<font color="#00afec">#1</font>将公会徽章等级提升到<font color="#00ff00">#2</font>！	2

@@ -1,0 +1,3 @@
+INT	INT	INT	STRING	INT	INT	STRING
+Index	Level	Time	Item	Gold	Mail	Effect
+0	155	86400	950:1:1:1	1888	6605	0yuangou

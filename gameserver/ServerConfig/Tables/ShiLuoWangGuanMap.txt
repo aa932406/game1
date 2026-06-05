@@ -1,0 +1,5 @@
+INT	INT	INT	INT	STRING	INT	STRING
+MapId	TargetMapId	Pox	Poy	Click	Layer	Desc
+7009	7010	103	49	3105	1	激活所有远古列王之柱来激活前往王冠贮藏室的入口
+7010	7011	16	192	3106	2	只有持有远古至高王王冠的氏族成员才能前往远古志高王的安息之地
+7011	-1	7	101	-1	3	-1

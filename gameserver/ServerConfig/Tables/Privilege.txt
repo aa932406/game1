@@ -1,0 +1,5 @@
+INT	INT	INT	STRING	INT	STRING	STRING	INT	INT	INT	INT
+PrivilegeID	Time	NeedGold	Attr	NeedVipLevel	PrivilegeName	PrivilegeDesc	ReNeedGold	Gold	Resources	ShenWei
+1	2592000	888	1:18000|4:450|5:1200	0	铂金特权	每天死亡首次不掉落装备:#f7ab00|背包界面可远程开启回收:#f7ab00|每天免费领取100000元宝:#00afec|每天免费领取5000神威值:#00afec	688	100000	0	5000
+2	2592000	6888	1:27000|4:800|5:2000	3	钻石特权	背包界面可远程开启仓库:#f7ab00|挂机时可自动回收装备:#f7ab00|八折领取所有任务双倍奖励:#f7ab00|每天免费领取200000元宝:#00afec|每天免费领取5000神威值:#00afec	5488	200000	0	5000
+3	2592000	16888	1:45000|4:1600|5:4000	5	星耀特权	死亡时装备掉落几率降低30%:#f7ab00|每天可以免费一键完成赏金任务:#f7ab00|每天额外赠送1次押镖任务:#f7ab00|每天免费领取300000元宝:#00afec|每天免费领取10000神威值:#00afec	12888	300000	0	10000

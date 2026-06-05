@@ -1,0 +1,5 @@
+INT	STRING	STRING	STRING	INT	INT	INT	INT	STRING
+id	name	descript	weapon	job_task	attack_attr	base_skill	recommend	feature
+1	战士	战士	wqq21	0	6	0		物理攻击中等、近战、血厚、物理防御高、法术防御中等。
+2	法师	法师	wqq21	0	6	0		物理攻击中等、远程、血中、物理防御中等、法术防御高，暴击高。
+3	龙骑士	龙骑士	wqq21	0	7	0		法术攻击高、远程、血中等、物理法术防御中等、暴击中等

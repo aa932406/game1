@@ -8,12 +8,13 @@
 #include "ActivityMap.h"
 #include "ActivityManager.h"
 #include "FamilyWar.h"
+#include "FamilyLight.h"
 
 using namespace Answer;
 
 enum ERR_FAMILY
 {
-	ERR_FAMILY_REGIST_PET_ALREADY	= 6,		// ½ñÌìÒÑ¾­µÇ¼Ç¹ýÕâÖÖ³èÎïÁË
+	ERR_FAMILY_REGIST_PET_ALREADY	= 6,		// ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½Ç¼Ç¹ï¿½ï¿½ï¿½ï¿½Ö³ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 
 CExtCharFamily::CExtCharFamily()
@@ -78,7 +79,7 @@ void CExtCharFamily::OnSaveToDB( PlayerDBData& dbData )
 
 void CExtCharFamily::OnDaySwitch( int32_t nDiffDays )
 {
-	bzero( m_vPetRegistTime, sizeof( m_vPetRegistTime ) );	// ¿çÌìÇå¿ÕµÇ¼ÇÇé¿ö
+	bzero( m_vPetRegistTime, sizeof( m_vPetRegistTime ) );	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÕµÇ¼ï¿½ï¿½ï¿½ï¿½
 	if ( m_IsLogin )
 	{
 		recalPetAddContribute();
@@ -87,20 +88,31 @@ void CExtCharFamily::OnDaySwitch( int32_t nDiffDays )
 
 void CExtCharFamily::GetInterestsProtocol( ProcIdList& procList )
 {
-	procList.push_back( CM_FAMILY_CONTRIBUTION );						// °ïÅÉ¾èÏ×
-	procList.push_back( CM_FAMILY_REGIST_PET );							// ×¢²á³èÎï
-	procList.push_back( CM_FAMILY_UNREGIST_PET );						// È¡Ïû×¢²á³èÎï
+	procList.push_back( CM_FAMILY_CONTRIBUTION );						// ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½
+	procList.push_back( CM_FAMILY_REGIST_PET );							// ×¢ï¿½ï¿½ï¿½ï¿½ï¿½
+	procList.push_back( CM_FAMILY_UNREGIST_PET );						// È¡ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	procList.push_back( IM_SOCIAL_GAME_CREATE_FAMILY );					// ´´½¨°ïÅÉ
-	procList.push_back( IM_SOCIAL_GAME_UPDATE_FAMILY );					// ¸üÐÂ°ïÅÉÐÅÏ¢
+	procList.push_back( IM_SOCIAL_GAME_CREATE_FAMILY );					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	procList.push_back( IM_SOCIAL_GAME_UPDATE_FAMILY );					// ï¿½ï¿½ï¿½Â°ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 
 
 	procList.push_back( CM_REQUEST_ACTIVITY_FAMILY_WAR_PILLAR_INFO );
 	procList.push_back( CM_ACTIVITY_FAMILYWAR_ADD_PILLAR_MONEY );
 	procList.push_back( IM_SOCIAL_GAME_FAMILYWAR_PILLAR_ADD_MONEY );
 
-	procList.push_back( CM_FAMILY_RECEIVE_TASK );						// ½ÓÊÕ¾üÍÅÈÎÎñ
+	procList.push_back( CM_FAMILY_RECEIVE_TASK );						// ï¿½ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	procList.push_back( CM_FAMILY_GET_TASK_REWARD );
+
+	procList.push_back( CM_FAMILY_UPGRADE_TOTEM );
+	procList.push_back( CM_FAMILY_PRAY );
+	procList.push_back( CM_FAMILY_ASK_PRAY_RANK );
+	procList.push_back( CM_FAMILY_ASK_TOTEM_RANK );
+	procList.push_back( CM_FAMILY_ACTIVE_LIGHT );
+	procList.push_back( CM_FAMILY_ASK_WAR_INFO );
+	procList.push_back( CM_FAMILY_START_WAR );
+	procList.push_back( CM_FAMILY_DONATE_ITEM );
+	procList.push_back( CM_FAMILY_ASK_DONATE_LOG );
+	procList.push_back( CM_FAMILY_RECEIVE_NEW_TASK );
 }
 
 int32_t CExtCharFamily::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -131,6 +143,16 @@ int32_t CExtCharFamily::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket 
 
 	case CM_FAMILY_RECEIVE_TASK:			return onReceiveFamilyTask( inPacket );
 	case CM_FAMILY_GET_TASK_REWARD:			return onGetFamilyTaskReward( inPacket );
+	case CM_FAMILY_UPGRADE_TOTEM:			return onUpgradeTotem( inPacket );
+	case CM_FAMILY_PRAY:					return onPray( inPacket );
+	case CM_FAMILY_ASK_PRAY_RANK:			return onAskPrayRank( inPacket );
+	case CM_FAMILY_ASK_TOTEM_RANK:			return onAskTotemRank( inPacket );
+	case CM_FAMILY_ACTIVE_LIGHT:			return onActiveFamilyLight( inPacket );
+	case CM_FAMILY_ASK_WAR_INFO:			return onAskFamilyWarInfo( inPacket );
+	case CM_FAMILY_START_WAR:				return onStartFamilyWar( inPacket );
+	case CM_FAMILY_DONATE_ITEM:				return onDonateItem( inPacket );
+	case CM_FAMILY_ASK_DONATE_LOG:			return onAskFamilyDonateLog( inPacket );
+	case CM_FAMILY_RECEIVE_NEW_TASK:		return onReceiveTask( inPacket );
 	default:
 		break;
 	}
@@ -175,7 +197,7 @@ int32_t CExtCharFamily::onContribution( Answer::NetPacket *inPacket )
 
 	if ( nAddValue + m_nContribution > MAX_FAMILY_CONTRIBUTE )
 	{
-		nAddValue = MAX_FAMILY_CONTRIBUTE - m_nContribution;		// µ½´ï¾èÏ×ÉÏÏÞ
+		nAddValue = MAX_FAMILY_CONTRIBUTE - m_nContribution;		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 
 	m_nContribution += nAddValue;
@@ -267,7 +289,7 @@ int32_t CExtCharFamily::onRegistPet( Answer::NetPacket* inPacket )
 // 	int32_t nTotomNeedLevel = CFG_DATA.GetFamilyTable().GetTotomActiveLevel( nBaseId );
 // 	if ( nFamilyLevel < nTotomNeedLevel )
 // 	{
-// 		return ERR_INVALID_DATA;		// µÈ¼¶²»¹»»¹Ã»¿ª
+// 		return ERR_INVALID_DATA;		// ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½
 // 	}
 	if ( !TotomIsOpened( nBaseId ) )
 	{
@@ -348,7 +370,7 @@ int32_t CExtCharFamily::onSocialCreateFamily( Answer::NetPacket *inPacket )
 
 	std::string	name = inPacket->readUTF8( true );
 	std::string notice = inPacket->readUTF8(true);
-	// Í¬²½µ½Éç»á·þÎñÆ÷
+	// Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_CREATE_FAMILY );
 	if (NULL == packet)
 	{
@@ -385,7 +407,7 @@ int32_t CExtCharFamily::onSocialUpdateFamilyInfo( Answer::NetPacket *inPacket )
 		{
 			if ( m_vRegistPetList[i] != NULL )
 			{
-				m_vRegistPetList[i]->SetRegInFamily( 0 );	// ×¢²á³èÎïÈ«²¿È¡Ïû
+				m_vRegistPetList[i]->SetRegInFamily( 0 );	// ×¢ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½È¡ï¿½ï¿½
 			}
 		}
 		bzero( m_vRegistPetList, sizeof( m_vRegistPetList ) );
@@ -472,7 +494,7 @@ int32_t CExtCharFamily::onFamilyWarAddPillarMoney( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	// Í¬²½µ½Éç»á·þÎñÆ÷
+	// Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILYWAR_ADD_PILLAR_MONEY );
 	if (NULL == packet)
 	{
@@ -770,4 +792,568 @@ void CExtCharFamily::SendAddFamilyTaskCount()
 	packet->writeInt32( m_pPlayer->getGateIndex() );
 	packet->setSize( packet->getWOffset() ); 
 	GAME_SERVICE.sendPacket( packet );
+}// ========== æ–°ç‰ˆæœ¬æ·»åŠ æ–¹æ³• ==========
+
+int32_t CExtCharFamily::onAskFamilyInfo( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskFamilyMemberList( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskFamilyLogs( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskFamilyTotem( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onActiveTotem( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onOpenTotem( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+
+int32_t CExtCharFamily::onSocialApplyFamily( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialApprove( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialKick( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialLeave( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialDestroy( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialAppoint( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialEditNotice( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestFamilyInfo( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestMemberList( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestLogs( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestTotemList( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestApplicants( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialCancelApply( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestFamilyWarPillarInfo( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialFamilyWarAddPillarMoney( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialGetDailyReward( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onGetTaskReward( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestPlayerPets( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialFamilyTaskCount( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialRequestRegistPets( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onSocialAddContribution( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::OnDaySwitch()
+{
+	return ERR_OK;
+}
+
+void CExtCharFamily::FamilySay( const char* pMsg )
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+}
+
+// ========== æ–°ç‰ˆæœ¬æ·»åŠ æ–¹æ³•å®žçŽ° ==========
+
+int32_t CExtCharFamily::onReceiveTask( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	if ( m_pPlayer->getRecord(RP_FAMILY_TASK_COUNT) >= MAX_FAMILY_TASK_COUNT )
+	{
+		return ERR_INVALID_DATA;
+	}
+	int32_t FamilyTaskId = CFG_DATA.GetFamilyTaskTable().GetFamilyTask( m_pPlayer->getLevel() );
+	if ( FamilyTaskId <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	m_pPlayer->GetTask().receive( FamilyTaskId, TT_FAMILY );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onUpgradeTotem( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nPetBaseId = inPacket->readInt32();
+	if ( nPetBaseId <= 0 || nPetBaseId > MAX_PET_ID )
+	{
+		return ERR_INVALID_DATA;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Check totem is already opened
+	if ( !TotomIsOpened( nPetBaseId ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Check family level meets requirement
+	int32_t nNeedLevel = CFG_DATA.GetFamilyTable().GetTotomActiveLevel( nPetBaseId );
+	if ( nNeedLevel <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	if ( GetFamilyLevel() < nNeedLevel )
+	{
+		return ERR_FAMILY_LEVEL_LOW;
+	}
+	// Upgrade totem: send social message
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	if ( NULL == packet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	packet->writeInt32( m_pPlayer->getGateIndex() );
+	packet->writeInt32( 0 );
+	packet->writeInt32( 0 );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( packet );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nPetBaseId );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onPray( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	int32_t nGold = inPacket->readInt32();
+	if ( nGold <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	if ( nGold > MAX_FAMILY_CONTRIBUTE_GOLD )
+	{
+		nGold = MAX_FAMILY_CONTRIBUTE_GOLD;
+	}
+	if ( m_pPlayer->GetCurrency( CURRENCY_GOLD ) < nGold )
+	{
+		return ERR_NOT_ENOUGH_GOLD;
+	}
+	// Check daily pray limit
+	int32_t nPrayCount = m_pPlayer->getRecord( RP_FAMILY_PRAY_COUNT );
+	if ( nPrayCount >= 10 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	m_pPlayer->updateRecord( RP_FAMILY_PRAY_COUNT, nPrayCount + 1 );
+	// Deduct gold, add exp and contribution
+	m_pPlayer->DecCurrency( CURRENCY_GOLD, nGold, GCR_FAMILY_CONTRIBUTE, m_nFamilyId );
+	int32_t nAddExp = nGold * 100;
+	int32_t nAddContrib = nGold * 10;
+	m_pPlayer->addExp( nAddExp );
+	m_nContribution += nAddContrib;
+	// Send to social server
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	if ( NULL == packet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	packet->writeInt32( m_pPlayer->getGateIndex() );
+	packet->writeInt32( nAddContrib );
+	packet->writeInt32( nGold );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( packet );
+	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_FAMILY_DONATE, nAddContrib );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddContrib );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskPrayRank( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Reply with current contribution rank info
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nContribution );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskTotemRank( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Reply with family level as totem rank
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), GetFamilyLevel() );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onActiveFamilyLight( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	int32_t nCount = inPacket->readInt32();
+	if ( nCount <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Check player is in family light map
+	CActivityMap* pActMap = dynamic_cast<CActivityMap*>( m_pPlayer->getMap() );
+	if ( NULL == pActMap )
+	{
+		return ERR_INVALID_DATA;
+	}
+	CFamilyLight* pLight = dynamic_cast<CFamilyLight*>( pActMap->GetActivity() );
+	if ( NULL == pLight )
+	{
+		return ERR_INVALID_DATA;
+	}
+	if ( !pLight->IsRuning() )
+	{
+		return ERR_INVALID_DATA;
+	}
+	pLight->DrinkWine( m_pPlayer, nCount );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nCount );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskFamilyWarInfo( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Get family war activity and send info
+	int32_t nActId = inPacket->readInt32();
+	CActivity* pActivity = ACTIVITY_MANAGER.GetActivity( nActId );
+	if ( NULL == pActivity )
+	{
+		return ERR_INVALID_DATA;
+	}
+	if ( pActivity->GetType() != ATI_FAMILY_WAR )
+	{
+		return ERR_INVALID_DATA;
+	}
+	pActivity->SendPlayerActivityInfo( m_pPlayer );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onStartFamilyWar( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Only family leader can start war
+	if ( m_nPosition != FP_LEADER )
+	{
+		return ERR_INVALID_DATA;
+	}
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nFamilyId );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onDonateItem( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	int32_t nBagSlot = inPacket->readInt32();
+	int32_t nCount = inPacket->readInt32();
+	if ( nBagSlot < 0 || nCount <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	MemChrBag bagItem = m_pPlayer->getBagSlotData( nBagSlot );
+	if ( bagItem.itemId <= 0 || bagItem.itemCount < nCount )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Check daily donate limit
+	int32_t nDonateCount = m_pPlayer->getRecord( RP_FAMILY_DONATE_COUNT );
+	if ( nDonateCount >= 20 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	m_pPlayer->updateRecord( RP_FAMILY_DONATE_COUNT, nDonateCount + 1 );
+	// Remove item from bag
+	ItemData itemData;
+	itemData.m_nId = bagItem.itemId;
+	itemData.m_nClass = bagItem.itemClass;
+	itemData.m_nCount = nCount;
+	Int32Vector vSlot( 1, nBagSlot );
+	if ( !m_pPlayer->GetBag().RemoveItem( vSlot, itemData, IDCR_FAMILY_DONATE ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Add contribution based on item quantity
+	int32_t nAddContrib = nCount * 100;
+	if ( nAddContrib + m_nContribution > MAX_FAMILY_CONTRIBUTE )
+	{
+		nAddContrib = MAX_FAMILY_CONTRIBUTE - m_nContribution;
+	}
+	m_nContribution += nAddContrib;
+	// Send to social server
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	if ( NULL == packet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	packet->writeInt32( m_pPlayer->getGateIndex() );
+	packet->writeInt32( nAddContrib );
+	packet->writeInt32( 0 );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( packet );
+	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_FAMILY_DONATE, nAddContrib );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddContrib );
+	return ERR_OK;
+}
+
+int32_t CExtCharFamily::onAskFamilyDonateLog( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( GetFamilyId() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+	// Send current contribution as donation log
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nContribution );
+	return ERR_OK;
 }

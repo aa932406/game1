@@ -1,0 +1,6 @@
+INT	STRING
+Id	BianconeriPosition
+0	成员
+1	精英
+2	副会长
+3	会长

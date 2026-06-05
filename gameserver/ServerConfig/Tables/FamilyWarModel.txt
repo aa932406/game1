@@ -1,0 +1,8 @@
+INT	STRING	INT	STRING	INT	STRING
+Index	Person	Sex	Weapon	Position	Name
+1	938|946|954	0	1323|1324|1325	6	<font color="#a54bfa">军团长</font>
+2	698|706|714	0	697|705|713	-1	<font color="#debc6a">军团长伴侣</font>
+3	826	2	825	5	<font color="#004afec">副团长</font>
+4	818	1	817	7	<font color="#00ff00">荣誉副团长</font>
+5	826	1	825	5	<font color="#004afec">副团长</font>
+6	834	1	833	7	<font color="#00ff00">荣誉副团长</font>

@@ -1,0 +1,7 @@
+INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT	INT
+Id	Job	AttrType1	AttrValue1	AttrType2	AttrValue2	AttrType3	AttrValue3	AttrType4	AttrValue4	AttrType5	AttrValue5	AttrType6	AttrValue6	AttrType7	AttrValue7	AttrType8	AttrValue7	AttrType9	AttrValue9	AttrType10	AttrValue10
+1	1	1	3000	5	1000	6	1000	20	50	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1
+1	2	1	3000	7	1000	8	1000	20	50	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1
+1	3	1	3000	5	1000	6	1000	20	50	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1
+2	1	20	30	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1
+3	1	20	20	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1

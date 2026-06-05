@@ -29,9 +29,9 @@ public:
 	void					SendTeHuiIcon();
 	void					GetTeHuiIconState( IconStateList& IconList );
 
-	void					SendEveryDayChongZhiInfo();
-	void					SendEveryDayChongZhiIcon();
-	void					GetEVeryDayChongZhiIconState( IconStateList& IconList );
+	void					SendEveryDayChongZhiInfo( int8_t nType = 3 );
+	void					SendEveryDayChongZhiIcon( int8_t nType = 3 );
+	void					GetEveryDayChongZhiIconState( IconStateList& IconList );
 
 	void					SendThreePetGiftIcon();
 	void					GetThreePetGiftIconState( IconStateList& IconList );
@@ -44,19 +44,49 @@ public:
 	void					AddTotalChongZhiCount( int32_t AddCount );
 	int32_t					HaveTotalChongZhiRewardCount();
 	bool					AllGetTotalChongZhiReward();
+public:
+	// === Missing methods from decompiled code ===
+	int32_t					getTeHuiLimitTime();
+	void					checkTeHuiTime();
+	bool					CanShowEveryChongZhiIcon();
+	int32_t					getEveryDayChongZhiIcon( int8_t nType );
+	bool					HaveEveryDayChongZhiGiftCount( int8_t nType, int32_t& Count );
+
+	void					GetMobilePhoneGiftIconState( IconStateList& IconList );
+	void					SendMobilePhoneGiftIcon();
+
+	void					GetAdultGiftIconState( IconStateList& IconList );
+	void					SendAdultGiftIcon();
+
+	void					SuperMemberRecharge( int32_t nGold );
+	void					GetSuperMemberIconState( IconStateList& IconList );
+
+	void					OnZeroBuyPetOpen();
+	void					SendZeroBuyPetIcon();
+	void					GetZeroBuyPetIconState( IconStateList& IconList );
+
 private:
+	int32_t					OnGetMobilePhoneGift( Answer::NetPacket *inPacket );
+	int32_t					OnDBGetMobilePhoneGift( Answer::NetPacket *inPacket );
+	int32_t					OnGetZeroBuyPetGift( Answer::NetPacket *inPacket );
+
+	ShowIcon				GetMobilePhoneGiftIconStu( int32_t nIcon );
+	ShowIcon				GetAdultGiftIconStu( int32_t nIconId );
+	ShowIcon				GetZeroBuyPetIconStu();
+
 	int8_t					GetShouChongState();
 	ShowIcon				GetShouChongIconStu();
 
 	ShowIcon				GetTeHuiIconStu();
 	bool					IsHaveTeHuiGift();
 
-	ShowIcon				GetEveryDayChongZhiIconStu();
+	ShowIcon				GetEveryDayChongZhiIconStu( int8_t nType = 3 );
 	bool					IsHaveEveryDayChongZhiGift();
 
 	void					GongGao( int32_t GongGaoId );
 
 	int32_t					m_TotalChongZhiDay;
+	int32_t					m_nLastTeHui;
 };
 
 #endif

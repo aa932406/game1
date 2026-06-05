@@ -1,0 +1,5 @@
+INT	INT	STRING	INT	STRING	STRING
+Id	Order	Name	Icon	clickType	Tips
+1	1		1	NPC|374017	军团战胜利军团每天20:30-21:30之间可以开启护送圣兽，其他军团可前往拦截圣兽
+2	2		2	openPanel|familyShopPanel|0	在军团商店中可以使用军团积分兑换强力属性药剂和其他稀有道具
+3	3		3	openPanel|FamilyFuBenPanel|0	合力通关军团副本可获得海量奖励

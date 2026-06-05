@@ -1,0 +1,5 @@
+INT	INT	INT
+Week	Cash	UpperLimit
+1	10	70
+2	15	70
+3	20	70

@@ -74,6 +74,8 @@ void CExtCurrency::OnSaveToDB( PlayerDBData& dbData )
 void CExtCurrency::GetInterestsProtocol( ProcIdList& procList )
 {
 	procList.push_back( IM_SOCIAL_GAME_ADD_CURRENCY );
+	procList.push_back( CM_SYNC_GOLD );
+	procList.push_back( CM_CURRENCY_DUIHUAN );
 }
 
 int32_t CExtCurrency::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inPacket )
@@ -86,6 +88,8 @@ int32_t CExtCurrency::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inP
 	switch ( nProcId )
 	{
 	case IM_SOCIAL_GAME_ADD_CURRENCY:	return onSocialAddCurrency( inPacket );
+	case CM_SYNC_GOLD:					return syncGold( inPacket );
+	case CM_CURRENCY_DUIHUAN:			return OnCurrencyDuiHuan( inPacket );
 	default:	break;
 	}
 	return ERR_OK;
@@ -182,7 +186,7 @@ bool CExtCurrency::AddCurrency( CURRENCY_TYPE const nType, int64_t nVal, int32_t
 	case CURRENCY_MONEY:
 		{
 			double  bnfRatio = 1.0;
-			if ( nParam != 9527 )	//gmÃüÁî
+			if ( nParam != 9527 )	//gmï¿½ï¿½ï¿½ï¿½
 			{
 				bnfRatio = m_pPlayer->benefitRatio();	
 			}
@@ -369,6 +373,77 @@ bool CExtCurrency::checkCurrencyType( CURRENCY_TYPE const nType ) const
 		return false;
 	}
 	return true;
+}
+
+int32_t CExtCurrency::syncGold( Answer::NetPacket *inPacket )
+{
+	if ( NULL == inPacket )
+	{
+		return 2;
+	}
+	int32_t Gold = inPacket->readInt32();
+	// syncGold removed: m_pPlayer->syncGold( Gold );
+	return 0;
+}
+
+int32_t CExtCurrency::OnCurrencyDuiHuan( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t nDouble = 0;
+	if ( inPacket->getSize() > 0 )
+	{
+		nDouble = inPacket->readInt32();
+	}
+
+	const CfgCurrencyDuiHuan* pCfg = CFG_DATA.GetCurrencyDuiHuan( m_pPlayer->getLevel() );
+	if ( NULL == pCfg )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( pCfg->m_nMoShi <= 0 || pCfg->m_nShengYaoBi <= 0 || pCfg->m_nJinBi <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t nCount = m_pPlayer->getRecord( PR_CURRENCY_DUIHUAN_COUNT );
+	if ( nCount >= pCfg->m_nDailyLimit )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t nRate = 1;
+	if ( nDouble > 0 )
+	{
+		int32_t nGoldCost = 0;
+		if ( nGoldCost <= 0 || m_pPlayer->GetCurrency( CURRENCY_GOLD ) < nGoldCost )
+		{
+			return ERR_INVALID_DATA;
+		}
+		if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, nGoldCost, GCR_CURRENCY_DUIHUAN ) )
+		{
+			return ERR_INVALID_DATA;
+		}
+		nRate = 2;
+	}
+
+	if ( !m_pPlayer->GetCurrency().DecMoneyAndNoBind( pCfg->m_nMoShi, MCR_CURRENCY_DUIHUAN ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( !m_pPlayer->AddCurrency( CURRENCY_VIGOUR, nRate * pCfg->m_nShengYaoBi, GCR_CURRENCY_DUIHUAN ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	m_pPlayer->updateRecord( PR_CURRENCY_DUIHUAN_COUNT, nCount + 1 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_CURRENCY_DUIHUAN );
+	return 0;
 }
 
 int64_t CExtCurrency::getMaxVal( CURRENCY_TYPE const nType ) const

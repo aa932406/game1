@@ -4,6 +4,7 @@
 #include "ActivityMap.h"
 #include "MonsterActivity.h"
 #include "GameService.h"
+#include "SkillBuff.h"
 #include "Timer.h"
 #include "DaTiHD.h"
 #include "MapManager.h"
@@ -12,7 +13,7 @@
 using namespace Answer;
 
 CActivity::CActivity( const CfgActivity& cfgActivity )
-:m_cfgActivity( cfgActivity ), m_nState( AS_NOT_START ), m_nBraodcastActivityScoreSign( 0 ), m_nBroadcastActivityScoreTick( 0 ), m_nKickTime( 0 )
+:m_cfgActivity( cfgActivity ), m_nState( AS_NOT_START ), m_nBraodcastActivityScoreSign( 0 ), m_nBroadcastActivityScoreTick( 0 ), m_nKickTime( 0 ), m_nLastReviveCheckTick( 0 ), m_nStartTime( 0 )
 {
 }
 
@@ -21,7 +22,7 @@ CActivity::~CActivity()
 
 }
 
-//»î¶¯³õÊ¼»¯Êý¾Ý
+//ï¿½î¶¯ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void CActivity::Init()
 {
 	Int32Vector::const_iterator iter = m_cfgActivity.maps.begin();
@@ -87,6 +88,8 @@ void CActivity::reset()
 	m_nKickTime						= 0;
 	m_nBraodcastActivityScoreSign	= 0;
 	m_nBroadcastActivityScoreTick	= 0;
+	m_nLastReviveCheckTick			= 0;
+	m_nStartTime					= 0;
 	m_players.clear();
 }
 
@@ -185,7 +188,7 @@ void CActivity::GetIconState( IconStateList& iconList )
 
 void CActivity::CheckActivity()
 {
-	if ( !checkData() )		// ÈÕÆÚ
+	if ( !checkData() )		// ï¿½ï¿½ï¿½ï¿½
 	{
 		m_nState = AS_TIME_OUT;
 		return;
@@ -335,7 +338,7 @@ int32_t	CActivity::getNextStartTime()
 	}
 
 	int32_t days = -1;
-	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌì¿ªÆô
+	int32_t startDays = TIMER.GetDaysFromStart();	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ì¿ªï¿½ï¿½
 	if ( checkData() && checkWeek() )
 	{
 		if( nowMinute < startMinute )
@@ -421,271 +424,413 @@ int32_t CActivity::getActivityTime()
 	return m_cfgActivity.duration * 60 - getLeftTime();
 }
 
-int32_t	CActivity::GetId() const
+// ========== ï¿½Â·ï¿½ï¿½ï¿½ - ï¿½ï¿½ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â°æ±¾ ==========
+
+bool CActivity::IsRightTime()
 {
-	return m_cfgActivity.id;
+	return checkTime() == AS_RUNNING;
 }
 
-int16_t CActivity::GetType() const
+void CActivity::removeActivityMonster( int32_t monsterId )
 {
-	return m_cfgActivity.typeId;
-}
-
-bool CActivity::IsRuning() const
-{
-	return m_nState == AS_RUNNING;
-}
-
-int8_t CActivity::GetState() const
-{
-	return m_nState;
-}
-
-int32_t	CActivity::canEnter( Player* player, CActivityMap* pTargetMap ) const
-{
-	if ( NULL == player || NULL == pTargetMap )
+	// Í¨ï¿½ï¿½ GameService É¾ï¿½ï¿½Ö¸ï¿½ï¿½ monsterId ï¿½Ä¹ï¿½ï¿½ï¿½
+	Monster* pMonster = GAME_SERVICE.getMonster( monsterId, 0 );
+	if ( pMonster != NULL )
 	{
-		return ERR_INVALID_DATA;
-	}
-
-	if ( !( m_cfgActivity.line == 0 || m_cfgActivity.line == GAME_SERVICE.getLine() ) )
-	{
-		return ERR_MAP_ACTIVITY_OTHER_LINE;
-	}
-
-	if ( m_cfgActivity.level > player->getLevel() )
-	{
-		return ERR_MAP_PLAYER_LEVEL;
-	}
-
-	return ERR_OK;
-}
-
-int32_t	CActivity::getPkMode() const
-{
-	return PK_MODE_FREE;
-}
-
-bool CActivity::canRevive() const
-{
-	return true;
-}
-
-int32_t CActivity::GiveDailyReward( Player* player )
-{
-	return ERR_INVALID_DATA;
-}
-
-bool CActivity::CanUseXP() const
-{
-	return true;
-}
-
-bool CActivity::CanUsePet( MapId_t mid ) const
-{
-	return true;
-}
-
-void CActivity::onPlantGather( Plant* pPlant, Player *player )
-{
-	
-}
-
-void CActivity::AddPlant( Plant* plant )
-{
-
-}
-
-int32_t CActivity::onBeginGather(  Plant* plant, Player *player )
-{
-	return ERR_OK;
-}
-int32_t CActivity::GetRevive( Player* player )
-{
-	int32_t lenth = m_cfgActivity.target_regiona.size();
-	if( lenth == 1 )
-	{
-		return m_cfgActivity.target_regiona[0];
-	}
-	else
-	{
-		return m_cfgActivity.target_regiona[RANDOM.generate( 0, lenth-1 )]; 
+		pMonster->leaveMap();
+		pMonster->destroy();
 	}
 }
 
-void CActivity::removePlayer( Player* player, bool islogout )
+void CActivity::adjustMonsterAttr( CfgMonster* cfgMonster, int32_t nLevel, bool bAutoLow )
 {
-	for ( PlayerList::iterator iter = m_players.begin(); iter != m_players.end(); ++iter )
-	{
-		if ( *iter == player )
-		{
-			m_players.erase( iter );
-			return;
-		}
-	}
-}
-
-void CActivity::addPlayer( Player* player )
-{
-	if ( NULL == player )
+	if ( NULL == cfgMonster || nLevel <= 0 )
 	{
 		return;
 	}
-	player->GetPlayerDailyActivity().RecordEnterNumber( m_cfgActivity.typeId, m_cfgActivity.id );
-	m_players.push_back( player );
-	SendPlayerActivityScore( player, getLeftTime() );
-}
-
-Position CActivity::GetRandBornPos( Player* player )
-{
-	return getBornRandPosA();
-}
-
-Position CActivity::getBornRandPosA()
-{
-	return getBornRandPos( m_cfgActivity.target_mapid, m_cfgActivity.target_regiona );
-}
-
-Position CActivity::getBornRandPosB()
-{
-	return getBornRandPos( m_cfgActivity.target_mapid, m_cfgActivity.target_regionb );
-}
-
-Position CActivity::getBornRandPos( int32_t nMapId, const Int32Vector& regions )
-{
-	Position pos( -1, -1 );
-	if( regions.empty() ) 
+	if ( cfgMonster->level <= 0 )
 	{
-		return pos;
+		return;
+	}
+	// æ ¹æ®ç­‰çº§è°ƒæ•´æ€ªç‰©å±žæ€§
+	double fRatio = (double)nLevel / (double)cfgMonster->level;
+	cfgMonster->hp = (int32_t)(cfgMonster->hp * fRatio);
+	cfgMonster->phy_atk_min = (int32_t)(cfgMonster->phy_atk_min * fRatio);
+	cfgMonster->phy_atk_max = (int32_t)(cfgMonster->phy_atk_max * fRatio);
+	cfgMonster->mag_atk_min = (int32_t)(cfgMonster->mag_atk_min * fRatio);
+	cfgMonster->mag_atk_max = (int32_t)(cfgMonster->mag_atk_max * fRatio);
+	cfgMonster->phy_def = (int32_t)(cfgMonster->phy_def * fRatio);
+	cfgMonster->mag_def = (int32_t)(cfgMonster->mag_def * fRatio);
+	cfgMonster->hitrate = (int32_t)(cfgMonster->hitrate * fRatio);
+	cfgMonster->dodge = (int32_t)(cfgMonster->dodge * fRatio);
+	cfgMonster->critrate = (int32_t)(cfgMonster->critrate * fRatio);
+	if ( bAutoLow )
+	{
+		// é™ä½Ž 20% å±žæ€§
+		cfgMonster->hp = (int32_t)(cfgMonster->hp * 0.8);
+		cfgMonster->phy_atk_min = (int32_t)(cfgMonster->phy_atk_min * 0.8);
+		cfgMonster->phy_atk_max = (int32_t)(cfgMonster->phy_atk_max * 0.8);
+		cfgMonster->mag_atk_min = (int32_t)(cfgMonster->mag_atk_min * 0.8);
+		cfgMonster->mag_atk_max = (int32_t)(cfgMonster->mag_atk_max * 0.8);
+		cfgMonster->phy_def = (int32_t)(cfgMonster->phy_def * 0.8);
+		cfgMonster->mag_def = (int32_t)(cfgMonster->mag_def * 0.8);
+		cfgMonster->hitrate = (int32_t)(cfgMonster->hitrate * 0.8);
+		cfgMonster->dodge = (int32_t)(cfgMonster->dodge * 0.8);		cfgMonster->critrate = (int32_t)(cfgMonster->critrate * 0.8);
+	}
+}
+
+bool CActivity::OnChangeMap( Player* player, CActivityMap* pMap, int32_t nX, int32_t nY, int32_t Param )
+{
+	if ( NULL == player || NULL == pMap )
+	{
+		return false;
 	}
 
-	Map* pMap = MAP_MANAGER.GetMap( nMapId );
+	if ( !pMap->isWalkablePosition( nX, nY ) )
+	{
+		return false;
+	}
+
+	bool bFind = false;
+	for ( ActivityMapList::iterator iter = m_activityMaps.begin(); iter != m_activityMaps.end(); ++iter )
+	{
+		CActivityMap* tp = *iter;
+		if ( tp != NULL && tp == pMap )
+		{
+			bFind = true;
+			break;
+		}
+	}
+
+	if ( bFind )
+	{
+		return player->switchMap( pMap, nX, nY, true ) == 0;
+	}
+
+	return false;
+}
+
+void CActivity::addActivityBuff( Unit* pUnit, int32_t nBuffId, bool bClear )
+{
+	if ( NULL == pUnit )
+	{
+		return;
+	}
+
+	CfgBuff* cfgBuff = CFG_DATA.getBuff( nBuffId );
+	if ( NULL == cfgBuff )
+	{
+		return;
+	}
+
+	UnitHandle launcher = pUnit->getHandle();
+	SkillBuff* buff = new SkillBuff( *pUnit, *cfgBuff );
+	if ( buff != NULL )
+	{
+		buff->init( cfgBuff->id, 1, launcher, pUnit->getHandle() );
+		pUnit->addBuff( buff );
+	}
+}
+
+bool CActivity::checkRevive( CActivityMap* pMap )
+{
 	if ( NULL == pMap )
 	{
-		return pos;
+		return false;
 	}
 
-	int32_t nReginId = -1;
-	int32_t lenth = regions.size();
-	if( lenth == 1 )
+	int64_t curTick = TIMER.GetTick();
+	if ( curTick - m_nLastReviveCheckTick <= 500 )
 	{
-		nReginId = regions[0];
+		return false;
 	}
-	else
-	{
-		nReginId = regions[RANDOM.generate( 0, lenth-1 )]; 
-	}
+	m_nLastReviveCheckTick = curTick;
 
-	CfgMapRegion *pCfgRegion = CFG_DATA.getMapRegion( nReginId );
-	if( NULL == pCfgRegion )
+	PlayerList tList = m_players;
+	for ( PlayerList::iterator iter = tList.begin(); iter != tList.end(); ++iter )
 	{
-		return pos;
+		Player* player = *iter;
+		if ( player != NULL && player->IsDead() && player->getMap() == pMap )
+		{
+			int32_t nReviveTime = GetRevive( player );
+			if ( nReviveTime > 0 && player->getDeadTime() >= nReviveTime )
+			{
+				player->FillHP();
+				player->FillMP();
+				Position pos = GetRandBornPos( player );
+				player->switchMap( pMap, pos.x, pos.y, true );
+			}
+		}
 	}
-
-	return pMap->getRandomWalkablePositionInRegion( *pCfgRegion );
+	return false;
 }
 
+void CActivity::sendSocialUpdateActivityState( int8_t nState )
+{
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	packet->writeInt32( m_cfgActivity.iconid );
+	packet->writeInt8( nState );
+	packet->writeInt32( getLeftTime() );
+	packet->writeInt8( 0 );
+	packet->writeInt32( 0 );
+	packet->writeInt8( nState == AS_RUNNING ? 1 : 0 );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( packet );
+}
 bool CActivity::checkData()
 {
-	return TIMER.BetweenDate( m_cfgActivity.begin_date, m_cfgActivity.end_date );
+    return TIMER.BetweenDate( m_cfgActivity.begin_date, m_cfgActivity.end_date );
 }
 
 bool CActivity::checkWeek()
 {
-	return std::find( m_cfgActivity.weekday.begin(), m_cfgActivity.weekday.end(), TIMER.GetWeekDay() ) != m_cfgActivity.weekday.end();
+    return std::find( m_cfgActivity.weekday.begin(), m_cfgActivity.weekday.end(), TIMER.GetWeekDay() ) != m_cfgActivity.weekday.end();
 }
 
 ACTIVITY_STATE CActivity::checkTime()
 {
-	if ( m_cfgActivity.start_hour.empty() )
-	{
-		return AS_NOT_START;
-	}
-	const tm& localnow	= TIMER.GetLocalNow();
-	int32_t nowMinute	= localnow.tm_hour * 60 + localnow.tm_min;
-	int32_t startMinute = m_cfgActivity.start_hour[0];
-	int32_t endMinute	= startMinute + m_cfgActivity.duration;
-	int32_t readyMinute	= startMinute-5;							//¿ªÊ¼Ç°5·ÖÖÓ ÏµÍ³ÌáÊ¾
-	for ( uint32_t i = 0; i < m_cfgActivity.start_hour.size(); ++i )
-	{
-		if ( nowMinute < readyMinute )
-		{
-			return AS_NOT_START;
-		}
-		else if ( nowMinute < startMinute )
-		{
-			return AS_READY;
-		}
-		else if ( nowMinute < endMinute ) //¿ªÊ¼»î¶¯
-		{
-			return AS_RUNNING;
-		}
-	}
-
-	return AS_END;
+    if ( m_cfgActivity.start_hour.empty() )
+    {
+        return AS_NOT_START;
+    }
+    const tm& localnow	= TIMER.GetLocalNow();
+    int32_t nowMinute	= localnow.tm_hour * 60 + localnow.tm_min;
+    int32_t startMinute = m_cfgActivity.start_hour[0];
+    int32_t endMinute	= startMinute + m_cfgActivity.duration;
+    int32_t readyMinute	= startMinute-5;
+    for ( uint32_t i = 0; i < m_cfgActivity.start_hour.size(); ++i )
+    {
+        if ( nowMinute < readyMinute )
+        {
+            return AS_NOT_START;
+        }
+        else if ( nowMinute < startMinute )
+        {
+            return AS_READY;
+        }
+        else if ( nowMinute < endMinute )
+        {
+            return AS_RUNNING;
+        }
+    }
+    return AS_END;
 }
 
 bool CActivity::checkLine()
 {
-	return m_cfgActivity.line == 0 || m_cfgActivity.line == GAME_SERVICE.getLine();
-}
-
-void CActivity::onMonsterAdd( MonsterActivity* pMonster )
-{
-
-}
-
-void CActivity::onMonsterDamaged( MonsterActivity* pMonster, int32_t nDamage, Player* pAttacker )
-{
-
-}
-
-void CActivity::onMonsterDie( MonsterActivity* pMonster )
-{
-
-}
-
-void CActivity::onMonsterDie( MonsterActivity* pMonster, Player* pKiller )
-{
-
-}
-
-void CActivity::onPlayerKilled( Player* pDier, Player* pKiller )
-{
-
-}
-
-void CActivity::delayKickAll( int32_t nTime )
-{
-	m_nKickTime = TIMER.GetNow() + nTime;
-}
-
-void CActivity::broadcastReady()
-{
-
-}
-
-void CActivity::broadcastStart()
-{
-
+    return m_cfgActivity.line == 0 || m_cfgActivity.line == GAME_SERVICE.getLine();
 }
 
 Answer::NetPacket* CActivity::packetActivityScore()
 {
-	return NULL;
+    return NULL;
+}
+void CActivity::delayKickAll( int32_t nTime )
+{
+    m_nKickTime = TIMER.GetNow() + nTime;
 }
 
 bool CActivity::needBroadcastActivityScore() const
 {
-	return m_nBraodcastActivityScoreSign > 0;
+    return m_nBraodcastActivityScoreSign > 0;
 }
 
-void CActivity::setNeedBroadcastActivityScore()
+bool CActivity::IsRuning() const
 {
-	m_nBraodcastActivityScoreSign = m_activityMaps.size();
+    return m_nState == AS_RUNNING;
+}
+
+
+int32_t CActivity::GetId() const
+{
+    return m_cfgActivity.id;
+}
+
+int16_t CActivity::GetType() const
+{
+    return m_cfgActivity.typeId;
+}
+
+int8_t CActivity::GetState() const
+{
+    return m_nState;
+}
+
+int32_t CActivity::canEnter( Player* player, CActivityMap* pTargetMap ) const
+{
+    if ( NULL == player || NULL == pTargetMap )
+    {
+        return ERR_INVALID_DATA;
+    }
+    if ( !( m_cfgActivity.line == 0 || m_cfgActivity.line == GAME_SERVICE.getLine() ) )
+    {
+        return ERR_MAP_ACTIVITY_OTHER_LINE;
+    }
+    if ( m_cfgActivity.level > player->getLevel() )
+    {
+        return ERR_MAP_PLAYER_LEVEL;
+    }
+    return ERR_OK;
+}
+
+int32_t CActivity::getPkMode() const
+{
+    return PK_MODE_FREE;
+}
+
+bool CActivity::canRevive() const
+{
+    return true;
+}
+
+int32_t CActivity::GiveDailyReward( Player* player )
+{
+    return ERR_INVALID_DATA;
+}
+
+bool CActivity::CanUseXP() const
+{
+    return true;
+}
+
+bool CActivity::CanUsePet( MapId_t mid ) const
+{
+    return true;
+}
+
+void CActivity::onPlantGather( Plant* pPlant, Player *player )
+{
+}
+
+void CActivity::AddPlant( Plant* plant )
+{
+}
+
+int32_t CActivity::onBeginGather(  Plant* plant, Player *player )
+{
+    return ERR_OK;
+}
+
+int32_t CActivity::GetRevive( Player* player )
+{
+    int32_t lenth = m_cfgActivity.target_regiona.size();
+    if( lenth == 1 )
+    {
+        return m_cfgActivity.target_regiona[0];
+    }
+    else
+    {
+        return m_cfgActivity.target_regiona[RANDOM.generate( 0, lenth-1 )];
+    }
+}
+
+void CActivity::removePlayer( Player* player, bool islogout )
+{
+    for ( PlayerList::iterator iter = m_players.begin(); iter != m_players.end(); ++iter )
+    {
+        if ( *iter == player )
+        {
+            m_players.erase( iter );
+            return;
+        }
+    }
+}
+
+void CActivity::addPlayer( Player* player )
+{
+    if ( NULL == player )
+    {
+        return;
+    }
+    player->GetPlayerDailyActivity().RecordEnterNumber( m_cfgActivity.typeId, m_cfgActivity.id );
+    m_players.push_back( player );
+    SendPlayerActivityScore( player, getLeftTime() );
+}
+
+Position CActivity::GetRandBornPos( Player* player )
+{
+    return getBornRandPosA();
+}
+
+Position CActivity::getBornRandPosA()
+{
+    return getBornRandPos( m_cfgActivity.target_mapid, m_cfgActivity.target_regiona );
+}
+
+Position CActivity::getBornRandPosB()
+{
+    return getBornRandPos( m_cfgActivity.target_mapid, m_cfgActivity.target_regionb );
+}
+
+Position CActivity::getBornRandPos( int32_t nMapId, const Int32Vector& regions )
+{
+    Position pos( -1, -1 );
+    if( regions.empty() ) 
+    {
+        return pos;
+    }
+    Map* pMap = MAP_MANAGER.GetMap( nMapId );
+    if ( NULL == pMap )
+    {
+        return pos;
+    }
+    int32_t nReginId = -1;
+    int32_t lenth = regions.size();
+    if( lenth == 1 )
+    {
+        nReginId = regions[0];
+    }
+    else
+    {
+        nReginId = regions[RANDOM.generate( 0, lenth-1 )]; 
+    }
+    CfgMapRegion *pCfgRegion = CFG_DATA.getMapRegion( nReginId );
+    if( NULL == pCfgRegion )
+    {
+        return pos;
+    }
+    return pMap->getRandomWalkablePositionInRegion( *pCfgRegion );
 }
 
 void CActivity::NotifyActivityInfo( Player* player )
 {
-
 }
+
+void CActivity::onMonsterAdd( MonsterActivity* pMonster )
+{
+}
+
+void CActivity::onMonsterDamaged( MonsterActivity* pMonster, int32_t nDamage, Player* pAttacker )
+{
+}
+
+void CActivity::onMonsterDie( MonsterActivity* pMonster )
+{
+}
+
+void CActivity::onMonsterDie( MonsterActivity* pMonster, Player* pKiller )
+{
+}
+
+void CActivity::onPlayerKilled( Player* pDier, Player* pKiller )
+{
+}
+
+void CActivity::broadcastReady()
+{
+}
+
+void CActivity::broadcastStart()
+{
+}
+
+void CActivity::setNeedBroadcastActivityScore()
+{
+    m_nBraodcastActivityScoreSign = m_activityMaps.size();
+}
+
+

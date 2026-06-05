@@ -1,0 +1,66 @@
+// Decompiled methods for class: DanTianCfg
+// Source: gameserver.cc
+// Total methods: 2
+
+#####################################
+int32_t __cdecl DanTianCfg::RandHighDanTianId(const DanTianCfg *const this)
+{
+  int32_t nHighMaxRate; // ebx
+  Answer::Random *v2; // rax
+  const Param2 *v3; // rax
+  const Param2 *v5; // rax
+  std::_List_const_iterator<Param2> it; // [rsp+10h] [rbp-30h] BYREF
+  std::_List_const_iterator<Param2> __x; // [rsp+20h] [rbp-20h] BYREF
+  int32_t nRand; // [rsp+2Ch] [rbp-14h]
+
+  nHighMaxRate = this->nHighMaxRate;
+  v2 = Answer::Singleton<Answer::Random>::instance();
+  nRand = Answer::Random::generate(v2, 1, nHighMaxRate);
+  for ( it._M_node = std::list<Param2>::begin(&this->nHighItemRate)._M_node;
+        ;
+        std::_List_const_iterator<Param2>::operator++(&it, 0) )
+  {
+    __x._M_node = std::list<Param2>::end(&this->nHighItemRate)._M_node;
+    if ( !std::_List_const_iterator<Param2>::operator!=(&it, &__x) )
+      break;
+    v3 = std::_List_const_iterator<Param2>::operator->(&it);
+    if ( v3->nParam2 >= nRand )
+      return std::_List_const_iterator<Param2>::operator->(&it)->nParam1;
+    v5 = std::_List_const_iterator<Param2>::operator->(&it);
+    nRand -= v5->nParam2;
+  }
+  return 0;
+}
+
+
+#####################################
+int32_t __cdecl DanTianCfg::RandDanTianId(const DanTianCfg *const this)
+{
+  int32_t nMaxRate; // ebx
+  Answer::Random *v2; // rax
+  const Param2 *v3; // rax
+  const Param2 *v5; // rax
+  std::_List_const_iterator<Param2> it; // [rsp+10h] [rbp-30h] BYREF
+  std::_List_const_iterator<Param2> __x; // [rsp+20h] [rbp-20h] BYREF
+  int32_t nRand; // [rsp+2Ch] [rbp-14h]
+
+  nMaxRate = this->nMaxRate;
+  v2 = Answer::Singleton<Answer::Random>::instance();
+  nRand = Answer::Random::generate(v2, 1, nMaxRate);
+  for ( it._M_node = std::list<Param2>::begin(&this->nItemRate)._M_node;
+        ;
+        std::_List_const_iterator<Param2>::operator++(&it, 0) )
+  {
+    __x._M_node = std::list<Param2>::end(&this->nItemRate)._M_node;
+    if ( !std::_List_const_iterator<Param2>::operator!=(&it, &__x) )
+      break;
+    v3 = std::_List_const_iterator<Param2>::operator->(&it);
+    if ( v3->nParam2 >= nRand )
+      return std::_List_const_iterator<Param2>::operator->(&it)->nParam1;
+    v5 = std::_List_const_iterator<Param2>::operator->(&it);
+    nRand -= v5->nParam2;
+  }
+  return 0;
+}
+
+

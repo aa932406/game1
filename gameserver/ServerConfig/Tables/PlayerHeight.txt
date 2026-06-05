@@ -1,0 +1,5 @@
+STRING	INT
+Name	Height
+zhanshi1000_nan	-200
+fashi1000_nan	-200
+cike1000_nan	-200

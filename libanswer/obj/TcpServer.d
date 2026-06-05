@@ -3,4 +3,4 @@
  ../include/Mutex.h ../include/TcpAcceptor.h ../include/ObjectPool.h \
  ../include/TcpConnection.h ../include/InetAddress.h ../include/Thread.h \
  ../include/TcpServer.h
-	g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpServer.cpp -o ../obj/TcpServer.o
+	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpServer.cpp -o ../obj/TcpServer.o

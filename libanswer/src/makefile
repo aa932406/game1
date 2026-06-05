@@ -6,6 +6,9 @@ OBJPATH = ../obj
 LIBPATH = /usr/lib64
 
 CFLAGS = -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX
+CXX = x86_64-linux-gnu-g++
+AR = x86_64-linux-gnu-ar
+
 CCOMLINE = $(CXX) -c $(CFLAGS) $< -o $@
 
 OBJS = $(patsubst %.cpp, $(OBJPATH)/%.o, $(notdir $(wildcard *.cpp)))

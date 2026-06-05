@@ -1,0 +1,23 @@
+INT	STRING	INT	STRING	STRING	STRING	INT	INT	INT
+Id	Parameter	Order	Tips1	Tips2	Effect	OpenLevel	Icon	IsSkill
+1	1	1	#ffff00|【至尊特权】\n|#e60012|（未激活）\n|#f7ab00|铂金VIP特权：{0}\n|#f7ab00|钻石VIP特权：{1}\n|#f7ab00|星耀VIP特权：{2}\n{3}{4}\n|#f5e8bf|提升Vip等级可获得Vip伤害加成\n（加成效果随VIP等级提升）\n幸运爆率次数：{5} \n超级幸运爆率次数：{6}	#ffff00|【VIP特权卡】\n|#00ff00|（已激活）\n|#00afec|铂金VIP特权：{0}\n|#a54bfa|钻石VIP特权：{1}\n|#f7ab00|星耀VIP特权：{2}\n【{3}】\n{4}\n幸运爆率次数：{5} \n超级幸运爆率次数：{6}	openPanel|VipPanel	1	30	0
+2	1	2	#ffff00|【原地复活】\n|#e60012|（冷却中）\n|#f7ab00|复活已激活，复活血量：{0}	#ffff00|【原地复活】\n|#00ff00|（已激活）\n|#f7ab00|复活已激活，复活血量：{0}	-1	1	31	0
+3	1	3	#ffff00|微端\n|#f5e8bf|点击查看微端奖励	#ffff00|微端加成\n|#debc6a|攻击加成：3%	openPanel|weiDuanLoadPanel	1	84	0
+9	2	4	#ffff00|超玩会员\n|#f5e8bf|未激活	#ffff00|YY超玩初级VIP\n|#00ff00|（已激活）\n|#00afec|攻击加成：1%	openPanel|yyDaTingPanel	1	1	0
+10	6	5	#ffff00|超玩会员\n|#f5e8bf|未激活	#ffff00|YY超玩中级VIP\n|#00ff00|（已激活）\n|#00afec|攻击加成：2%	openPanel|yyDaTingPanel	1	1	0
+11	9	6	#ffff00|超玩会员\n|#f5e8bf|未激活	#ffff00|YY超玩高级VIP\n|#00ff00|（已激活）\n|#00afec|攻击加成：3%	openPanel|yyDaTingPanel	1	1	0
+12	1	3	#ffff00|大厅\n|#f5e8bf|点击查看大厅奖励	#ffff00|大厅加成\n|#00ff00|（已激活）\n|#debc6a|攻击加成：3%	openPanel|daTingPanel	1	213	0
+16	1	3	#ffff00|会员特权\n|#f5e8bf|点击查看会员特权	#ffff00|会员特权\n|#00ff00|（已激活）\n|#debc6a|攻击加成：3%	openPanel|daTingPanel	1	213	0
+17	0	3	#ffff00|跨服王者服务器Buff\n|#f5e8bf|已失去	#ffff00|跨服王者|#00ff00|{0}|#ffff00|给你送温暖\n|#00ff00|（已激活）\n|#00afec|攻击加成：2%	-1	200	2	0
+18	1	4	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP1级\n|#00ff00|（已激活）\n|#00afec|攻击加成：0.5%	openPanel|DaTingPanel	1	1	0
+19	2	5	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP2级\n|#00ff00|（已激活）\n|#00afec|攻击加成：0.5%	openPanel|DaTingPanel	1	1	0
+20	3	6	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP3级\n|#00ff00|（已激活）\n|#00afec|攻击加成：0.5%	openPanel|DaTingPanel	1	1	0
+21	4	7	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP4级\n|#00ff00|（已激活）\n|#00afec|攻击加成：1%	openPanel|DaTingPanel	1	1	0
+22	5	8	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP5级\n|#00ff00|（已激活）\n|#00afec|攻击加成：1%	openPanel|DaTingPanel	1	1	0
+23	6	9	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP6级\n|#00ff00|（已激活）\n|#00afec|攻击加成：1%	openPanel|DaTingPanel	1	1	0
+24	7	10	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP7级\n|#00ff00|（已激活）\n|#00afec|攻击加成：2%	openPanel|DaTingPanel	1	1	0
+25	8	11	#ffff00||37VIP\n|#f5e8bf|未激活	#ffff00|37VIP8级\n|#00ff00|（已激活）\n|#00afec|攻击加成：3%	openPanel|DaTingPanel	1	1	0
+26	1	12	#ffff00|【首充爆率】\n|#e60012|（未激活）\n|#f7ab00|装备爆率永久提升2000%	#ffff00|【首充爆率】\n|#00ff00|（已激活）\n|#f7ab00|装备爆率永久提升2000%	openPanel|firstChargePanel	1	214	0
+27	1	14	#ffff00|【切割契约】\n|#e60012|（未激活）\n|#f7ab00|切割伤害+0%	#ffff00|【切割契约】\n|#00ff00|（已激活）\n|#00ff00|切割伤害+10%&#ffff00|【切割契约】\n|#00ff00|（已激活）\n|#00afec|切割伤害+30%&#ffff00|【切割契约】\n|#00ff00|（已激活）\n|#ff9c1c|切割伤害+50%	openPanel|shenShouJiangLinPanel	100	215	0
+28	1	13	#ffff00|【特戒装备】\n|#e60012|（未激活）\n|#f7ab00|点击打开	#ffff00|【特戒装备】\n|#f7ab00|希望特戒:|#00ff00|希望之力{1}\n|#f7ab00|信仰特戒:|#00ff00|信仰之力{2}\n|#f7ab00|永恒特戒:|#00ff00|永恒之力{3}\n|#f7ab00|命运特戒:|#00ff00|命运之力{4}\n|#f7ab00|末日特戒:|#00ff00|末日之力{5}\n|#f7ab00|毁灭特戒:|#00ff00|毁灭之力{6}	openPanel|rolePanel	150	216	0
+29	0	15	#debc6a|跨服圣域争霸霸主服专属福利	#f1b72c|跨服·圣域争霸霸主服专属福利|n|#debc6a|跨服商店和魔界商人尊享|#00ff00|8折钜惠|#debc6a|，持续到下次跨服圣域争霸开启	-1	1	500	0

@@ -1,0 +1,4 @@
+INT	INT	INT	INT
+id	npcid	x	y
+101	1117	21	31
+102	5015	101	25

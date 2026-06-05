@@ -6,6 +6,7 @@
 #include "ActivityManager.h"
 #include "GMBackstage.h"
 #include "WorldBoss.h"
+#include "FestivalDoubleEleven.h"
 
 using namespace Answer;
 
@@ -52,7 +53,7 @@ void CTimer::Start()
 	m_tmLastLocalNow	= GetLocalNow();
 	m_nextAnnoucement	= 0;
 
-	start(); //Æô¶¯Ïß³Ì
+	start(); //ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
 }
 
 void CTimer::Stop()
@@ -119,11 +120,13 @@ void CTimer::onDaySwitch()
 	m_nWeekDay			= static_cast<int8_t>( ( m_tmLocalNow.tm_wday + 6 ) % 7 + 1 );
 
 	PET_MANAGER.ResetRecords();
+
+	FESTIVAL_DOUBLE_ELEVEN->OnDaySwitch();
 }
 
 void CTimer::checkAnnoucement(const tm &localnow)
 {
-	const CfgAnnoucementTimeTable& allAnnoucements = CFG_DATA.getAllAnnoucementTime();					//¹«¸æµÄÁÐ±í
+	const CfgAnnoucementTimeTable& allAnnoucements = CFG_DATA.getAllAnnoucementTime();					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
 	if (localnow.tm_hour == 0 && localnow.tm_min == 0)
 	{
 		m_nextAnnoucement = 0;

@@ -5,4 +5,4 @@
  ../include/TcpMultiplexor.h ../include/TcpProcessor.h \
  ../include/BlockingQueue.h ../include/Condition.h \
  ../include/NetPacketPool.h
-	g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpAcceptor.cpp -o ../obj/TcpAcceptor.o
+	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpAcceptor.cpp -o ../obj/TcpAcceptor.o

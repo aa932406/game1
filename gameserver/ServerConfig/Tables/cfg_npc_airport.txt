@@ -1,0 +1,3 @@
+INT	INT	STRING	INT	INT	INT	INT	INT	INT	INT
+id	npcid	descript	player_kingdom	kingdom_id	map_id	map_x	map_y	cost	find_path
+8001	20001	»î¶¯´«ËÍ	1	99	200021	108	88	0	0

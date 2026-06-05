@@ -3,14 +3,15 @@
 #include "Player.h"
 #include "GameService.h"
 #include "ActivityManager.h"
+
 using namespace Answer;
-#define LEVEL_REWARD_REWARD "LEVEL_REWARD_REWARD_"		//µÈ¼¶Àñ°üÏÖÔÚ±ê¼Ç
+#define LEVEL_REWARD_REWARD "LEVEL_REWARD_REWARD_"		//ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú±ï¿½ï¿½
 enum KaiFuHuoDongType
 {
-	KFHDT_LEVEL_UP		= 1,		//µÚÒ»ÌìµÈ¼¶
-	KFHDT_PET			= 2,		//µÚ¶þÌì³èÎï
-	KFHDT_JUN_TUAN		= 3,		//µÚÈýÌì¾üÍÅÕ½
-	KFHDT_BATTLE		= 4,		//µÚËÄÌìÕ½¶·Á¦
+	KFHDT_LEVEL_UP		= 1,		//ï¿½ï¿½Ò»ï¿½ï¿½È¼ï¿½
+	KFHDT_PET			= 2,		//ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	KFHDT_JUN_TUAN		= 3,		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ½
+	KFHDT_BATTLE		= 4,		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ½ï¿½ï¿½ï¿½ï¿½
 };
 struct CButtonState
 {
@@ -29,10 +30,10 @@ struct KaiFuHuoDongState
 typedef std::map<int8_t,KaiFuHuoDongState> KFHD_SATATE;
 enum ERR_VALUES
 {
-	EV_ALREADY_GET		= 1,	//ÒÑÁìÈ¡
-	EV_BROUGHT_OUT		= 2,	//ÒÑÁìÍê
-	EV_TIME_OUT			= 3,	//²»ÔÙÁìÈ¡Ê±¼äÄÚ
-	EV_NO_FINISH		= 4,	//Î´Íê³É
+	EV_ALREADY_GET		= 1,	//ï¿½ï¿½ï¿½ï¿½È¡
+	EV_BROUGHT_OUT		= 2,	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	EV_TIME_OUT			= 3,	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡Ê±ï¿½ï¿½ï¿½ï¿½
+	EV_NO_FINISH		= 4,	//Î´ï¿½ï¿½ï¿½
 };
 
 CKaiFuHuoDong::CKaiFuHuoDong()
@@ -740,4 +741,399 @@ ShowIcon CKaiFuHuoDong::GetKaiFuHuoDongIconStu( Player *pPlayer )
 	}
 
 	return stu;
+}
+// ========== Missing methods from decompiled code ==========
+
+bool CKaiFuHuoDong::InTime()
+{
+	return CFG_DATA.getServerType() != 1 && GetDaysFromServerStart() <= m_HDLastDay;
+}
+
+int32_t CKaiFuHuoDong::GetDaysFromServerStart()
+{
+	if ( CFG_DATA.isUniteServer() )
+	{
+		return 99999;
+	}
+	int32_t DiffDay = CFG_DATA.getServerDiffDay( SVT_NORMAL ) + 1;
+	if ( DiffDay > 0 )
+	{
+		return DiffDay;
+	}
+	return 99999;
+}
+
+void CKaiFuHuoDong::GongGao( Player* pPlayer, int32_t GongGaoId, int32_t Index )
+{
+	if ( NULL == pPlayer )
+	{
+		return;
+	}
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	packet->writeInt32( GongGaoId );
+	packet->writeInt64( pPlayer->getCid() );
+	packet->writeUTF8( pPlayer->getName() );
+	packet->writeInt32( Index );
+	packet->setSize( packet->getWOffset() );
+	packet->setProc( SM_SEND_NOTICE_PARAM );
+	GAME_SERVICE.worldBroadcast( packet );
+}
+
+int32_t CKaiFuHuoDong::GetLimitCount( int32_t index )
+{
+	std::stringstream ss;
+	ss << "KAI_FU_LIMIT_" << index;
+	MySqlDBGuard db(DBPOOL);
+	char mySql[1024] = {0};
+	snprintf( mySql, 1023, "SELECT `value` FROM `sys_server_config` WHERE `name`='%s'", ss.str().c_str() );
+	MySqlQuery result = db.query( mySql );
+	if ( !result.eof() )
+	{
+		return atoi( result.getStringValue(0) );
+	}
+	return 0;
+}
+
+void CKaiFuHuoDong::AddLimitCount( int32_t index, int32_t Values )
+{
+	std::stringstream ss;
+	ss << "KAI_FU_LIMIT_" << index;
+	MySqlDBGuard db(DBPOOL);
+	char mySql[1024] = {0};
+	snprintf( mySql, 1023, "SELECT `value` FROM `sys_server_config` WHERE `name`='%s'", ss.str().c_str() );
+	MySqlQuery result = db.query( mySql );
+	char mySql_0[1024] = {0};
+	if ( result.eof() )
+	{
+		snprintf( mySql_0, 1023, "INSERT INTO `sys_server_config` (`name`,`value`) VALUES('%s','%d')", ss.str().c_str(), Values );
+	}
+	else
+	{
+		snprintf( mySql_0, 1023, "UPDATE `sys_server_config` SET `value`= value + %d WHERE `name`='%s'", Values, ss.str().c_str() );
+	}
+	db.excute( mySql_0 );
+}
+
+int32_t CKaiFuHuoDong::HaveRewardCount( Player* pPlayer )
+{
+	if ( NULL == pPlayer )
+	{
+		return 0;
+	}
+	int32_t Count = 0;
+	for ( KaiFuHuoDongCfg::iterator it = m_KaiFuHuoDongCfg.begin(); it != m_KaiFuHuoDongCfg.end(); ++it )
+	{
+		int32_t Day = GetDaysFromServerStart();
+		if ( Day < it->second.StartDay || Day > it->second.EndDay )
+		{
+			continue;
+		}
+		if ( IsAlreadyGet( pPlayer, it->first ) )
+		{
+			continue;
+		}
+		switch ( it->second.Type )
+		{
+		case 4: // Level up
+			if ( pPlayer->getLevel() >= it->second.Conditions )
+			{
+				if ( GetLimitCount( it->first ) < it->second.Limit )
+					++Count;
+			}
+			break;
+		case 5: // Wing level
+			if ( pPlayer->GetCharWing().GetLevel() >= it->second.Conditions )
+			{
+				if ( GetLimitCount( it->first ) < it->second.Limit )
+					++Count;
+			}
+			break;
+		case 10: // Record 1150
+			if ( pPlayer->getRecord( 1150 ) >= it->second.Conditions )
+			{
+				if ( GetLimitCount( it->first ) < it->second.Limit )
+					++Count;
+			}
+			break;
+		case 11: // JueWei
+			if ( pPlayer->GetCharJueWei().GetJueWei() >= it->second.Conditions )
+			{
+				if ( GetLimitCount( it->first ) < it->second.Limit )
+					++Count;
+			}
+			break;
+		case 12: // Equip level
+			if ( pPlayer->GetEquip().IsAllPosLevel() >= it->second.Conditions )
+			{
+				if ( GetLimitCount( it->first ) < it->second.Limit )
+					++Count;
+			}
+			break;
+		case 13: // FaBao level
+			if ( pPlayer->GetPlayerFaBao().GetFaBaoLevel( 3 ) >= it->second.Conditions )
+			{
+				if ( GetLimitCount( it->first ) < it->second.Limit )
+					++Count;
+			}
+			break;
+		case 17: // Flop draw
+			{
+				int32_t MaxFlopTimes = GetMaxFlopTimes( pPlayer );
+				int32_t FlopCount = MaxFlopTimes - pPlayer->getRecord( 2130 );
+				if ( FlopCount > 0 )
+					Count += FlopCount;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	return Count;
+}
+
+void CKaiFuHuoDong::OnKilledMonster( Player* pPlayer, int32_t Mid )
+{
+	if ( NULL == pPlayer )
+	{
+		return;
+	}
+	int32_t Day = GetDaysFromServerStart();
+	for ( KaiFuHuoDongCfg::iterator it = m_KaiFuHuoDongCfg.begin(); it != m_KaiFuHuoDongCfg.end(); ++it )
+	{
+		if ( it->second.Type == 8 && it->second.StartDay <= Day && it->second.EndDay >= Day )
+		{
+			std::map<int32_t,BossFirstKilled>::iterator bit = m_BossFirstKilledMap.find( Mid );
+			if ( bit == m_BossFirstKilledMap.end() )
+			{
+				BossFirstKilled stu;
+				stu.BossId = Mid;
+				stu.Killer = pPlayer->getCid();
+				stu.KillerName = pPlayer->getName();
+				stu.KillTime = pPlayer->getNow();
+				m_BossFirstKilledMap[Mid] = stu;
+				GongGao( pPlayer, 0, Mid );
+			}
+			break;
+		}
+	}
+}
+
+void CKaiFuHuoDong::OnUpdateKilledMonster( int32_t Mid, CharId_t cid, const std::string& Name, int32_t KillTime )
+{
+	Answer::MutexGuard lock( m_Lock );
+	std::map<int32_t,BossFirstKilled>::iterator it = m_BossFirstKilledMap.find( Mid );
+	if ( it != m_BossFirstKilledMap.end() )
+	{
+		it->second.Killer = cid;
+		it->second.KillerName = Name;
+		it->second.KillTime = KillTime;
+	}
+}
+
+void CKaiFuHuoDong::SendBossFirstKillInfo( Player* pPlayer )
+{
+	if ( NULL == pPlayer )
+	{
+		return;
+	}
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CED );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	int32_t Count = 0;
+	int32_t Oldoffset = packet->getWOffset();
+	packet->writeInt32( 0 );
+	for ( std::map<int32_t,BossFirstKilled>::iterator it = m_BossFirstKilledMap.begin(); it != m_BossFirstKilledMap.end(); ++it )
+	{
+		if ( it->second.Killer > 0 )
+		{
+			packet->writeInt32( it->second.BossId );
+			packet->writeUTF8( it->second.KillerName );
+			++Count;
+		}
+	}
+	int32_t NewWoffset = packet->getWOffset();
+	packet->setWOffset( Oldoffset );
+	packet->writeInt32( Count );
+	packet->setWOffset( NewWoffset );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+}
+
+bool CKaiFuHuoDong::HaveTeHuiGift( Player* pPlayer )
+{
+	if ( NULL == pPlayer )
+	{
+		return false;
+	}
+	for ( KaiFuHuoDongCfg::iterator it = m_KaiFuHuoDongCfg.begin(); it != m_KaiFuHuoDongCfg.end(); ++it )
+	{
+		if ( it->second.Type == 1 && !IsAlreadyGet( pPlayer, it->first ) )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CKaiFuHuoDong::HaveBuyPetItem( Player* pPlayer )
+{
+	if ( NULL == pPlayer )
+	{
+		return false;
+	}
+	for ( KaiFuHuoDongCfg::iterator it = m_KaiFuHuoDongCfg.begin(); it != m_KaiFuHuoDongCfg.end(); ++it )
+	{
+		if ( it->second.Type == 2 && IsAlreadyGet( pPlayer, it->first ) )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void CKaiFuHuoDong::GetKaiFuPetIcon( Player* pPlayer, IconStateList& IconList )
+{
+	if ( NULL == pPlayer )
+	{
+		return;
+	}
+	if ( CFG_DATA.isUniteServer() )
+	{
+		return;
+	}
+	if ( !pPlayer->GetPlayerFunctionOpen().IsOpened( FT_KAI_FU_HUO_DONG ) )
+	{
+		return;
+	}
+	int32_t Day = GetDaysFromServerStart();
+	if ( GetKaiFuPetEndDay() >= Day && GetKaiFuPetStartDay() <= Day )
+	{
+		IconList.push_back( GetKaiFuHuoDongIconStu( pPlayer ) );
+	}
+}
+
+void CKaiFuHuoDong::SendKaiFuPetIcon( Player* pPlayer )
+{
+	if ( NULL == pPlayer )
+	{
+		return;
+	}
+	if ( CFG_DATA.isUniteServer() )
+	{
+		return;
+	}
+	if ( !pPlayer->GetPlayerFunctionOpen().IsOpened( FT_KAI_FU_HUO_DONG ) )
+	{
+		return;
+	}
+	pPlayer->SendIconState( GetKaiFuHuoDongIconStu( pPlayer ) );
+}
+
+int32_t CKaiFuHuoDong::GetKaiFuPetStartDay()
+{
+	for ( KaiFuHuoDongCfg::iterator it = m_KaiFuHuoDongCfg.begin(); it != m_KaiFuHuoDongCfg.end(); ++it )
+	{
+		if ( it->second.Type == 2 )
+		{
+			return it->second.StartDay;
+		}
+	}
+	return 0;
+}
+
+int32_t CKaiFuHuoDong::GetKaiFuPetEndDay()
+{
+	for ( KaiFuHuoDongCfg::iterator it = m_KaiFuHuoDongCfg.begin(); it != m_KaiFuHuoDongCfg.end(); ++it )
+	{
+		if ( it->second.Type == 2 )
+		{
+			return it->second.EndDay;
+		}
+	}
+	return 0;
+}
+
+int32_t CKaiFuHuoDong::GetFlopType( int32_t nFlopId )
+{
+	if ( nFlopId >= 0 && m_FlopSize > nFlopId )
+	{
+		return m_FlopType[nFlopId];
+	}
+	return 0;
+}
+
+bool CKaiFuHuoDong::CanFlopDraw( Player* pPlayer, int32_t FlopId )
+{
+	if ( NULL == pPlayer )
+	{
+		return false;
+	}
+	int32_t Day = GetDaysFromServerStart();
+	if ( Day < m_FlopStartTime || Day > m_FlopEndTime )
+	{
+		return false;
+	}
+	if ( FlopId < 0 || m_FlopSize <= FlopId )
+	{
+		return false;
+	}
+	// Check cost items
+	if ( m_FlopCost[FlopId].m_nId > 0 )
+	{
+		if ( !pPlayer->GetBag().RemoveItem( m_FlopCost[FlopId], IDCR_FLOP ) )
+		{
+			return false;
+		}
+	}
+	// Type 4 is free draw
+	if ( m_FlopType[FlopId] == 4 )
+	{
+		return true;
+	}
+	int32_t FlopTimes = pPlayer->getRecord( 2130 );
+	int32_t MaxTimes = GetMaxFlopTimes( pPlayer );
+	if ( FlopTimes >= MaxTimes )
+	{
+		int32_t BuyTimes = pPlayer->getRecord( 2129 );
+		if ( Day == m_FlopEndTime || m_FlopBuyTimes > BuyTimes )
+		{
+			int32_t NeedCost = 500 * ( BuyTimes + 1 );
+			if ( NeedCost > 0 )
+			{
+				if ( pPlayer->DecCurrency( CURRENCY_GOLD, NeedCost, GCR_FLOP, 0 ) )
+				{
+					pPlayer->GetOperateLimit().AddLimitCount( 2129, 1 );
+					pPlayer->GetOperateLimit().AddLimitCount( 2130, 1 );
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
+	}
+	else
+	{
+		pPlayer->GetOperateLimit().AddLimitCount( 2130, 1 );
+		return true;
+	}
+}
+
+int32_t CKaiFuHuoDong::GetMaxFlopTimes( Player* pPlayer )
+{
+	if ( NULL == pPlayer )
+	{
+		return 0;
+	}
+	int32_t Times = m_FlopFreeTimes;
+	if ( pPlayer->GetTodayPayGold() > 0 )
+	{
+		++Times;
+	}
+	return pPlayer->getRecord( 2129 ) + Times;
 }

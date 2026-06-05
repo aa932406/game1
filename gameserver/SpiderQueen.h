@@ -10,10 +10,12 @@ public:
 	~CSqiderQueen();
 	
 	void StopActivityBySqiderQueenDie();
+
 protected:
 	virtual void stopActivity();
 	virtual void broadcastStart();
-	virtual void broadcastEnd( bool IsTimeEnd );
+	virtual void broadcastTimeEnd();
+	virtual void broadcastKillAllSqiderQueen();
 };
 
-#endif __SPIDER_QUEEN_H__
+#endif //__SPIDER_QUEEN_H__

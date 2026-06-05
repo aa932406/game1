@@ -22,6 +22,10 @@ private:
 	void			SetRank( int32_t Rank );
 	int32_t			GetRank();
 	void			GongGao( int8_t GongGaoType, int64_t Values );
+	void			AddCharAttr();
+	int32_t			onAskJueWeiLevelUp( Answer::NetPacket *inPacket );
+	int32_t			onRequestJueWeiInfo( Answer::NetPacket *inPacket );
+	void			sendJueWeiInfo();
 public:
 	int8_t			GetJueWei();
 	int32_t			GetBattleValues();

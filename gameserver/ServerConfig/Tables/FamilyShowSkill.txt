@@ -1,0 +1,8 @@
+INT	INT	STRING
+Index	SkillId	Name
+1	1	ÉúÃüÐÞÁ¶
+2	2	·ÀÓùÐÞÁ¶
+3	3	¹¥»÷ÐÞÁ¶
+4	4	ÈÍÐÔÐÞÁ¶
+5	5	±©ÉËÐÞÁ¶
+6	6	ÁéÇÉÐÞÁ¶

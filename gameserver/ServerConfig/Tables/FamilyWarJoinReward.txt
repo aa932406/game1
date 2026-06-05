@@ -1,0 +1,3 @@
+INT	INT
+Level	Exp
+99999	10000000

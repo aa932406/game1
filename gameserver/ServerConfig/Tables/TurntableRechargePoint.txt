@@ -1,0 +1,5 @@
+INT	INT	INT	INT
+Id	Recharges	Ponit	MonthNumber
+1	1000	20	15
+2	10000	50	8
+3	100000	100	5

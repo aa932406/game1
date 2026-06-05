@@ -1,0 +1,3 @@
+INT	INT	INT	INT	INT	INT	STRING	INT
+id	itemzhanshi	itemfashi	itemcike	weight	isbind	static_probability	probability
+7919	2031	2041	2051	5	1	7:10000	10000

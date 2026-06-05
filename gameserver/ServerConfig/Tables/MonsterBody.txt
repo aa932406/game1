@@ -1,0 +1,16 @@
+INT	STRING	STRING	STRING	INT	INT	STRING	STRING
+PlayerId	Weapon	Person	Wing	Sex	Job	Word	JueWeiName
+1	zhanshi132_nan	zhanshi33_nan	20	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#e60012">浩瀚擎天·虚祖</font>
+2	zhanshi130_nan	zhanshi30_nan	113	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#e60012">普度八荒·圣尊</font>
+3	zhanshi127_nan	zhanshi26_nan	112	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#e60012">万劫不灭·斗神</font>
+4	zhanshi25_nan	zhanshi25_nan	111	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#f7ab00">摧星撼月·神</font>
+5	zhanshi22_nan	zhanshi22_nan	110	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#f7ab00">超凡入圣·仙</font>
+6	zhanshi20_nan	zhanshi20_nan	109	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#f7ab00">君临天下·皇</font>
+7	zhanshi18_nan	zhanshi18_nan	108	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#a54bfa">天人合一</font>
+8	zhanshi13_nan	zhanshi13_nan	107	1	1	<font color="#f7ab00">决战布拉格</font><font color="#6FA8DC">(圣域)</font>	<font color="#a54bfa">出神入化</font>
+9	zhanshi132_nan	zhanshi33_nan	20	1	1	<font color="#f7ab00">皇城争霸</font><font color="#6FA8DC">(圣域)</font>	<font color="#e60012">浩瀚擎天·虚祖</font>
+10	zhanshi130_nan	zhanshi30_nan	113	1	1	<font color="#f7ab00">皇城争霸</font><font color="#6FA8DC">(圣域)</font>	<font color="#e60012">普度八荒·圣尊</font>
+11	zhanshi127_nan	zhanshi26_nan	112	1	1	<font color="#f7ab00">皇城争霸</font><font color="#6FA8DC">(圣域)</font>	<font color="#e60012">万劫不灭·斗神</font>
+12	zhanshi25_nan	zhanshi25_nan	111	1	1	<font color="#f7ab00">皇城争霸</font><font color="#6FA8DC">(圣域)</font>	<font color="#f7ab00">摧星撼月·神</font>
+13	zhanshi22_nan	zhanshi22_nan	110	1	1	<font color="#f7ab00">皇城争霸</font><font color="#6FA8DC">(圣域)</font>	<font color="#f7ab00">超凡入圣·仙</font>
+14	zhanshi22_nan	zhanshi22_nan	110	1	1	 	 

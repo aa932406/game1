@@ -1,0 +1,4 @@
+STRING	INT	INT	STRING
+PingTai	Icon	Pic	LoadUrl
+sogou	1008	5	-1
+duowanclouds	1004	-1	http://wan.yy.com/yygame.html

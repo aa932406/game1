@@ -12,6 +12,13 @@
 #include "TianJiangBaoXiang.h"
 #include "VipGuaJi.h"
 #include "SpiderQueen.h"
+#include "CityWar.h"
+#include "CampWar.h"
+#include "PeerlessWar.h"
+#include "ActivityWorldBoss.h"
+#include "CrossTower.h"
+#include "KaiFuBoss.h"
+#include "UltimateChallenge.h"
 #include <algorithm>
 
 using namespace Answer;
@@ -25,7 +32,7 @@ CActivityManager::~CActivityManager()
 
 }
 
-//»î¶¯³õÊ¼»¯Êý¾Ý
+//ï¿½î¶¯ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void CActivityManager::Init()
 {
 	const CfgActivityTable &cfgAllActivity = CFG_DATA.getAllActivity();
@@ -47,6 +54,14 @@ void CActivityManager::Init()
 		case ATI_BAO_XIANG:			pActivity = new CTianJiangBaoXiang(cfgActivity);				break;
 		case ATI_TERRITORY_WAR:		pActivity = new CTerritoryWar( cfgActivity, TerritorySign );	break;
 		case ATI_SPIDER_QUEEN:		pActivity = new CSqiderQueen( cfgActivity );					break;
+		// ï¿½Â·ï¿½ï¿½ï¿½ - ï¿½ï¿½ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â°æ±¾
+		case ATI_WORLD_BOSS:		pActivity = new CActivityWorldBoss( cfgActivity );				break;
+		case ATI_CAMP_WAR:			pActivity = new CCampWar( cfgActivity );						break;
+		case ATI_PEERLESS_WAR:		pActivity = new CPeerlessWar( cfgActivity );					break;
+		case ATI_CITY_WAR:			pActivity = new CCityWar( cfgActivity );						break;
+		case ATI_CROSS_TOWER:		pActivity = new CCrossTower( cfgActivity );					break;
+		case ATI_KAI_FU_BOSS:		pActivity = new CKaiFuBoss( cfgActivity );						break;
+		case ATI_ULTIMATE_CHALLENGE:	pActivity = new CUltimateChallenge( cfgActivity );				break;
 		default: break;
 		}
 		if ( pActivity != NULL )
@@ -143,7 +158,7 @@ CActivity* CActivityManager::GetActivity( int32_t id )
 	return NULL;
 }
 
-//»ñÈ¡ËùÓÐ»î¶¯µÄÊý¾ÝÐ´Èëµ½Êý¾Ý°üÖÐ
+//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ð»î¶¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ëµ½ï¿½ï¿½ï¿½Ý°ï¿½ï¿½ï¿½
 void CActivityManager::AppendActivityState(Answer::NetPacket *packet)
 {
 	if (NULL == packet)
@@ -214,10 +229,8 @@ std::string CActivityManager::GetFamilyWarLeaderName()
 
 void CActivityManager::OnFamilyWarResult( int32_t nActId, FamilyId_t nFamilyId, int16_t nWinTimes, string FamilyName, string LeadyerName  )
 {
-	//m_nFamilyWarWinner		= nFamilyId;
-	//m_nFamilyWarWinTimes	= nWinTimes;
 	ActivityMap::iterator iter = m_mActivity.find( nActId );
-	if ( iter == m_mActivity.end() )
+	if ( iter != m_mActivity.end() )
 	{
 		CFamilyWar* pFamilyWar = dynamic_cast<CFamilyWar*>( iter->second );
 		if ( pFamilyWar != NULL )
@@ -230,7 +243,7 @@ void CActivityManager::OnFamilyWarResult( int32_t nActId, FamilyId_t nFamilyId, 
 void CActivityManager::OnTerritoryWarResult( int32_t nActId, std::string winners )
 {
 	ActivityMap::iterator iter = m_mActivity.find( nActId );
-	if ( iter == m_mActivity.end() )
+	if ( iter != m_mActivity.end() )
 	{
 		CTerritoryWar* pTerritoryWar = dynamic_cast<CTerritoryWar*>( iter->second );
 		if ( pTerritoryWar != NULL )
@@ -329,4 +342,120 @@ void CActivityManager::NotifyActivityInfo( Player* player )
 			pActivity->NotifyActivityInfo( player );
 		}
 	}
+}
+
+// ========== ï¿½Â·ï¿½ï¿½ï¿½ - ï¿½ï¿½ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â°æ±¾ ==========
+
+void CActivityManager::SendActivityRankInfo( Player* player, int32_t nId )
+{
+	ActivityMap::iterator iter = m_mActivity.find( nId );
+	if ( iter != m_mActivity.end() && iter->second != NULL )
+	{
+		// ï¿½ï¿½ï¿½Ã·ï¿½ï¿½î¶¯Ë¢ï¿½Â·ï¿½ï¿½Ð°ï¿½ï¿½ï¿½Ï¢
+		// Ã¿ï¿½ï¿½ï¿½î¶¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ä·ï¿½ï¿½Ð°ï¿½ß¼ï¿½
+	}
+}
+
+void CActivityManager::UpdateActivityState( int32_t nId, int32_t nState )
+{
+	ActivityMap::iterator iter = m_mActivity.find( nId );
+	if ( iter != m_mActivity.end() && iter->second != NULL )
+	{
+		// Í¨Öªï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½Ë¸ï¿½ï¿½Â»î¶¯×´Ì¬
+	}
+}
+
+bool CActivityManager::IsActivityRunningByType( int32_t nType )
+{
+	for ( ActivityMap::iterator iter = m_mActivity.begin(); iter != m_mActivity.end(); ++iter )
+	{
+		CActivity* pActivity = iter->second;
+		if ( pActivity != NULL && pActivity->GetType() == nType && pActivity->IsRuning() )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+int32_t CActivityManager::GetCurActivityId()
+{
+	for ( ActivityMap::iterator iter = m_mActivity.begin(); iter != m_mActivity.end(); ++iter )
+	{
+		CActivity* pActivity = iter->second;
+		if ( pActivity != NULL && pActivity->IsRuning() )
+		{
+			return pActivity->GetId();
+		}
+	}
+	return 0;
+}
+
+FamilyId_t CActivityManager::GetCityWarWinner()
+{
+	return m_nCityWarWinner;
+}
+
+void CActivityManager::SetCityWarWinner( FamilyId_t nFamilyId )
+{
+	m_nCityWarWinner = nFamilyId;
+}
+
+FamilyId_t CActivityManager::GetPeerlessWarWinner()
+{
+	return m_nPeerlessWarWinner;
+}
+
+void CActivityManager::SetPeerlessWarWinner( FamilyId_t nFamilyId )
+{
+	m_nPeerlessWarWinner = nFamilyId;
+}
+
+void CActivityManager::OnCityWarResult( int32_t nActId, FamilyId_t nWinnerId, const std::string& winnerName )
+{
+	ActivityMap::iterator iter = m_mActivity.find( nActId );
+	if ( iter != m_mActivity.end() )
+	{
+		SetCityWarWinner( nWinnerId );
+		m_sCityWarWinnerName = winnerName;
+	}
+}
+
+void CActivityManager::OnPeerlessWarResult( int32_t nActId, FamilyId_t nWinnerId, const std::string& winnerName )
+{
+	ActivityMap::iterator iter = m_mActivity.find( nActId );
+	if ( iter != m_mActivity.end() )
+	{
+		SetPeerlessWarWinner( nWinnerId );
+		m_sPeerlessWarWinnerName = winnerName;
+	}
+}
+
+void CActivityManager::AddTianJiangBaoXiangCount( Player* player, int32_t nCount )
+{
+	// ï¿½ï¿½ï¿½Ó½ï¿½ï¿½ï¿½ï¿½ï¿½ò¿ª·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+}
+
+void CActivityManager::ApplyCityWar( Player* player )
+{
+	if ( NULL == player )
+	{
+		return;
+	}
+	for ( ActivityMap::iterator iter = m_mActivity.begin(); iter != m_mActivity.end(); ++iter )
+	{
+		CCityWar* pCityWar = dynamic_cast<CCityWar*>( iter->second );
+		if ( pCityWar != NULL )
+		{
+			pCityWar->ApplyCityWar( player );
+			break;
+		}
+	}
+}
+
+void CActivityManager::SetCrossTowerResult( CharId_t nWinnerId, int32_t nBattle, const std::string& winnerName )
+{
+	m_nCrossTowerWinner = nWinnerId;
+	m_sCrossTowerWinnerName = winnerName;
+	m_nCrossTowerBattle = nBattle;
 }

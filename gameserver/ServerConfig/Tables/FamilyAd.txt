@@ -1,0 +1,11 @@
+INT	STRING	STRING
+Index	Dec	Function
+1	小提示：<font color="#00ff00"><u>购买三种VIP卡</u></font>可永久获得170点战斗力	openPanel|VipPanel|1
+2	小提示：幻兽的品质越好，星级的成长速度和上限都会越高	-1
+3	小提示：使用<font color="#00ff00"><u>圣兽合晶</u></font>可以出战第三只幻兽，战力暴涨	openPanel|sanChongPanel|1
+4	小提示：<font color="#00ff00"><u>首次充值</u></font>可以获得实用的法系群攻幻兽	openPanel|firstChargePanel|1
+5	小提示：坐骑达到100星以后骑乘的移动速度会增加哦	-1
+6	小提示：在开服<font color="#00ff00"><u>限时抢购</u></font>中可以购买到非常划算的道具哦	openPanel|teHuiPanel|1
+7	小提示：在PK中将高防高血幻兽进行<font color="#00ff00">合体</font>能大幅提升生存能力	-1
+8	小提示：在<font color="#00ff00"><u>投资理财</u></font>中进行月卡投资，只需两天即可返还所有钻石	openPanel|touZiPanel|0
+9	小提示：在幻兽和灵兽幻化时使用<font color="#00ff00">幸运草</font>可以让他们成长到更高的星级	-1

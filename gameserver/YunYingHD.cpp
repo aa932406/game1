@@ -4,10 +4,12 @@
 #include "EquipManager.h"
 #include "GameService.h"
 #include "DBService.h"
+#include "FestivalDoubleEleven.h"
 
 CYunYingHD::CYunYingHD()
 {
 	m_TotalChongZhiDay = 0;
+	m_nLastTeHui = 0;
 }
 
 CYunYingHD::~CYunYingHD()
@@ -113,8 +115,10 @@ void CYunYingHD::OnUpdate( int64_t curTick )
 
 void CYunYingHD::OnDaySwitch( int32_t nDiffDays )
 {
-	SendEveryDayChongZhiInfo();
-	SendEveryDayChongZhiIcon();
+	SendEveryDayChongZhiInfo( 3 );
+	SendEveryDayChongZhiInfo( 2 );
+	SendEveryDayChongZhiIcon( 3 );
+	SendEveryDayChongZhiIcon( 2 );
 	SendTotalChongZhiIcon();
 }
 
@@ -681,9 +685,22 @@ bool CYunYingHD::IsHaveTeHuiGift()
 	return false;
 }
 
-void CYunYingHD::SendEveryDayChongZhiInfo()
+void CYunYingHD::SendEveryDayChongZhiInfo( int8_t nType )
 {
 	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	int32_t nRecord = 0;
+	if ( nType == 3 || nType == 1 || nType == 4 )
+	{
+		nRecord = m_pPlayer->getRecord( PR_EVERY_DAY_CHONG_ZHI_GIFT_RECORD );
+	}
+	else if ( nType == 2 )
+	{
+		nRecord = m_pPlayer->getRecord( 2033 );
+	}
+	else
 	{
 		return;
 	}
@@ -692,15 +709,20 @@ void CYunYingHD::SendEveryDayChongZhiInfo()
 	{
 		return;
 	}
+	packet->writeInt8( nType );
 	packet->writeInt32( m_pPlayer->GetTodayPayGold() );
-	packet->writeInt32( m_pPlayer->getRecord( PR_EVERY_DAY_CHONG_ZHI_GIFT_RECORD ) );
+	packet->writeInt32( nRecord );
 	packet->setSize(packet->getWOffset());
 	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
-void CYunYingHD::SendEveryDayChongZhiIcon()
+void CYunYingHD::SendEveryDayChongZhiIcon( int8_t nType )
 {
 	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	if ( !CanShowEveryChongZhiIcon() )
 	{
 		return;
 	}
@@ -708,25 +730,28 @@ void CYunYingHD::SendEveryDayChongZhiIcon()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
-	if (NULL == packet)
+	if ( nType != 2 )
+	{
+		ShowIcon stu = GetEveryDayChongZhiIconStu( nType );
+		m_pPlayer->SendIconState( stu );
+		return;
+	}
+	// nType == 2: FestivalDailyRecharge check
+	CFestivalDoubleEleven* pFestival = Answer::Singleton<CFestivalDoubleEleven>::instance();
+	if ( pFestival != NULL && pFestival->IsInTime( FAT_DAILY_RECHARGE ) )
+	{
+		ShowIcon stu = GetEveryDayChongZhiIconStu( nType );
+		m_pPlayer->SendIconState( stu );
+	}
+}
+
+void CYunYingHD::GetEveryDayChongZhiIconState( IconStateList& IconList )
+{
+	if ( NULL == m_pPlayer )
 	{
 		return;
 	}
-	ShowIcon stu = GetEveryDayChongZhiIconStu();
-	packet->writeInt32( stu.nId );
-	packet->writeInt8(  stu.nState );
-	packet->writeInt32( stu.nLeftTime );
-	packet->writeInt8( stu.IconLeft );
-	packet->writeInt32( stu.IconRight );
-	packet->writeInt8( stu.Effects );
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
-}
-
-void CYunYingHD::GetEVeryDayChongZhiIconState( IconStateList& IconList )
-{
-	if ( NULL == m_pPlayer )
+	if ( !CanShowEveryChongZhiIcon() )
 	{
 		return;
 	}
@@ -734,17 +759,23 @@ void CYunYingHD::GetEVeryDayChongZhiIconState( IconStateList& IconList )
 	{
 		return;
 	}
-	if ( !IsHaveEveryDayChongZhiGift() )
+	int32_t HaveCount = 0;
+	if ( HaveEveryDayChongZhiGiftCount( 3, HaveCount ) )
 	{
-		return;
+		IconList.push_back( GetEveryDayChongZhiIconStu( 3 ) );
 	}
-	IconList.push_back( GetEveryDayChongZhiIconStu() );
+	CFestivalDoubleEleven* pFestival = Answer::Singleton<CFestivalDoubleEleven>::instance();
+	if ( pFestival != NULL && pFestival->IsInTime( FAT_DAILY_RECHARGE )
+		&& HaveEveryDayChongZhiGiftCount( 2, HaveCount ) )
+	{
+		IconList.push_back( GetEveryDayChongZhiIconStu( 2 ) );
+	}
 }
 
-ShowIcon CYunYingHD::GetEveryDayChongZhiIconStu()
+ShowIcon CYunYingHD::GetEveryDayChongZhiIconStu( int8_t nType )
 {
 	ShowIcon stu = {};
-	stu.nId			= EVERYDAY_CHOU_ZHI;
+	stu.nId			= getEveryDayChongZhiIcon( nType );
 	if ( !IsHaveEveryDayChongZhiGift() )
 	{
 		stu.nState		= AS_TIME_OUT;
@@ -754,7 +785,6 @@ ShowIcon CYunYingHD::GetEveryDayChongZhiIconStu()
 		stu.nState		= AS_RUNNING;
 	}
 	stu.nLeftTime	= -1;
-	stu.Effects		= 1;
 	return stu;
 }
 
@@ -970,4 +1000,248 @@ void CYunYingHD::AddTotalChongZhiCount( int32_t AddCount )
 		SendTotalChongZhiIcon();
 	}
 	SendTotalChongZhiInfo();
+}
+// ========== Missing methods from decompiled code ==========
+
+int32_t CYunYingHD::getTeHuiLimitTime()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return 0;
+	}
+	int32_t nLimitTime = 0;
+	int32_t nStartTime = m_pPlayer->getCreateTime();
+	int32_t nNowTime = m_pPlayer->getNow();
+	int32_t OldRecord = m_pPlayer->getRecord( RP_BUY_TE_HUI_RECORD );
+	const NewServerFavorableMap& cfgMap = CFG_DATA.GetNewServerFavorableCfg();
+	for ( NewServerFavorableMap::const_iterator iter = cfgMap.begin(); iter != cfgMap.end(); ++iter )
+	{
+		int32_t NewRecord = OldRecord | ( 1 << ( iter->first - 1 ) );
+		if ( OldRecord != NewRecord )
+		{
+			int32_t nTime = nStartTime + iter->second.nLimitTime - nNowTime;
+			if ( nTime > 0 && ( nLimitTime == 0 || nLimitTime > nTime ) )
+			{
+				nLimitTime = nTime;
+			}
+		}
+	}
+	return nLimitTime;
+}
+
+void CYunYingHD::checkTeHuiTime()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	int32_t nLimitTime = 0;
+	int32_t nIndex = 0;
+	int32_t nStartTime = m_pPlayer->getCreateTime();
+	int32_t nNowTime = m_pPlayer->getNow();
+	int32_t OldRecord = m_pPlayer->getRecord( RP_BUY_TE_HUI_RECORD );
+	const NewServerFavorableMap& cfgMap = CFG_DATA.GetNewServerFavorableCfg();
+	for ( NewServerFavorableMap::const_iterator iter = cfgMap.begin(); iter != cfgMap.end(); ++iter )
+	{
+		int32_t NewRecord = OldRecord | ( 1 << ( iter->first - 1 ) );
+		if ( OldRecord != NewRecord )
+		{
+			int32_t nTime = nStartTime + iter->second.nLimitTime - nNowTime;
+			if ( nTime > 0 && ( nLimitTime == 0 || nLimitTime > nTime ) )
+			{
+				nIndex = iter->first;
+				nLimitTime = nTime;
+			}
+		}
+	}
+	if ( m_nLastTeHui != nIndex )
+	{
+		m_nLastTeHui = nIndex;
+		SendTeHuiIcon();
+	}
+}
+
+bool CYunYingHD::CanShowEveryChongZhiIcon()
+{
+	if ( m_pPlayer->GetTotalPayGold() <= 0 )
+	{
+		return false;
+	}
+	int32_t nRecord = m_pPlayer->getRecord( 1026 );
+	return nRecord == ( nRecord | 2 );
+}
+
+int32_t CYunYingHD::getEveryDayChongZhiIcon( int8_t nType )
+{
+	if ( nType == 3 || nType == 1 || nType == 4 )
+	{
+		return 17;
+	}
+	if ( nType == 2 )
+	{
+		return 52;
+	}
+	return 0;
+}
+
+bool CYunYingHD::HaveEveryDayChongZhiGiftCount( int8_t nType, int32_t& Count )
+{
+	int32_t OldRecord = 0;
+	if ( nType == 3 || nType == 1 || nType == 4 )
+	{
+		OldRecord = m_pPlayer->getRecord( PR_EVERY_DAY_CHONG_ZHI_GIFT_RECORD );
+	}
+	else if ( nType == 2 )
+	{
+		OldRecord = m_pPlayer->getRecord( 2033 );
+	}
+	else
+	{
+		return false;
+	}
+	bool CanShowIcon = false;
+	// Use existing CFG_DATA.GetEveryDayTable() which returns EverydayChongZhiMap
+	const EverydayChongZhiMap& CfgEveryDayChongZhiMap = CFG_DATA.GetEveryDayTable();
+	for ( EverydayChongZhiMap::iterator it = CfgEveryDayChongZhiMap.begin(); it != CfgEveryDayChongZhiMap.end(); ++it )
+	{
+		int32_t NewRecord = OldRecord | ( 1 << ( it->first - 1 ) );
+		if ( OldRecord != NewRecord )
+		{
+			CanShowIcon = true;
+			if ( m_pPlayer->GetTodayPayGold() >= it->second.NeedGold )
+			{
+				++Count;
+			}
+		}
+	}
+	return CanShowIcon;
+}
+
+// ========== Mobile Phone Gift ==========
+
+int32_t CYunYingHD::OnGetMobilePhoneGift( Answer::NetPacket *inPacket )
+{
+	// TODO: needs CfgMobilePhoneGift / CFG_DATA.GetMobilePhoneGift / DBService.CheckMobilePhoneGiftEffect
+	// Infra not ported yet. Return stub error.
+	return ERR_SYETEM_ERR;
+}
+
+int32_t CYunYingHD::OnDBGetMobilePhoneGift( Answer::NetPacket *inPacket )
+{
+	// TODO: needs CfgMobilePhoneGift / CfgAdultGift / CfgWeiXingGift types
+	// Infra not ported yet. Return stub error.
+	return ERR_SYETEM_ERR;
+}
+
+
+void CYunYingHD::GetMobilePhoneGiftIconState( IconStateList& IconList )
+{
+	// TODO: needs CfgMobilePhoneGift - infra not ported yet
+}
+
+void CYunYingHD::SendMobilePhoneGiftIcon()
+{
+	// TODO: needs CfgMobilePhoneGift - infra not ported yet
+}
+
+ShowIcon CYunYingHD::GetMobilePhoneGiftIconStu( int32_t nIcon )
+{
+	ShowIcon stu = {};
+	stu.nId = nIcon;
+	stu.nState = AS_RUNNING;
+	stu.nLeftTime = -1;
+	return stu;
+}
+
+void CYunYingHD::GetAdultGiftIconState( IconStateList& IconList )
+{
+	// TODO: needs CfgAdultGift - infra not ported yet
+}
+
+void CYunYingHD::SendAdultGiftIcon()
+{
+	// TODO: needs CfgAdultGift - infra not ported yet
+}
+
+ShowIcon CYunYingHD::GetAdultGiftIconStu( int32_t nIconId )
+{
+	ShowIcon stu = {};
+	stu.nId = nIconId;
+	stu.nState = AS_RUNNING;
+	stu.nLeftTime = -1;
+	return stu;
+}
+
+void CYunYingHD::SuperMemberRecharge( int32_t nGold )
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	int32_t nowTime = m_pPlayer->getNow();
+	m_pPlayer->GetOperateLimit().UpdateLimitCount( 1114, nowTime );
+	m_pPlayer->GetOperateLimit().AddLimitCount( 1115, nGold );
+	int32_t nOldRecord = m_pPlayer->GetOperateLimit().GetLimitCount( 1116 );
+	int32_t nNewRecord = m_pPlayer->GetOperateLimit().GetLimitCount( 1115 );
+	if ( nNewRecord > nOldRecord )
+	{
+		m_pPlayer->GetOperateLimit().UpdateLimitCount( 1116, nNewRecord );
+	}
+}
+
+void CYunYingHD::GetSuperMemberIconState( IconStateList& IconList )
+{
+	// TODO: needs CfgSuperMember/CFG_DATA.GetSuperMember - infra not ported yet
+}
+
+// ========== Zero Buy Pet ==========
+
+int32_t CYunYingHD::OnGetZeroBuyPetGift( Answer::NetPacket *inPacket )
+{
+	// TODO: needs CfgData.GetZeroBuyPetCfg - infra not ported yet
+	return ERR_SYETEM_ERR;
+}
+
+void CYunYingHD::OnZeroBuyPetOpen()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	int32_t Now = m_pPlayer->getNow();
+	m_pPlayer->updateRecord( 37502, Now + 86400 ); // 1 day
+	SendZeroBuyPetIcon();
+}
+
+void CYunYingHD::SendZeroBuyPetIcon()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	if ( m_pPlayer->GetPlayerFunctionOpen().IsOpened( 237 ) )
+	{
+		m_pPlayer->SendIconState( GetZeroBuyPetIconStu() );
+	}
+}
+
+void CYunYingHD::GetZeroBuyPetIconState( IconStateList& IconList )
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	if ( m_pPlayer->GetPlayerFunctionOpen().IsOpened( 237 ) )
+	{
+		IconList.push_back( GetZeroBuyPetIconStu() );
+	}
+}
+
+ShowIcon CYunYingHD::GetZeroBuyPetIconStu()
+{
+	ShowIcon stu = {};
+	stu.nId = 122;
+	stu.nState = AS_RUNNING;
+	stu.nLeftTime = -1;
+	return stu;
 }

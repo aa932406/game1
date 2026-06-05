@@ -1,0 +1,2 @@
+STRING	INT	INT
+mini_body	Action	Frame

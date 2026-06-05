@@ -1,0 +1,5 @@
+INT	INT
+Id	SkillId
+1	3521
+2	0
+3	0

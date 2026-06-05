@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "stdafx.h"
+#include "DataStructs.h"
 #include "CharPet.h"
 #include "CfgData.h"
 #include "Player.h"
@@ -13,12 +14,12 @@
 #include "PoolManager.h"
 
 int32_t	vPetBagSize[PET_BAG_TYPE_SIZE] = { PET_BAG_SIZE, PET_DEPORT_SIZE };
-#define ADD_SOUL	800		//À¿Õˆª√ ﬁª÷∏¥¡ÈªÍ÷µ
+#define ADD_SOUL	800		//ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩﬁª÷∏ÔøΩÔøΩÔøΩÔøΩ÷µ
 using namespace Answer;
 
 enum ERR_PET
 {
-	ERR_PET_USE_LUCKY_ITEM_FAIL	= 1,		// ≥ËŒÔ π”√–“‘À÷µµ¿æﬂ ß∞‹
+	ERR_PET_USE_LUCKY_ITEM_FAIL	= 1,		// ÔøΩÔøΩÔøΩÔøΩ πÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ÷µÔøΩÔøΩÔøΩÔøΩ ßÔøΩÔøΩ
 };
 
 CExtCharPet::CExtCharPet()
@@ -27,7 +28,7 @@ CExtCharPet::CExtCharPet()
 	initEggBag( PEBT_HATCH_POOL, PET_HATCH_POOL_SIZE );
 //	initEggBag( PEBT_MUTI_HATCH_POOL, PET_MUTI_HATCH_POOL_SIZE );
 
-	// ÷∏’Î≥ı ºªØ
+	// ÷∏ÔøΩÔøΩÔøΩ ºÔøΩÔøΩ
 	m_pRidePet	= NULL;
 	bzero( m_vFightPet,		sizeof( m_vFightPet ) );
 	bzero( m_vAllPet,		sizeof( m_vAllPet ) );
@@ -103,7 +104,7 @@ void CExtCharPet::AddPetFromGift( CfgPetGift* pPetGift )
 
 void CExtCharPet::OnLoadFromDB( const PlayerDBData& dbData )
 {
-	if ( dbData.m_CharPets.charPets.empty() )	// ≥ı ºªØ√ª”–≥ËŒÔ£¨ÀÕ¡Ω÷ª
+	if ( dbData.m_CharPets.charPets.empty() )	// ÔøΩÔøΩ ºÔøΩÔøΩ√ªÔøΩ–≥ÔøΩÔøΩÔ£¨ÔøΩÔøΩÔøΩÔøΩ÷ª
 	{
 		if ( NULL == m_pPlayer )
 		{
@@ -244,6 +245,15 @@ void CExtCharPet::GetInterestsProtocol( ProcIdList& procList )
 	procList.push_back ( CM_PET_GET_FROM_BAG );
 	procList.push_back ( CM_WEAR_QI_SHI );
 	procList.push_back( CM_PET_ILLUSION_BY_LI_BAO );
+procList.push_back( CM_PET_FIGHT );
+	procList.push_back( CM_PET_HUANHUA );
+	procList.push_back( CM_PET_UP_STAR );
+	procList.push_back( CM_PET_DRESS_EQUIP );
+	procList.push_back( CM_PET_UNDRESS_EQUIP );
+	procList.push_back( CM_PET_FITTING );
+	procList.push_back( CM_PET_REST_PET );
+	procList.push_back( CM_PET_CHANGE_AI );
+	procList.push_back( CM_PET_SKILL_UP_LEVEL );
 }
 
 int32_t CExtCharPet::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -282,7 +292,16 @@ int32_t CExtCharPet::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
 // 	case CM_PET_MOVE_TO_BAG:					return onMoveToBag( inPacket );
 // 	case CM_PET_GET_FROM_BAG:					return onGetFromBag( inPacket );
 	case CM_WEAR_QI_SHI:						return onWearQiShi( inPacket );
-	case CM_PET_ILLUSION_BY_LI_BAO:				return onLiBaoIllusion( inPacket );
+	case CM_PET_ILLUSION_BY_LI_BAO:			return onLiBaoIllusion( inPacket );
+	case CM_PET_FIGHT:						return onFight( inPacket );
+	case CM_PET_HUANHUA:					return onPetHuanHua( inPacket );
+	case CM_PET_UP_STAR:					return onUpStar( inPacket );
+	case CM_PET_DRESS_EQUIP:				return onDressEquip( inPacket );
+	case CM_PET_UNDRESS_EQUIP:				return onUnDressEquip( inPacket );
+	case CM_PET_FITTING:					return onFitting( inPacket );
+	case CM_PET_REST_PET:					return onRestPet( inPacket );
+	case CM_PET_CHANGE_AI:					return onChangeAi( inPacket );
+	case CM_PET_SKILL_UP_LEVEL:				return onSkillUpLevel( inPacket );
 	default:	break;
 	}
 	return ERR_OK;
@@ -444,7 +463,7 @@ int32_t CExtCharPet::onZoarium( Answer::NetPacket* inPacket )
 		return ERR_SYETEM_ERR;
 	}
 
-	// ∫œÃÂ“‘∫Û¥”µÿÕºœ˚ ß
+	// ÔøΩÔøΩÔøΩÔøΩÔøΩ‘∫ÔøΩ”µÔøΩÕºÔøΩÔøΩ ß
 	pPet->Zoarium();
 	pPet->LeaveMap();
 	pPet->SendPetInfo( false );
@@ -472,7 +491,7 @@ int32_t CExtCharPet::onZoariumOff( Answer::NetPacket* inPacket )
 		return ERR_SYETEM_ERR;
 	}
 
-	// Ω‚≥˝∫œÃÂ“‘∫Û≥ˆ’Ω
+	// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ‘∫ÔøΩÔøΩ’Ω
 	int32_t SubHp		= pPet->GetAttrValue( CObjAttrs::ATTR_HP ) / 10;
 	int32_t PlayerHp	= m_pPlayer->GetHP();
 	if ( SubHp >= PlayerHp )
@@ -496,7 +515,7 @@ int32_t CExtCharPet::onRide( Answer::NetPacket* inPacket )
 	}
 
 	PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
-	if ( nPetId == 0 )	// œ¬◊¯∆Ô
+	if ( nPetId == 0 )	// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	{
 		ridePet( NULL );
 		m_pPlayer->recalcAttr();
@@ -568,7 +587,7 @@ int32_t CExtCharPet::onChangeName( Answer::NetPacket* inPacket )
 	return ERR_OK;
 }
 
-int32_t CExtCharPet::onPetRelease( Answer::NetPacket* inPacket )			// ∑≈…˙≥ËŒÔ
+int32_t CExtCharPet::onPetRelease( Answer::NetPacket* inPacket )			// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 {
 	if ( NULL == m_pPlayer || NULL == inPacket )
 	{
@@ -750,7 +769,7 @@ int32_t CExtCharPet::onReHatching( Answer::NetPacket* inPacket )
 		eggList.push_back( pEgg );
 	}
 
-	// √øø≈µ∞œ˚∫ƒ3ƒß Ø
+	// √øÔøΩ≈µÔøΩÔøΩÔøΩÔøΩÔøΩ3ƒß Ø
 	if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, PET_EGG_REHATCH_COST * ( nCount > 10 ? 10 : nCount ), GCR_PET_EGG_REHATCH ) )
 	{
 		return ERR_INVALID_DATA;
@@ -804,7 +823,7 @@ int32_t CExtCharPet::onQuickHatching( Answer::NetPacket* inPacket )
 		eggList.push_back( pEgg );
 		nTotalTime += pEgg->GetStartTime() + PET_EGG_MUTI_HATCH_TIME - nNow;
 	}
-	// √ø30∑÷÷”œ˚∫ƒ1ƒß Ø
+	// √ø30ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ1ƒß Ø
 	int32_t nNeedGold = nTotalTime % PET_EGG_QUICK_HATCH_COST == 0 ? nTotalTime / PET_EGG_QUICK_HATCH_COST : nTotalTime / PET_EGG_QUICK_HATCH_COST + 1;
 	if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, nNeedGold, GCR_PET_EGG_QUICK_HATCH ) )
 	{
@@ -961,7 +980,7 @@ int32_t CExtCharPet::onDropEgg( Answer::NetPacket* inPacket )
 
 	if ( pPet != NULL )
 	{
-		PET_MANAGER.DelPet( pPet );	// …æ≥˝∂‘œÛ
+		PET_MANAGER.DelPet( pPet );	// …æÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	}
 	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nSlot );
 	return ERR_OK;
@@ -985,7 +1004,7 @@ int32_t CExtCharPet::onUseExpItem( Answer::NetPacket* inPacket )
 
 	if ( !pPet->AliveFlag() )
 	{
-		// À¿Õˆ∫Û≤ªƒ‹≥‘æ≠—È«Ú
+		// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ‹≥‘æÔøΩÔøΩÔøΩÔøΩÔøΩ
 		return ERR_INVALID_DATA;
 	}
 
@@ -1004,13 +1023,13 @@ int32_t CExtCharPet::onUseExpItem( Answer::NetPacket* inPacket )
 	bool bNeedCheck = false;
 	PET_RECORD record;
 	int32_t nAddExp = 0;
-	if ( slot.itemId == ISI_PET_EXP_GRAIN )				//  • ﬁƒßæß
+	if ( slot.itemId == ISI_PET_EXP_GRAIN )				//  •ÔøΩÔøΩƒßÔøΩÔøΩ
 	{
 		record = PR_USE_EXP_GRAIN;
 		bNeedCheck = true;
 		nAddExp = atoi( cfgItem->effect.c_str() );
 	}
-	else if ( slot.itemId == ISI_EXP_BALL )				// æ≠—È«Ú
+	else if ( slot.itemId == ISI_EXP_BALL )				// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	{
 		if( pPet->getLevel() >= m_pPlayer->getLevel() + LEVEL_DIFF )
 		{
@@ -1020,7 +1039,7 @@ int32_t CExtCharPet::onUseExpItem( Answer::NetPacket* inPacket )
 		bNeedCheck = true;
 		nAddExp = atoi( cfgItem->effect.c_str() );
 	}
-	else if ( slot.itemId == ISI_SPECIAL_EXP_BALL )		// Ãÿº∂æ≠—È«Ú
+	else if ( slot.itemId == ISI_SPECIAL_EXP_BALL )		// ÔøΩÿºÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	{
 		if( pPet->getLevel() >= m_pPlayer->getLevel() + LEVEL_DIFF )
 		{
@@ -1090,11 +1109,11 @@ int32_t CExtCharPet::onUsePhaseItem( Answer::NetPacket* inPacket )
 	}
 
 	PET_PHASE phase = PP_INVALID;
-	if ( slot.itemId == ISI_PET_KIWI_FRUIT )				// ∆Ê“Ïπ˚
+	if ( slot.itemId == ISI_PET_KIWI_FRUIT )				// ÔøΩÔøΩÔøΩÔøΩÔøΩ
 	{
-		phase = PP_INVALID;	// ◊‘∂ØÀÊª˙
+		phase = PP_INVALID;	// ÔøΩ‘∂ÔøΩÔøΩÔøΩÔøΩ
 	}
-	else if ( slot.itemId == ISI_PET_ELECTRIC_POTION )		// µÁΩ¨“©ÀÆ
+	else if ( slot.itemId == ISI_PET_ELECTRIC_POTION )		// ÔøΩÁΩ¨“©ÀÆ
 	{
 		phase = PP_ELECTRIC;
 	}
@@ -1129,7 +1148,7 @@ int32_t CExtCharPet::onLearnSkill( Answer::NetPacket* inPacket )
 	int32_t		nBagSlot	= inPacket->readInt32();
 	int8_t		nSkillPos	= inPacket->readInt8();
 
-	++nSkillPos;	// ∑˛ŒÒ∂À∂‡“ª∏Ò¥Ê∆’Õ®π•ª˜
+	++nSkillPos;	// ÔøΩÔøΩÔøΩÔøΩÀ∂ÔøΩ“ªÔøΩÔøΩÔøΩÔøΩÔøΩÕ®ÔøΩÔøΩÔøΩÔøΩ
 	
 	CObjPet* pPet = GetPet( nPetId );
 	if ( NULL == pPet )
@@ -1335,8 +1354,8 @@ int32_t CExtCharPet::onIllusion( Answer::NetPacket* inPacket )
 
 	PetId_t nMainPetId	= static_cast<PetId_t>( inPacket->readInt64() );
 	PetId_t nVicePetId	= static_cast<PetId_t>( inPacket->readInt64() );
-	int8_t	nType		= inPacket->readInt8();		// ª˘¥° Ù–‘ª√ªØ°¢≥…≥§¬ ª√ªØ°¢–“‘À÷µª√ªØ
-	int8_t	nUseItem	= inPacket->readInt8();		// ≥…≥§¬ ª√ªØ£∫0 ≤ª π”√µ¿æﬂ 1 –“‘À≤› 2 …Òœ…≤›
+	int8_t	nType		= inPacket->readInt8();		// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ‘ª√ªÔøΩÔøΩÔøΩÔøΩ…≥ÔøΩÔøΩ ª√ªÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ÷µÔøΩ√ªÔøΩ
+	int8_t	nUseItem	= inPacket->readInt8();		// ÔøΩ…≥ÔøΩÔøΩ ª√ªÔøΩÔøΩÔøΩ0 ÔøΩÔøΩ πÔøΩ√µÔøΩÔøΩÔøΩ 1 ÔøΩÔøΩÔøΩÀ≤ÔøΩ 2 ÔøΩÔøΩÔøΩ…≤ÔøΩ
 
 	CObjPet* pMainPet = GetPet( nMainPetId );
 	CObjPet* pVicePet = GetPet( nVicePetId );
@@ -1345,13 +1364,13 @@ int32_t CExtCharPet::onIllusion( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 	
-	// ∏±≥ËºÏ≤‚
+	// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	if ( !pVicePet->IsRest() || pVicePet->GetKnight() != PK_NONE || pVicePet->IsRegInFamily() || IsTopPet( pVicePet ) || pVicePet->GetQiShi() != 0 )
 	{
 		return ERR_SYETEM_ERR;
 	}
 
-	// ºÏ≤‚∏±≥ËŒÔª√ªØ–Ë«Û
+	// ÔøΩÔøΩ‚∏±ÔøΩÔøΩÔøΩÔøΩ√ªÔøΩÔøΩÔøΩÔøΩÔøΩ
 	if ( !pMainPet->CanIllusion( pVicePet, nType ) )
 	{
 		return ERR_INVALID_DATA;
@@ -1372,7 +1391,7 @@ int32_t CExtCharPet::onIllusion( Answer::NetPacket* inPacket )
 	{
 		return ERR_INVALID_DATA;
 	}
-	// ºÏ≤‚µ¿æﬂ
+	// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	ItemData itemData = {};
 	if ( nType == PHT_GROW_ATTR )
 	{
@@ -1429,7 +1448,7 @@ int32_t CExtCharPet::onUseLuckyItem( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	// ºÏ≤‚µ¿æﬂ
+	// ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	const CfgPetLuckyItem*	pCfgLucky = CFG_DATA.GetCharPetTable().GetPetLuckyItem( pPet->GetLucky() );
 	if ( NULL == pCfgLucky )
 	{
@@ -1738,7 +1757,7 @@ int32_t CExtCharPet::onMoveToBag( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	// √ª≥ˆ’Ω ªÓ◊≈ √ª”–»Œ√¸∆Ô ø √ª”–‘⁄æ¸Õ≈µ«º« √ª”–≈Â¥˜◊¯∆Ô
+	// √ªÔøΩÔøΩ’Ω ÔøΩÔøΩÔøΩÔøΩ √ªÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ø √ªÔøΩÔøΩÔøΩ⁄æÔøΩÔøΩ≈µ«ºÔøΩ √ªÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
 	if ( !pPet->IsRest() || !pPet->AliveFlag() || pPet->GetKnight() != PK_NONE || pPet->IsRegInFamily() || pPet->GetQiShi() != 0 )
 	{
 		return ERR_INVALID_DATA;
@@ -1749,7 +1768,7 @@ int32_t CExtCharPet::onMoveToBag( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	// ø€«Æ
+	// ÔøΩÔøΩ«Æ
 	const PetPackageCost* pCost = CFG_DATA.GetPetTable().GetPackageCost( pPet->GetPoints() );
 	if ( NULL == pCost )
 	{
@@ -2320,7 +2339,7 @@ void CExtCharPet::SendPetInfoList()
 	{
 		return;
 	}
-	//TODO:œ»œ¬∑¢PetList;‘Ÿœ¬∑¢ObjPetList;
+	//TODO:ÔøΩÔøΩÔøΩ¬∑ÔøΩPetList;ÔøΩÔøΩÔøΩ¬∑ÔøΩObjPetList;
 	PetList pList;
 	PET_MANAGER.GetPlayerPetList( m_pPlayer->getCid(), pList );
 	sendPetInfo( pList );
@@ -2907,7 +2926,7 @@ void CExtCharPet::OnKillMonster( int32_t nLevel )
 		}
 
 		pPet->AddSoul( nLevel, m_pPlayer->GetSoulLevel() );
-		return;	//÷ªº”“ª∏ˆ»Àµƒ
+		return;	//÷ªÔøΩÔøΩ“ªÔøΩÔøΩÔøΩÀµÔøΩ
 	}
 }
 
@@ -3471,4 +3490,589 @@ int32_t CExtCharPet::HavePetCountByPoints( int32_t Points )
 		}
 	}
 	return Count;
+}
+// ========== Êñ∞ÁâàÊú¨Ê∑ªÂä†ÊñπÊ≥ï ==========
+
+int32_t CExtCharPet::onFight( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	CObjPet* pPet = GetFightPet();
+	if ( NULL == pPet )
+	{
+		PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
+		pPet = GetPet( nPetId );
+		if ( NULL == pPet )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	if ( !pPet->AliveFlag() )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	Map* pMap = m_pPlayer->getMap();
+	if ( NULL == pMap || !pMap->CanUsePet() )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// If pet is fitting, transition to fighting
+	if ( pPet->IsFitting() )
+	{
+		pPet->SetFitting( false );
+		pPet->Fighting();
+		pPet->EnterMap();
+		m_pPlayer->recalcAttr();
+	}
+	else if ( pPet->IsRest() )
+	{
+		pPet->Fighting();
+		pPet->EnterMap();
+		m_pPlayer->recalcAttr();
+	}
+	else
+	{
+		return ERR_SYETEM_ERR;
+	}
+	broadcastMapPetFighting( pPet );
+	pPet->SendPetInfo();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+int32_t CExtCharPet::onPetHuanHua( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t HuanHua = inPacket->readInt32();
+	if ( m_HuanHua == HuanHua )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	m_HuanHua = HuanHua;
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+int32_t CExtCharPet::onUpStar( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
+	CObjPet* pPet = GetPet( nPetId );
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check star config
+	int32_t nNextStar = pPet->GetStar() + 1;
+	const CfgPetUpStar* pCfgUpStar = CFG_DATA.GetPetTable().GetPetUpStar( nNextStar );
+	if ( NULL == pCfgUpStar )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check items cost
+	Int32Vector vSlot;
+	if ( pCfgUpStar->nNeedItemId > 0 )
+	{
+		m_pPlayer->queryBagInfoByItemId( pCfgUpStar->nNeedItemId, pCfgUpStar->nNeedItemCount, vSlot );
+		if ( vSlot.empty() )
+		{
+			return ERR_SYETEM_ERR;
+		}
+		ItemData itemData = {};
+		itemData.m_nId = pCfgUpStar->nNeedItemId;
+		itemData.m_nClass = IC_NORMAL;
+		itemData.m_nCount = pCfgUpStar->nNeedItemCount;
+		if ( !m_pPlayer->GetBag().RemoveItem( vSlot, itemData, IDCR_PET_UP_STAR ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Check money cost
+	if ( pCfgUpStar->nCostMoney > 0 )
+	{
+		if ( !m_pPlayer->GetCurrency().DecMoneyAndNoBind( pCfgUpStar->nCostMoney, MCR_PET_UP_STAR ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Check gold cost
+	if ( pCfgUpStar->nCostGold > 0 )
+	{
+		if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, pCfgUpStar->nCostGold, (CurrencyChangeReason)2059 ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Perform up star
+	pPet->UpStar();
+	m_nStar = nNextStar;
+	pPet->SendPetInfo();
+	pPet->RecalAttr();
+	m_pPlayer->recalcAttr();
+	// Check skill unlock
+	pPet->CheckSkillOpen();
+	// Broadcast if needed
+	if ( pCfgUpStar->nBroadId > 0 )
+	{
+		std::string strMsg;
+		// TODO: implement world broadcast for pet up-star (API removed)
+		// broadcastWorld removed: GAME_SERVICE.broadcastWorld( strMsg );
+	}
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+int32_t CExtCharPet::onDressEquip( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	Int32Vector vSlot;
+	m_pPlayer->queryBagInfo( inPacket, vSlot );
+	if ( vSlot.empty() )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nBagSlot = vSlot[0];
+	int32_t nPetSlot = inPacket->readInt32();
+	MemChrBag bagItem = m_pPlayer->GetBag().GetSlotData( nBagSlot );
+	if ( m_pPlayer->GetBag().IsEmptySlot( bagItem ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( bagItem.itemClass != IC_PET_EQUIP )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	CObjPet* pPet = GetFightPet();
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check if pet slot already has equipment, swap it back
+	int32_t nOldEquipId = pPet->GetEquip( nPetSlot );
+	if ( nOldEquipId > 0 )
+	{
+		ItemData oldEquip = {};
+		oldEquip.m_nId = nOldEquipId;
+		oldEquip.m_nClass = IC_PET_EQUIP;
+		oldEquip.m_nCount = 1;
+		MemChrBag bagItem; bagItem.itemId = oldEquip.m_nId; bagItem.itemClass = oldEquip.m_nClass; bagItem.itemCount = oldEquip.m_nCount; bagItem.bind = 0; bagItem.endTime = 0; bagItem.srcId = 0; if ( !m_pPlayer->GetBag().AddItem( bagItem, IACR_FROM_PET ) )
+		{
+			return ERR_SYETEM_ERR;
+		}
+	}
+	// Remove new item from bag
+	MemChrBag emptySlot = {};
+	m_pPlayer->GetBag().SetSlotData( nBagSlot, emptySlot, 39 );
+	// Set equip on pet
+	pPet->SetEquip( nPetSlot, bagItem.itemId );
+	pPet->SendPetInfo();
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+int32_t CExtCharPet::onUnDressEquip( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nPetSlot = inPacket->readInt32();
+	CObjPet* pPet = GetFightPet();
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	int32_t nEquipId = pPet->GetEquip( nPetSlot );
+	if ( nEquipId <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Return equipment to bag
+	ItemData equipData = {};
+	equipData.m_nId = nEquipId;
+	equipData.m_nClass = IC_PET_EQUIP;
+	equipData.m_nCount = 1;
+	MemChrBag bagItem2; bagItem2.itemId = equipData.m_nId; bagItem2.itemClass = equipData.m_nClass; bagItem2.itemCount = equipData.m_nCount; bagItem2.bind = 0; bagItem2.endTime = 0; bagItem2.srcId = 0; if ( !m_pPlayer->GetBag().AddItem( bagItem2, IACR_FROM_PET ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Clear pet slot
+	pPet->SetEquip( nPetSlot, 0 );
+	pPet->SendPetInfo();
+	m_pPlayer->recalcAttr();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+int32_t CExtCharPet::onFitting( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
+	CObjPet* pPet = GetPet( nPetId );
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( !m_pPlayer->GetEquip().GetGongMingSuitId() )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( pPet->IsFighting() )
+	{
+		pPet->LeaveMap();
+		pPet->SetFitting( true );
+		m_pPlayer->recalcAttr();
+	}
+	else if ( pPet->IsRest() )
+	{
+		pPet->SetFitting( true );
+	}
+	else
+	{
+		return ERR_SYETEM_ERR;
+	}
+	pPet->SendPetInfo();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+int32_t CExtCharPet::onRestPet( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
+	CObjPet* pPet = GetPet( nPetId );
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( pPet->IsFighting() )
+	{
+		pPet->LeaveMap();
+		pPet->Rest();
+		m_pPlayer->recalcAttr();
+	}
+	else if ( pPet->IsFitting() )
+	{
+		pPet->SetFitting( false );
+		m_pPlayer->recalcAttr();
+	}
+	else
+	{
+		return ERR_SYETEM_ERR;
+	}
+	pPet->SendPetInfo();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+int32_t CExtCharPet::onChangeAi( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
+	int8_t nAiState = inPacket->readInt8();
+	CObjPet* pPet = GetPet( nPetId );
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( nAiState < 0 || nAiState > 1 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	pPet->ChangeAi( nAiState );
+	pPet->SendPetInfo();
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+int32_t CExtCharPet::onSkillUpLevel( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
+	int8_t nSkillPos = inPacket->readInt8();
+	CObjPet* pPet = GetPet( nPetId );
+	if ( NULL == pPet )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	PetSkillInfo* pSkill = pPet->GetSkill( nSkillPos );
+	if ( NULL == pSkill || pSkill->nId <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Check max level from talent config
+	int32_t nMaxLevel = pPet->GetSkillMaxLevel( nSkillPos );
+	if ( pSkill->nLevel >= nMaxLevel )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Find cost item
+	int32_t nNextLevel = pSkill->nLevel + 1;
+	int32_t nBookId = CFG_DATA.GetSkillLevelUpTable().GetBook( pSkill->nId, pSkill->nLevel );
+	if ( nBookId <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	Int32Vector vSlot;
+	m_pPlayer->queryBagInfoByItemId( nBookId, 1, vSlot );
+	if ( vSlot.empty() )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	ItemData itemData = {};
+	itemData.m_nId = nBookId;
+	itemData.m_nClass = IC_NORMAL;
+	itemData.m_nCount = 1;
+	if ( !m_pPlayer->GetBag().RemoveItem( vSlot, itemData, (ITEM_DEL_REASON)40 ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Level up skill
+	pPet->LearnSkill( pSkill->nId, nSkillPos );
+	pPet->SendPetInfo();
+	if ( pPet->IsFighting() )
+	{
+		m_pPlayer->recalcAttr();
+	}
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
+}
+
+
+
+bool CExtCharPet::IsFighting() const
+{
+	CObjPet* pPet = const_cast<CExtCharPet*>(this)->GetFightPet();
+	return NULL != pPet;
+}
+
+bool CExtCharPet::IsFitting() const
+{
+	CObjPet* pFit = const_cast<CExtCharPet*>(this)->GetFightPet();
+	if ( NULL != pFit )
+	{
+		return pFit->IsFitting();
+	}
+	return false;
+}
+
+bool CExtCharPet::IsFunctionOpen() const
+{
+	if ( NULL == m_pPlayer )
+	{
+		return false;
+	}
+	return m_pPlayer->GetPlayerFunctionOpen().IsOpened( 32 );
+}
+
+void CExtCharPet::SendPetStatus()
+{
+	CObjPet* pPet2 = GetFightPet();
+	if ( pPet2 != NULL && pPet2->GetState() == PS_FIGHTING )
+	{
+		pPet2->SendPetStatus();
+	}
+}
+
+int32_t CExtCharPet::GetSkillBattle()
+{
+	return 0;
+}
+
+int32_t CExtCharPet::GetStar() const
+{
+	return m_nStar;
+}
+
+int32_t CExtCharPet::GetHuanHua() const
+{
+	return m_HuanHua;
+}
+
+void CExtCharPet::AddPetAttr()
+{
+	// Â±ûÊÄßÂä†ÊàêÁî±ÂêÑÂ≠êÊ®°ÂùóËá™Ë°åÂ§ÑÁêÜ
+}
+
+void CExtCharPet::clearSummonPet()
+{
+	SummonList::iterator iter = m_lSummons.begin();
+	SummonList::iterator eiter = m_lSummons.end();
+	for ( ; iter != eiter; ++iter )
+	{
+		CObjPet* pPet = *iter;
+		if ( pPet != NULL )
+		{
+			pPet->LeaveMap();
+			GAME_SERVICE.removePet( pPet );
+			POOL_MANAGER.push<CObjPet>( pPet );
+		}
+	}
+	m_lSummons.clear();
+}
+
+bool CExtCharPet::HaveSummonAlive()
+{
+	SummonList::iterator iter = m_lSummons.begin();
+	SummonList::iterator eiter = m_lSummons.end();
+	for ( ; iter != eiter; ++iter )
+	{
+		CObjPet* pPet = *iter;
+		if ( pPet != NULL && pPet->AliveFlag() )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void CExtCharPet::addSummonPet( CObjPet* pPet )
+{
+	if ( NULL == pPet )
+	{
+		return;
+	}
+	m_lSummons.push_back( pPet );
+}
+
+void CExtCharPet::removeSummonPet( CObjPet* pPet )
+{
+	if ( NULL == pPet )
+	{
+		return;
+	}
+	m_lSummons.remove( pPet );
+	GAME_SERVICE.removePet( pPet );
+	POOL_MANAGER.push<CObjPet>( pPet );
+}
+
+void CExtCharPet::OnSummon( int32_t nPetId )
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	CPet* pPet = PET_MANAGER.CreateNewPet( nPetId, m_pPlayer, PFW_SUMMON );
+	CObjPet* pObjPet = POOL_MANAGER.pop<CObjPet>();
+	if ( NULL == pPet || NULL == pObjPet )
+	{
+		return;
+	}
+	PET_MANAGER.AddPet( pPet );
+	pObjPet->Init( pPet, m_pPlayer );
+	GAME_SERVICE.addPet( pObjPet );
+	m_lSummons.push_back( pObjPet );
+	pObjPet->SendPetInfo();
+}
+
+void CExtCharPet::SummonInfo()
+{
+	// ÂèëÈÄÅÂè¨Âî§‰ø°ÊÅØÁªôÂÆ¢Êà∑Á´Ø
+}
+
+void CExtCharPet::OnInitPet()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	CObjPet* pFightPet = GetFightPet();
+	if ( pFightPet != NULL )
+	{
+		return;
+	}
+	int32_t nDefaultPetId = 101;
+	CPet* pPet = PET_MANAGER.CreateNewPet( nDefaultPetId, m_pPlayer, PFW_BORN );
+	CObjPet* pObjPet = POOL_MANAGER.pop<CObjPet>();
+	if ( NULL == pPet || NULL == pObjPet )
+	{
+		return;
+	}
+	PET_MANAGER.AddPet( pPet );
+	pPet->SetPetBorn();
+	pObjPet->Init( pPet, m_pPlayer );
+	GAME_SERVICE.addPet( pObjPet );
+	addPet( pObjPet, PBT_BAG );
+	Fighting( pObjPet );
+	pObjPet->SendPetInfo();
+}
+
+void CExtCharPet::OnLevelUp()
+{
+	CObjPet* pLvl = GetFightPet();
+	if ( NULL != pLvl )
+	{
+		pLvl->OnLevelUp();
+		pLvl->SendPetInfo();
+	}
+	SummonList::iterator iter = m_lSummons.begin();
+	SummonList::iterator eiter = m_lSummons.end();
+	for ( ; iter != eiter; ++iter )
+	{
+		CObjPet* pPet = *iter;
+		if ( pPet != NULL && pPet->AliveFlag() )
+		{
+			pPet->OnLevelUp();
+		}
+	}
+}
+
+void CExtCharPet::OnPlayerDie()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	for ( int32_t i = 0; i < PSP_SIZE; ++i )
+	{
+		CObjPet* pPet = m_vFightPet[i];
+		if ( pPet != NULL )
+		{
+			if ( pPet->IsFighting() )
+			{
+				pPet->LeaveMap();
+				pPet->Rest();
+			}
+		}
+	}
+	m_pPlayer->recalcAttr();
+	clearSummonPet();
 }

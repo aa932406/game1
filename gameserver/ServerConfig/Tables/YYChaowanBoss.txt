@@ -1,0 +1,5 @@
+INT	INT	INT	INT	INT	INT
+Index	VIPLv	DungeonId	BuffAttr	IconId	Att
+1	2	-1	10	1	20
+2	6	-1	20	1	20
+3	9	-1	30	1	20

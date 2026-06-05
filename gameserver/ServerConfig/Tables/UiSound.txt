@@ -1,0 +1,9 @@
+STRING	STRING
+Name	Sound
+luggagePanel	openBag
+roleEquipPanel	openCharator
+petPanel	openPet
+gameShopPanel	openShop
+skillPanel	openSkill
+mapPanel	mapAndMail
+mailpanel	mapAndMail

@@ -1,0 +1,5 @@
+INT	INT
+ItemClass	ItemId
+1	7549
+1	7553
+1	7489

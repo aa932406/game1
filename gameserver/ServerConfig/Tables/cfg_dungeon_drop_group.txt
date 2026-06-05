@@ -1,0 +1,2 @@
+INT	INT	INT	INT	INT	INT	INT	INT	INT	INT
+id	type	group_Id	item_id	item_class	bindType	count	weight	probability	show

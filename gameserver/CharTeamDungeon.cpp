@@ -246,3 +246,41 @@ bool CExtCharTeamDungeon::checkTeamDungeon( const CfgDungeon& cfgDungeon ) const
 	return true;
 }
 
+// ========== 新版本添加方法 - TeamDungeon ==========
+int32_t CExtCharTeamDungeon::onSocialTeamDungeonCost( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+// ========== 新版本添加方法 - Auction ==========
+int32_t CExtCharAuction::onAddEquip( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+
+// ========== 新版本添加方法 - JueWei ==========
+void CJueWei::AddCharAttr()
+{
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+}
+
+int32_t CJueWei::onAskJueWeiLevelUp( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	return ERR_OK;
+}
+

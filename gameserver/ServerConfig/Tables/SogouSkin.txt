@@ -1,0 +1,4 @@
+STRING	STRING	INT	INT	STRING
+PingTai	Items	Icon	Pic	LoadUrl
+sogou	13:1:1:1|575:1:5:1|9:1:2:1|151:1:2:1	67	1	http://config.pinyin.sogou.com/skins/download.php?dn=%A1%BE%CB%D1%B9%B7%D3%CE%CF%B7%A1%BF%CA%A5%D1%FD%B4%AB.ssf&skin_id=600672
+2217	13:1:1:1|575:1:5:1|9:1:2:1|151:1:2:1	1026	1	http://static.2217.com/down/hz/2217gamebox_1.2.3.0919_public_2217.exe

@@ -4,6 +4,7 @@
 #include "Shared.h"
 #include "libanswer.h"
 #include <vector>
+#include <map>
 #include <list>
 
 typedef std::list<std::string> SqlStringList;
@@ -4390,6 +4391,32 @@ public:
 	AchievementMap	m_AchievementMap;
 };
 //========================================================================================================================================
+
+struct GoblinInfo
+{
+	int32_t GoblinLevel;
+	int32_t GoblinRes;
+};
+
+struct CGoblinData
+{
+	void CleanUp()
+	{
+		m_GoblinInfoMap.clear();
+		m_ShouHuRefiningLeveMap.clear();
+		m_WingEquipPolishMap.clear();
+		m_MoFuZhuNengMap.clear();
+		m_WingEquipRefiningMap.clear();
+		m_VipEquipPosLevelMap.clear();
+	}
+	std::map<int32_t, GoblinInfo>	m_GoblinInfoMap;
+	std::map<int32_t, int32_t>	m_ShouHuRefiningLeveMap;
+	std::map<int32_t, int32_t>	m_WingEquipPolishMap;
+	std::map<int32_t, int32_t>	m_MoFuZhuNengMap;
+	std::map<int32_t, int32_t>	m_WingEquipRefiningMap;
+	std::map<int32_t, int32_t>	m_VipEquipPosLevelMap;
+};
+
 class PlayerDBData : public IDataStruct
 {
 public:
@@ -4434,6 +4461,7 @@ public:
 		m_FamilyData.CleanUp();
 		m_WorshipData.CleanUp();
 		m_JueWeiData.CleanUp();
+		m_CGoblinData.CleanUp();
 		m_ChouJinagData.CleanUp();
 		m_SoulData.CleanUp();
 		m_ScoreShopData.CleanUp();
@@ -4714,7 +4742,8 @@ public:
 	CharFamilyDBData			m_FamilyData;
 	WorshipDBData				m_WorshipData;
 	CJueWeiData					m_JueWeiData;
-	ChouJiangData				m_ChouJinagData;
+CGoblinData	m_CGoblinData;
+		ChouJiangData				m_ChouJinagData;
 	SoulDBData					m_SoulData;
 	ScoreShopData				m_ScoreShopData;
 	CExpBallData			    m_ExpBallData;

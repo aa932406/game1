@@ -6,7 +6,8 @@ class CActivityMap;
 class MonsterActivity
 	: public Monster
 {
-public:
+public:    bool isDead() const { return false; }
+
 	MonsterActivity();
 	virtual ~MonsterActivity();
 

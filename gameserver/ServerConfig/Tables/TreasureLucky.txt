@@ -1,0 +1,6 @@
+INT	INT	INT	INT
+MinLucky	MaxLucky	MinQuality	MaxQuality
+-10000	100	1	2
+101	200	1	2
+201	299	3	3
+300	300	3	3

@@ -30,6 +30,7 @@ private:
 	void				sendSocialBuy( int32_t nId );
 	void				sendSocialStall( bool bStall );
 	bool				closeStall();
+	int32_t				onAddEquip( Answer::NetPacket* inPacket );
 
 private:
 	EntityId_t			m_nStall;

@@ -1,0 +1,6 @@
+INT	STRING	STRING	STRING	INT	INT	INT	STRING	INT	INT	INT	STRING	STRING	STRING	STRING	INT	INT	INT	INT
+ID	Name	NamePic	HeadPic	Speed	CanPick	CanSkill	Attr	Gold	ReGold	Time	Body	SkillPic	SkillDesc	TimeDesc	High	Notice	Level	OpenServerDay
+1	通灵麋鹿	name_3	head_3	200	1	0	1:8888|4:188|5:388|6:188|7:388	1888	1510	2592000	3	skill_3	#f7ab00|随宠天赋1：|#00ff00|自动拾取|#f5e8bf|周围可拾取的装备道具	每次召唤可持续30天	80	2008	120	0
+2	寒天冰蛟	name_4	head_4	200	1	0	1:18888|4:288|5:588|6:288|7:588|34:10	6888	5510	2592000	4	skill_4	#f7ab00|随宠天赋1：|#00ff00|自动拾取|#f5e8bf|周围可拾取的装备道具|n|#f7ab00|随宠天赋2：|n|#00ff00|PK加成：1%	每次召唤可持续30天	80	2009	400	0
+3	佩琪	name_1	Head_1	200	1	0	1:8888|4:188|5:388|6:188|7:388	1888	1510	2592000	1	skill_1	#f7ab00|【收集】|n|#00ff00|自动拾取|#f5e8bf|周围可拾取的装备道具	每次召唤可持续30天	80	2008	145	0
+4	食铁兽	name_2	Head_2	200	1	1	1:18888|4:288|5:588|6:288|7:588	6888	5510	2592000	2	skill_2	#f7ab00|随宠天赋1：|#00ff00|自动拾取|#f5e8bf|周围可拾取的装备道具|n|#f7ab00|随宠天赋2：|#f5e8bf|自动使用|#00ff00|鲲灵吞噬|#f5e8bf|技能|#e60012|(需激活鲲灵)	每次召唤可持续30天	80	2009	400	0

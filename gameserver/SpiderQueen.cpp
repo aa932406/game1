@@ -19,17 +19,14 @@ void CSqiderQueen::stopActivity()
 	if ( !WORLDBOSS.IsAllSpiderQueenDie() )
 	{
 		WORLDBOSS.KillAllSpiderQueen();
-		broadcastEnd( true );
-	}
-	else
-	{
-		broadcastEnd( false );
+		broadcastTimeEnd();
 	}
 	BroadcastActivityState();
 }
 
 void CSqiderQueen::StopActivityBySqiderQueenDie()
 {
+	broadcastKillAllSqiderQueen();
 	stopActivity();
 }
 
@@ -45,23 +42,26 @@ void CSqiderQueen::broadcastStart()
 	GAME_SERVICE.worldBroadcast(packet);
 }
 
-void CSqiderQueen::broadcastEnd( bool IsTimeEnd )
+void CSqiderQueen::broadcastTimeEnd()
 {
-	int32_t GongGaoId = 0;
-	if ( IsTimeEnd )
-	{
-		GongGaoId = BCI_SQ_ACTIVITY_END_BY_TIME;
-	}
-	else
-	{
-		GongGaoId = BCI_SQ_ACTIVITY_END_BY_SQ_DIE;
-	}
 	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if (NULL == packet)
 	{
 		return;
 	}
-	packet->writeInt32( GongGaoId );
+	packet->writeInt32( BCI_SQ_ACTIVITY_END_BY_TIME );
+	packet->setSize(packet->getWOffset());
+	GAME_SERVICE.worldBroadcast(packet);
+}
+
+void CSqiderQueen::broadcastKillAllSqiderQueen()
+{
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	if (NULL == packet)
+	{
+		return;
+	}
+	packet->writeInt32( BCI_SQ_ACTIVITY_END_BY_SQ_DIE );
 	packet->setSize(packet->getWOffset());
 	GAME_SERVICE.worldBroadcast(packet);
 }

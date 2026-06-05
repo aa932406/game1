@@ -1,3 +1,4 @@
+CXX = x86_64-linux-gnu-g++
 SHELL=/bin/bash
 TARGET = ../bin/dbserver
 OBJPATH = obj

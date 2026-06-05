@@ -362,3 +362,4 @@ int32_t CJueWei::GetBattleValues()
 		return 0;
 	}
 }
+// ========== 新版本添加方法 - TeamDungeon ==========

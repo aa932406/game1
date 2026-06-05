@@ -1,0 +1,5 @@
+STRING	INT	INT	INT
+Platform	Index	StartTime	EndTime
+swjoy	1	0	840
+swjoy	2	840	1200
+swjoy	3	1200	1380

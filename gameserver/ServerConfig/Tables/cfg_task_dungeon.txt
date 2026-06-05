@@ -1,0 +1,4 @@
+INT	STRING	INT	INT	INT	INT	STRING
+id	name	dungeon	task	layer	index	head
+1	蜘蛛女皇	10002	21	1	1	gwb041
+2	军团战场	10003	58	2	1	gwb041

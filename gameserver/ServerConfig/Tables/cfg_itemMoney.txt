@@ -1,0 +1,9 @@
+INT	INT	STRING	STRING	STRING	STRING	INT
+Id	Type	Name	Desc	url	drop_url	auction
+1	1	元宝	|元宝	coin3	21	14
+2	2	钻石	|钻石	43	23	15
+3	3	绑定钻石	|绑定钻石	bz	22	-1
+4	4	圣妖币	|圣妖币：用于系统升级	chuanqibi	130	-1
+5	5	威望	威望：用于官位升级	weiWang	130	-1
+6	6	情义值	|情义值：可提升情义符扩展属性	qingYiZhi	130	-1
+7	7	绑定元宝	|绑定元宝	coin3	21	-1

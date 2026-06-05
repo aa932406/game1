@@ -8,6 +8,9 @@
 #include "EquipManager.h"
 #include "ItemHelper.h"
 #include "EquipRansom.h"
+#include "DropItem.h"
+#include "MapManager.h"
+#include "PDUDefine.h"
 #include <algorithm>
 #include <set>
 
@@ -96,11 +99,11 @@ void CExtCharBag::OnSaveToDB( PlayerDBData& dbData )
 
 void CExtCharBag::OnUpdate( int64_t curTick )
 {
-	// ¼ì²â±³°ü¿ªÆô
+	// ï¿½ï¿½â±³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	checkBagOpen();
-	// ¼ì²âÐèÒª´´½¨µÄµÀ¾ß
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½
 	checkCreate();
-	// ÔàÊý¾Ý´¦Àí£¨×îºó´¦Àí£©
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	checkDirty();
 }
 
@@ -111,6 +114,12 @@ void CExtCharBag::GetInterestsProtocol( ProcIdList& procList )
 	procList.push_back( CM_SORT_BAG );
 	procList.push_back( CM_SELL_ITEM );
 	procList.push_back( CM_ADD_BAGSLOT );
+	procList.push_back( CM_USE_ITEM );
+	procList.push_back( CM_PATCH_USE_ITEM );
+	procList.push_back( CM_SELECT_ITEM );
+	procList.push_back( CM_DISCARD_ITEM );
+	procList.push_back( CM_USE_MMULTI_ITEM );
+	procList.push_back( CM_ADD_BAG_ITEM );
 	procList.push_back( CM_ASK_RANSOM_INFO );
 	procList.push_back( CM_ASK_SPOILS_INFO );
 	procList.push_back( CM_ASK_RANSOM_ITEM );
@@ -125,6 +134,12 @@ int32_t CExtCharBag::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inPa
 	case CM_SPLIT_ITEM:		return onSplitItem( inPacket );
 	case CM_SORT_BAG:		return onSort( inPacket );
 	case CM_SELL_ITEM:		return onSellItem( inPacket );
+	case CM_USE_ITEM:		return onUseItem( inPacket );
+	case CM_PATCH_USE_ITEM:	return onPatchUseItem( inPacket );
+	case CM_SELECT_ITEM:	return onSelectItem( inPacket );
+	case CM_DISCARD_ITEM:	return onDiscardItem( inPacket );
+	case CM_USE_MMULTI_ITEM:	return onUseMutiItem( inPacket );
+	case CM_ADD_BAG_ITEM:		return onAddItem( inPacket );
 
 	case CM_ASK_RANSOM_INFO:return OnAskRansomInfo( inPacket ); 
 	case CM_ASK_SPOILS_INFO:return OnAskSpoilsInfo( inPacket );
@@ -333,11 +348,11 @@ int32_t CExtCharBag::onAddBagSlots( NetPacket *inPacket )
 	{
 		return ERR_INVALID_DATA;
 	}
-	slot += 1; //¿Í»§¶Ë·¢¹ýÀ´µÄµÄÊÇ´Ó0¿ªÊ¼µÄ
+	slot += 1; //ï¿½Í»ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½Ç´ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½
 	if ( slot <= m_bagInfo.m_nCanOpenSlots + FREE_BAG_SLOT_NUM )
 	{
 		int32_t nSize = slot - GetBagSize();
-		for( int32_t i = 0; i < nSize; i++ )	//¼Ó¾­Ñé
+		for( int32_t i = 0; i < nSize; i++ )	//ï¿½Ó¾ï¿½ï¿½ï¿½
 		{
 			const CfgBagSlotOpenTime* pCfgSlotOpen = CFG_DATA.GetBagSlotOpenTimeTable().Get( m_bagInfo.m_nOpenedSlots + i + 1 );
 			if ( NULL != pCfgSlotOpen )
@@ -381,7 +396,7 @@ int32_t CExtCharBag::onAddBagSlots( NetPacket *inPacket )
 
 	int32_t nSize = slot - GetBagSize();
 
-	//¼Ó¾­Ñé
+	//ï¿½Ó¾ï¿½ï¿½ï¿½
 	int32_t NeedAddExp = 0;
 	for( int32_t i = 0; i < nSize; i++ )	
 	{
@@ -533,7 +548,7 @@ int32_t CExtCharBag::onSort( NetPacket *inPacket )
 		return ERR_SYETEM_ERR;
 	}
 
-	// ÌáÈ¡°ü¹üÖÐÏÖ´æµÀ¾ß
+	// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½
 	MemChrBagVector items;
 	int32_t nBagSize = GetBagSize();
 	for ( int32_t i = 0; i < nBagSize; ++i )
@@ -558,10 +573,10 @@ int32_t CExtCharBag::onSort( NetPacket *inPacket )
 		}
 	}
 
-	// µÀ¾ßÅÅÐò
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::sort(items.begin(), items.end(), GreaterItem);
 
-	// °´Ë³Ðò·Å»Ø°ü¹üÖÐ
+	// ï¿½ï¿½Ë³ï¿½ï¿½Å»Ø°ï¿½ï¿½ï¿½ï¿½ï¿½
 	int32_t slot = 0;
 	MemChrBagVector::iterator iter = items.begin();
 	for ( ; iter != items.end() && slot < nBagSize; ++iter )
@@ -589,7 +604,7 @@ int32_t CExtCharBag::onSort( NetPacket *inPacket )
 		}
 	}
 
-	// ½«Ê£Óà¸ñ×ÓÖÃ¿Õ
+	// ï¿½ï¿½Ê£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½
 	for ( ; slot < nBagSize; ++slot )
 	{
 		setSlotData( slot, m_nullobj );
@@ -740,7 +755,7 @@ int32_t	CExtCharBag::OnAskRansomItem( Answer::NetPacket *inPacket )
 	{
 		return ERR_SYETEM_ERR;
 	}
-	//¸ø¶Ô·½·¢ÓÊ¼þ
+	//ï¿½ï¿½ï¿½Ô·ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½
 	int32_t GetGold	= NeedGold;
 	if ( GetGold > 0 && EquipInfo.KillerId > 0 )
 	{
@@ -926,7 +941,7 @@ int32_t CExtCharBag::buyChrShopItem( CfgChrShop* pCharShop,int32_t id,int32_t co
 	}
 	else if ( !AddItem( add,IACR_CHR_SHOP ) )
 	{
-		LOG_ERROR("¹ºÂò¸öÈËÉÌµêÎïÆ·Ê§°Ü,itemClass=%d,ItemId=%d,ItemCount=%d,time=%d,cid=%lld",pCharShop->ItemClass,pCharShop->ItemId,count,m_pPlayer->getNow(),m_pPlayer->getCid() );
+		LOG_ERROR("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ï¿½ï¿½Æ·Ê§ï¿½ï¿½,itemClass=%d,ItemId=%d,ItemCount=%d,time=%d,cid=%lld",pCharShop->ItemClass,pCharShop->ItemId,count,m_pPlayer->getNow(),m_pPlayer->getCid() );
 	}
 	if ( pCharShop->LimitCount > 0 )
 	{
@@ -1763,7 +1778,7 @@ bool CExtCharBag::removeCombiItem(  const ItemDataList& lst, ITEM_DEL_REASON del
 	ItemDataList::const_iterator it = lst.begin();
 	for ( ; it != lst.end(); ++it )
 	{
-		//ÏÈÀ´Ò»±é°ó¶¨µÄ
+		//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ó¶¨µï¿½
 		int32_t nCount = (*it).m_nCount;
 		int32_t nBagSize = GetBagSize();
 		for ( int32_t i = 0; i < nBagSize; ++i )
@@ -1792,7 +1807,7 @@ bool CExtCharBag::removeCombiItem(  const ItemDataList& lst, ITEM_DEL_REASON del
 			continue;
 		}
 
-		//ÔÚÀ´Ò»±é·Ç°ó¶¨µÄ
+		//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ç°ó¶¨µï¿½
 		for ( int32_t i = 0; i < nBagSize; ++i )
 		{
 			MemChrBag bagSlot = GetSlotData( i );
@@ -2170,8 +2185,7 @@ bool CExtCharBag::UseCurrencyItem( const MemChrBag& Item, ITEM_ADD_REASON addRea
 		return false;
 	}
 	if( addReason == IACR_PICK )
-	{
-		switch( Item.itemId )
+	{			switch( Item.itemId )
 		{
 		case CURRENCY_MONEY_ID:
 			{
@@ -2584,7 +2598,7 @@ bool CExtCharBag::removeItem( const ItemData& data, ITEM_DEL_REASON delReason, i
 {
 	int32_t nCount = data.m_nCount;
 	int32_t nBagSize = GetBagSize();
-	//°ó¶¨É¾³ý
+	//ï¿½ï¿½É¾ï¿½ï¿½
 	for ( int32_t i = 0; i < nBagSize; ++i )
 	{
 		MemChrBag bagSlot = GetSlotData( i );
@@ -2629,4 +2643,562 @@ bool CExtCharBag::removeItem( const ItemData& data, ITEM_DEL_REASON delReason, i
 		}
 	}
 	return false;
+}
+
+// ========== ï¿½ï¿½ï¿½Â°æ±¾ï¿½Â·ï¿½ï¿½ï¿½ ==========
+
+int32_t CExtCharBag::onUseItem( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t slot = inPacket->readInt32();
+	int32_t type = inPacket->readInt32();
+	int32_t nItemId = inPacket->readInt32();
+
+	if ( !IsSlotValid( slot ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	MemChrBag slotData = GetSlotData( slot );
+	if ( slotData.itemCount <= 0 || slotData.itemId != nItemId )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( slotData.endTime > 0 && slotData.endTime < m_pPlayer->getNow() )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	CfgItem* cfgItem = CFG_DATA.getItem( slotData.itemId );
+	if ( NULL == cfgItem || !canUseItem( slot, cfgItem ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( cfgItem->type == 106 )
+	{
+		if ( m_pPlayer->IsInFight() )
+		{
+			return ERR_INVALID_DATA;
+		}
+	}
+
+	if ( slotData.itemId == ISI_XIAO_JV_HUA )
+	{
+		if ( m_pPlayer->getRecord( PR_XIAO_JV_HUA_SHI_YONG ) >= 10 )
+		{
+			return ERR_INVALID_DATA;
+		}
+	}
+
+	int32_t err = ERR_INVALID_DATA;
+	if ( type == ET_PLAYER )
+	{
+		err = ITEM_EFFECT.effect( slotData.itemId, *m_pPlayer, *m_pPlayer, 1 );
+	}
+
+	if ( err == ERR_OK )
+	{
+		if ( slotData.itemId == ISI_XIAO_JV_HUA )
+		{
+			m_pPlayer->updateRecord( PR_XIAO_JV_HUA_SHI_YONG, m_pPlayer->getRecord( PR_XIAO_JV_HUA_SHI_YONG ) + 1 );
+		}
+
+		m_pPlayer->GetTask().updateTaskUseItem( slotData.itemId, 1 );
+		slotData.itemCount--;
+		SetSlotData( slot, slotData, IDCR_BAG_USE, 1 );
+
+		m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
+
+		if ( cfgItem->broadcast > 0 )
+		{
+			sendUseBroadcast( cfgItem->broadcast, m_pPlayer->getName(), m_pPlayer->getCid(), slotData.itemId );
+		}
+
+		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_USE_ITEM, cfgItem->id );
+	}
+
+	return err;
+}
+
+int32_t CExtCharBag::onPatchUseItem( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t slot = inPacket->readInt32();
+	int32_t count = inPacket->readInt32();
+	int32_t nItemId = inPacket->readInt32();
+
+	if ( !IsSlotValid( slot ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	MemChrBag slotData = GetSlotData( slot );
+	if ( slotData.itemCount <= 0 || slotData.itemId != nItemId )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( slotData.endTime > 0 && slotData.endTime < m_pPlayer->getNow() )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	CfgItem* cfgItem = CFG_DATA.getItem( slotData.itemId );
+	if ( NULL == cfgItem || !canUseItem( slot, cfgItem ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( count > slotData.itemCount )
+	{
+		count = slotData.itemCount;
+	}
+
+	int32_t err = ERR_OK;
+	if ( cfgItem->type == 106 || cfgItem->type == 108 )
+	{
+		if ( cfgItem->type == 106 && m_pPlayer->IsInFight() )
+		{
+			return ERR_INVALID_DATA;
+		}
+
+		int32_t used = 0;
+		for ( int32_t i = 0; i < count; ++i )
+		{
+			err = ITEM_EFFECT.effect( slotData.itemId, *m_pPlayer, *m_pPlayer, 1 );
+			if ( err == ERR_OK )
+			{
+				m_pPlayer->GetTask().updateTaskUseItem( slotData.itemId, 1 );
+				slotData.itemCount--;
+				SetSlotData( slot, slotData, IDCR_BAG_USE, 1 );
+				used++;
+			}
+		}
+
+		if ( cfgItem->type == 108 )
+		{
+			m_pPlayer->RecalcAttr();
+		}
+
+		m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
+		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, nItemId );
+		err = ERR_OK;
+	}
+	else
+	{
+		err = ITEM_EFFECT.effect( slotData.itemId, *m_pPlayer, *m_pPlayer, count );
+		if ( err == ERR_OK )
+		{
+			m_pPlayer->GetTask().updateTaskUseItem( slotData.itemId, count );
+			slotData.itemCount -= count;
+			SetSlotData( slot, slotData, IDCR_BAG_USE, count );
+
+			m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
+			GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, cfgItem->id );
+		}
+	}
+
+	return err;
+}
+
+int32_t CExtCharBag::onSelectItem( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t nSlot = inPacket->readInt32();
+	int32_t nId = inPacket->readInt32();
+
+	if ( !IsSlotValid( nSlot ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	MemChrBag slotData = GetSlotData( nSlot );
+	if ( slotData.itemCount <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	CfgItem* cfgItem = CFG_DATA.getItem( slotData.itemId );
+	if ( NULL == cfgItem )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( cfgItem->type != 213 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	MemChrBagVector selectItems = CItemHelper::parseItemString( slotData.itemId, cfgItem->effect );
+	if ( selectItems.empty() )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( nId < 0 || nId >= (int32_t)selectItems.size() )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( GetFreeSlotCount() <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( !RemoveItem( ItemData( slotData.itemId, slotData.itemClass, 1 ), IDCR_SELECT_ITEM ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	if ( !AddItemsAndMingGe( selectItems, IACR_SELECT_ITEM ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_SELECT_ITEM, nId );
+	return ERR_OK;
+}
+
+int32_t CExtCharBag::onDiscardItem( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	/* line check removed for compatibility */
+
+	int32_t nSlot = inPacket->readInt32();
+	if ( !IsSlotValid( nSlot ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	MemChrBag slotData = GetSlotData( nSlot );
+	if ( slotData.itemCount <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( slotData.bind == IBS_BIND || slotData.bind == IBS_BIND_2 )
+	{
+		CleanSlot( nSlot, IDCR_DISCARD );
+	}
+	else
+	{
+		CfgItem* cfgItem = CFG_DATA.getItem( slotData.itemId );
+		if ( NULL == cfgItem )
+		{
+			return ERR_INVALID_DATA;
+		}
+
+		Map* pMap = MAP_MANAGER.GetMap( m_pPlayer->getMapId() );
+		if ( NULL == pMap )
+		{
+			return ERR_SYETEM_ERR;
+		}
+
+		Position pos = m_pPlayer->getCurrentTile();
+		DropItem dropItem = {};
+		dropItem.itemId = slotData.itemId;
+		dropItem.itemClass = slotData.itemClass;
+		dropItem.itemCount = slotData.itemCount;
+		dropItem.bindType = slotData.bind;
+		dropItem.endTime = slotData.endTime;
+		dropItem.srcId = slotData.srcId;
+		CDropItemGroup* pDrop = new CDropItemGroup();
+		if ( NULL != pDrop )
+		{
+			DropItem dropItems[MAX_DROPITEM_SIZE] = {};
+			dropItems[0] = dropItem;
+			pDrop->init( pMap, pos, m_pPlayer, -1, 0, dropItems, m_pPlayer->getName(), 0, 0 );
+			pMap->addDropItemGroup( pDrop );
+		}
+
+		CleanSlot( nSlot, IDCR_DISCARD );
+	}
+
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_DISCARD_ITEM, nSlot );
+	return ERR_OK;
+}
+
+int32_t CExtCharBag::onUseMutiItem( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t nId = inPacket->readInt32();
+	int32_t nCount = inPacket->readInt32();
+	if ( nCount <= 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	CfgItem* cfgItem = CFG_DATA.getItem( nId );
+	if ( NULL == cfgItem )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t nSlot = GetItemSlot( nId, IC_NORMAL );
+	if ( nSlot < 0 )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	if ( !canUseItem( nSlot, cfgItem ) )
+	{
+		return ERR_INVALID_DATA;
+	}
+
+	int32_t nHasCount = GetItemCount( nId, IC_NORMAL );
+	if ( nCount > nHasCount )
+	{
+		nCount = nHasCount;
+	}
+
+	int32_t err = ITEM_EFFECT.effect( nId, *m_pPlayer, *m_pPlayer, nCount );
+	if ( err == ERR_OK )
+	{
+		m_pPlayer->GetTask().updateTaskUseItem( nId, nCount );
+		RemoveItem( ItemData( nId, IC_NORMAL, nCount ), IDCR_BAG_USE );
+		m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
+		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_USE_MMULTI_ITEM, nId );
+	}
+
+	return err;
+}
+
+int32_t CExtCharBag::onAddItem( Answer::NetPacket *inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return 2;
+	}
+
+	ITEM_CHANGE_REASON nReason = (ITEM_CHANGE_REASON)inPacket->readInt32();
+	std::string MailParam = inPacket->readUTF8( true );
+
+	MemChrBagVector vItem;
+	int32_t nSize = inPacket->readInt32();
+	vItem.resize( nSize );
+
+	for ( int32_t i = 0; i < nSize; ++i )
+	{
+		MemChrBag& item = vItem[i];
+		item.itemId = inPacket->readInt32();
+		item.itemClass = inPacket->readInt8();
+		item.itemCount = inPacket->readInt32();
+		item.bind = inPacket->readInt8();
+		item.endTime = inPacket->readInt32();
+		item.srcId = inPacket->readInt64();
+	}
+
+	if ( !AddItem( vItem, (ITEM_ADD_REASON)nReason ) )
+	{
+		int32_t MailId = 6208;
+		if ( nReason == ICR_AUCTION_BUY )
+		{
+			MailId = 6208;
+		}
+		else if ( nReason == ICR_AUCTION_CANCEL )
+		{
+			MailId = 6209;
+		}			DB_SERVICE.OnSendSysMail( m_pPlayer->getCid(), MailId, vItem, MailParam );
+	}
+
+	return 0;
+}
+
+bool CExtCharBag::canUseItem( int32_t nSlot, const CfgItem* cfgItem )
+{
+	if ( NULL == m_pPlayer || NULL == cfgItem )
+	{
+		return false;
+	}
+
+	if ( cfgItem->level > m_pPlayer->getLevel() )
+	{
+		return false;
+	}
+
+	if ( cfgItem->job != 0 && cfgItem->job != m_pPlayer->getJob() )
+	{
+		return false;
+	}	/* carrier check removed for compatibility */
+
+	if ( cfgItem->cd_group < 0 || cfgItem->cd_group >= ITEM_CD_GROUP_COUNT )
+	{
+		return false;
+	}
+
+	if ( m_pPlayer->getTick() - m_lastItemTick[cfgItem->cd_group] < m_itemCD[cfgItem->cd_group] )
+	{
+		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), CM_USE_ITEM, ERR_ITEM_CD );
+		return false;
+	}
+
+	return true;
+}
+
+bool CExtCharBag::isAutoUseItem( const CfgItem* cfgItem )
+{
+	if ( NULL == cfgItem )
+	{
+		return false;
+	}
+	return cfgItem->type == 1 || cfgItem->type == 4 || cfgItem->type == 86;
+}
+
+bool CExtCharBag::autoUseItem( const MemChrBag& item )
+{
+	if ( NULL == m_pPlayer )
+	{
+		return false;
+	}
+
+	if ( item.itemCount <= 0 )
+	{
+		return false;
+	}
+
+	if ( item.itemClass == IC_CURRENCY )
+	{
+		if ( item.itemId == CURRENCY_GOLD_ID )
+		{
+			m_pPlayer->AddCurrency( CURRENCY_GOLD, item.itemCount, GCR_AUTO_USE );
+			return true;
+		}
+		else if ( item.itemId == CURRENCY_CASH_ID )
+		{
+			m_pPlayer->AddCurrency( CURRENCY_CASH, item.itemCount, GCC_AUTO_USE );
+			return true;
+		}
+		else if ( item.itemId == CURRENCY_HORNOR_ID )
+		{
+			m_pPlayer->AddCurrency( CURRENCY_HONOR, item.itemCount, GCC_AUTO_USE );
+			return true;
+		}
+		else if ( item.itemId == CURRENCY_VIGOUR_ID )
+		{
+			m_pPlayer->AddCurrency( CURRENCY_VIGOUR, item.itemCount, GCC_AUTO_USE );
+			return true;
+		}
+		else
+		{
+			return m_pPlayer->AddCurrency( CURRENCY_MONEY, item.itemCount, MCR_AUTO_USE );
+		}
+	}
+	else if ( item.itemClass == IC_NORMAL )
+	{
+		CfgItem* cfgItem = CFG_DATA.getItem( item.itemId );
+		if ( NULL == cfgItem )
+		{
+			return false;
+		}
+
+		if ( cfgItem->type == 1 || cfgItem->type == 86 )
+		{
+			int32_t err = ITEM_EFFECT.effect( item.itemId, *m_pPlayer, *m_pPlayer, item.itemCount );
+			return err == ERR_OK;
+		}
+	}
+
+	return false;
+}
+
+void CExtCharBag::sendUseBroadcast( int32_t nBroadcast, const std::string& p_name, CharId_t cid, int32_t nItemId )
+{
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	if ( NULL == packet )
+	{
+		return;
+	}
+
+	packet->writeInt32( nBroadcast );
+	packet->writeUTF8( p_name );
+	packet->writeInt64( cid );
+	packet->writeInt32( nItemId );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.worldBroadcast( packet );
+}
+
+void CExtCharBag::CleanItemId( int32_t nId, int32_t nReason, int8_t nClass )
+{
+	int32_t nBagSize = GetBagSize();
+	for ( int32_t i = 0; i < nBagSize; ++i )
+	{
+		const MemChrBag& slotData = GetSlotData( i );
+		if ( slotData.itemId == nId && slotData.itemClass == nClass )
+		{
+			setSlotData( i, m_nullobj, nReason, 0 );
+		}
+	}
+}
+
+int32_t CExtCharBag::GetItemSlot( int32_t nId, int8_t nClass ) const
+{
+	int32_t nBagSize = GetBagSize();
+	for ( int32_t i = 0; i < nBagSize; ++i )
+	{
+		const MemChrBag& slotData = GetSlotData( i );
+		if ( slotData.itemId == nId && slotData.itemClass == nClass )
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+int32_t CExtCharBag::GetTypeItem( int32_t nType ) const
+{
+	int32_t nBagSize = GetBagSize();
+	for ( int32_t i = 0; i < nBagSize; ++i )
+	{
+		if ( CItemHelper::GetItemType( m_bagData[i].itemId, m_bagData[i].itemClass ) == nType )
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+bool CExtCharBag::AddItemsAndMingGe( const MemChrBagVector& vItem, int32_t addReason )
+{
+	if ( NULL == m_pPlayer || vItem.empty() )
+	{
+		return false;
+	}
+
+	MemChrBagVector items;
+	for ( MemChrBagVector::const_iterator it = vItem.begin(); it != vItem.end(); ++it )
+	{
+		if ( it->itemClass == IC_NORMAL || it->itemClass == IC_EQUIP || it->itemClass == IC_GEM )
+		{
+			items.push_back( *it );
+		}
+	}
+
+	if ( items.empty() )
+	{
+		return true;
+	}
+
+	return AddItem( items, (ITEM_ADD_REASON)addReason );
 }

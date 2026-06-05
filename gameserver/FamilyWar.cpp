@@ -1,4 +1,3 @@
-
 #include "FamilyWar.h"
 #include "GameService.h"
 #include "DBService.h"
@@ -7,18 +6,29 @@
 #include "FamilyManager.h"
 #include "ActivityManager.h"
 #include "KaiFuHuoDong.h"
+#include <algorithm>
+
 using namespace Answer;
 
 CFamilyWar::CFamilyWar( const CfgActivity& cfgActivity )
-:CActivity( cfgActivity ), m_pSton( NULL ), m_pPillar( NULL ), m_nGuidFamily( 0 ), m_nWinTimes( 0 )
+:CActivity( cfgActivity )
+, m_pSton( NULL )
+, m_pPillar( NULL )
+, m_pTitle( NULL )
+, m_pBoss( NULL )
+, m_pBuffPlayer( NULL )
+, m_nBuffStartTick( 0 )
+, m_nGuidFamily( 0 )
+, m_nWinTimes( 0 )
+, m_nActiveState( 0 )
+, m_nActivePillarState( 0 )
 {
-	m_FamilyName			= "";		
+	m_FamilyName			= "";
 	m_FamilyLeaderName		= "";
 }
 
 CFamilyWar::~CFamilyWar()
 {
-
 }
 
 void CFamilyWar::Init()
@@ -30,7 +40,7 @@ void CFamilyWar::Init()
 	FamilyId_t nFamilyId = 0;
 	int16_t	nWinTimes = 0;
 	string familyname = "";
-	string leadyername= "";	
+	string leadyername = "";
 	while(!result.eof())
 	{
 		nFamilyId	= result.getInt64Value("familyid");
@@ -54,19 +64,19 @@ void CFamilyWar::OnUpdate( CActivityMap* pMap )
 	}
 
 	int64_t curTick = pMap->getTick();
-	for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
 	{
-		PlayerScore& score = iter->second;
-		if ( score.bInActivity && score.nJoinExp == 0 )
+		PlayerScore& score = *iter;
+		if ( score.bInActivity && score.nScore == 0 )
 		{
-			if ( ( curTick - score.nStartTick ) / 1000 + score.nSeconds >= 900 )
+			if ( ( curTick - score.nStartTick ) / 1000 >= 900 )
 			{
 				Player* pPlayer = GAME_SERVICE.getPlayer( score.nCharId, pMap->GetRunnerId() );
 				if ( pPlayer != NULL )
 				{
 					int32_t nExp = CFG_DATA.GetFamilyWarJoinRewardTable().GetReward( pPlayer->getLevel() );
 					pPlayer->addExp( nExp );
-					score.nJoinExp = nExp;
+					score.nScore = nExp;
 				}
 			}
 		}
@@ -78,14 +88,20 @@ void CFamilyWar::reset()
 	CActivity::reset();
 	m_pSton			= NULL;
 	m_pPillar		= NULL;
+	m_pTitle		= NULL;
+	m_pBoss			= NULL;
+	m_pBuffPlayer	= NULL;
+	m_nBuffStartTick = 0;
+	m_nActiveState	= 0;
+	m_nActivePillarState = 0;
 
 	m_lstFamilyScore.clear();
-	m_mPlayerScore.clear();
+	m_lstPlayerScore.clear();
 }
 
 bool CFamilyWar::checkData()
 {
-	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌì¿ªÆô
+	int32_t startDays = TIMER.GetDaysFromStart();
 	if ( startDays == 2 )
 	{
 		return true;
@@ -102,7 +118,7 @@ bool CFamilyWar::checkData()
 
 bool CFamilyWar::checkWeek()
 {
-	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌì¿ªÆô
+	int32_t startDays = TIMER.GetDaysFromStart();
 	if ( startDays == 2 )
 	{
 		return true;
@@ -126,15 +142,14 @@ void CFamilyWar::onMonsterDamaged( MonsterActivity* pMonster, int32_t nDamage, P
 
 	if ( pMonster == m_pSton )
 	{
-		int32_t nAddExp = nDamage;		// Ô­À´Òª³ý10;
+		int32_t nAddExp = nDamage;
 		pAttacker->addExp( nAddExp );
-		addPlayerScore( pAttacker, nAddExp, 0, 0 );
+		addPlayerScore( pAttacker, nAddExp, 0 );
 	}
 	else if ( pMonster == m_pPillar )
 	{
-		int32_t nAddMoney = nDamage / 10;
 		pAttacker->AddCurrency( CURRENCY_MONEY, nDamage / 10, MCR_ATTACK_FAMIWAR_PILLAR );
-		addPlayerScore( pAttacker, 0, nAddMoney, 0 );
+		addPlayerScore( pAttacker, 0, 0 );
 		if ( pAttacker->getFamilyId() > 0 )
 		{
 			addFamilyScore( pAttacker->getFamilyId(), pAttacker->getFamilyName(), nDamage );
@@ -154,20 +169,25 @@ void CFamilyWar::onMonsterDie( MonsterActivity* pMonster, Player* pKiller )
 		return;
 	}
 
-	if ( m_pPillar == pMonster )
+	if ( m_pTitle == pMonster )
+	{
+		m_pBuffPlayer = pKiller;
+		m_nBuffStartTick = pKiller->getTick();
+		addBuff( pKiller );
+		setNeedBroadcastActivityScore();
+	}
+	else if ( m_pPillar == pMonster )
 	{
 		FamilyId_t nFamilyId = 0;
 		if ( !m_lstFamilyScore.empty() )
 		{
 			nFamilyId = m_lstFamilyScore.front().nFamilyId;
-			m_lstFamilyScore.clear();
-			setNeedBroadcastActivityScore();
 		}
 		m_pPillar->SetFamilyId( nFamilyId );
 		broadcastPillerKilled( nFamilyId );
 		if ( NULL == m_pSton || !m_pSton->isAlive() )
 		{
-			win( nFamilyId );
+				win( nFamilyId );
 		}
 	}
 	else if ( m_pSton == pMonster )
@@ -190,7 +210,15 @@ void CFamilyWar::onPlayerKilled( Player* pDier, Player* pAttacker )
 		return;
 	}
 
-	addPlayerScore( pAttacker, 0, 0, 1 );
+	addPlayerScore( pAttacker, 20, 1 );
+
+	if ( m_pBuffPlayer == pDier )
+	{
+		m_pBuffPlayer = pAttacker;
+		m_nBuffStartTick = pAttacker->getTick();
+		addBuff( m_pBuffPlayer );
+		setNeedBroadcastActivityScore();
+	}
 }
 
 void CFamilyWar::onMonsterAdd( MonsterActivity* pMonster )
@@ -200,16 +228,28 @@ void CFamilyWar::onMonsterAdd( MonsterActivity* pMonster )
 		return;
 	}
 
-	if ( pMonster->getActivityMonsterId() == ACTICITY_MONSTER_ID_FAMILY_WAR_STON )
+	int32_t nActMonsterId = pMonster->getActivityMonsterId();
+	if ( nActMonsterId == 20333 )
+	{
+		m_pTitle = pMonster;
+	}
+	else if ( nActMonsterId == 20334 )
+	{
+		m_pBoss = pMonster;
+	}
+	else if ( nActMonsterId == ACTICITY_MONSTER_ID_FAMILY_WAR_STON )
 	{
 		m_pSton = pMonster;
 	}
-	else if ( pMonster->getActivityMonsterId() == ACTICITY_MONSTER_ID_FAMILY_WAR_PILLAR )
+	else if ( nActMonsterId == ACTICITY_MONSTER_ID_FAMILY_WAR_PILLAR )
 	{
 		m_pPillar = pMonster;
 	}
 
-	pMonster->SetFamilyId( m_nGuidFamily );
+	if ( m_pSton != NULL && m_pPillar != NULL && m_pTitle != NULL && m_pBoss != NULL )
+	{
+		pMonster->SetFamilyId( m_nGuidFamily );
+	}
 }
 
 void CFamilyWar::addPlayer( Player* player )
@@ -220,7 +260,7 @@ void CFamilyWar::addPlayer( Player* player )
 		return;
 	}
 
-	// ÉèÖÃPKÄ£Ê½
+	// Set PK mode
 	if ( player->getFamilyId() > 0 )
 	{
 		player->setPkMode( PK_MODE_LEGION, false );
@@ -230,24 +270,32 @@ void CFamilyWar::addPlayer( Player* player )
 		player->setPkMode( PK_MODE_ALL, false );
 	}
 
-	// Ìí¼ÓBUFF
 	addBuff( player );
 
-	PlayerScoreMap::iterator iter = m_mPlayerScore.find( player->getCid() );
-	if ( iter != m_mPlayerScore.end() )
+	CharId_t nCharId = player->getCid();
+	PlayerScore* pFound = NULL;
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
 	{
-		iter->second.bInActivity = true;
-		iter->second.nStartTick = player->getTick();
+		if ( iter->nCharId == nCharId )
+		{
+			iter->bInActivity = true;
+			iter->nStartTick = player->getTick();
+			pFound = &(*iter);
+			break;
+		}
 	}
-	else
+
+	if ( pFound == NULL )
 	{
-		PlayerScore score = {};
-		score.nCharId	= player->getCid();
-		score.nFamilyId	= player->getFamilyId();
-		score.bInActivity = true;
-		score.nStartTick = player->getTick();
-		m_mPlayerScore.insert( PlayerScoreMap::value_type( score.nCharId, score ) );
+		PlayerScore score;
+		score.nCharId		= nCharId;
+		score.strName		= player->getName();
+		score.nFamilyId		= player->getFamilyId();
+		score.nStartTick	= player->getTick();
+		score.bInActivity	= true;
+		m_lstPlayerScore.push_back( score );
 	}
+
 	player->updateRecord( RP_FIRST_JUN_TUAN_ZHAN_STATE ,3 );
 	KAI_FU_HUO_DONG.SendKaiFuHuoDongIcon( player );
 	SendPlayerActivityScore( player, getLeftTime() );
@@ -260,12 +308,24 @@ void CFamilyWar::removePlayer( Player* player, bool islogout )
 	{
 		return;
 	}
-	removeBuff(player);
-	PlayerScoreMap::iterator iter = m_mPlayerScore.find( player->getCid() );
-	if ( iter != m_mPlayerScore.end() )
+
+	if ( player->HasBuffById( 100001 ) )
 	{
-		iter->second.bInActivity = false;
-		iter->second.nSeconds += static_cast<int32_t>( ( player->getTick() - iter->second.nStartTick ) / 1000 );
+		removeBuff( player );
+		if ( m_pTitle != NULL )
+		{
+			// Note: Monster::OnRevive not available in current codebase
+		}
+	}
+
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
+	{
+		if ( iter->nCharId == player->getCid() )
+		{
+			iter->bInActivity = false;
+			iter->nStartTick = player->getTick();
+			return;
+		}
 	}
 }
 
@@ -311,7 +371,6 @@ void CFamilyWar::SendPlayerActivityInfo( Player* player )
 		GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 	}
 }
-
 
 void CFamilyWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 {
@@ -420,27 +479,32 @@ int32_t CFamilyWar::GetRevive( Player* player )
 	}
 }
 
-void CFamilyWar::addPlayerScore( Player* player, int32_t nExp, int32_t nMoney, int32_t nKillCount )
+void CFamilyWar::addPlayerScore( Player* player, int32_t nScore, int32_t nKillCount )
 {
 	if ( NULL == player )
 	{
 		return;
 	}
 
-	PlayerScoreMap::iterator iter = m_mPlayerScore.find( player->getCid() );
-	if ( iter != m_mPlayerScore.end() )
+	CharId_t Cid = player->getCid();
+	PlayerScore* pPlayerScore = getPlayerScore( Cid );
+	if ( NULL == pPlayerScore )
 	{
-		iter->second.nExp		+= nExp;
-		iter->second.nMoney		+= nMoney;
-		iter->second.nKillCount	+= nKillCount;
-
-		NetPacket* packet = packetActivityPlayerScore( player );
-		if ( NULL == packet )
-		{
-			return;
-		}
-		GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+		return;
 	}
+
+	if ( nKillCount > 0 )
+	{
+		if ( pPlayerScore->nKillCount >= 19 )
+			return;
+		pPlayerScore->nKillCount += nKillCount;
+	}
+	pPlayerScore->nScore += nScore;
+
+	addFamilyScore( player->getFamilyId(), player->getFamilyName(), nScore );
+	m_lstPlayerScore.sort( std::greater<PlayerScore>() );
+	sendPlayerScore( player );
+	setNeedBroadcastActivityScore();
 }
 
 void CFamilyWar::addFamilyScore( FamilyId_t nFamilyId, const std::string& strFamilyName, int32_t nScore )
@@ -460,16 +524,18 @@ void CFamilyWar::addFamilyScore( FamilyId_t nFamilyId, const std::string& strFam
 		score.nFamilyId		= nFamilyId;
 		score.strFamilyName	= strFamilyName;
 		score.nScore		= nScore;
+		score.nUsedScore	= 0;
+		score.nActivePillar	= 0;
 		m_lstFamilyScore.push_back( score );
 	}
-	m_lstFamilyScore.sort(std::greater<FamilyScore>());
+	m_lstFamilyScore.sort( std::greater<FamilyScore>() );
 	setNeedBroadcastActivityScore();
 }
 
 void CFamilyWar::win( FamilyId_t nFamilyId )
 {
-	// ½áÊø
-	if ( m_nGuidFamily != nFamilyId )
+	m_nActiveState = 2;
+	if ( nFamilyId != m_nGuidFamily && nFamilyId > 0 )
 	{
 		FirstFamilyWar( nFamilyId );
 		m_nWinTimes = 0;
@@ -477,6 +543,11 @@ void CFamilyWar::win( FamilyId_t nFamilyId )
 	}
 	++m_nWinTimes;
 	m_nState = AS_END;
+
+	sendWinnerReward( nFamilyId );
+	sendPlayerScoreRankReward();
+	sendFamilyScoreRankReward();
+
 	saveFamilyWarResult();
 	addRewards();
 	broadcastActivityResult();
@@ -494,11 +565,9 @@ void CFamilyWar::FirstFamilyWar( FamilyId_t FamilyId )
 	{
 		return;
 	}
-	PlayerScoreMap::iterator iter = m_mPlayerScore.begin();
-	PlayerScoreMap::iterator eiter = m_mPlayerScore.end();
-	for ( ; iter != eiter; ++iter )
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
 	{
-		const PlayerScore& score = iter->second;
+		const PlayerScore& score = *iter;
 		Player* player = GAME_SERVICE.getPlayer( score.nCharId, 0, false );
 		if ( NULL != player )
 		{
@@ -524,11 +593,9 @@ void CFamilyWar::FirstFamilyWar( FamilyId_t FamilyId )
 
 void CFamilyWar::addRewards()
 {
-	PlayerScoreMap::iterator iter = m_mPlayerScore.begin();
-	PlayerScoreMap::iterator eiter = m_mPlayerScore.end();
-	for ( ; iter != eiter; ++iter )
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
 	{
-		const PlayerScore& score = iter->second;
+		const PlayerScore& score = *iter;
 		if ( score.bInActivity )
 		{
 			Player* player = GAME_SERVICE.getPlayer( score.nCharId, 0, false );
@@ -537,14 +604,17 @@ void CFamilyWar::addRewards()
 				int32_t nGiftId = 0;
 				if ( m_nGuidFamily > 0 && m_nGuidFamily == player->getFamilyId() )
 				{
+				if ( m_cfgActivity.gift_id.size() > (size_t)player->getFamilyPosition() )
 					nGiftId = m_cfgActivity.gift_id[ player->getFamilyPosition() ];
-				}
-				else if ( score.nKillCount > 0 )
-				{
+			}
+			else if ( score.nKillCount > 0 )
+			{
+				if ( m_cfgActivity.gift_id.size() > 10 )
 					nGiftId = m_cfgActivity.gift_id[10];
-				}
-				else
-				{
+			}
+			else
+			{
+				if ( m_cfgActivity.gift_id.size() > 11 )
 					nGiftId = m_cfgActivity.gift_id[11];
 				}
 
@@ -557,7 +627,7 @@ void CFamilyWar::addRewards()
 				{
 					DB_SERVICE.OnSendSysMail( player->getCid(), MI_FAMILYWAR_REWARD, bagItem );
 				}
-				if ( isDoubleReward() )	// Ë«±¶½±Àø·¢Á½¸ö
+				if ( isDoubleReward() )
 				{
 					if ( !player->GetBag().AddItem( bagItem, IACR_ACTIVITY ) )
 					{
@@ -577,9 +647,9 @@ void CFamilyWar::saveFamilyWarResult()
 
 void CFamilyWar::broadcastActivityResult()
 {
-	for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
 	{
-		PlayerScore& score = iter->second;
+		PlayerScore& score = *iter;
 		if ( score.bInActivity )
 		{
 			Player* pPlayer = GAME_SERVICE.getPlayer( score.nCharId, 0, false );
@@ -595,7 +665,7 @@ void CFamilyWar::broadcastActivityResult()
 				packet->writeInt64( m_nGuidFamily );
 				FamilyInfo familyInfo = FAMILY_MANAGER.GetFamilyInfo( m_nGuidFamily );
 				packet->writeUTF8( familyInfo.strName );
-				packet->writeInt32( score.nJoinExp );
+				packet->writeInt32( score.nScore );
 				packet->writeInt8( isDoubleReward() ? 1 : 0 );
 
 				packet->setSize( packet->getWOffset() );
@@ -607,9 +677,13 @@ void CFamilyWar::broadcastActivityResult()
 
 void CFamilyWar::onTimeEnd()
 {
-	if ( m_pPillar != NULL )
+	if ( m_pBuffPlayer != NULL )
 	{
-		win( m_pPillar->GetFamilyId() );
+		win( m_pBuffPlayer->getFamilyId() );
+	}
+	else
+	{
+		win( 0 );
 	}
 	CActivity::onTimeEnd();
 }
@@ -636,7 +710,7 @@ int32_t	CFamilyWar::getNextStartTime()
 	}
 
 	int32_t days = -1;
-	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌì¿ªÆô
+	int32_t startDays = TIMER.GetDaysFromStart();
 	if ( checkData() && checkWeek() )
 	{
 		if( nowMinute < startMinute )
@@ -694,7 +768,36 @@ int32_t	CFamilyWar::getNextStartTime()
 
 Answer::NetPacket* CFamilyWar::packetActivityScore()
 {
-	return packetActivityFamilyScore();
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E26 );
+	if ( NULL == packet )
+	{
+		return NULL;
+	}
+
+	packet->writeInt32( m_cfgActivity.id );
+	packet->writeInt8( (int8_t)m_nActiveState );
+	packet->writeInt32( m_nActivePillarState );
+	packet->writeInt32( getLeftTime() );
+
+	// Write current buff player's family name and remaining win time
+	if ( m_pBuffPlayer != NULL )
+	{
+		packet->writeUTF8( m_pBuffPlayer->getName() + "(" + m_pBuffPlayer->getFamilyName() + ")" );
+		int32_t nLeftWinTime = (int32_t)(m_nBuffStartTick - m_pBuffPlayer->getTick() + 300000) / 1000;
+		if ( nLeftWinTime < 0 ) nLeftWinTime = 0;
+		packet->writeInt32( nLeftWinTime );
+	}
+	else
+	{
+		packet->writeUTF8( "" );
+		packet->writeInt32( 0 );
+	}
+
+	appendPlayerScoreRank( packet );
+	appendFamilyScoreRank( packet );
+
+	packet->setSize( packet->getWOffset() );
+	return packet;
 }
 
 Answer::NetPacket* CFamilyWar::packetActivityFamilyScore()
@@ -749,13 +852,12 @@ Answer::NetPacket* CFamilyWar::packetActivityPlayerScore( Player* player )
 		return NULL;
 	}
 
-	PlayerScoreMap::iterator iter = m_mPlayerScore.find( player->getCid() );
-	if ( iter == m_mPlayerScore.end() )
+	PlayerScore* pScore = getPlayerScore( player->getCid() );
+	if ( NULL == pScore )
 	{
 		return NULL;
 	}
 
-	const PlayerScore& score = iter->second;
 	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_PLAYER_SCORE );
 	if ( NULL == packet )
 	{
@@ -763,9 +865,9 @@ Answer::NetPacket* CFamilyWar::packetActivityPlayerScore( Player* player )
 	}
 
 	packet->writeInt32( m_cfgActivity.id );
-	packet->writeInt32( score.nExp );
-	packet->writeInt32( score.nMoney );
-	packet->writeInt32( score.nKillCount );
+	packet->writeInt32( pScore->nScore );
+	packet->writeInt32( 0 ); // money (not tracked separately in new version)
+	packet->writeInt32( pScore->nKillCount );
 
 	packet->setSize( packet->getWOffset() );
 	return packet;
@@ -941,93 +1043,72 @@ bool CFamilyWar::CanUseXP() const
 
 void CFamilyWar::broadcastReady()
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-	if (NULL == packet)
-	{
-		return;
-	}
-	packet->writeInt32( BCI_WORLD_FAMILYWAR_READY );
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast(packet);
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	if ( NULL == packet ) return;
+	packet->writeInt32( 2 );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CFamilyWar::broadcastStart()
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-	if (NULL == packet)
-	{
-		return;
-	}
-	packet->writeInt32( BCI_WORLD_FAMILYWAR_START );
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast(packet);
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	if ( NULL == packet ) return;
+	packet->writeInt32( 3 );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CFamilyWar::broadcastPillerKilled( FamilyId_t nFamilyId )
 {
 	if ( nFamilyId > 0 )
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-		if (NULL == packet)
-		{
-			return;
-		}
-		packet->writeInt32( BCI_WORLD_FAMILYWAR_PILLAR_KILLED_BY_FAMILY );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+		if ( NULL == packet ) return;
+		packet->writeInt32( 6 );
 		FamilyInfo familyInfo = FAMILY_MANAGER.GetFamilyInfo( nFamilyId );
 		packet->writeUTF8( familyInfo.strName );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast(packet);
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 	else
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-		if (NULL == packet)
-		{
-			return;
-		}
-		packet->writeInt32( BCI_WORLD_FAMILYWAR_PILLAR_KILLED_BY_FREE );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+		if ( NULL == packet ) return;
+		packet->writeInt32( 7 );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast(packet);
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 }
 
 void CFamilyWar::broadcastStoneKilled()
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-	if (NULL == packet)
-	{
-		return;
-	}
-	packet->writeInt32( BCI_WORLD_FAMILYWAR_STONE_KILLED );
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast(packet);
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	if ( NULL == packet ) return;
+	packet->writeInt32( 8 );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CFamilyWar::broadcastWin()
 {
 	if ( m_nGuidFamily > 0 )
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-		if (NULL == packet)
-		{
-			return;
-		}
-		packet->writeInt32( BCI_WORLD_FAMILYWAR_WIN );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+		if ( NULL == packet ) return;
+		packet->writeInt32( 9 ); // BCI_WORLD_FAMILYWAR_WIN
 		FamilyInfo familyInfo = FAMILY_MANAGER.GetFamilyInfo( m_nGuidFamily );
 		packet->writeUTF8( familyInfo.strName );
-		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.worldBroadcast(packet);
+		packet->setSize( packet->getWOffset() );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 	else
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-		if (NULL == packet)
-		{
-			return;
-		}
-		packet->writeInt32( BCI_WORLD_FAMILYWAR_FAIL );
-		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.worldBroadcast(packet);
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+		if ( NULL == packet ) return;
+		packet->writeInt32( 10 ); // BCI_WORLD_FAMILYWAR_FAIL
+		packet->setSize( packet->getWOffset() );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 }
 
@@ -1065,36 +1146,26 @@ void CFamilyWar::addBuff( Player* player )
 	{
 		return;
 	}
-	CfgBuff *cfgBuff = CFG_DATA.getBuff( ACTIVITY_FAMILY_WAR_BUFF_ID );
-	if ( cfgBuff != NULL )
-	{
-		SkillBuff *buff = new SkillBuff( *player, *cfgBuff );
-		if (NULL == buff)
-		{
-			return;
-		}
-		buff->init( cfgBuff->id, nBuffLevel, player->getHandle(), player->getHandle() );
-		player->addBuff( buff );
-	}
+	addActivityBuff( player, 100001, true );
 }
 
 void CFamilyWar::removeBuff( Player* player )
 {
 	if ( player != NULL )
 	{
-		player->removeBuff( ACTIVITY_FAMILY_WAR_BUFF_ID );
+		player->removeBuff( 100001 );
 	}
 }
 
 bool CFamilyWar::isDoubleReward() const
 {
-	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌìË«±¶½±Àø
+	int32_t startDays = TIMER.GetDaysFromStart();
 	return startDays <= 2;
 }
 
 bool CFamilyWar::isShowDoubleReward()
 {
-	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌìË«±¶½±Àø
+	int32_t startDays = TIMER.GetDaysFromStart();
 	if ( startDays < 2 )
 	{
 		return true;
@@ -1116,7 +1187,7 @@ std::string CFamilyWar::GetFamilyName()
 	return m_FamilyName;
 }
 
-std::string	CFamilyWar::GetFamilyLeaderName()
+std::string CFamilyWar::GetFamilyLeaderName()
 {
 	return m_FamilyLeaderName;
 }
@@ -1125,24 +1196,368 @@ void CFamilyWar::NotifyActivityInfo( Player* pPlayer )
 {
 	if ( NULL == pPlayer )
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
 		if (NULL == packet)
 		{
 			return;
 		}
 		packet->writeInt64( m_nGuidFamily );
-		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.worldBroadcast(packet);
+		packet->setSize( packet->getWOffset() );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 	else
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
 		if (NULL == packet)
 		{
 			return;
 		}
 		packet->writeInt64( m_nGuidFamily );
-		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);
+		packet->setSize( packet->getWOffset() );
+		GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
 	}
+}
+
+// ========== æ–°ç‰ˆæœ¬æ–¹æ³• ==========
+
+void CFamilyWar::AdjustMonsterAttr( CfgMonster* cfgMonster )
+{
+	if ( NULL == cfgMonster ) return;
+	// Binary: adjust by world level -> use GetDaysFromStart as a proxy
+	int32_t nLevel = 1 + TIMER.GetDaysFromStart() / 7;
+	adjustMonsterAttr( cfgMonster, nLevel, true );
+}
+
+bool CFamilyWar::OnChangeMap( Player* player, CActivityMap* pMap, int32_t nX, int32_t nY, int32_t param )
+{
+	if ( NULL == player || NULL == pMap )
+	{
+		return false;
+	}
+
+	if ( !pMap->isWalkablePosition( nX, nY ) )
+	{
+		return false;
+	}
+
+	// Find map index in activity maps
+	int32_t nIndex = 0;
+	bool bFind = false;
+	for ( std::list<CActivityMap*>::iterator iter = m_activityMaps.begin(); iter != m_activityMaps.end(); ++iter )
+	{
+		++nIndex;
+		if ( *iter == pMap )
+		{
+			bFind = true;
+			break;
+		}
+	}
+
+	if ( !bFind )
+	{
+		return false;
+	}
+
+	// Map index 2: requires m_nActivePillarState == 15 (all pillars activated)
+	if ( nIndex == 2 )
+	{
+		return m_nActivePillarState == 15;
+	}
+
+	// Map index 3: requires winning family member
+	if ( nIndex == 3 )
+	{
+		return m_nGuidFamily > 0 && player->getFamilyId() == m_nGuidFamily;
+	}
+
+	return false;
+}
+
+bool CFamilyWar::OnActivePillar( Player* player, int32_t nIndex )
+{
+	if ( NULL == player )
+	{
+		return false;
+	}
+
+	FamilyId_t FamilyId = player->getFamilyId();
+	FamilyScore* pFamilyScore = getFamilyScore( FamilyId );
+	if ( NULL == pFamilyScore )
+	{
+		return false;
+	}
+
+	// Need at least 1000 unused score to activate a pillar
+	if ( pFamilyScore->nScore - pFamilyScore->nUsedScore < 1000 )
+	{
+		return false;
+	}
+
+	int32_t nResult = m_nActivePillarState | (1 << nIndex);
+	if ( m_nActivePillarState == nResult )
+	{
+		return false;
+	}
+
+	pFamilyScore->nUsedScore += 1000;
+	++pFamilyScore->nActivePillar;
+	sendActivePillarReward( FamilyId );
+
+	m_nActivePillarState = nResult;
+	setNeedBroadcastActivityScore();
+
+	if ( m_nActivePillarState == 15 )
+	{
+		m_nActiveState = 1;
+	}
+
+	return true;
+}
+
+void CFamilyWar::OnTaskSubmited( Player* player, int32_t nScore )
+{
+	if ( NULL == player ) return;
+
+	CharId_t Cid = player->getCid();
+	PlayerScore* pPlayerScore = getPlayerScore( Cid );
+	if ( NULL == pPlayerScore ) return;
+
+	++pPlayerScore->nTaskCount;
+	pPlayerScore->nScore += nScore;
+
+	m_lstPlayerScore.sort( std::greater<PlayerScore>() );
+
+	addFamilyScore( player->getFamilyId(), player->getFamilyName(), nScore );
+	sendPlayerScore( player );
+}
+
+int32_t CFamilyWar::GetActivePillar( FamilyId_t nFamilyId )
+{
+	FamilyScore* pFamilyScore = getFamilyScore( nFamilyId );
+	if ( pFamilyScore )
+		return pFamilyScore->nActivePillar;
+	return 0;
+}
+
+int32_t CFamilyWar::canEnter( Player* player, CActivityMap* pTargetMap ) const
+{
+	if ( NULL == player || NULL == pTargetMap )
+	{
+		return 10002;
+	}
+	if ( player->getFamilyId() > 0 )
+	{
+		return CActivity::canEnter( player, pTargetMap );
+	}
+	return 10102;
+}
+
+PlayerScore* CFamilyWar::getPlayerScore( CharId_t nCharId )
+{
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
+	{
+		if ( iter->nCharId == nCharId )
+			return &(*iter);
+	}
+	return NULL;
+}
+
+FamilyScore* CFamilyWar::getFamilyScore( FamilyId_t nFamilyId )
+{
+	for ( FamilyScoreList::iterator iter = m_lstFamilyScore.begin(); iter != m_lstFamilyScore.end(); ++iter )
+	{
+		if ( iter->nFamilyId == nFamilyId )
+			return &(*iter);
+	}
+	return NULL;
+}
+
+void CFamilyWar::sendPlayerScoreRankReward()
+{
+	int32_t nIndex = 1;
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end() && nIndex <= 3; ++iter, ++nIndex )
+	{
+		int32_t nGiftId = 0;
+		int32_t nMailId = 0;
+
+		if ( nIndex == 1 )
+		{
+			if ( m_cfgActivity.gift_id.size() > 0 ) nGiftId = m_cfgActivity.gift_id[0];
+			nMailId = 6336;
+		}
+		else if ( nIndex == 2 )
+		{
+			if ( m_cfgActivity.gift_id.size() > 1 ) nGiftId = m_cfgActivity.gift_id[1];
+			nMailId = 6337;
+		}
+		else
+		{
+			if ( m_cfgActivity.gift_id.size() > 2 ) nGiftId = m_cfgActivity.gift_id[2];
+			nMailId = 6338;
+		}
+
+		if ( nGiftId <= 0 ) continue;
+
+		MemChrBag reward;
+		memset( &reward, 0, sizeof(reward) );
+		reward.itemId		= nGiftId;
+		reward.itemClass	= IC_NORMAL;
+		reward.itemCount	= 1;
+		reward.bind		= IBS_BIND;
+
+		DB_SERVICE.OnSendSysMail( iter->nCharId, nMailId, reward, "" );
+	}
+}
+
+void CFamilyWar::sendFamilyScoreRankReward()
+{
+	int32_t nIndex = 1;
+	for ( FamilyScoreList::iterator iter = m_lstFamilyScore.begin(); iter != m_lstFamilyScore.end() && nIndex <= 3; ++iter, ++nIndex )
+	{
+		int32_t nGiftId = 0;
+		int32_t nMailId = 0;
+
+		if ( nIndex == 1 )
+		{
+			if ( m_cfgActivity.gift_id.size() > 3 ) nGiftId = m_cfgActivity.gift_id[3];
+			nMailId = 6339;
+		}
+		else if ( nIndex == 2 )
+		{
+			if ( m_cfgActivity.gift_id.size() > 4 ) nGiftId = m_cfgActivity.gift_id[4];
+			nMailId = 6340;
+		}
+		else
+		{
+			if ( m_cfgActivity.gift_id.size() > 5 ) nGiftId = m_cfgActivity.gift_id[5];
+			nMailId = 6341;
+		}
+
+		if ( nGiftId <= 0 ) continue;
+
+		MemChrBag reward;
+		memset( &reward, 0, sizeof(reward) );
+		reward.itemId		= nGiftId;
+		reward.itemClass	= IC_NORMAL;
+		reward.itemCount	= 1;
+		reward.bind		= IBS_BIND;
+
+		DB_SERVICE.OnSendSysMail( 0, nMailId, reward, "" );
+	}
+}
+
+void CFamilyWar::sendActivePillarReward( FamilyId_t nFamilyId )
+{
+	if ( m_cfgActivity.gift_id.size() <= 6 ) return;
+	MemChrBag reward;
+	memset( &reward, 0, sizeof(reward) );
+	reward.itemId		= m_cfgActivity.gift_id[6];
+	reward.itemClass	= IC_NORMAL;
+	reward.itemCount	= 1;
+	reward.bind		= IBS_BIND;
+
+	DB_SERVICE.OnSendSysMail( 0, 6342, reward, "" );
+}
+
+void CFamilyWar::sendWinnerReward( FamilyId_t nFamilyId )
+{
+	if ( m_cfgActivity.gift_id.size() <= 7 ) return;
+	MemChrBag reward;
+	memset( &reward, 0, sizeof(reward) );
+	reward.itemId		= m_cfgActivity.gift_id[7];
+	reward.itemClass	= IC_NORMAL;
+	reward.itemCount	= 1;
+	reward.bind		= IBS_BIND;
+
+	DB_SERVICE.OnSendSysMail( 0, 6343, reward, "" );
+}
+
+void CFamilyWar::appendPlayerScoreRank( Answer::NetPacket* packet )
+{
+	if ( NULL == packet ) return;
+
+	int8_t nCount = 0;
+	uint32_t offset = packet->getWOffset();
+	packet->writeInt8( nCount );
+
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
+	{
+		if ( iter->nScore <= 0 ) break;
+
+		packet->writeUTF8( iter->strName );
+		packet->writeInt32( iter->nScore );
+
+		if ( ++nCount > 9 ) break;
+	}
+
+	uint32_t oldOffset = packet->getWOffset();
+	packet->setWOffset( offset );
+	packet->writeInt8( nCount );
+	packet->setWOffset( oldOffset );
+}
+
+void CFamilyWar::appendFamilyScoreRank( Answer::NetPacket* packet )
+{
+	if ( NULL == packet ) return;
+
+	int8_t nCount = 0;
+	uint32_t offset = packet->getWOffset();
+	packet->writeInt8( nCount );
+
+	for ( FamilyScoreList::iterator iter = m_lstFamilyScore.begin(); iter != m_lstFamilyScore.end(); ++iter )
+	{
+		packet->writeUTF8( iter->strFamilyName );
+		packet->writeInt32( iter->nScore );
+
+		if ( ++nCount > 2 ) break;
+	}
+
+	uint32_t oldOffset = packet->getWOffset();
+	packet->setWOffset( offset );
+	packet->writeInt8( nCount );
+	packet->setWOffset( oldOffset );
+}
+
+void CFamilyWar::sendPlayerScore( Player* player )
+{
+	if ( NULL == player ) return;
+
+	int8_t nIndex = 0;
+	int32_t nScore = 0;
+	int8_t nTaskCount = 0;
+
+	for ( PlayerScoreList::iterator iter = m_lstPlayerScore.begin(); iter != m_lstPlayerScore.end(); ++iter )
+	{
+		++nIndex;
+		if ( iter->nCharId == player->getCid() )
+		{
+			nScore = iter->nScore;
+			nTaskCount = (int8_t)iter->nTaskCount;
+			break;
+		}
+	}
+
+	int8_t nFamilyIndex = 0;
+	int32_t nFamilyScore = 0;
+	for ( FamilyScoreList::iterator iter = m_lstFamilyScore.begin(); iter != m_lstFamilyScore.end(); ++iter )
+	{
+		++nFamilyIndex;
+		if ( iter->nFamilyId == player->getFamilyId() )
+		{
+			nFamilyScore = iter->nScore - iter->nUsedScore;
+			break;
+		}
+	}
+
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E24 );
+	if ( NULL == packet ) return;
+
+	packet->writeInt32( m_cfgActivity.id );
+	packet->writeInt8( nIndex );
+	packet->writeInt32( nScore );
+	packet->writeInt8( nFamilyIndex );
+	packet->writeInt32( nFamilyScore );
+	packet->writeInt8( nTaskCount );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }

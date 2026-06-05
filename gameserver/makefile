@@ -2,10 +2,12 @@ SHELL=/bin/bash
 TARGET = ../bin/gameserver
 OBJPATH = obj
 
+CXX = x86_64-linux-gnu-g++
+
 CFLAGS = -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX
 CCOMLINE = $(CXX) -c $(CFLAGS) $< -o $@
 
-LFLAGS = -L/usr/lib64/mysql -lmysqlclient -lpthread -lz
+LFLAGS = -L/usr/lib/x86_64-linux-gnu -lmysqlclient -lpthread -lz -lssl -lcrypto -lzstd
 LLIB = -L../libanswer/obj -lanswer
 
 OBJS = $(patsubst %.cpp, $(OBJPATH)/%.o, $(notdir $(wildcard *.cpp)))
@@ -19,7 +21,7 @@ $(OBJPATH)/%.d : %.cpp
 all : $(TARGET)
 
 $(TARGET) : $(DS) $(OBJS)
-	$(CXX) -o $(TARGET) $(LFLAGS) $(OBJS) $(LLIB)
+	$(CXX) -o $(TARGET) $(OBJS) $(LLIB) $(LFLAGS)
 
 -include $(DS)
 

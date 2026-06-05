@@ -1,0 +1,3 @@
+INT	INT	INT	INT	STRING	STRING	INT	STRING
+DungeonId	Id	CostGold	MaxTimes	Monsters	CostItemId	FreeCount	Desc
+2015	1	0	10	144	718:1:1	2	花费100钻石，召唤战神守卫

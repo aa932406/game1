@@ -1,7 +1,7 @@
 /*
-* ¼¼ÄÜÏµÍ³
-* Íæ¼Ò¼¼ÄÜ
-* XP¼¼ÄÜ
+* ï¿½ï¿½ï¿½ï¿½ÏµÍ³
+* ï¿½ï¿½Ò¼ï¿½ï¿½ï¿½
+* XPï¿½ï¿½ï¿½ï¿½
 */
 #ifndef __TPOC_CHAR_SKILL_H__
 #define __TPOC_CHAR_SKILL_H__
@@ -10,10 +10,11 @@
 #include "ExtSystemBase.h"
 #include "Skill.h"
 #include "SkillBuff.h"
+#include <map>
 
-#define ADD_XP_TIME				30000		// XPÃ¿´ÎÔö¼ÓÊ±¼ä¼ä¸ô
-#define XP_WAIT_SELECT_TIME		30000		// XPÑ¡ÔñÊ±¼ä
-#define XP_TIME					60000		// XP³ÖĞøÊ±¼ä
+#define ADD_XP_TIME				30000		// XPÃ¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
+#define XP_WAIT_SELECT_TIME		30000		// XPÑ¡ï¿½ï¿½Ê±ï¿½ï¿½
+#define XP_TIME					60000		// XPï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 
 class Player;
 class CExtCharSkill : public CExtSystemBase
@@ -47,7 +48,7 @@ public:
 	bool				IsLearnedXPSkill() const;
 	void				DieResetXp();
 	void				ClearXP();
-	void				sendSocialAddXP( int32_t AddXp = 0 );				// XPÖµÔö¼Ó
+	void				sendSocialAddXP( int32_t AddXp = 0 );				// XPÖµï¿½ï¿½ï¿½ï¿½
 private:
 	void				checkXP( int64_t curTick );
 	void				sendXP();
@@ -55,9 +56,62 @@ private:
 	void				startXP( SkillId_t nSkillId );
 	void				endXP();
 
-	void				sendSocialStartXP();			// ¿ªÊ¼XP¼¼ÄÜ
-	void				sendSocialEndXP();				// ½áÊøXP¼¼ÄÜ
-	void				sendSocialBreakXP();			// Ìø¹ıXP¼¼ÄÜ
+	void				sendSocialStartXP();			// ï¿½ï¿½Ê¼XPï¿½ï¿½ï¿½ï¿½
+	void				sendSocialEndXP();				// ï¿½ï¿½ï¿½ï¿½XPï¿½ï¿½ï¿½ï¿½
+	void				sendSocialBreakXP();			// ï¿½ï¿½ï¿½ï¿½XPï¿½ï¿½ï¿½ï¿½
+
+public:
+	// ========== æ–°ç‰ˆæœ¬æ·»åŠ æ–¹æ³• ==========
+	void				InitSystem();
+	void				initSkills();
+	void				AddCharAttr();
+	int32_t				CallSkillBattle();
+	int32_t				GetPower();
+	int32_t				AddPower( int32_t nAddPower );
+	int32_t				AddSkillPoint( int32_t nAddPoint );
+	int32_t				AddSkillBookPoint( int32_t nAddPoint );
+	int32_t				GetDropMoneyRate();
+	void				recalDropMoneyRate();
+	bool				CanUseSkillAndMove();
+	void				addSkillBuffTo( UnitHandle launcher, SkillId_t nSkillId );
+	void				broadcastIntervalEffect( int32_t nSkillId );
+	void				calActiveSkillCD( int32_t nSkillId );
+	void				checkActiveList();
+	void				recalAcviveSkill();
+	void				doSkill( SkillId_t nSkillId );
+	void				doSkillActive();
+	int32_t				activeSkill( SkillId_t nSkill );
+	int32_t				getActiveSkill( int32_t nSkillId );
+	int32_t				addActiveSkill( int32_t nSkillId );
+	int32_t				getAddonSkill( int32_t nSkillId );
+	int32_t				addAddonSkill( int32_t nSkillId );
+	void				removeAddonSkill( int32_t nSkillId );
+	void				checkAddonSkills();
+	void				checkSummonSkills();
+	void				CheckSummonBuff();
+	void				CheckSelfTrigBuff();
+	void				CheckHPPecentTrigBuff();
+	void				CheckPhaseDamageTrigBuff();
+	void				checkSkillTrigBuff( SkillId_t nSkillId );
+	void				CheckSkillTrigBuff( SkillId_t nSkillId );
+	void				AddSuitSkillEnergy( int32_t nAddValue );
+	void				checkSuitSkillEnergy();
+	void				AddOtherSkill( int32_t nSkillId, int32_t nLevel );
+	void				addTalentAddon( int32_t nAddonId );
+	int32_t				getTalentAddon( int32_t nAddonId );
+	void				recalTalentAddon();
+	void				loadTalentPoints( const PlayerDBData& dbData );
+	void				saveTalentPoints( PlayerDBData& dbData );
+	void				SendTalentInfo();
+	void				SendTalentAddon();
+	void				SendlearedSkill();
+	void				UseSkillBook( int32_t nSkillId );
+	void				removeSkillByTalent( int32_t nSkillId );
+
+private:
+	int32_t				onDoUnitSkill( Answer::NetPacket* inPacket );
+	int32_t				onDoAddonSkill( Answer::NetPacket* inPacket );
+	int32_t				onAddTalentPoint( Answer::NetPacket* inPacket );
 
 private:
 	bool				m_bXP;
@@ -67,6 +121,17 @@ private:
 
 	int64_t				m_nLastTick;
 	int64_t				m_nStartTick;
+
+	// ========== æ–°ç‰ˆæœ¬æˆå‘˜ ==========
+	int32_t				m_nPower;
+	int32_t				m_nSkillPoint;
+	int32_t				m_nSkillBookPoint;
+	int32_t				m_nDropMoneyRate;
+	bool				m_bCanUseSkillAndMove;
+	std::map<int32_t, int32_t>	m_mActiveSkills;
+	std::map<int32_t, int32_t>	m_mAddonSkills;
+	std::map<int32_t, int32_t>	m_mTalentAddons;
+	int32_t				m_nSuitSkillEnergy;
 };
 
 #endif	//__TPOC_CHAR_SKILL_H__

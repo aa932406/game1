@@ -188,6 +188,7 @@ enum CurrencyChangeReason
 	MCR_SEARCH_BACK						= 53,		// 资源找回
 	MCR_GUAN_WEI_GET					= 54,		// 官位获得
 	MCR_ACHIEVEMENT_FINISHED			= 55,		// 完成成就
+	MCR_TIAN_LING_LEVEL_UP				= 56,
 //=======================================================================================
 //绑定魔石开始	
  	GCC_PICK_CURRENCY_ITEM				= 1000,
@@ -207,6 +208,10 @@ enum CurrencyChangeReason
 	GCR_BUY_CYCLE_TASK_COUNT			= 2005,		//购买循环任务
 	GCR_RECHARGE						= 2006,		//充值
 	GCR_CREATE_FAMILY					= 2007,
+	GCR_ACT_SPECIAL_EQUIP					= 2008,
+
+	GCR_BLACK_MARCKET_ENTER_TICKET			= 2009,
+	GCR_BLACK_MARCKET_BUY_GOODS				= 2010,
 	GCR_USE_LIQUAN						= 2008,		//使用礼券
 	GCR_SUPER_EXCHANGE					= 2009,		//超级兑换
 	GCR_GET_DROP_ITEM					= 2010,		//掉落拾取
@@ -257,6 +262,7 @@ enum CurrencyChangeReason
 	GCR_BUY_AC_SOCRE					= 2055,		// 购买勋章积分
 	GCR_BUY_WAR_VICTORY_GIFT			= 2056,		// 购买抗战胜利礼包
 	GCT_WAR_VICTORY_FAN_LI				= 2057,		// 战胜利充值返利
+	GCR_SUN_AND_MOON_LEVEL_UP			= 2058,
 
 //==================================================================================
 //元气
@@ -330,6 +336,9 @@ enum ITEM_ADD_REASON
 	IACR_FAMILY_TASK_REWARD		= 38,	//军团任务
 	IACR_TOTAL_CHONG_ZHI		= 39,	//开服累计充值
 	IACR_VAR_VICTORY			= 40,	//抗战70周年
+
+	IACR_BLACK_MARKET_ENTER_TICKET		= 70,
+	IACR_BLACK_MARKET_BUY_GOODS			= 71,
 };
 
 enum ITEM_DEL_REASON
@@ -370,6 +379,8 @@ enum ITEM_DEL_REASON
 	IDCR_USE_MULTI_ITEM				= 33,	// 使用多个
 	IDCR_ENTER_BOSS_HOME			= 34,	// 进入boss之家
 	IDCR_SITE_REVIVE				= 35,	// 复活丹
+	IDCR_SUN_AND_MOON_LEVEL_UP			= 36,
+	IDCR_MOON_SKILL_GET			= 37,
 };
 
 enum ItemEffectType

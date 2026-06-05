@@ -1,0 +1,5 @@
+INT	STRING	INT	STRING
+Frequency	NeedItem	Price	BuyItem
+1	566:1:1	10	52:1:1:1
+10	566:1:1	10	52:1:1:1
+50	566:1:1	10	52:1:1:1

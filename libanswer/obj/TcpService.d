@@ -2,4 +2,4 @@
  ../include/TcpClient.h ../include/InetAddress.h ../include/NetPacket.h \
  ../include/Logger.h ../include/NetPacketPool.h ../include/SafeQueue.h \
  ../include/Mutex.h ../include/Thread.h
-	g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpService.cpp -o ../obj/TcpService.o
+	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I../include -I/usr/include/mysql -DLIBANSWER_LINUX TcpService.cpp -o ../obj/TcpService.o

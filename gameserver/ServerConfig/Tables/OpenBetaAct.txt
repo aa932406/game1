@@ -1,0 +1,4 @@
+INT	INT	STRING	STRING	STRING	STRING	STRING	STRING	INT	INT	INT	INT	INT
+Index	Sort	Desc	Title	Params	Params1	ClickType	StartTime	TotleEndDay	StartDay	EndDay	Pic	TrueStartDay
+6	1	#f5e8bf|活动期间可花费|#00ff00|8888钻石|#f5e8bf|购买绝版称号，每个玩家限购一次。	-1	7198:1:1:1|7198:1:1:1|5439:1:1:1|7198:1:1:1|7198:1:1:1	8888	daodanchenghao	2019-10-31 00:00:00	4	0	4	28	0
+8	3	#f5e8bf|活动期间内，打怪会掉落“节日糖果”，收集对应的节日糖果即可领取奖励。奖励所有玩家均可领取，抓紧机会不要错过!	-1	-1	-1	-1	2019-10-31 00:00:00	4	0	4	29	0

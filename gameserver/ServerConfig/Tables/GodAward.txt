@@ -1,0 +1,5 @@
+INT	INT	STRING	STRING	INT
+Index	FinishCount	Award	Desc	LanguageId
+1	3	775:1:1:1	#f7ab00|完成|#00ff00|三个|#f7ab00|每日目标	528
+2	5	17:1:1:1	#f7ab00|完成|#00ff00|五个|#f7ab00|每日目标	529
+3	7	777:1:1:1	#f7ab00|完成|#00ff00|七个|#f7ab00|每日目标	530
