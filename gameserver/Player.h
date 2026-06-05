@@ -41,6 +41,7 @@
 #include "Vplan.h"
 #include "NationalDayHd.h"
 #include "SevenDayTask.h"
+#include "ShenWei.h"
 
 #include "Trade.h"
 #include "PlayerMail.h"
@@ -622,6 +623,10 @@ private:			CExtCharDraw			m_extCharDraw;
 	friend class CExtCharExchange;
 private:			CExtCharExchange			m_extCharExchange;
 public:				CExtCharExchange&		GetCharExchange();
+
+	friend class CShenWei;
+public:				CShenWei&			GetShenWei() { return m_extShenWei; }
+private:			CShenWei			m_extShenWei;
 
 	friend class CExtCharMysteryGift;
 private:			CExtCharMysteryGift		m_extCharMysteryGift;

@@ -4252,6 +4252,26 @@ struct DaZheQuan
 };
 typedef std::map<int32_t, DaZheQuan> DaZheQuanMap;
 
+// 神威配置 (Cachet)
+struct CfgCachet
+{
+	CfgCachet() { CleanUp(); }
+	void CleanUp()
+	{
+		nLevel = 0;
+		nCachet = 0;
+		nDeduct = 0;
+		nLanguage = 0;
+		lAttrList.clear();
+	}
+	int32_t		nLevel;		// Lv
+	int32_t		nCachet;	// Cachet (minimum honor)
+	AddAttrList	lAttrList;	// Attr (parsed from string)
+	int32_t		nDeduct;	// Deduct (daily honor deduction)
+	int32_t		nLanguage;	// Language
+};
+typedef std::map<int32_t, CfgCachet> CachetCfgMap;
+
 class SevenTaskTable
 {
 public:
@@ -4982,6 +5002,7 @@ private:
 	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
 	SevenTaskTable			m_SevenTaskTable;
 	DaZheQuanMap			m_DaZheQuanMap;
+	CachetCfgMap			m_CachetCfg;
 	CfgCarrierTable			m_cfgCarrierTable;
 	CfgWingTable			m_cfgWing;
 	CfgWishRewardTable		m_cfgWishRewardTable;		// 护送配置表
@@ -5015,6 +5036,8 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 
 	const CfgOutLinkFestivalTable*	GetOutLinkFestivalTable();
 	const DaZheQuan*			GetDaZheQuanCfg( int32_t nIndex ) const;
+	const CfgCachet*			GetCfgCachet( int32_t nLevel ) const;
+	int32_t					GetCachetLevel( int64_t nHonor ) const;
 	const SevenTaskTable*			GetSevenTaskTable();
 
 	const CfgBlacketMarketTable*	GetBlacketMarketTable();

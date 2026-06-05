@@ -8200,6 +8200,9 @@ void Player::InitExtSystems()
 	m_extCharHallOfFame.Init( this );
 	m_ExtSysMgr.Register( &m_extCharHallOfFame );
 
+	m_extShenWei.Init( this );
+	m_ExtSysMgr.Register( &m_extShenWei );
+
 	/*
 	* EXT_INIT_ZK
 	* �쿪����ϵͳע�������֮��

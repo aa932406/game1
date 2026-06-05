@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (28/88)
+### 已移植模块 (29/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -73,7 +73,7 @@ make
 | `share/PDUDefine.h` | 添加 CM_MAGIC_BOX 协议 (725-729) 和 SM_MAGIC_BOX 协议 (11797-11799) 以及 CM_WISH 协议 (950-952) 和 SM_WISH 协议 (12040-12041) |
 | `Player.h` | 集成 CharDraw/CharExchange/CharMysteryGift/CharMysteryShop/MagicBox/Wish/Vplan/NationalDayHd 模块声明 |
 
-### 待移植模块 (剩余 ~56 个)
+### 待移植模块 (剩余 ~55 个)
 
 以下是从反编译代码中识别出的 `CExtSystemBase` 派生类模块：
 

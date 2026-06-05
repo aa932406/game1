@@ -307,7 +307,8 @@ enum CurrencyChangeReason
 // ����
 	HCR_HALL_OF_FAME_FIGHT				= 5000,		// ��ս
 	HCR_BUY_GUAN_WEI					= 5001,		// �����λ
-	HCR_HALL_OF_FAME_RANK_REWARD		= 5002,		// ��������
+	HCR_HALL_OF_FAME_RANK_REWARD		= 5002,
+	HCR_HALL_DAY_SWITCH			= 5003,		// ��������
 
 //�ɾͻ���
 	ACHIEVEMNET_SOCRE_GET				= 6001,		// �ɾ�	

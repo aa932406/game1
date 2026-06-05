@@ -8564,10 +8564,58 @@ void CfgData::InitCachetCfg()
 
     for (int32_t i = 0; i < iBaseTableCount; ++i)
     {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/Cachet.txt
+        CfgCachet stu;
+        stu.CleanUp();
+        stu.nLevel = TabFile.Search_Posistion(i, 0)->iValue;
+        stu.nCachet = TabFile.Search_Posistion(i, 1)->iValue;
+        std::string attrStr = TabFile.Search_Posistion(i, 2)->pString;
+        stu.nDeduct = TabFile.Search_Posistion(i, 3)->iValue;
+        stu.nLanguage = TabFile.Search_Posistion(i, 4)->iValue;
+
+        // Parse attr string: type:value,type:value,...
+        if (!attrStr.empty())
+        {
+            StringVector vAttrs = StringUtility::split(attrStr, ",");
+            for (size_t j = 0; j < vAttrs.size(); ++j)
+            {
+                StringVector vAttr = StringUtility::split(vAttrs[j], ":");
+                if (vAttr.size() == 2)
+                {
+                    AddAttribute attr;
+                    attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+                    attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+                    if (attr.m_nAddAttrType > 0 && attr.m_nAddAttrValue > 0)
+                    {
+                        stu.lAttrList.push_back(attr);
+                    }
+                }
+            }
+        }
+        m_CachetCfg[stu.nLevel] = stu;
     }
+}
+
+const CfgCachet* CfgData::GetCfgCachet( int32_t nLevel ) const
+{
+	CachetCfgMap::const_iterator it = m_CachetCfg.find( nLevel );
+	if ( it != m_CachetCfg.end() )
+	{
+		return &(it->second);
+	}
+	return NULL;
+}
+
+int32_t CfgData::GetCachetLevel( int64_t nHonor ) const
+{
+	int32_t nLevel = 0;
+	for ( CachetCfgMap::const_iterator it = m_CachetCfg.begin(); it != m_CachetCfg.end(); ++it )
+	{
+		if ( nHonor >= it->second.nCachet )
+		{
+			nLevel = it->first;
+		}
+	}
+	return nLevel;
 }
 
 void CfgData::InitCampWarContKillTable()
