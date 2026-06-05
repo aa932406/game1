@@ -983,7 +983,7 @@ Answer::NetPacket* CCityWar::packetActivityScore()
 
 	if ( !m_lFamilyScore.empty() )
 	{
-		m_lFamilyScore.sort();
+		m_lFamilyScore.sort( FamilyScoreRankGreater() );
 		for ( CityWarFamilyScorePtrList::iterator iter = m_lFamilyScore.begin();
 			iter != m_lFamilyScore.end() && nCount < 5; ++iter )
 		{
@@ -1076,7 +1076,7 @@ void CCityWar::broadcastResult()
 
 	if ( !m_lFamilyScore.empty() )
 	{
-		m_lFamilyScore.sort();
+		m_lFamilyScore.sort( FamilyScoreRankGreater() );
 		for ( CityWarFamilyScorePtrList::iterator iter = m_lFamilyScore.begin();
 			iter != m_lFamilyScore.end() && nCount < 4; ++iter )
 		{
@@ -1117,7 +1117,7 @@ Answer::NetPacket* CCityWar::packetActivityFamilyScore()
 
 	if ( !m_lFamilyScore.empty() )
 	{
-		m_lFamilyScore.sort();
+		m_lFamilyScore.sort( FamilyScoreRankGreater() );
 		for ( CityWarFamilyScorePtrList::iterator iter = m_lFamilyScore.begin();
 			iter != m_lFamilyScore.end() && nCount < 4; ++iter )
 		{

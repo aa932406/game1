@@ -8,7 +8,6 @@ using namespace Answer;
 
 CWorldBoss::CWorldBoss()
 {
-	m_BossMap.clear();
 	m_WarVictoryBoss = NULL;
 	m_lastUpdateTick = 0;
 }
@@ -20,11 +19,10 @@ CWorldBoss::~CWorldBoss()
 
 void CWorldBoss::Init()
 {
-	BossInfoMap BossMap = CFG_DATA.GetBossInfoMap();
-	BossInfoMap::iterator it = BossMap.begin();
-	for ( ; it != BossMap.end(); ++it )
+	const BossInfoMap& BossMap = CFG_DATA.GetBossInfoMap();
+	for ( BossInfoMap::const_iterator it = BossMap.begin(); it != BossMap.end(); ++it )
 	{
-		CfgMapMonster* pCfgMapMonster = CFG_DATA.GetMapMonsterInfo(it->first);
+		CfgMapMonster* pCfgMapMonster = CFG_DATA.GetMapMonsterInfo( it->first );
 		if ( NULL == pCfgMapMonster )
 		{
 			continue;
@@ -36,28 +34,27 @@ void CWorldBoss::Init()
 			continue;
 		}
 		WorldBossInfo stu;
-		stu.BossId			 = it->first;
-		stu.Mid				 = pMonster->mid;
-		stu.BossType		 = pMonster->boss_sign;
-		stu.MapId			 = pCfgMapMonster->mapid;
-		stu.DieTime			 = 0;
-		if ( stu.BossType == BOSS_TYPE_SPIDER_QUEEN )
+		stu.nBossId		 = it->first;
+		stu.nMid		 = pMonster->mid;
+		stu.nBossType	 = pMonster->boss_sign;
+		stu.nMapId		 = pCfgMapMonster->mapid;
+		stu.nLevel		 = 1;
+		if ( stu.nBossType == BOSS_TYPE_SPIDER_QUEEN )
 		{
-			stu.ReviveTimes	 = 0;
+			stu.nState		= 3;
+			stu.nReviveTime = 0;
 		}
 		else
 		{
-			int32_t ReviveTime = GetBossRevieTime( stu.BossId );
+			stu.nState		= 0;
+			int32_t ReviveTime = GetBossRevieTime( stu.nBossId );
 			if ( ReviveTime <= 0 )
 			{
-				stu.ReviveTimes	 = pMonster->revive_time / 1000;
+				ReviveTime = pMonster->revive_time / 1000;
 			}
-			else
-			{
-				stu.ReviveTimes	 = ReviveTime;
-			}
+			stu.nReviveTime = Answer::DayTime::now() + ReviveTime;
 		}
-		m_BossMap[it->first] = stu;
+		m_mBossMap[it->first] = stu;
 	}
 }
 
@@ -75,32 +72,13 @@ int32_t CWorldBoss::GetBossRevieTime( int32_t BossId )
 	int32_t DiffDay = CFG_DATA.getServerDiffTime();
 	switch ( DiffDay )
 	{
-	case 0:
-		{
-			return 5 * 60;
-		}
-	case 1:
-		{
-			return 10 * 60;
-		}
-	case 2:
-		{
-			return 20 * 60;
-		}
-	case 3:
-		{
-			return 30 * 60;
-		}
-	case 4:
-		{
-			return 40 * 60;
-		}
-	case 5:
-		{
-			return 50 * 60;
-		}
-	default:
-		return 0;
+	case 0:		return 5 * 60;
+	case 1:		return 10 * 60;
+	case 2:		return 20 * 60;
+	case 3:		return 30 * 60;
+	case 4:		return 40 * 60;
+	case 5:		return 50 * 60;
+	default:	return 0;
 	}
 }
 
@@ -129,43 +107,19 @@ void CWorldBoss::PacketBossInfo( Answer::NetPacket *packet, int8_t BossType )
 	}
 	int32_t nSize = 0;
 	int32_t NowTime = Answer::DayTime::now();
-	tm	NowLocal	= Answer::DayTime::localnow();
 	int32_t OldOffset = packet->getWOffset();
 	packet->writeInt32( nSize );
 	packet->writeInt8( BossType );
-	BoosMap::iterator it = m_BossMap.begin();
-	for ( ; it != m_BossMap.end(); ++it )
+	for ( BoosMap::iterator it = m_mBossMap.begin(); it != m_mBossMap.end(); ++it )
 	{
-		if ( it->second.BossType == BossType  )
+		if ( it->second.nBossType == BossType )
 		{
 			BossInfo* pBossInfo = CFG_DATA.GetBossInfo( it->first );
 			if ( NULL == pBossInfo || pBossInfo->m_IsShow <= 0 )
 			{
 				continue;
 			}
-			packet->writeInt32( it->second.BossId );
-			packet->writeInt32( it->second.Mid );
-			packet->writeInt32( it->second.MapId );
-			if ( BossType == BOSS_TYPE_SPIDER_QUEEN )
-			{
-				int32_t LeftTime = 0;
-				if ( it->second.DieTime > 0 )
-				{
-					int32_t Seconds = NowLocal.tm_hour * 60 * 60 + NowLocal.tm_min * 60 + NowLocal.tm_sec;
-					LeftTime = it->second.ReviveTimes * 60 - Seconds; 
-					if ( LeftTime < 0 )
-					{
-						LeftTime = it->second.ReviveTimes * 60 - Seconds + 86400;
-					}
-				}
-				packet->writeInt32( LeftTime );
-			}
-			else
-			{
-				packet->writeInt32( it->second.DieTime > 0 ? (it->second.DieTime + it->second.ReviveTimes - NowTime) : 0 );
-			}
-			packet->writeInt64( it->second.KillerId );
-			packet->writeUTF8( it->second.KillerName );
+			it->second.PackageBossInfo( packet, NowTime );
 			nSize++;
 		}
 	}
@@ -186,17 +140,31 @@ void CWorldBoss::PacketBossHomeInfo( Answer::NetPacket *packet, int32_t MapId )
 	int32_t OldOffset = packet->getWOffset();
 	packet->writeInt32( nSize );
 	packet->writeInt8( BOSS_TYPE_BOSS_HOME );
-	BoosMap::iterator it = m_BossMap.begin();
-	for ( ; it != m_BossMap.end(); ++it )
+	for ( BoosMap::iterator it = m_mBossMap.begin(); it != m_mBossMap.end(); ++it )
 	{
-		if ( it->second.BossType == BOSS_TYPE_BOSS_HOME && it->second.MapId == MapId )
+		if ( it->second.nBossType == BOSS_TYPE_BOSS_HOME && it->second.nMapId == MapId )
 		{
-			packet->writeInt32( it->second.BossId );
-			packet->writeInt32( it->second.Mid );
-			packet->writeInt32( it->second.MapId );
-			packet->writeInt32( it->second.DieTime > 0 ? (it->second.DieTime + it->second.ReviveTimes - NowTime) : 0 );
-			packet->writeInt64( it->second.KillerId );
-			packet->writeUTF8( it->second.KillerName );
+			packet->writeInt32( it->second.nBossId );
+			packet->writeInt32( it->second.nMid );
+			packet->writeInt32( it->second.nMapId );
+			if ( it->second.nState )
+			{
+				packet->writeInt32( it->second.nReviveTime - NowTime );
+			}
+			else
+			{
+				packet->writeInt32( 0 );
+			}
+			if ( it->second.vKiller[0].nCharId > 0 )
+			{
+				packet->writeInt64( it->second.vKiller[0].nCharId );
+				packet->writeUTF8( it->second.vKiller[0].strName );
+			}
+			else
+			{
+				packet->writeInt64( 0 );
+				packet->writeUTF8( "" );
+			}
 			nSize++;
 		}
 	}
@@ -206,64 +174,73 @@ void CWorldBoss::PacketBossHomeInfo( Answer::NetPacket *packet, int32_t MapId )
 	packet->setWOffset( NewOffset );
 }
 
-void CWorldBoss::UpdateBossInfo( int32_t BossId, int32_t DieTime, CharId_t KillerId, std::string KillerName , int32_t ReviveTime)  //dieTime = 0 ��ʾ����
+void CWorldBoss::UpdateBossInfo( int32_t BossId, int32_t DieTime, CharId_t KillerId, std::string KillerName, int32_t ReviveTime )
 {
-	BoosMap::iterator it = m_BossMap.find( BossId );
-	if ( it != m_BossMap.end() )
+	BoosMap::iterator it = m_mBossMap.find( BossId );
+	if ( it == m_mBossMap.end() )
 	{
-		m_BossMap[BossId].DieTime = DieTime;
-		if ( KillerId > 0 )
-		{
-			m_BossMap[BossId].KillerId		= KillerId;
-			m_BossMap[BossId].KillerName	= KillerName;
-		}
-		if ( DieTime > 0 )
-		{
-			if ( it->second.BossType == BOSS_TYPE_SPIDER_QUEEN )
-			{
-				it->second.ReviveTimes = ReviveTime;
-				if ( IsAllSpiderQueenDie() )
-				{
-					ACTIVITY_MANAGER.StopSqiderQueen();
-				}
-			}
-			else
-			{
-				int32_t ReviveTime = GetBossRevieTime( it->first );
-				if ( ReviveTime > 0 )
-				{
-					it->second.ReviveTimes	 = ReviveTime;
-				}
-			}
+		return;
+	}
 
+	it->second.nReviveTime = DieTime + ReviveTime;
+	if ( KillerId > 0 )
+	{
+		it->second.vKiller[0].nCharId = KillerId;
+		it->second.vKiller[0].strName = KillerName;
+		it->second.vKiller[0].nTime = DieTime;
+		it->second.nState = 1;
+	}
+	else
+	{
+		it->second.nState = 2;
+	}
+
+	if ( DieTime > 0 )
+	{
+		if ( it->second.nBossType == BOSS_TYPE_SPIDER_QUEEN )
+		{
+			if ( ReviveTime > 0 )
+			{
+				it->second.nReviveTime = ReviveTime;
+			}
+			if ( IsAllSpiderQueenDie() )
+			{
+				ACTIVITY_MANAGER.StopSqiderQueen();
+			}
 		}
-		
-		if ( it->second.BossType == BOSS_TYPE_SPIDER_QUEEN || it->second.BossType == BOSS_TYPE_WORLD_BOSS )
+		else
+		{
+			int32_t nNewRevive = GetBossRevieTime( it->first );
+			if ( nNewRevive > 0 )
+			{
+				it->second.nReviveTime = DieTime + nNewRevive;
+			}
+		}
+
+		if ( it->second.nBossType == BOSS_TYPE_SPIDER_QUEEN || it->second.nBossType == BOSS_TYPE_WORLD_BOSS )
 		{
 			if ( KillerId > 0 )
 			{
-				GongGao( DieTime, it->second.Mid, BossId, it->second.KillerName, it->second.MapId, KillerId );
+				GongGao( DieTime, it->second.nMid, BossId, it->second.vKiller[0].strName, it->second.nMapId, KillerId );
 			}
 		}
-		if ( it->second.BossType == BOSS_TYPE_BOSS_HOME )
+		if ( it->second.nBossType == BOSS_TYPE_BOSS_HOME )
 		{
-			int32_t NowTime = Answer::DayTime::now();
-			Map* pMap = MAP_MANAGER.GetMap( it->second.MapId);
+			Map* pMap = MAP_MANAGER.GetMap( it->second.nMapId );
 			if ( NULL != pMap )
 			{
-				NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_BOSS_CHANGE);
-				if (NULL == packet)
+				NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_BOSS_CHANGE );
+				if ( NULL != packet )
 				{
-					return;
+					packet->writeInt32( it->second.nBossId );
+					packet->writeInt32( it->second.nMid );
+					packet->writeInt32( it->second.nMapId );
+					packet->writeInt32( it->second.nState ? (it->second.nReviveTime - Answer::DayTime::now()) : 0 );
+					packet->writeInt64( KillerId );
+					packet->writeUTF8( KillerName );
+					packet->setSize( packet->getWOffset() );
+					pMap->broadcast( packet );
 				}
-				packet->writeInt32( it->second.BossId );
-				packet->writeInt32( it->second.Mid );
-				packet->writeInt32( it->second.MapId );
-				packet->writeInt32( it->second.DieTime > 0 ? (it->second.DieTime + it->second.ReviveTimes - NowTime) : 0 );
-				packet->writeInt64( it->second.KillerId );
-				packet->writeUTF8( it->second.KillerName );
-				packet->setSize( packet->getWOffset() );
-				pMap->broadcast( packet );
 			}
 		}
 	}
@@ -271,26 +248,26 @@ void CWorldBoss::UpdateBossInfo( int32_t BossId, int32_t DieTime, CharId_t Kille
 
 void CWorldBoss::GongGao( int32_t DieTime, int32_t Mid, int32_t BossId, std::string KillerName, int32_t MapId, CharId_t KillerId )
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_BOSS_GONG_GAO);
-	if (NULL == packet)
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_BOSS_GONG_GAO );
+	if ( NULL == packet )
 	{
 		return;
 	}
-	if ( DieTime > 0 )		
+	if ( DieTime > 0 )
 	{
-		packet->writeInt8( 0 );		//0 ��ʾ����
+		packet->writeInt8( 0 );		// 0 = 已击杀
 		packet->writeInt32( Mid );
 		packet->writeUTF8( KillerName );
 		packet->writeInt64( KillerId );
 	}
-	else	
+	else
 	{
-		packet->writeInt8( 1 );		//1 ��ʾ����
+		packet->writeInt8( 1 );		// 1 = 已复活
 		packet->writeInt32( Mid );
 		packet->writeInt32( BossId );
 		packet->writeInt32( MapId );
 	}
-	packet->setSize(packet->getWOffset());
+	packet->setSize( packet->getWOffset() );
 	GAME_SERVICE.broadcast( packet );
 }
 
@@ -303,14 +280,14 @@ void CWorldBoss::GetWorldBossIcon( IconStateList& IconList )
 	IconList.push_back( stu );
 }
 
-void CWorldBoss::SendWorldBossIcon( Player *pPlayer)
+void CWorldBoss::SendWorldBossIcon( Player *pPlayer )
 {
 	if ( NULL == pPlayer )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
-	if (NULL == packet)
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
+	if ( NULL == packet )
 	{
 		return;
 	}
@@ -318,7 +295,6 @@ void CWorldBoss::SendWorldBossIcon( Player *pPlayer)
 	stu.nId			= JI_ZHAN_BOSS;
 	stu.nState		= AS_RUNNING;
 	stu.nLeftTime	= -1;
-
 	packet->writeInt32( stu.nId );
 	packet->writeInt8( stu.nState );
 	packet->writeInt32( stu.nLeftTime );
@@ -326,7 +302,7 @@ void CWorldBoss::SendWorldBossIcon( Player *pPlayer)
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
 }
 
 void CWorldBoss::AddMonst( Monster* pMonster )
@@ -368,8 +344,7 @@ int32_t CWorldBoss::GetSpiderQueenReviveTime()
 
 bool CWorldBoss::IsAllSpiderQueenDie()
 {
-	MonsterList::iterator it = m_MonsterList.begin();
-	for ( ; it != m_MonsterList.end(); ++it )
+	for ( MonsterList::iterator it = m_MonsterList.begin(); it != m_MonsterList.end(); ++it )
 	{
 		if ( (*it)->GetHP() > 0 )
 		{
@@ -381,8 +356,7 @@ bool CWorldBoss::IsAllSpiderQueenDie()
 
 void CWorldBoss::KillAllSpiderQueen()
 {
-	MonsterList::iterator it = m_MonsterList.begin();
-	for ( ; it != m_MonsterList.end(); ++it )
+	for ( MonsterList::iterator it = m_MonsterList.begin(); it != m_MonsterList.end(); ++it )
 	{
 		if ( (*it)->GetHP() > 0 )
 		{
@@ -402,7 +376,7 @@ bool CWorldBoss::IsWarVictoryBossTime()
 	{
 		return false;
 	}
-	int32_t NowTime =  Answer::DayTime::now();
+	int32_t NowTime = Answer::DayTime::now();
 	if ( NowTime < pWarVictory->StartTime || NowTime > pWarVictory->EndTime )
 	{
 		return false;
@@ -465,13 +439,12 @@ void CWorldBoss::Update( int64_t CurTick )
 void CWorldBoss::GongGao( int32_t GongGaoId, Player* pPlayer )
 {
 	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-	if (NULL == packet)
+	if ( NULL == packet )
 	{
 		return;
 	}
-
 	packet->writeInt32( GongGaoId );
-	if ( GongGaoId ==  BCI_WAR_VICTORY_BOSS_KILLED )
+	if ( GongGaoId == BCI_WAR_VICTORY_BOSS_KILLED )
 	{
 		if ( pPlayer != NULL )
 		{
@@ -484,8 +457,222 @@ void CWorldBoss::GongGao( int32_t GongGaoId, Player* pPlayer )
 			packet->writeInt64( 0 );
 		}
 	}
-
-	packet->setSize(packet->getWOffset());
+	packet->setSize( packet->getWOffset() );
 	packet->setProc( SM_SEND_NOTICE_PARAM );
-	GAME_SERVICE.worldBroadcast(packet);
+	GAME_SERVICE.worldBroadcast( packet );
+}
+
+// ============================================================
+// 反编译新增方法
+// ============================================================
+
+int32_t CWorldBoss::GetBossLevel( int32_t nBossId )
+{
+	Answer::MutexGuard lock( m_Lock );
+	BoosMap::iterator iter = m_mBossMap.find( nBossId );
+	if ( iter != m_mBossMap.end() )
+	{
+		return iter->second.nLevel;
+	}
+	return 0;
+}
+
+void CWorldBoss::OnBossSummon( int32_t nBossId, Monster* pMonster )
+{
+	if ( NULL == pMonster )
+	{
+		return;
+	}
+
+	WorldBossInfo info;
+	bool bFind = false;
+
+	{
+		Answer::MutexGuard lock( m_Lock );
+		BoosMap::iterator iter = m_mBossMap.find( nBossId );
+		if ( iter != m_mBossMap.end() )
+		{
+			iter->second.nState = 0;
+			info = iter->second;
+			bFind = true;
+		}
+	}
+
+	if ( bFind )
+	{
+		broadcastBossRevive( info.nMid, info.nBossId, info.nMapId );
+	}
+}
+
+void CWorldBoss::OnBossKilled( int32_t nBossId, int32_t nNowTime, Monster* pMonster, Player* pKiller )
+{
+	if ( NULL == pMonster )
+	{
+		return;
+	}
+
+	WorldBossInfo info;
+	bool bFind = false;
+
+	{
+		Answer::MutexGuard lock( m_Lock );
+		BoosMap::iterator iter = m_mBossMap.find( nBossId );
+		if ( iter != m_mBossMap.end() )
+		{
+			if ( pKiller )
+			{
+				iter->second.nState = 1;
+				KillerInfo killer;
+				killer.nCharId = pKiller->getCid();
+				killer.strName = pKiller->getName();
+				killer.nTime = nNowTime;
+				iter->second.AddKiller( killer );
+			}
+			else
+			{
+				iter->second.nState = 2;
+			}
+
+			// 计算复活时间
+			int32_t nReviveTime = GetBossRevieTime( iter->second.nBossId );
+			if ( nReviveTime <= 0 )
+			{
+				CfgMonster* pMonsterCfg = CFG_DATA.getMonster( iter->second.nMid );
+				if ( pMonsterCfg )
+				{
+					nReviveTime = pMonsterCfg->revive_time / 1000;
+				}
+			}
+			iter->second.nReviveTime = nNowTime + nReviveTime;
+			info = iter->second;
+			bFind = true;
+		}
+	}
+
+	if ( bFind )
+	{
+		// 广播BOSS击杀
+		if ( info.nBossType == BOSS_TYPE_WORLD_BOSS && pKiller )
+		{
+			broadcastBossKilled( info.nMid, pKiller->getName(), pKiller->getCid() );
+		}
+		if ( info.nBossType == 1 )
+		{
+			// BOSS_TYPE 1 也需要广播
+			if ( pKiller )
+			{
+				broadcastBossKilled( info.nMid, pKiller->getName(), pKiller->getCid() );
+			}
+		}
+	}
+}
+
+void CWorldBoss::broadcastBossKilled( int32_t nMid, const std::string& strKillerName, CharId_t nKillerId )
+{
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_BOSS_GONG_GAO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	packet->writeInt8( 0 );		// 0 = 已击杀
+	packet->writeInt32( nMid );
+	packet->writeUTF8( strKillerName );
+	packet->writeInt64( nKillerId );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.broadcast( packet );
+}
+
+void CWorldBoss::broadcastBossRevive( int32_t nMid, int32_t nBossId, int32_t nMapId )
+{
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_BOSS_GONG_GAO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	packet->writeInt8( 1 );		// 1 = 已复活
+	packet->writeInt32( nMid );
+	packet->writeInt32( nBossId );
+	packet->writeInt32( nMapId );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.broadcast( packet );
+}
+
+int32_t CWorldBoss::GetBossRevie( int32_t nBossId )
+{
+	int32_t nReviveTime = 0;
+	int32_t nNowTime = Answer::DayTime::now();
+
+	Answer::MutexGuard lock( m_Lock );
+	BoosMap::iterator it = m_mBossMap.find( nBossId );
+	if ( it != m_mBossMap.end() )
+	{
+		if ( it->second.nState == 0 )
+		{
+			return 0;	// BOSS 存活中
+		}
+		nReviveTime = it->second.nReviveTime - nNowTime;
+		if ( nReviveTime < 0 )
+		{
+			nReviveTime = 0;
+		}
+	}
+	return nReviveTime;
+}
+
+// ============================================================
+// WorldBossInfo 方法实现
+// ============================================================
+
+void WorldBossInfo::PackageBossInfo( Answer::NetPacket* packet, int32_t nNowTime ) const
+{
+	packet->writeInt32( nBossId );
+	packet->writeInt32( nMid );
+	packet->writeInt32( nMapId );
+	packet->writeInt8( nState );
+	packet->writeInt32( nState ? (nReviveTime - nNowTime) : 0 );
+
+	// 击杀者列表（Top5）
+	int32_t nCount = 0;
+	int32_t nOldOffset = packet->getWOffset();
+	packet->writeInt32( 0 );
+	for ( int32_t i = 0; i < 5; ++i )
+	{
+		if ( vKiller[i].nCharId > 0 )
+		{
+			packet->writeInt64( vKiller[i].nCharId );
+			packet->writeUTF8( vKiller[i].strName );
+			packet->writeInt32( vKiller[i].nTime );
+			nCount++;
+		}
+	}
+	packet->writeInt32( nLevel );
+	packet->writeInt32( nExp );
+
+	int32_t nNewOffset = packet->getWOffset();
+	packet->setWOffset( nOldOffset );
+	packet->writeInt32( nCount );
+	packet->setWOffset( nNewOffset );
+}
+
+void WorldBossInfo::AddKiller( const KillerInfo& info )
+{
+	bool bFind = false;
+	for ( int32_t i = 0; i < 5; ++i )
+	{
+		if ( vKiller[i].nCharId == 0 )
+		{
+			vKiller[i] = info;
+			bFind = true;
+			break;
+		}
+	}
+	if ( !bFind )
+	{
+		// 全部满了，移除第一个，后移并追加
+		for ( int32_t i = 0; i < 4; ++i )
+		{
+			vKiller[i] = vKiller[i + 1];
+		}
+		vKiller[4] = info;
+	}
 }

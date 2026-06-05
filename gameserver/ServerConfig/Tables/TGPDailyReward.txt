@@ -1,0 +1,3 @@
+STRING	STRING
+Pf	Reward
+tgp	13:1:1:1|575:1:1:1

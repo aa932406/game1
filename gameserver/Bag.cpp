@@ -2580,6 +2580,7 @@ bool CExtCharBag::AddItemsAndEggs( const MemChrBagVector &vItem, ITEM_ADD_REASON
 void CExtCharBag::OnDaySwitch( int32_t nDiffDays )
 {
 	m_ItemLimit.clear();
+	SendLimitCount();
 }
 
 bool CExtCharBag::RemoveItem( const ItemData& data, ITEM_DEL_REASON delReason, int32_t& BindCount, int32_t& UnBindCount )
@@ -2992,7 +2993,7 @@ int32_t CExtCharBag::onAddItem( Answer::NetPacket *inPacket )
 		return 2;
 	}
 
-	ITEM_CHANGE_REASON nReason = (ITEM_CHANGE_REASON)inPacket->readInt32();
+	int32_t nReason = inPacket->readInt32();
 	std::string MailParam = inPacket->readUTF8( true );
 
 	MemChrBagVector vItem;
@@ -3013,14 +3014,15 @@ int32_t CExtCharBag::onAddItem( Answer::NetPacket *inPacket )
 	if ( !AddItem( vItem, (ITEM_ADD_REASON)nReason ) )
 	{
 		int32_t MailId = 6208;
-		if ( nReason == ICR_AUCTION_BUY )
+		if ( nReason == IACR_AUCTION_BUY )
 		{
 			MailId = 6208;
 		}
-		else if ( nReason == ICR_AUCTION_CANCEL )
+		else if ( nReason == IACR_AUCTION_CANCEL )
 		{
 			MailId = 6209;
-		}			DB_SERVICE.OnSendSysMail( m_pPlayer->getCid(), MailId, vItem, MailParam );
+		}
+		DB_SERVICE.OnSendSysMail( m_pPlayer->getCid(), MailId, vItem, MailParam );
 	}
 
 	return 0;

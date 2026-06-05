@@ -1188,8 +1188,8 @@ typedef std::map<int32_t, CfgMountEquip> CfgMountEquipTable;
 struct CfgYellowStone
 {
 	int32_t id;
-	int32_t yellow_type; //1:����ÿ�����(�ȼ�Ϊ����ȼ�) 2:��ѻ������ÿ����� 3:����ɳ����(�ȼ�Ϊ����ȼ�) 4:�����������
-	int32_t level; //�ȼ�
+	int32_t yellow_type; //1:yellow daily(level=vip level) 2:free yellow daily 3:yellow level(level=player level) 4:yellow year
+	int32_t level;
 	MemChrBagVector awards;
 };
 typedef std::map<int32_t, CfgYellowStone> CfgYellowStoneTables;

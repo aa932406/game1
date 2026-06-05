@@ -189,6 +189,7 @@ enum CurrencyChangeReason
 	MCR_GUAN_WEI_GET					= 54,		// ��λ���
 	MCR_ACHIEVEMENT_FINISHED			= 55,		// ��ɳɾ�
 	MCR_TIAN_LING_LEVEL_UP				= 56,
+	MCR_AUTO_USE					= 57,		//�Զ�ʹ��
 //=======================================================================================
 //��ħʯ��ʼ	
  	GCC_PICK_CURRENCY_ITEM				= 1000,
@@ -197,6 +198,7 @@ enum CurrencyChangeReason
 	GCC_WEEK_ONLINE_REWARD				= 1003,		//�����߽���
 	GCC_ENTER_BOSS_HOME					= 1004,		//����boss֮��
 	GCC_EQUIP_EXCHANGE_STAR				= 1005,		//ħ��ת��
+	GCC_AUTO_USE					= 1006,		//�Զ�ʹ��
 
 //=========================================================================================
 //ħʯ
@@ -268,6 +270,10 @@ enum CurrencyChangeReason
 	GCR_LEVEL_REFIN					= 2061,	GCR_BOSS_KILLED_REWARD				= 2062,
 	GCR_FESTIVAL_ACT_2					= 2063,
 	GCR_OPEN_BETA						= 2064,
+	GCR_UNITE_SERVER_BUY_DISTINCT_GIFT	= 2065,
+	GCR_MYSTERY_SHOP_REFRESH			= 2066,
+	GCR_BUY_CHANGE_NAME_CARD			= 2067,
+	GCR_AUTO_USE					= 2068,
 
 	//==================================================================================
 //Ԫ��
@@ -355,7 +361,32 @@ enum ITEM_ADD_REASON
 	IACR_WU_HUN_UNDRESS				= 78,
 	IACR_WU_HUN_CREATE				= 79,
 	IACR_OPEN_BETA					= 80,
-			};
+	IACR_UNITE_SERVER_RECHARGE_GIFT	= 81,
+	IACR_UNITE_SERVER_DISTINCT_GIFT	= 82,
+	IACR_UNITE_SERVER_HUO_YUE_DU	= 83,
+	IACR_BUY_CHANGE_NAME_CARD		= 84,
+	IACR_WING_LEVEL_UP				= 85,
+	IACR_HE_FU_CHOU_JIANG_TIMES	= 86,
+	IACR_HE_FU_LIAN_CHONG			= 87,
+	IACR_YELLOW_NEWER_REWARD	= 88,
+	IACR_YELLOW_DAILY_REWARD	= 89,
+	IACR_YELLOW_YEAR_REWARD	= 90,
+	IACR_YELLOW_LEVEL_REWARD	= 91,
+	IACR_BLUE_NEWER_REWARD		= 92,
+	IACR_BLUE_DAILY_REWARD		= 93,
+	IACR_BLUE_YEAR_REWARD		= 94,
+	IACR_BLUE_LEVEL_REWARD		= 95,
+	IACR_BLUE_HIGH_REWARD		= 96,
+	IACR_TENCENT_QZONE_REWARD	= 97,
+	IACR_TENCENT_QQGAME_REWARD	= 98,
+	IACR_TENCENT_SEVEN_DAY_LOGIN_REWARD = 99,
+	IACR_TGP_NEWER_REWARD		= 100,
+	IACR_TGP_DAILY_REWARD		= 101,
+	IACR_TGP_LEVEL_REWARD		= 102,
+	IACR_SELECT_ITEM			= 103,
+	IACR_AUCTION_BUY			= 104,
+	IACR_AUCTION_CANCEL			= 105,
+	};
 
 enum ITEM_DEL_REASON
 {
@@ -403,6 +434,8 @@ enum ITEM_DEL_REASON
 	IDCR_FESTIVAL_ACT_2			= 41,
 	IDCR_WU_HUN_CREATE			= 42,
 	IDCR_OPEN_BETA_LI_QUAN			= 43,
+	IDCR_SELECT_ITEM			= 44,
+	IDCR_DISCARD				= 45,
 	};
 
 enum ItemEffectType
