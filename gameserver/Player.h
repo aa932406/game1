@@ -23,8 +23,11 @@
 #include "CharTeamDungeon.h"
 #include "CharInsidePet.h"
 #include "CharWorship.h"
+#include "CharCarrier.h"
 #include "CharAuction.h"
 #include "CharSoul.h"
+#include "CharDraw.h"
+#include "CharExchange.h"
 #include "CharHallOfFame.h"
 
 #include "Trade.h"
@@ -583,11 +586,29 @@ public:				CExtCharAuction&		GetCharAuction() { return m_extCharAuction; }
 					bool					IsInStall() const { return m_extCharAuction.IsInStall(); }
 private:			CExtCharAuction			m_extCharAuction;
 
+	friend class CExtCharCarrier;
+public:				CExtCharCarrier&		GetCharCarrier() { return m_extCharCarrier; }
+					bool					IsInCarrier() const { return m_extCharCarrier.IsInCarrier(); }
+					CObjCarrier*			GetCarrier() const { return m_extCharCarrier.GetCarrier(); }
+private:			CExtCharCarrier			m_extCharCarrier;
+
 	friend class CExtCharSoul;
 public:				CExtCharSoul&			GetCharSoul() { return m_extCharSoul; }
 					int32_t					GetSoulLevel() const { return m_extCharSoul.GetLevel(); }
 					int32_t					GetMaxLevel() const { return m_extCharSoul.GetPlayerMaxLevel(); }
 private:			CExtCharSoul			m_extCharSoul;
+
+	friend class CExtCharDraw;
+public:				CExtCharDraw&		GetCharDraw() { return m_extCharDraw; }
+private:			CExtCharDraw			m_extCharDraw;
+
+	friend class CExtCharExchange;
+private:			CExtCharExchange			m_extCharExchange;
+public:				CExtCharExchange&		GetCharExchange();
+
+	friend class CExtCharMysteryGift;
+private:			CExtCharMysteryGift		m_extCharMysteryGift;
+public:				CExtCharMysteryGift&		GetCharMysteryGift();
 
 	friend class CExtCharSoul;
 public:				CExtCharHallOfFame&		GetCharHallOfFame() { return m_extCharHallOfFame; }
@@ -773,4 +794,10 @@ private:
 	std::map<int32_t, int32_t> m_SystemSetting;
 };
 
+#include "CharExchange.h"
+#include "CharMysteryGift.h"
+
+inline CExtCharMysteryGift& Player::GetCharMysteryGift() { return m_extCharMysteryGift; }
+
+inline CExtCharExchange& Player::GetCharExchange() { return m_extCharExchange; }
 

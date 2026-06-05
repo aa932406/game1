@@ -141,6 +141,65 @@ struct CfgActivityDrop
 };
 typedef std::map<int32_t, CfgActivityDrop> CfgActivityDropTable;
 
+// 护送配置
+struct CfgCarrier
+{
+	int32_t nId;
+	std::list<int> lSkills;
+};
+typedef std::map<int32_t, CfgCarrier> CfgCarrierMap;
+
+struct CfgCarrierAttr
+{
+	int32_t nId;
+	int32_t nLevel;
+	std::vector<AttrAddon> vAttr;
+};
+typedef std::map<std::pair<int32_t,int32_t>, CfgCarrierAttr> CfgCarrierAttrMap;
+
+class CfgCarrierTable
+{
+public:
+	CfgCarrierTable(){}
+	~CfgCarrierTable(){}
+
+	void AddCarrier( const CfgCarrier& stu )
+	{
+		m_mCarrier[stu.nId] = stu;
+	}
+
+	const CfgCarrier* GetCarrier( int32_t nId ) const
+	{
+		CfgCarrierMap::const_iterator iter = m_mCarrier.find( nId );
+		if ( iter != m_mCarrier.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
+	void AddCarrierAttr( const CfgCarrierAttr& stu )
+	{
+		std::pair<int32_t,int32_t> key = std::make_pair( stu.nId, stu.nLevel );
+		m_mCarrierAttr[key] = stu;
+	}
+
+	const CfgCarrierAttr* GetCarrierAttr( int32_t nId, int32_t nLevel ) const
+	{
+		std::pair<int32_t,int32_t> key = std::make_pair( nId, nLevel );
+		CfgCarrierAttrMap::const_iterator iter = m_mCarrierAttr.find( key );
+		if ( iter != m_mCarrierAttr.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
+private:
+	CfgCarrierMap		m_mCarrier;
+	CfgCarrierAttrMap	m_mCarrierAttr;
+};
+
 // ��Ӫս���뽱��
 struct CfgFamilyWarJoinReward 
 {
@@ -1948,6 +2007,31 @@ struct FamilyTaskReward
 	MemChrBagVector Rewards;
 };
 typedef map<int32_t,FamilyTaskReward>  FamilyTaskRewardMap;
+struct CfgPetUpStar
+{
+	CfgPetUpStar() { CleanUp(); }
+	void CleanUp()
+	{
+		nStar = 0;
+		nCostMoney = 0;
+		nCostGold = 0;
+		GongGaoId = 0;
+		lCostItem.clear();
+		vAddPetAttr.clear();
+		vAddPlayerAttr.clear();
+		vSkillLevel.clear();
+	}
+	int32_t				nStar;
+	int32_t				nCostMoney;
+	int32_t				nCostGold;
+	int32_t				GongGaoId;
+	std::list<ItemData>	lCostItem;
+	std::vector<AttrAddon>	vAddPetAttr;
+	std::vector<AttrAddon>	vAddPlayerAttr;
+	Int32Vector				vSkillLevel;
+};
+typedef std::map<int32_t, CfgPetUpStar> CfgPetUpStarMap;
+
 class CfgPetTable
 {
 public:
@@ -1958,7 +2042,22 @@ public:
 	{
 		m_mPetCfgData[pet.m_nPetId] = pet;
 	}
-	
+
+	void AddPetUpStar( const CfgPetUpStar& stu )
+	{
+		m_mPetUpStar[stu.nStar] = stu;
+	}
+
+	const CfgPetUpStar* GetPetUpStar( int32_t nStar ) const
+	{
+		CfgPetUpStarMap::const_iterator iter = m_mPetUpStar.find( nStar );
+		if ( iter != m_mPetUpStar.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
 	void AddWuHunExp( const CWuHunExp& WuHunExp )
 	{
 		m_WuHunExpList.push_back( WuHunExp );
@@ -2033,6 +2132,7 @@ public:
 
 private:
 	CfgPetDataMap		m_mPetCfgData;
+	CfgPetUpStarMap		m_mPetUpStar;
 	Int32List			m_vInitPet[PJ_JOB_COUNT];
 	PetPackageCostList	m_lstPetPackageCost;
 	WuHunExpList		m_WuHunExpList;
@@ -3437,6 +3537,170 @@ struct CfgBlackMarketGoods
 	MemChrBag	item;		// Parsed from Items column (per job)
 };
 
+// 抽卡配置
+struct CfgDrawReward
+{
+	CfgDrawReward() { nIndex = 0; nType = 0; nRate = 0; nBroad = 0; nId = 0; }
+	int32_t nIndex;
+	int32_t nType;
+	int32_t nRate;
+	int32_t nBroad;
+	int32_t nId;
+	std::vector<MemChrBag> vItem;
+};
+typedef std::list<CfgDrawReward> CfgDrawRewardList;
+
+struct CfgDraw
+{
+	CfgDraw() { m_nType = 0; m_nMaxRate = 0; }
+	int8_t GetType() const { return m_nType; }
+	void Add( const CfgDrawReward* reward )
+	{
+		m_rewards.push_back( *reward );
+		m_nMaxRate += reward->nRate;
+	}
+	int8_t m_nType;
+	int32_t m_nMaxRate;
+	CfgDrawRewardList m_rewards;
+};
+
+typedef std::list<CfgDraw> CfgDrawList;
+
+// 兑换配置
+struct CfgExchange
+{
+	CfgExchange() { nType = 0; nIndex = 0; nLimit = 0; }
+	void CleanUp() { nType = 0; nIndex = 0; nLimit = 0; vCost.clear(); vReward.clear(); }
+	int8_t nType;
+	int16_t nIndex;
+	int32_t nLimit;
+	ItemDataList vCost;
+	MemChrBagVector vReward;
+};
+
+class CfgExchangeTable
+{
+public:
+	CfgExchangeTable() {}
+	~CfgExchangeTable() {}
+
+	bool Add( const CfgExchange* stu )
+	{
+		m_lstExchange.push_back( *stu );
+		return true;
+	}
+
+	const CfgExchange* GetExchange( int8_t nType, int16_t nIndex ) const
+	{
+		for ( std::list<CfgExchange>::const_iterator iter = m_lstExchange.begin(); iter != m_lstExchange.end(); ++iter )
+		{
+			if ( iter->nType == nType && iter->nIndex == nIndex )
+			{
+				return &(*iter);
+			}
+		}
+		return NULL;
+	}
+
+private:
+	std::list<CfgExchange> m_lstExchange;
+};
+
+class CfgDrawTable
+{
+public:
+	CfgDrawTable() {}
+	~CfgDrawTable() {}
+
+	void Add( const CfgDrawReward* reward )
+	{
+		for ( CfgDrawList::iterator iter = m_Draws.begin(); iter != m_Draws.end(); ++iter )
+		{
+			if ( iter->GetType() == reward->nType )
+			{
+				iter->Add( reward );
+				return;
+			}
+		}
+		CfgDraw draw;
+		draw.m_nType = reward->nType;
+		draw.Add( reward );
+		m_Draws.push_back( draw );
+	}
+
+	void RandomReward( CfgDrawReward* pReward, int8_t nType, int32_t* pGetItemList ) const
+	{
+		if ( NULL == pReward ) return;
+		for ( CfgDrawList::const_iterator iter = m_Draws.begin(); iter != m_Draws.end(); ++iter )
+		{
+			if ( iter->GetType() == nType )
+			{
+				if ( iter->m_nMaxRate <= 0 ) return;
+				int32_t nRand = RANDOM.generate( 1, iter->m_nMaxRate );
+				int32_t nCur = 0;
+				for ( CfgDrawRewardList::const_iterator rit = iter->m_rewards.begin(); rit != iter->m_rewards.end(); ++rit )
+				{
+					nCur += rit->nRate;
+					if ( nRand <= nCur )
+					{
+						*pReward = *rit;
+						return;
+					}
+				}
+				return;
+			}
+		}
+	}
+
+private:
+	CfgDrawList m_Draws;
+};
+
+// 神秘礼物配置
+struct CfgMysteryGift
+{
+	CfgMysteryGift() { CleanUp(); }
+	void CleanUp()
+	{
+		nIndex = 0;
+		nType = 0;
+		nCondition = 0;
+		nBroadId = 0;
+		vItem.clear();
+	}
+	int32_t nIndex;
+	int32_t nType;
+	int32_t nCondition;
+	int32_t nBroadId;
+	MemChrBagVector vItem;
+};
+
+class CfgMysteryGiftTable
+{
+public:
+	CfgMysteryGiftTable() {}
+	~CfgMysteryGiftTable() {}
+
+	bool Add( const CfgMysteryGift* gift )
+	{
+		m_mMysteryGift[gift->nIndex] = *gift;
+		return true;
+	}
+
+	const CfgMysteryGift* GetGiftInfo( int32_t nIndex ) const
+	{
+		std::map<int32_t, CfgMysteryGift>::const_iterator iter = m_mMysteryGift.find( nIndex );
+		if ( iter != m_mMysteryGift.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
+private:
+	std::map<int32_t, CfgMysteryGift> m_mMysteryGift;
+};
+
 struct CfgBlacketMarketTable
 {
 	typedef std::map<int32_t, CfgBlackMarketGoods> GoodsMap;
@@ -4218,12 +4482,16 @@ private:
 	SunAndMoonCfgMap	m_SunAndMoonCfgMap;	CfgBlacketMarketTable	m_BlacketMarketTable;
 	CfgOutLinkFestivalTable	m_OutLinkFestivalTable;
 	SevenTaskTable			m_SevenTaskTable;
+	CfgCarrierTable			m_cfgCarrierTable;		// 护送配置表
+	CfgDrawTable				m_cfgDrawTable;			// 抽卡配置表
+	CfgExchangeTable			m_cfgExchangeTable;		// 兑换配置表
 	CfgGuardPrivilegeMap	m_GuardPrivilegeMap;
 	int32_t					m_nGuardPrivilegeStartTime;
 	int32_t					m_nGuardPrivilegeEndTime;
 	BossKilledRewardMap		m_BossKilledRewardMap;
 	WuHunItemMap			m_WuHunItemMap;
 	CreateWuHunMap			m_CreateWuHunMap;
+	CfgMysteryGiftTable		m_cfgMysteryGiftTable;
 public:
 	// ZongHeYunYingHD
 	const CfgZongHeYunYingHD*	GetZongHeYunYingHDCfg();
@@ -4246,6 +4514,10 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const SevenTaskTable*			GetSevenTaskTable();
 
 	const CfgBlacketMarketTable*	GetBlacketMarketTable();
+	const CfgCarrierTable*		GetCarrierTable() const { return &m_cfgCarrierTable; }
+	const CfgDrawTable*			GetDrawTable() const { return &m_cfgDrawTable; }
+	const CfgExchangeTable*		GetExchangeTable() const { return &m_cfgExchangeTable; }
+	const CfgMysteryGiftTable*	GetMysteryGiftTable() const { return &m_cfgMysteryGiftTable; }
 private:
 };
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

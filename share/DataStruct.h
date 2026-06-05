@@ -5118,6 +5118,92 @@ struct BossKilledRewardDBData : public IDataStruct
 	}
 };
 
+#ifndef EXCHANGE_RECORD_DEFINED
+#define EXCHANGE_RECORD_DEFINED
+struct ExchangeRecord
+{
+	int8_t	nType;
+	int16_t	nIndex;
+	int32_t	nCount;
+};
+typedef std::list<ExchangeRecord> ExchangeRecordList;
+#endif
+
+class ExchangeDBData : public IDataStruct
+{
+public:
+	ExchangeDBData(){ CleanUp(); }
+	virtual ~ExchangeDBData(){}
+
+	void CleanUp()
+	{
+		lstExchange.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof(szSQL)-1, "DELETE FROM `mem_char_exchange` WHERE `cid`=%lld", nCid );
+		sqls.push_back( szSQL );
+
+		for ( ExchangeRecordList::const_iterator iter = lstExchange.begin(); iter != lstExchange.end(); ++iter )
+		{
+			bzero( szSQL, sizeof( szSQL ) );
+			snprintf( szSQL, sizeof(szSQL)-1,
+				"INSERT INTO `mem_char_exchange` (`cid`,`type`,`index`,`count`) VALUES (%lld,%d,%d,%d)",
+				nCid, iter->nType, iter->nIndex, iter->nCount );
+			sqls.push_back( szSQL );
+		}
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof(szSQL)-1, "SELECT * FROM `mem_char_exchange` WHERE `cid`=%lld", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+
+		while( !result.eof() )
+		{
+			ExchangeRecord record;
+			record.nType	= result.getIntValue( "type", 0 );
+			record.nIndex	= result.getIntValue( "index", 0 );
+			record.nCount	= result.getIntValue( "count", 0 );
+			lstExchange.push_back( record );
+			result.nextRow();
+		}
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		packet->writeInt32( (int32_t)lstExchange.size() );
+		for ( ExchangeRecordList::const_iterator iter = lstExchange.begin(); iter != lstExchange.end(); ++iter )
+		{
+			packet->writeInt8( iter->nType );
+			packet->writeInt16( iter->nIndex );
+			packet->writeInt32( iter->nCount );
+		}
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid )
+	{
+		if ( NULL == inPacket ) return;
+		int32_t nSize = inPacket->readInt32();
+		for ( int32_t i = 0; i < nSize; ++i )
+		{
+			ExchangeRecord record;
+			record.nType	= inPacket->readInt8();
+			record.nIndex	= inPacket->readInt16();
+			record.nCount	= inPacket->readInt32();
+			lstExchange.push_back( record );
+		}
+	}
+
+public:
+	ExchangeRecordList	lstExchange;
+};
+
 class PlayerDBData : public IDataStruct
 {
 public:
@@ -5167,6 +5253,7 @@ public:
 	m_BossKilledReward.CleanUp();
 		m_ChouJinagData.CleanUp();
 		m_SoulData.CleanUp();
+		m_ExchangeDBData.CleanUp();
 		m_ScoreShopData.CleanUp();
 		m_ExpBallData.CleanUp();
 		m_TouZiData.CleanUp();
@@ -5470,6 +5557,7 @@ CGoblinData	m_CGoblinData;
 	BossKilledRewardDBData	m_BossKilledReward;
 		ChouJiangData				m_ChouJinagData;
 	SoulDBData					m_SoulData;
+	ExchangeDBData				m_ExchangeDBData;
 	ScoreShopData				m_ScoreShopData;
 	CExpBallData			    m_ExpBallData;
 	TouZiData					m_TouZiData;

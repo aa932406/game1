@@ -81,14 +81,6 @@ struct LianRechargeCfg
     int32_t nMailId;
 };
 
-struct RateItem
-{
-    int32_t nItemType;
-    int32_t nItemId;
-    int32_t nItemCount;
-    int32_t nRate;
-};
-
 class CFestivalDoubleEleven
 {
 public:

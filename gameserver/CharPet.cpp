@@ -3580,22 +3580,23 @@ int32_t CExtCharPet::onUpStar( Answer::NetPacket* inPacket )
 	{
 		return ERR_SYETEM_ERR;
 	}
-	// Check items cost
-	Int32Vector vSlot;
-	if ( pCfgUpStar->nNeedItemId > 0 )
+	// Check items cost (iterate lCostItem list)
+	if ( !pCfgUpStar->lCostItem.empty() )
 	{
-		m_pPlayer->queryBagInfoByItemId( pCfgUpStar->nNeedItemId, pCfgUpStar->nNeedItemCount, vSlot );
-		if ( vSlot.empty() )
+		for ( std::list<ItemData>::const_iterator iter = pCfgUpStar->lCostItem.begin();
+			iter != pCfgUpStar->lCostItem.end(); ++iter )
 		{
-			return ERR_SYETEM_ERR;
-		}
-		ItemData itemData = {};
-		itemData.m_nId = pCfgUpStar->nNeedItemId;
-		itemData.m_nClass = IC_NORMAL;
-		itemData.m_nCount = pCfgUpStar->nNeedItemCount;
-		if ( !m_pPlayer->GetBag().RemoveItem( vSlot, itemData, IDCR_PET_UP_STAR ) )
-		{
-			return ERR_SYETEM_ERR;
+			const ItemData& cost = *iter;
+			Int32Vector vSlot;
+			m_pPlayer->queryBagInfoByItemId( cost.m_nId, cost.m_nCount, vSlot );
+			if ( vSlot.empty() )
+			{
+				return ERR_SYETEM_ERR;
+			}
+			if ( !m_pPlayer->GetBag().RemoveItem( vSlot, cost, IDCR_PET_UP_STAR ) )
+			{
+				return ERR_SYETEM_ERR;
+			}
 		}
 	}
 	// Check money cost
@@ -3623,7 +3624,7 @@ int32_t CExtCharPet::onUpStar( Answer::NetPacket* inPacket )
 	// Check skill unlock
 	pPet->CheckSkillOpen();
 	// Broadcast if needed
-	if ( pCfgUpStar->nBroadId > 0 )
+	if ( pCfgUpStar->GongGaoId > 0 )
 	{
 		std::string strMsg;
 		// TODO: implement world broadcast for pet up-star (API removed)

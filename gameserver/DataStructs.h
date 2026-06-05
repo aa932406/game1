@@ -190,6 +190,7 @@ enum CurrencyChangeReason
 	MCR_ACHIEVEMENT_FINISHED			= 55,		// ��ɳɾ�
 	MCR_TIAN_LING_LEVEL_UP				= 56,
 	MCR_AUTO_USE					= 57,		//�Զ�ʹ��
+	MCR_PET_UP_STAR					= 58,		// ��������
 //=======================================================================================
 //��ħʯ��ʼ	
  	GCC_PICK_CURRENCY_ITEM				= 1000,
@@ -274,6 +275,13 @@ enum CurrencyChangeReason
 	GCR_MYSTERY_SHOP_REFRESH			= 2066,
 	GCR_BUY_CHANGE_NAME_CARD			= 2067,
 	GCR_AUTO_USE					= 2068,
+	GCR_DOUBLE_ELEVEN_BUY_SHOP_ITEM		= 2069,
+	GCR_DOUBLE_ELEVEN_BUY_GIFT_ITEM		= 2070,
+	GCR_DOUBLE_ELEVEN_BUY_GIFT_SHOP_ITEM	= 2071,
+	GCR_DOUBLE_ELEVEN_BUY_GIFT_SHOP_ITEM_2	= 2072,
+	GCR_DOUBLE_ELEVEN_DAILY_RECHARGE_GIFT	= 2073,
+	GCR_BUY_TITLE					= 2074,
+	GCR_MYSTERY_GIFT_BUY			= 2075,
 
 	//==================================================================================
 //Ԫ��
@@ -386,6 +394,21 @@ enum ITEM_ADD_REASON
 	IACR_SELECT_ITEM			= 103,
 	IACR_AUCTION_BUY			= 104,
 	IACR_AUCTION_CANCEL			= 105,
+	IACR_DOUBLE_ELEVEN_BUY_SHOP_ITEM	= 106,
+	IACR_DOUBLE_ELEVEN_BUY_GIFT_ITEM	= 107,
+	IACR_DOUBLE_ELEVEN_BUY_GIFT_SHOP_ITEM	= 108,
+	IACR_DOUBLE_ELEVEN_BUY_GIFT_SHOP_ITEM_2 = 109,
+	IACR_DOUBLE_ELEVEN_LAND_GIFT		= 110,
+	IACR_DOUBLE_ELEVEN_DAILY_RECHARGE_GIFT	= 111,
+	IACR_DOUBLE_ELEVEN_DRAW_GIFT		= 112,
+	IACR_DOUBLE_ELEVEN_HUO_YUE_DU		= 113,
+	IACR_DOUBLE_ELEVEN_LAND_SUM_GIFT	= 114,
+	IACR_DOUBLE_ELEVEN_LIAN_CHONG		= 115,
+	IACR_DOUBLE_ELEVEN_ONLINE_GIFT		= 116,
+	IACR_DOUBLE_ELEVEN_PET_ILLUSION_REWARD	= 117,
+	IACR_DOUBLE_ELEVEN_RECHARGE_SUM_GIFT	= 118,
+	IACR_DOUBLE_ELEVEN_WISH_GIFT		= 119,
+	IACR_DOUBLE_ELEVEN_XIAO_FEI_SUM_GIFT	= 120,
 	};
 
 enum ITEM_DEL_REASON
@@ -422,6 +445,7 @@ enum ITEM_DEL_REASON
 	IDCR_QI_FU						= 29,	// ��������
 	IDCR_FAMILY_WAR_SIT_REVIVE		= 30,	// ����սԭ�ظ���
 	IDCR_FAMILY_WAR_PET_REVIVE		= 31,	// ����ս�������
+	IDCR_PET_UP_STAR				= 32,	// ��������
 	IDCR_PUT_IN_EXP_BALL			= 32,	// װ��������
 	IDCR_USE_MULTI_ITEM				= 33,	// ʹ�ö��
 	IDCR_ENTER_BOSS_HOME			= 34,	// ����boss֮��
@@ -430,6 +454,7 @@ enum ITEM_DEL_REASON
 	IDCR_MOON_SKILL_GET			= 37,
 	IDCR_SEVEN_DAY				= 38,
 	IDCR_FLOP					= 39,
+	IDCR_FAMILY_DONATE			= 40,	// ��������
 	IDCR_GET_BOSS_KILLED_REWARD		= 40,
 	IDCR_FESTIVAL_ACT_2			= 41,
 	IDCR_WU_HUN_CREATE			= 42,
@@ -679,6 +704,8 @@ enum PlayerRecord
 	RP_VIP_SITEREVIVE_TIMES					= 2021,		// vipÿ��ԭ�ظ������
 	RP_WAR_VICTORY_LOGIN					= 2022,		// ÿ�տ�սʤ��ÿ�յ�½�����ȡ���
 	RP_WAR_VICTORY_BUY_GIFT					= 2023,		// ��սʤ��ÿ���ػݹ������
+	RP_FAMILY_PRAY_COUNT					= 2024,		// ��������κϼ���
+	RP_FAMILY_DONATE_COUNT					= 2025,		// ��������κϼ���
 
 	RP_DUNGEON_DAILY_START					= 3000,		// ����ÿ���콱��¼��ʼ
 	RP_DUNGEON_DAILY_END					= 3999,		// ����ÿ���콱��¼����
