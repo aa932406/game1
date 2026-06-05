@@ -19,6 +19,7 @@
 #include "CrossTower.h"
 #include "KaiFuBoss.h"
 #include "UltimateChallenge.h"
+#include "RongLian.h"
 #include <algorithm>
 
 using namespace Answer;
@@ -62,6 +63,7 @@ void CActivityManager::Init()
 		case ATI_CROSS_TOWER:		pActivity = new CCrossTower( cfgActivity );					break;
 		case ATI_KAI_FU_BOSS:		pActivity = new CKaiFuBoss( cfgActivity );						break;
 		case ATI_ULTIMATE_CHALLENGE:	pActivity = new CUltimateChallenge( cfgActivity );				break;
+		case ATI_RONG_LIAN:			pActivity = new CRongLian( cfgActivity );						break;
 		default: break;
 		}
 		if ( pActivity != NULL )
