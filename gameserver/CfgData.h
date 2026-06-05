@@ -3701,6 +3701,74 @@ private:
 	std::map<int32_t, CfgMysteryGift> m_mMysteryGift;
 };
 
+// 神秘商店配置
+struct CfgMysteryShop
+{
+	CfgMysteryShop() { CleanUp(); }
+	void CleanUp()
+	{
+		nId = 0;
+		nType = 0;
+		memset( &item, 0, sizeof( item ) );
+		nCostType = 0;
+		nPrice = 0;
+		nRate = 0;
+		nMinLevel = 0;
+		nMaxLevel = 0;
+		nBroad = 0;
+		memset( &exchange, 0, sizeof( exchange ) );
+	}
+	int32_t		nId;
+	int32_t		nType;
+	MemChrBag	item;
+	int32_t		nCostType;
+	int32_t		nPrice;
+	int32_t		nRate;
+	int32_t		nMinLevel;
+	int32_t		nMaxLevel;
+	int32_t		nBroad;
+	ItemData	exchange;
+};
+
+typedef std::list<CfgMysteryShop> CfgMysteryShopList;
+
+class CfgMysteryShopTable
+{
+public:
+	CfgMysteryShopTable() {}
+	~CfgMysteryShopTable() {}
+
+	void Add( const CfgMysteryShop& shop )
+	{
+		m_mMysteryShop[shop.nId] = shop;
+	}
+
+	const CfgMysteryShop* GetShopGood( int32_t nId ) const
+	{
+		std::map<int32_t, CfgMysteryShop>::const_iterator iter = m_mMysteryShop.find( nId );
+		if ( iter != m_mMysteryShop.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
+	void GetShopList( CfgMysteryShopList& lst, int32_t nType ) const
+	{
+		for ( std::map<int32_t, CfgMysteryShop>::const_iterator iter = m_mMysteryShop.begin();
+			iter != m_mMysteryShop.end(); ++iter )
+		{
+			if ( iter->second.nType == nType )
+			{
+				lst.push_back( iter->second );
+			}
+		}
+	}
+
+private:
+	std::map<int32_t, CfgMysteryShop>	m_mMysteryShop;
+};
+
 struct CfgBlacketMarketTable
 {
 	typedef std::map<int32_t, CfgBlackMarketGoods> GoodsMap;
@@ -4492,6 +4560,7 @@ private:
 	WuHunItemMap			m_WuHunItemMap;
 	CreateWuHunMap			m_CreateWuHunMap;
 	CfgMysteryGiftTable		m_cfgMysteryGiftTable;
+	CfgMysteryShopTable			m_cfgMysteryShopTable;
 public:
 	// ZongHeYunYingHD
 	const CfgZongHeYunYingHD*	GetZongHeYunYingHDCfg();
@@ -4518,6 +4587,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const CfgDrawTable*			GetDrawTable() const { return &m_cfgDrawTable; }
 	const CfgExchangeTable*		GetExchangeTable() const { return &m_cfgExchangeTable; }
 	const CfgMysteryGiftTable*	GetMysteryGiftTable() const { return &m_cfgMysteryGiftTable; }
+	const CfgMysteryShopTable*		GetMysteryShopTable() const { return &m_cfgMysteryShopTable; }
 private:
 };
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

@@ -5204,6 +5204,117 @@ public:
 	ExchangeRecordList	lstExchange;
 };
 
+// 神秘商店运行时结构
+struct MysteryShop
+{
+	int8_t		nType;
+	int32_t		nBuyFlag;
+	int32_t		nAutoRefreshTime;
+	int32_t		vGoods[4];
+};
+typedef std::list<MysteryShop> MysteryShopList;
+
+//========================================================================================================================================
+class MysteryShopDBData : public IDataStruct
+{
+public:
+	MysteryShopDBData(){ CleanUp(); }
+	virtual ~MysteryShopDBData(){}
+
+	void CleanUp()
+	{
+		lstShop.clear();
+	}
+
+	virtual void SaveToSqlString( SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid = 0 )
+	{
+		for ( MysteryShopList::iterator iter = lstShop.begin(); iter != lstShop.end(); ++iter )
+		{
+			std::stringstream ss;
+			for ( int32_t i = 0; i < 4; ++i )
+			{
+				ss << (int32_t)iter->vGoods[i] << ":";
+			}
+			std::string strGoods = ss.str();
+			bzero( szSQL, sizeof( szSQL ) );
+			snprintf( szSQL, sizeof( szSQL ) - 1,
+				"INSERT INTO `mem_char_mystery_shop` (`cid`,`type`,`buy_flag`,`refresh_time`,`goods`) VALUES (%lld,%d,%d,%d,'%s') ON DUPLICATE KEY UPDATE `buy_flag`=%d,`refresh_time`=%d,`goods`='%s'",
+				nCid,
+				iter->nType,
+				iter->nBuyFlag,
+				iter->nAutoRefreshTime,
+				strGoods.c_str(),
+				iter->nBuyFlag,
+				iter->nAutoRefreshTime,
+				strGoods.c_str() );
+			sqls.push_back( szSQL );
+		}
+	}
+
+	virtual bool LoadFromDB( Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid = 0 )
+	{
+		bzero( szSQL, sizeof( szSQL ) );
+		snprintf( szSQL, sizeof( szSQL ) - 1, "SELECT * FROM `mem_char_mystery_shop` WHERE `cid`=%lld", nCid );
+		Answer::MySqlQuery result = db.query( szSQL );
+		while ( !result.eof() )
+		{
+			MysteryShop shop;
+			memset( &shop, 0, sizeof( shop ) );
+			shop.nType = (int8_t)result.getIntValue( "type", 0 );
+			shop.nBuyFlag = result.getIntValue( "buy_flag", 0 );
+			shop.nAutoRefreshTime = result.getIntValue( "refresh_time", 0 );
+			std::string strGoods = result.getStringValue( "goods", "" );
+			StringVector vGoods = Answer::StringUtility::split( strGoods, ":" );
+			for ( uint32_t i = 0; i < 4 && i < vGoods.size(); ++i )
+			{
+				shop.vGoods[i] = atoi( vGoods[i].c_str() );
+			}
+			lstShop.push_back( shop );
+			result.nextRow();
+		}
+		return true;
+	}
+
+	virtual void PackageData( Answer::NetPacket* packet )
+	{
+		if ( NULL == packet ) return;
+		int32_t nSize = lstShop.size();
+		packet->writeInt32( nSize );
+		for ( MysteryShopList::iterator iter = lstShop.begin(); iter != lstShop.end(); ++iter )
+		{
+			packet->writeInt8( iter->nType );
+			packet->writeInt32( iter->nBuyFlag );
+			packet->writeInt32( iter->nAutoRefreshTime );
+			for ( int32_t i = 0; i < 4; ++i )
+			{
+				packet->writeInt32( iter->vGoods[i] );
+			}
+		}
+	}
+
+	virtual void UnPackageData( Answer::NetPacket* inPacket, CharId_t nCid = 0 )
+	{
+		if ( NULL == inPacket ) return;
+		int32_t nSize = inPacket->readInt32();
+		for ( int32_t i = 0; i < nSize; ++i )
+		{
+			MysteryShop shop;
+			memset( &shop, 0, sizeof( shop ) );
+			shop.nType = inPacket->readInt8();
+			shop.nBuyFlag = inPacket->readInt32();
+			shop.nAutoRefreshTime = inPacket->readInt32();
+			for ( int32_t j = 0; j < 4; ++j )
+			{
+				shop.vGoods[j] = inPacket->readInt32();
+			}
+			lstShop.push_back( shop );
+		}
+	}
+
+public:
+	MysteryShopList	lstShop;
+};
+
 class PlayerDBData : public IDataStruct
 {
 public:
@@ -5565,6 +5676,7 @@ CGoblinData	m_CGoblinData;
 	AchievementData				m_AchievementData;
 	CSevenDayData				m_CSevenDayData;
 	CKunData				m_KunData;
+	MysteryShopDBData			m_MysteryShopDBData;
 };
 
 struct PlayerDBSql 

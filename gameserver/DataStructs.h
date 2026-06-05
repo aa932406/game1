@@ -282,6 +282,7 @@ enum CurrencyChangeReason
 	GCR_DOUBLE_ELEVEN_DAILY_RECHARGE_GIFT	= 2073,
 	GCR_BUY_TITLE					= 2074,
 	GCR_MYSTERY_GIFT_BUY			= 2075,
+	GCR_MYSTERY_SHOP_BUY			= 2076,
 
 	//==================================================================================
 //Ԫ��
@@ -409,6 +410,7 @@ enum ITEM_ADD_REASON
 	IACR_DOUBLE_ELEVEN_RECHARGE_SUM_GIFT	= 118,
 	IACR_DOUBLE_ELEVEN_WISH_GIFT		= 119,
 	IACR_DOUBLE_ELEVEN_XIAO_FEI_SUM_GIFT	= 120,
+	IACR_MYSTERY_SHOP_BUY_GET		= 121,
 	};
 
 enum ITEM_DEL_REASON
@@ -461,6 +463,7 @@ enum ITEM_DEL_REASON
 	IDCR_OPEN_BETA_LI_QUAN			= 43,
 	IDCR_SELECT_ITEM			= 44,
 	IDCR_DISCARD				= 45,
+	IDCR_MYSTERY_SHOP_BUY_COST	= 46,
 	};
 
 enum ItemEffectType

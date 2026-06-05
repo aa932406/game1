@@ -28,6 +28,8 @@
 #include "CharSoul.h"
 #include "CharDraw.h"
 #include "CharExchange.h"
+#include "CharMysteryGift.h"
+#include "CharMysteryShop.h"
 #include "CharHallOfFame.h"
 
 #include "Trade.h"
@@ -610,6 +612,10 @@ public:				CExtCharExchange&		GetCharExchange();
 private:			CExtCharMysteryGift		m_extCharMysteryGift;
 public:				CExtCharMysteryGift&		GetCharMysteryGift();
 
+	friend class CExtCharMysteryShop;
+private:			CExtCharMysteryShop		m_extCharMysteryShop;
+public:				CExtCharMysteryShop&		GetCharMysteryShop();
+
 	friend class CExtCharSoul;
 public:				CExtCharHallOfFame&		GetCharHallOfFame() { return m_extCharHallOfFame; }
 private:			CExtCharHallOfFame		m_extCharHallOfFame;
@@ -796,8 +802,11 @@ private:
 
 #include "CharExchange.h"
 #include "CharMysteryGift.h"
+#include "CharMysteryShop.h"
 
 inline CExtCharMysteryGift& Player::GetCharMysteryGift() { return m_extCharMysteryGift; }
 
 inline CExtCharExchange& Player::GetCharExchange() { return m_extCharExchange; }
+
+inline CExtCharMysteryShop& Player::GetCharMysteryShop() { return m_extCharMysteryShop; }
 
