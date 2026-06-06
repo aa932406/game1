@@ -1,7 +1,7 @@
 #pragma once
 //////////////////////////////////////////////////////////////////////////
 //author :zxj			modify Time:2012 -7-7
-//description:µØÍ¼Êý¾ÝÀà
+//description:ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //////////////////////////////////////////////////////////////////////////
 #include <vector>
 
@@ -10,13 +10,13 @@
 #include "DropItem.h"
 #include "ObjPet.h"
 
-#define AREA_WIDTH			600			// ÇøÓò¿í
-#define AREA_HEIGHT			400			// ÇøÓò¸ß
-#define AREA_VIEW_SIZE		1			// ÊÓÒ° 2x+1
+#define AREA_WIDTH			600			// ï¿½ï¿½ï¿½ï¿½ï¿½
+#define AREA_HEIGHT			400			// ï¿½ï¿½ï¿½ï¿½ï¿½
+#define AREA_VIEW_SIZE		1			// ï¿½ï¿½Ò° 2x+1
 
-typedef std::list<CDropItemGroup*> DropItemGroupList;
-
+typedef std::list<CDropItemGroup*> DropItemGroupList;class CLittleHelper;
 class Player;
+
 class Map
 {
 public:
@@ -33,10 +33,10 @@ public:
 	static Position getAroundTile(int32_t tx, int32_t ty, Direction direction);
 
 public:
-	virtual void init( const CfgMap &cfgmap );//µØÍ¼Êý¾Ý³õÊ¼»¯
+	virtual void init( const CfgMap &cfgmap );//ï¿½ï¿½Í¼ï¿½ï¿½ï¿½Ý³ï¿½Ê¼ï¿½ï¿½
 	virtual void update();
 	
-	virtual int32_t canEnter(Player *player);//ÅÐ¶ÏÊÇ·ñ¿ÉÒÔ½øÈë
+	virtual int32_t canEnter(Player *player);//ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½
 	virtual int32_t getPkMode() const;
 	virtual int32_t getReive( Player* player );
 	virtual bool randomTransfer();
@@ -61,7 +61,7 @@ public:
 	int32_t GetType() const;
 	int32_t getAntiProtect() const;
 	int32_t getHideMini();
-	//*¿ÉÒÔÈ¥³ý
+	//*ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½
 	bool isRunning();
 	void onPlantGather(int wava);
 
@@ -98,6 +98,10 @@ public:
 	void addTrailer(Trailer *trailer);
 	void removeTrailer(Trailer *trailer);
 
+	void AddLittleHelper(CLittleHelper *pLittleHelper);
+	void removeLittleHelper(CLittleHelper *pLittleHelper);
+	CDropItem* GetNearestDropItem(Unit *pUnit);
+
 	void addPet( CObjPet *pet );
 	void removePet( CObjPet *pet );
 
@@ -125,7 +129,7 @@ public:
 	void sendTrailersInMap(Player *player);
 	void sendTrapsInMap( Player *player );
 
-	void sendTeamsInMap( Player *player );			// ²éÕÒ¸½½ü¶ÓÎéÊ±ÏÂ·¢
+	void sendTeamsInMap( Player *player );			// ï¿½ï¿½ï¿½Ò¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Â·ï¿½
 
 	void broadcastPlayerIntoMap(Player *player);
 	void broadcastMonsterIntoMap(Monster *monster);
@@ -212,10 +216,11 @@ protected:
 	DropItemGroupList m_dropItems;
 	PlantList	m_plants;
 	TrailerList m_trailers;
+	std::list<CLittleHelper*> m_CLittleHelperList;
 	ObjPetList	m_pets;
 	TrapList	m_traps;
 	int32_t		m_lastUpdateTime;
-	PosList		m_lstStack;			// ÁÙÊ±Åö×²¿é
+	PosList		m_lstStack;			// ï¿½ï¿½Ê±ï¿½ï¿½×²ï¿½ï¿½
 	bool		m_IsVipGuaJiMap;
 	tm			m_lastLocalNow;
 };

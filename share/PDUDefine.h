@@ -491,7 +491,12 @@ enum MSG_CM_CODE
 	CM_ASK_GUAN_WEI_INFO						= 505,			//�����λ��Ϣ
 	CM_ASK_GUAN_WEI_REWARD						= 506,			//��ȡ��λ����
 	CM_UP_GUAN_WEI								= 507,			//������λ
-	CM_WEAR_QI_SHI								= 508,			//�����ʿ
+	CM_WEAR_QI_SHI								= 508,
+
+	//小助手
+	CM_LITTLE_HELPER_WORK					= 530,			//小助手工作
+	CM_LITTLE_HELPER_REST					= 531,			//小助手休息
+	CM_LITTLE_HELPER_BUY					= 532,			//购买小助手			//�����ʿ
 	//�ɾ�
 	CM_ACHIEVEMENT_GET_REWARD					= 510,			//��ȡ�ɾͽ���
 	CM_ACHIEVEMENT_UP_XUN_ZHANG					= 511,			//����ѫ��
@@ -590,7 +595,11 @@ enum MSG_CM_CODE
 	CM_PET_REST_PET								= 763,			// ���³���
 	CM_PET_CHANGE_AI							= 764,			// �ı�����
 	CM_PET_SKILL_UP_LEVEL						= 765,			// �������ܵȼ�
-	// XP
+
+
+	// 装备精炼
+	CM_REFIN_INFO						= 768,			// 精炼信息
+	CM_REFIN_UPGRADE					= 769,			// 精炼升级	// XP
 
 	CM_START_XP									= 760,			// ��ʼXP
 
@@ -1401,7 +1410,9 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	// 时装系统
 	SM_SHI_ZHUANG_INFO				= 12060,	// 时装信息
 	SM_SHI_ZHUANG_PEI_YANG_RESULT	= 12061,	// 时装培养结果
-
+	SM_LITTLE_HELPER_INFO					= 11530,		// 小助手信息
+	SM_LITTLE_HELPER_SYNS					= 11531,		// 小助手外观同步
+	SM_REFIN_INFO								= 11532,		// 精炼信息
 	// 武魂
 	SM_WU_HUN_INFO					= 0x2EA1,	// 武魂信息
 	SM_WU_HUN_SLOT					= 0x2EA2,	// 武魂槽位变化

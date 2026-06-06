@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (34/88)
+### 已移植模块 (37/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -64,6 +64,9 @@ make
 | **CShenWei** (神威) | `ShenWei.cpp/.h` | ~42 | 5 方法 (OnDaySwitch/AddCharAttr/GetRankAttr/GetShenWeiLevel)，CExtSystemBase子类
 | **CRongHe** (融合) | `RongHe.cpp/.h` | ~130 | 15 方法 (OnRongLian/装备熔炼/拆卸/回收)，CExtSystemBase子类
 | **CShiZhuang** (时装) | `ShiZhuang.cpp/.h` | ~943 | 26 方法 (培养/穿戴/升阶/套装效果)，CExtSystemBase 子类
+| **CExtFlopDraw** (翻牌抽奖) | `FlopDraw.cpp/.h` | ~290 | 11 方法 (翻牌/抽奖/记录/广播)，CExtSystemBase 子类，由 KaiFuHuoDong 调用
+| **CCharWuHun** (武魂) | `CharWuHun.cpp/.h` | ~538 | 12 方法 (穿戴/卸下/创建/天赋/套装)，CExtSystemBase 子类
+| **CBossKilledReward** (BOSS击杀奖励) | `BossKilledReward.cpp/.h` | ~397 | 12 方法 (领取/加载/保存/图标)，CExtSystemBase 子类
 | **CGuiGuDaoRen** (鬼谷道人) | `GuiGuDaoRen.cpp/.h` | ~450 | 19 方法 (物品回收/装备回收/排行榜/每日重置/融合记录)，Answer::Singleton 全局单继
 
 ### 数据层变更
@@ -83,10 +86,8 @@ make
 
 | # | 模块 | 反编译文件 | 行数 | 说明 |
 |---|------|-----------|------|------|
-| 1 | BossKilledReward | `CBossKilledReward.cpp` | — | BOSS击杀奖励 |
 | 2 | CardGroupBox | `CCardGroupBox.cpp` | — | 卡牌礼盒 |
 | 3 | CardGroupBoxManager | `CCardGroupBoxManager.cpp` | — | 卡牌礼盒管理器 |
-| 4 | CharWuHun | `CCharWuHun.cpp` | — | 武魂系统 |
 | 5 | DaTingReward | `CDaTingReward.cpp` | — | 大厅奖励 |
 | 7 | DropItemGroup | `CDropItemGroup.cpp` | — | 掉落组 |
 | 8 | EquipBack | `CEquipBack.cpp` | — | 装备回购 |
@@ -107,7 +108,6 @@ make
 | 27 | ExtOperateLimit | `CExtOperateLimit.cpp` | — | 操作限制 |
 | 28 | FestivalActivity | `CFestivalActivity.cpp` | ~1,372 | 节日活动 |
 | 29 | FestivalDoubleEleven | `CFestivalDoubleEleven.cpp` | ~10,725 | **双十一活动（最大模块）** |
-| 30 | FlopDraw | `CFlopDraw.cpp` | — | 翻牌抽奖 |
 | 31 | GMBackstate | `CGMBackstate.cpp` | — | GM后台 |
 | 33 | HttpRequest | `CHttpRequest.cpp` | — | HTTP请求 |
 | 34 | KiaFuRecharge | `CKiaFuRecharge.cpp` | — | 开服充值 |

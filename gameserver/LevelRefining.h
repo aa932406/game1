@@ -3,10 +3,6 @@
 
 #include "ExtSystemBase.h"
 
-// Protocol IDs
-#define CM_REFIN_INFO				768
-#define CM_REFIN_UPGRADE			769
-#define SM_REFIN_INFO				0x2D0A
 
 class CLevelRefining : public CExtSystemBase
 {

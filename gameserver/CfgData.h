@@ -23,6 +23,30 @@ struct AddAttribute
 };
 typedef std::list<AddAttribute> AddAttrList;
 
+// 小助手配置
+struct LittleHelperCfg
+{
+	LittleHelperCfg()
+		: nId( 0 )
+		, nSpeed( 0 )
+		, nGold( 0 )
+		, nReGold( 0 )
+		, nTime( 0 )
+		, nGongGaoId( 0 )
+	{
+	}
+
+	int32_t nId;
+	int32_t nSpeed;
+	AddAttrList lAttr;
+	int32_t nGold;
+	int32_t nReGold;
+	int32_t nTime;
+	int32_t nGongGaoId;
+};
+
+typedef std::map<int32_t, LittleHelperCfg> LittleHelperCfgMap;
+
 
 // GuardPrivilege Config
 struct CfgGuardPrivilege
@@ -4918,6 +4942,8 @@ public:
 	CfgEverydayChongZhi*		GetEveryDayChongZhiCfg( int8_t Index );
 	CTouZiCfg&					GetTouZhiCfg();
 	KaiFuHuoDongCfg&			GetKaiFuHuoDongCfg();
+	LittleHelperCfg*				GetLittleHelperCfg( int32_t nId );
+	LittleHelperCfgMap&			GetLittleHelperCfgTable();
 	LevelRefinCfg*				GetRefining( int32_t nLevel );
 	LevelRefinCfgMap&			GetRefiningTable();
 	void						InitBossKilledReward();
@@ -5028,6 +5054,8 @@ private:
 	void InitMagicBoxTable();
 	void InitFlopDrawTable();				// 初始化翻牌抽奖配置表
 	void InitEquipBackTable();				// 初始化装备回购配置表
+	void InitLittleHelperCfg();				// 初始化小助手配置表
+	void InitLevelRefiningTable();				// 初始化装备精炼配置表
 	void InitShiZhuangTable();				// 初始化时装配置表
 	void InitShiZhuangLevelTable();			// 初始化时装等级配置表
 	void InitShiZhuLevelUp();				// 初始化时装升阶配置表				// ��ʼ��ħ�б�
@@ -5268,6 +5296,7 @@ private:
 	int32_t					m_nGuardPrivilegeStartTime;
 	int32_t					m_nGuardPrivilegeEndTime;
 	BossKilledRewardMap		m_BossKilledRewardMap;
+	LittleHelperCfgMap		m_LittleHelperCfgMap;
 	WuHunItemMap			m_WuHunItemMap;
 	CreateWuHunMap			m_CreateWuHunMap;
 	CfgMysteryGiftTable		m_cfgMysteryGiftTable;

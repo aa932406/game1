@@ -36,14 +36,9 @@ void CBossKilledReward::OnCleanUp()
 }
 
 // ========== 从DB加载 ==========
-void CBossKilledReward::OnLoadFromDB( const PlayerDBData* dbData )
+void CBossKilledReward::OnLoadFromDB( const PlayerDBData& dbData )
 {
-	if ( NULL == dbData )
-	{
-		return;
-	}
-
-	const std::string& strReward = dbData->m_BossKilledReward.RewardString;
+	const std::string& strReward = dbData.m_BossKilledReward.RewardString;
 	if ( strReward.empty() )
 	{
 		return;
@@ -75,13 +70,8 @@ void CBossKilledReward::OnLoadFromDB( const PlayerDBData* dbData )
 }
 
 // ========== 保存到DB ==========
-void CBossKilledReward::OnSaveToDB( PlayerDBData* dbData )
+void CBossKilledReward::OnSaveToDB( PlayerDBData& dbData )
 {
-	if ( NULL == dbData )
-	{
-		return;
-	}
-
 	std::stringstream ss;
 	for ( std::map<int8_t, BossKilledRewardInfo>::iterator it = m_BossKilledRewardMap.begin(); it != m_BossKilledRewardMap.end(); ++it )
 	{
@@ -98,7 +88,7 @@ void CBossKilledReward::OnSaveToDB( PlayerDBData* dbData )
 		ss << ":" << "|";
 	}
 
-	dbData->m_BossKilledReward.RewardString = ss.str();
+	dbData.m_BossKilledReward.RewardString = ss.str();
 }
 
 // ========== 协议注册 ==========

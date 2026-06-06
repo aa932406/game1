@@ -9856,30 +9856,7 @@ void CfgData::InitLevelChatTimesTable()
     }
 }
 
-void CfgData::InitLevelRefiningTable()
-{
-    CDBCFile TabFile(0);
-    bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/LvRefining.txt");
-    if (ret == false)
-    {
-        LOG_ERROR("open ./ServerConfig/Tables/LvRefining.txt failed, please check!!!");
-        return;
-    }
 
-    int32_t iBaseTableCount = TabFile.GetRecordsNum();
-    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
-    if (iBaseColumnCount <= 0)
-    {
-        return;
-    }
-
-    for (int32_t i = 0; i < iBaseTableCount; ++i)
-    {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/LvRefining.txt
-    }
-}
 
 void CfgData::InitLibraryTable()
 {

@@ -6,9 +6,8 @@
 #include "CfgData.h"
 #include "DataStructs.h"
 
-// ========== 协议定义 ==========
-#define CM_GET_BOSS_KILLED_REWARD		545
-#define SM_BOSS_KILLED_REWARD_INFO		0x283E
+// ========== 协议定义 (参见 share/PDUDefine.h) ==========
+// CM_GET_BOSS_KILLED_REWARD = 545, SM_BOSS_KILLED_REWARD_INFO = 0x283E
 
 // ========== 结构体定义 ==========
 struct BossKilledInfo
@@ -60,8 +59,8 @@ public:
 	virtual ~CBossKilledReward(){}
 
 	virtual void	OnCleanUp();
-	virtual void	OnLoadFromDB( const PlayerDBData* dbData );
-	virtual void	OnSaveToDB( PlayerDBData* dbData );
+	virtual void	OnLoadFromDB( const PlayerDBData& dbData );
+	virtual void	OnSaveToDB( PlayerDBData& dbData );
 
 	virtual void	GetInterestsProtocol( ProcIdList& procList );
 	virtual int32_t	DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket* inPacket );

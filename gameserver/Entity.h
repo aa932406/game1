@@ -13,6 +13,7 @@ enum EntityType
 	ET_TRAILER		= 8,	// 拖车
 	ET_LACKEY		= 9,	// 跟班
 	ET_CARRIER		= 10,	// 护送
+	ET_LITTLE_HELPER	= 11,	// 小助手
 };
 
 class Entity

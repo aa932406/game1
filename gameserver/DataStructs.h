@@ -280,8 +280,8 @@ enum CurrencyChangeReason
 	GCR_DOUBLE_ELEVEN_BUY_GIFT_ITEM		= 2070,
 	GCR_DOUBLE_ELEVEN_BUY_GIFT_SHOP_ITEM	= 2071,
 	GCR_DOUBLE_ELEVEN_BUY_GIFT_SHOP_ITEM_2	= 2072,
-	GCR_DOUBLE_ELEVEN_DAILY_RECHARGE_GIFT	= 2073,
-	GCR_BUY_TITLE					= 2074,
+	GCR_DOUBLE_ELEVEN_DAILY_RECHARGE_GIFT	= 2073,	GCR_BUY_TITLE						= 2074,
+	GCR_BUY_LITTLE_HELPER				= 2075,		// 购买小助手
 	GCR_MYSTERY_GIFT_BUY			= 2075,
 	GCR_MYSTERY_SHOP_BUY			= 2076,
 	GCR_NATIONAL_UNLOCK_REWARD	= 2077,
@@ -853,6 +853,7 @@ enum InstanceMoveReason
 	IMR_SPOUSE_MOVE = 6,
 	IMR_HIT			= 7,
 	IMR_OPEN_STALL	= 8,		// ��̯
+	IMR_LITTLE_HELPER	= 9,		// 小助手跟随
 };
 
 enum SuperExchangeType
@@ -1585,6 +1586,21 @@ enum SysSetting
 enum APPEND_ATTR_TYPE
 {
 	FAMILY_WAR_WIN		= 1,	//����սʤ�����ų�����
+};
+
+// 小助手
+struct ActLittleHelperInfo
+{
+	ActLittleHelperInfo()
+		: nId( 0 )
+		, nSkin( 0 )
+		, nTimes( 0 )
+	{
+	}
+
+	int32_t nId;
+	int32_t nSkin;
+	int32_t nTimes;
 };
 
 #define WAR_VICTORY_BOSS_ID  477115		//��սʤ��bossid

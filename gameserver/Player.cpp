@@ -27,6 +27,8 @@
 #include "HorseRacing.h"
 #include "VipGuaJi.h"
 #include "KaiFuHuoDong.h"
+#include "LevelRefining.h"
+#include "CharLittlerHelper.h"
 #include "PetManager.h"
 #include "GMBackstage.h"
 #include <algorithm>
@@ -8218,6 +8220,12 @@ void Player::InitExtSystems()
 
 	m_BossKilledReward.Init( this );
 	m_ExtSysMgr.Register( &m_BossKilledReward );
+
+	m_CharLittlerHelper.Init( this );
+	m_ExtSysMgr.Register( &m_CharLittlerHelper );
+
+	m_CLevelRefining.Init( this );
+	m_ExtSysMgr.Register( &m_CLevelRefining );
 
 	m_extShiZhuang.Init( this );
 	m_ExtSysMgr.Register( &m_extShiZhuang );

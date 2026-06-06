@@ -46,6 +46,8 @@
 #include "ShenWei.h"
 #include "RongHe.h"
 #include "ShiZhuang.h"
+#include "LevelRefining.h"
+#include "CharLittlerHelper.h"
 
 #include "Trade.h"
 #include "PlayerMail.h"
@@ -675,6 +677,14 @@ private:			CExtCharHallOfFame		m_extCharHallOfFame;
 	friend class CMoneyRewardTask;
 public:				CMoneyRewardTask&		GetMoneyRewardTask() { return m_extMoneyRewardTask; }
 private:			CMoneyRewardTask		m_extMoneyRewardTask;
+
+	friend class CLevelRefining;
+public:				CLevelRefining&		GetCLevelRefining() { return m_CLevelRefining; }
+private:			CLevelRefining			m_CLevelRefining;
+
+	friend class CharLittlerHelper;
+public:				CharLittlerHelper&		GetCharLittlerHelper() { return m_CharLittlerHelper; }
+private:			CharLittlerHelper			m_CharLittlerHelper;
 
 	friend class CExtMagicBox;
 public:				CExtMagicBox&			GetMagicBox() { return m_extMagicBox; }

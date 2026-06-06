@@ -33,6 +33,7 @@ public:
 	bool submitPreCheck(int32_t tid,  const CfgTask &cfgTask);
 
 	void updateTaskUseItem( int32_t id ,int32_t Count);
+	void CleanTaskType( int32_t taskType );
 	void updateTaskTypeCount( int32_t taskType );
 	void updateTaskMonster(int32_t mid, int32_t level);
 	void updateTaskCount( int32_t Condition );
