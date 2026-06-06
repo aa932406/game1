@@ -71,8 +71,11 @@ public:
 	void TeamDungeonEnterDungeon( Dungeon* pDungeon, const CharIdList& lst );
 	void broadcastHuoDongDaTingIcon();
 	void SendServerDiffToGlobal();
-	void requestFamilyInfo();
-	void KickUser( CharId_t cid );
+	void requestFamilyInfo();	void	KickUser( CharId_t cid );
+
+	// Title/称号管理（供 RankMirror 及其他模块调用）
+	void	onCheckTitle( CharId_t nCharId, int8_t nType, int32_t nParam );
+	void	onRemoveTitle( CharId_t nCharId, int8_t nType );
 
 private:
 	void onAddUser(Answer::NetPacket *inPacket);
@@ -92,6 +95,8 @@ private:
 	void onSocialUpdatePetRank( Answer::NetPacket* inPacket );
 	void onSocialUpdateFamilyInfo( Answer::NetPacket* inPacket );
 	void onSocialInitPetRank( Answer::NetPacket* inPacket );
+
+	void AddPlayerVipClubDropTime();
 	void onSocialCreateTeamDungeon( Answer::NetPacket* inPacket );
 	void onSocialSendSystemMail( Answer::NetPacket* inPacket );
 	void onSocialSendSystemMail2( Answer::NetPacket* inPacket );

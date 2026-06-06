@@ -109,6 +109,9 @@ public:
 	int32_t		OnGetSWVipReward( Answer::NetPacket* inPacket );
 	int32_t		OnGetSWVipBarReward( Answer::NetPacket* inPacket );
 
+
+	int32_t		GetPlatformVipLevel() const;
+
 private:
 	Player*		m_pPlayer;
 
@@ -132,6 +135,7 @@ private:
 
 	// 迅雷
 	int32_t		m_XlNxLevel;
+
 
 	// 平台
 	int32_t		m_PlatformVip;

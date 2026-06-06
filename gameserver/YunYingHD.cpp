@@ -1121,27 +1121,64 @@ bool CYunYingHD::HaveEveryDayChongZhiGiftCount( int8_t nType, int32_t& Count )
 
 int32_t CYunYingHD::OnGetMobilePhoneGift( Answer::NetPacket *inPacket )
 {
-	// TODO: needs CfgMobilePhoneGift / CFG_DATA.GetMobilePhoneGift / DBService.CheckMobilePhoneGiftEffect
-	// Infra not ported yet. Return stub error.
-	return ERR_SYETEM_ERR;
+	// Need DBService::CheckMobilePhoneGiftEffect for cross-server verification
+	// Not available in this version; fallback to OnDBGetMobilePhoneGift directly
+	return OnDBGetMobilePhoneGift( inPacket );
 }
 
 int32_t CYunYingHD::OnDBGetMobilePhoneGift( Answer::NetPacket *inPacket )
 {
-	// TODO: needs CfgMobilePhoneGift / CfgAdultGift / CfgWeiXingGift types
-	// Infra not ported yet. Return stub error.
-	return ERR_SYETEM_ERR;
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	// Prevent duplicate claims
+	if ( m_pPlayer->getRecord( 37010 ) > 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	std::string platform = m_pPlayer->GetPlatform();
+	const CfgMobilePhoneGift* pCfg = CFG_DATA.GetMobilePhoneGift( platform );
+	if ( pCfg == NULL || pCfg->vItem.empty() )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( !m_pPlayer->GetBag().AddItem( pCfg->vItem, IACR_ACTIVITY ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	m_pPlayer->updateRecord( 37010, 1 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
 }
-
 
 void CYunYingHD::GetMobilePhoneGiftIconState( IconStateList& IconList )
 {
-	// TODO: needs CfgMobilePhoneGift - infra not ported yet
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	std::string platform = m_pPlayer->GetPlatform();
+	const CfgMobilePhoneGift* pCfg = CFG_DATA.GetMobilePhoneGift( platform );
+	if ( pCfg != NULL && pCfg->nIcon > 0 )
+	{
+		IconList.push_back( GetMobilePhoneGiftIconStu( pCfg->nIcon ) );
+	}
 }
 
 void CYunYingHD::SendMobilePhoneGiftIcon()
 {
-	// TODO: needs CfgMobilePhoneGift - infra not ported yet
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	std::string platform = m_pPlayer->GetPlatform();
+	const CfgMobilePhoneGift* pCfg = CFG_DATA.GetMobilePhoneGift( platform );
+	if ( pCfg != NULL && pCfg->nIcon > 0 )
+	{
+		ShowIcon stu = GetMobilePhoneGiftIconStu( pCfg->nIcon );
+		m_pPlayer->SendIconState( stu );
+	}
 }
 
 ShowIcon CYunYingHD::GetMobilePhoneGiftIconStu( int32_t nIcon )
@@ -1155,12 +1192,31 @@ ShowIcon CYunYingHD::GetMobilePhoneGiftIconStu( int32_t nIcon )
 
 void CYunYingHD::GetAdultGiftIconState( IconStateList& IconList )
 {
-	// TODO: needs CfgAdultGift - infra not ported yet
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	std::string platform = m_pPlayer->GetPlatform();
+	const CfgAdultGift* pCfg = CFG_DATA.GetAdultGiftTable()->GetAdultGift( platform );
+	if ( pCfg != NULL && pCfg->nIconId > 0 )
+	{
+		IconList.push_back( GetAdultGiftIconStu( pCfg->nIconId ) );
+	}
 }
 
 void CYunYingHD::SendAdultGiftIcon()
 {
-	// TODO: needs CfgAdultGift - infra not ported yet
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	std::string platform = m_pPlayer->GetPlatform();
+	const CfgAdultGift* pCfg = CFG_DATA.GetAdultGiftTable()->GetAdultGift( platform );
+	if ( pCfg != NULL && pCfg->nIconId > 0 )
+	{
+		ShowIcon stu = GetAdultGiftIconStu( pCfg->nIconId );
+		m_pPlayer->SendIconState( stu );
+	}
 }
 
 ShowIcon CYunYingHD::GetAdultGiftIconStu( int32_t nIconId )
@@ -1191,15 +1247,52 @@ void CYunYingHD::SuperMemberRecharge( int32_t nGold )
 
 void CYunYingHD::GetSuperMemberIconState( IconStateList& IconList )
 {
-	// TODO: needs CfgSuperMember/CFG_DATA.GetSuperMember - infra not ported yet
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+	std::string platform = m_pPlayer->GetPlatform();
+	const CfgSuperMember* pCfg = CFG_DATA.GetSuperMember( platform );
+	if ( pCfg != NULL && pCfg->nIcon > 0 )
+	{
+		ShowIcon stu = {};
+		stu.nId = pCfg->nIcon;
+		stu.nState = AS_RUNNING;
+		stu.nLeftTime = -1;
+		IconList.push_back( stu );
+	}
 }
 
 // ========== Zero Buy Pet ==========
 
 int32_t CYunYingHD::OnGetZeroBuyPetGift( Answer::NetPacket *inPacket )
 {
-	// TODO: needs CfgData.GetZeroBuyPetCfg - infra not ported yet
-	return ERR_SYETEM_ERR;
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( m_pPlayer->getRecord( 37502 ) < 0 || m_pPlayer->getRecord( 37503 ) > 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	const ZeroBuyPetCfg* pCfg = CFG_DATA.GetZeroBuyPetCfg();
+	if ( NULL == pCfg )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( m_pPlayer->GetCurrency( CURRENCY_GOLD ) < pCfg->nGold )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	if ( !m_pPlayer->GetBag().AddItem( pCfg->cItems, IACR_ACTIVITY ) )
+	{
+		return ERR_SYETEM_ERR;
+	}
+	m_pPlayer->DecCurrency( CURRENCY_GOLD, pCfg->nGold, GCR_BUY_THREE_PET_LI_BAO, 0 );
+	int32_t Now = m_pPlayer->getNow();
+	m_pPlayer->updateRecord( 37503, Now + 259200 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	return ERR_OK;
 }
 
 void CYunYingHD::OnZeroBuyPetOpen()

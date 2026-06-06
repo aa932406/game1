@@ -8,6 +8,7 @@ public:
 	static  MemChrBagVector parseItemString(int32_t id, const std::string &strItems);
 	static  MemChrBagVector parseItemVectorString(const std::string &strItems);
 	static  std::list<ItemData> parseItemDataListString(const std::string &strItems);
+	static	void parseRateItemDataString(RateItem& outItem, const std::string& strData);
 };
 
 

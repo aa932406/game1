@@ -81,7 +81,7 @@ public:
 	virtual Player* getEnemySidePlayer(Monster *monster);
 	virtual Unit* GetNearestAliveEnemySideUnit(Monster *monster);
 
-	void addMonster(Monster *monster, int32_t x, int32_t y);
+	virtual void addMonster(Monster *monster, int32_t x, int32_t y);
 	Monster* getEnemySideMonster(Monster *monster);
 
 	void addNpc(Npc	*npc, int32_t x, int32_t y);
@@ -99,8 +99,7 @@ public:
 	void removeTrailer(Trailer *trailer);
 
 	void AddLittleHelper(CLittleHelper *pLittleHelper);
-	void removeLittleHelper(CLittleHelper *pLittleHelper);
-	CDropItem* GetNearestDropItem(Unit *pUnit);
+	void removeLittleHelper(CLittleHelper *pLittleHelper);	bool		GetNearestDropPos(Unit *pUnit, Position& outPos, EntityId_t& outDropId);
 
 	void addPet( CObjPet *pet );
 	void removePet( CObjPet *pet );
@@ -173,6 +172,8 @@ public:
 	void	OnKillMonster( EntityId_t MonsterId );
 	int32_t GetMapParam();
 
+	void	ResetRefreshMonster();
+
 private:
 	bool		inAreas(Unit *pUnit, const PositionVector &areas);
 	bool		checkPos( const Position& pos, const Position& area ) const;
@@ -223,5 +224,8 @@ protected:
 	PosList		m_lstStack;			// ��ʱ��ײ��
 	bool		m_IsVipGuaJiMap;
 	tm			m_lastLocalNow;
+
+	std::map<int32_t, int32_t>	m_MonsterReviveMap;	// 怪物复活时间表 (mid -> reviveTime)
+	int8_t				m_NeedUpdate;		// 是否需要更新怪物刷新
 };
 

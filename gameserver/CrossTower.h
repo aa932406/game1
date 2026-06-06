@@ -3,11 +3,12 @@
 
 #include "stdafx.h"
 #include "Activity.h"
+#include "CfgData.h"
 
 // 跨服塔配置
-// CrossTowerCfg is defined as CfgCrossTower in CfgData.h
+// CrossTowerCfg is defined in CfgData.h
 // This typedef provides the old name for compatibility
-typedef CfgCrossTower CrossTowerCfg;
+typedef CrossTowerCfg CfgCrossTower;
 
 class CCrossTower : public CActivity
 {

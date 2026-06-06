@@ -332,8 +332,22 @@ void CMoneyRewardTask::parseMoneyRewardTaskInfo( const std::string& infoString )
 		if ( IsFunctionOpen() ) InitMoneyRewardTask();
 		return;
 	}
-	// Parse format: "i|TaskId|TaskState:..."
-	// TODO: implement proper parsing
+	// Parse format: "i|TaskId|TaskState:|"
+	// Split by "|:" to get individual entries, then each entry by "|"
+	StringVector entries = Answer::StringUtility::split( infoString, "|:" );
+	for ( size_t i = 0; i < entries.size(); ++i )
+	{
+		StringVector fields = Answer::StringUtility::split( entries[i], "|" );
+		if ( fields.size() == 3 )
+		{
+			int32_t nIndex = atoi( fields[0].c_str() );
+			if ( nIndex >= 0 && nIndex <= 8 )
+			{
+				m_MoneyRewardTask[nIndex].TaskId = atoi( fields[1].c_str() );
+				m_MoneyRewardTask[nIndex].TaskState = (int8_t)atoi( fields[2].c_str() );
+			}
+		}
+	}
 }
 
 std::string CMoneyRewardTask::GetMoneyRewardTaskInfo()
@@ -464,9 +478,95 @@ int32_t CMoneyRewardTask::OnReceiveEquipBackTask( Answer::NetPacket* inPacket )
 
 int32_t CMoneyRewardTask::OnSubmitEquipBackTask( Answer::NetPacket* inPacket )
 {
-	// Complex logic: check bag slot, verify equip, calc reward
-	// TODO: implement full equip back task submission
-	return ERR_INVALID_DATA;
+	if ( !m_pPlayer || !inPacket ) return ERR_INVALID_DATA;
+
+	int32_t Bagslot = inPacket->readInt32();
+	int32_t times = inPacket->readInt32();
+	if ( times <= 0 || times > 2 ) return ERR_INVALID_DATA;
+
+	if ( !m_pPlayer->GetTask().isDoingTaskType( 6 ) ) return ERR_INVALID_DATA;
+
+	MemChrBag BagItem = m_pPlayer->GetBag().GetSlotData( Bagslot );
+	if ( BagItem.itemClass != 2 ) return ERR_INVALID_DATA;
+
+	if ( m_EquipBackTaskFinishTimes >= GetEquipBackTaskLimit() ) return ERR_INVALID_DATA;
+
+	const CfgTask* pCfg = CFG_DATA.getTask( m_EquipBackTaskId );
+	if ( !pCfg ) return ERR_INVALID_DATA;
+
+	const BackEquipTask* pTask = CFG_DATA.GetBackEquipTask( m_EquipBackTaskId );
+	if ( !pTask ) return ERR_INVALID_DATA;
+
+	const CfgEquip* pCfgEquip = CFG_DATA.GetEquipTable().GetEquip( BagItem.itemId );
+	if ( !pCfgEquip ) return ERR_INVALID_DATA;
+
+	// Check if the equip id is in the task's allowed equip list
+	bool bFind = false;
+	for ( Int32Vector::const_iterator iter = pTask->Equips.begin(); iter != pTask->Equips.end(); ++iter )
+	{
+		if ( *iter == BagItem.itemId )
+		{
+			bFind = true;
+			break;
+		}
+	}
+	if ( !bFind ) return ERR_INVALID_DATA;
+
+	// Check free slots for reward items
+	if ( (int32_t)pTask->Items.size() > m_pPlayer->GetBag().GetFreeSlotCount() ) return ERR_INVALID_DATA;
+
+	// If double submission, deduct gold
+	if ( times == 2 )
+	{
+		float Rate = 1.0f;
+		//if ( m_pPlayer->GetPlayerVip().GetVipFlg( 2 ) ) Rate = 0.8f;
+		int32_t nCost = (int32_t)((float)pCfg->gold * Rate);
+		if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, nCost, GCR_DOUBLE_BACK_EQUIP, 0 ) )
+			return ERR_INVALID_DATA;
+	}
+
+	// Remove the equipped item from bag
+	m_pPlayer->GetBag().CleanSlot( Bagslot, IDCR_EQUIP_BACK_TASK );
+
+	// Build reward items (scaled by times)
+	MemChrBagVector ItemTmp;
+	for ( size_t i = 0; i < pTask->Items.size(); ++i )
+	{
+		MemChrBag stu = pTask->Items[i];
+		stu.itemCount *= times;
+		ItemTmp.push_back( stu );
+	}
+
+	// Add reward items to bag
+	if ( !ItemTmp.empty() )
+	{
+		if ( !m_pPlayer->GetBag().AddItem( ItemTmp, IACR_EQUIP_BACK_TASK_GET ) )
+			return ERR_INVALID_DATA;
+	}
+
+	// Add vigor reward
+	if ( pTask->nGetCurr > 0 )
+	{
+		m_pPlayer->AddCurrency( CURRENCY_VIGOUR, times * pTask->nGetCurr, VCR_EQUIP_BACK_TASK );
+	}
+
+	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( 14 );
+
+	// Log task completion to DB
+	LogTask logTask = {};
+	logTask.cid = m_pPlayer->getCid();
+	logTask.tid = m_EquipBackTaskId;
+	logTask.type = 6;
+	logTask.time = m_pPlayer->getNow();
+	logTask.state = 1;
+	DB_SERVICE.insertTaskInfo( logTask );
+
+	++m_EquipBackTaskFinishTimes;
+	m_EquipBackTaskId = RandTaskIndex( 1 );
+	m_RandEquipBackTaskStarTimes = 1;
+	SendBackEquipTaskInfo();
+
+	return 0;
 }
 
 int32_t CMoneyRewardTask::OnEquipBackTaskRandStar( Answer::NetPacket* inPacket )
@@ -848,8 +948,22 @@ void CMoneyRewardTask::SendXiangYaoTaskInfo()
 
 void CMoneyRewardTask::parseXiangYaoTask( const std::string& infoString )
 {
+	if ( infoString.empty() ) return;
 	// Parse format: "i|TaskId|TaskState:|" for up to 4 entries
-	// TODO: implement proper parsing
+	StringVector entries = Answer::StringUtility::split( infoString, "|:" );
+	for ( size_t i = 0; i < entries.size(); ++i )
+	{
+		StringVector fields = Answer::StringUtility::split( entries[i], "|" );
+		if ( fields.size() == 3 )
+		{
+			int32_t nIndex = atoi( fields[0].c_str() );
+			if ( nIndex >= 0 && nIndex < 4 )
+			{
+				m_XiangYaoTask[nIndex].TaskId = atoi( fields[1].c_str() );
+				m_XiangYaoTask[nIndex].TaskState = (int8_t)atoi( fields[2].c_str() );
+			}
+		}
+	}
 }
 
 std::string CMoneyRewardTask::saveXiangYaoTaskString()
@@ -968,8 +1082,21 @@ void CMoneyRewardTask::SendShenWeiTaskInfo()
 
 void CMoneyRewardTask::parseShenWeiTask( const std::string& infoString )
 {
+	if ( infoString.empty() ) return;
 	// Parse format: "i|TaskState:|" for up to 5 entries
-	// TODO: implement proper parsing
+	StringVector entries = Answer::StringUtility::split( infoString, "|:" );
+	for ( size_t i = 0; i < entries.size(); ++i )
+	{
+		StringVector fields = Answer::StringUtility::split( entries[i], "|" );
+		if ( fields.size() == 2 )
+		{
+			int32_t nIndex = atoi( fields[0].c_str() );
+			if ( nIndex >= 0 && nIndex <= 4 )
+			{
+				m_ShenWeiTaskState[nIndex] = (int8_t)atoi( fields[1].c_str() );
+			}
+		}
+	}
 }
 
 std::string CMoneyRewardTask::saveShenWeiTaskString()

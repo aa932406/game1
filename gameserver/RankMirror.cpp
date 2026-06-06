@@ -225,14 +225,14 @@ void CRankMirror::setWeiWangRank( CharId_t nCharId, int32_t nIndex )
 	}
 }
 
-// ========== 标题/称号存根 ==========
-// TODO: 集成到 Title 系统后实现完整逻辑
+// ========== 标题/称号 ==========
+// 通过 GameService 查找在线玩家并授予/移除称号
 void CRankMirror::onCheckTitle( CharId_t nCharId, int32_t nTitleId, int8_t nParam )
 {
-	// stub - 等待 Title 系统集成
+	GAME_SERVICE.onCheckTitle( nCharId, (int8_t)nTitleId, nParam );
 }
 
 void CRankMirror::onRemoveTitle( CharId_t nCharId, int32_t nTitleId )
 {
-	// stub - 等待 Title 系统集成
+	GAME_SERVICE.onRemoveTitle( nCharId, (int8_t)nTitleId );
 }

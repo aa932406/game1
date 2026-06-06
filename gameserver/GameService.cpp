@@ -1760,6 +1760,34 @@ void GameService::requestFamilyInfo()
 	GAME_SERVICE.sendPacket(packet);
 }
 
+void GameService::onCheckTitle( CharId_t nCharId, int8_t nType, int32_t nParam )
+{
+	Answer::MutexGuard lock( m_playerLock );
+	CharIdPlayerMap::iterator iter = m_players.find( nCharId );
+	if ( iter != m_players.end() )
+	{
+		Player* player = iter->second;
+		if ( player != NULL )
+		{
+			player->GetCharTitle().CheckAddTitle( nType, nParam );
+		}
+	}
+}
+
+void GameService::onRemoveTitle( CharId_t nCharId, int8_t nType )
+{
+	Answer::MutexGuard lock( m_playerLock );
+	CharIdPlayerMap::iterator iter = m_players.find( nCharId );
+	if ( iter != m_players.end() )
+	{
+		Player* player = iter->second;
+		if ( player != NULL )
+		{
+			player->GetCharTitle().RemoveTitle( nType, 0 );
+		}
+	}
+}
+
 void GameService::KickUser( CharId_t cid )
 {
 	Answer::MutexGuard lock( m_playerLock );
@@ -1785,4 +1813,20 @@ void GameService::KickUser( CharId_t cid )
 	packet->writeInt32( player->getSid() );
 	packet->setSize( packet->getWOffset() );
 	sendPacket( packet );
+}
+
+
+void GameService::AddPlayerVipClubDropTime()
+{
+	Answer::MutexGuard lock( m_playerLock );
+
+	for ( CharIdPlayerMap::iterator iter = m_players.begin();
+			iter != m_players.end(); ++iter )
+	{
+		Player* pPlayer = iter->second;
+		if ( pPlayer != NULL )
+		{
+			pPlayer->GetVip().AddDropTimes();
+		}
+	}
 }

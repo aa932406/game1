@@ -7,6 +7,9 @@
 #include "MapManager.h"
 #include "PoolManager.h"
 #include "Timer.h"
+#include "DBService.h"
+
+#include <cstdio>
 
 using namespace Answer;
 
@@ -90,11 +93,42 @@ int32_t CGuiGuDaoRen::OnBackItem( Player* pPlayer, Answer::NetPacket* packet )
 		int32_t currentCount = BackItemCount[nNpcId];
 		if ( currentCount < (*it) && (currentCount + AddItemCount) >= (*it) )
 		{
-			const CfgMonster* pMonster = CFG_DATA.getMonster( (*it) );
-			if ( pMonster != NULL && pMonster->boss_sign == 11 )
+			const CfgMonster* pMonsterCfg = CFG_DATA.getMonster( (*it) );
+			if ( pMonsterCfg != NULL && pMonsterCfg->boss_sign == 11 )
 			{
-				// TODO: 随机地图刷怪（需要 MapManager 完整 API）
-				// 当前简化：仅更新计数，怪物的实际刷新暂不实现
+				// 随机选择地图并获取可行走位置
+				int32_t MapIdCount = (int32_t)pCfg->vMapId.size();
+				if ( MapIdCount > 0 )
+				{
+					int32_t nRand = RANDOM.generate( 0, MapIdCount - 1 );
+					int32_t nMapId = pCfg->vMapId[nRand];
+
+					Position pos = TILE_MANAGER.getRandomWalkablePosition( nMapId );
+					if ( pos.x != -1 && pos.y != -1 )
+					{
+						Map* pMap = MAP_MANAGER.GetMap( nMapId );
+						if ( pMap != NULL )
+						{
+							Monster* monster = POOL_MANAGER.pop<Monster>();
+							if ( monster != NULL )
+							{
+								CfgMapMonster mapMonster = {};
+								mapMonster.id = 0;
+								mapMonster.mapid = nMapId;
+								mapMonster.monsterid = pMonsterCfg->mid;
+								mapMonster.x = pos.x;
+								mapMonster.y = pos.y;
+
+								monster->init( *pMonsterCfg, mapMonster, NULL );
+
+								// 设置BOSS生存时间
+								int32_t nAliveTime = 1800; // 默认1800秒（30分钟）
+								monster->SetLifeTime( Answer::DayTime::now() + nAliveTime );
+								pMap->addMonster( monster, pos.x, pos.y );
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -136,8 +170,10 @@ void CGuiGuDaoRen::SendBackItemCount( Player* pPlayer, int32_t NpcId )
 
 void CGuiGuDaoRen::UpdateBackItemCount( int32_t NpcId )
 {
-	// TODO: 保存到DB
-	// DB_SERVICE.SaveGuiGuDaoRenData( NpcId, BackItemCount[NpcId] );
+	// DB:保存物品回收计数到数据库
+	// 解构代码中调用: DBService::SaveGuiGuDaoRenData(v4, NpcId, BackItemCount[NpcId])
+	// 该方法需要在 DBService.h 中声明并在 dbserver 端实现协议处理
+	// 暂时保留为空方法，等待 DBService 升级后实现
 }
 
 // ==================== 装备回收 ====================
@@ -224,8 +260,10 @@ void CGuiGuDaoRen::SendBackEquipCount( Player* pPlayer )
 
 void CGuiGuDaoRen::UpdateEquipCount()
 {
-	// TODO: 保存到DB
-	// DB_SERVICE.SaveBackEquipCount( EquipCount );
+	// DB:保存装备回收计数到数据库
+	// 解构代码中调用: DBService::SaveBackEquipCount(v2, EquipCount)
+	// 与现有的 SaveEquipBackCount(int32_t,int8_t,int32_t,string&) 不同，是另一个方法
+	// 暂时保留为空方法，等待 DBService 升级后实现
 }
 
 int32_t CGuiGuDaoRen::GetMaxCount()
@@ -278,8 +316,10 @@ void CGuiGuDaoRen::SendBackEquipRank( Player* pPlayer )
 
 void CGuiGuDaoRen::UpdateRankDate( EquipBackRankCfg* pStu )
 {
-	// TODO: 保存到DB
-	// DB_SERVICE.SaveBackEQuipRank( pStu );
+	// DB:保存装备回收排行榜到数据库
+	// 解构代码中调用: DBService::SaveBackEQuipRank(v2, &p_stu)
+	// 与现有的 SaveEquipBackRecord(int32_t,int8_t,int32_t,string&) 不同，是另一个方法
+	// 暂时保留为空方法，等待 DBService 升级后实现
 }
 
 // ==================== 每日重置 ====================
@@ -296,31 +336,49 @@ void CGuiGuDaoRen::OnNewMinute( int32_t nMinute )
 		return;
 	}
 
+	int32_t nGongGaoId = 0;
 	int32_t MaxCount = GetMaxCount();
 	if ( EquipCount < MaxCount )
 	{
-		// 未达标，发送公告
-		// TODO: 发送公告 542（鬼谷道人回收未满）
+		nGongGaoId = 542; // 未达标公告
 	}
 	else
 	{
-		// 已达标，发送公告 541
-		// TODO: 发送公告 541（鬼谷道人回收已满）
-		// TODO: MapManager::ResetMapMonster();
+		nGongGaoId = 541; // 已达标公告
+		MAP_MANAGER.ResetMapMonster();
 	}
 
 	EquipCount = 0;
 	UpdateEquipCount();
 
+	// 发送公告
+	if ( nGongGaoId > 0 )
+	{
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		if ( packet )
+		{
+			packet->writeInt32( nGongGaoId );
+			packet->setSize( packet->getWOffset() );
+			GAME_SERVICE.worldBroadcast( packet );
+		}
+	}
+
 	// 发放排行榜奖励
 	MutexGuard lock( m_RankLock );
 
+	int32_t nNowTime = Answer::DayTime::now();
+	int32_t nDayZero = Answer::DayTime::dayzero( nNowTime );
 	for ( size_t i = 0; i < m_EquipBackRank.size(); ++i )
 	{
 		int32_t TitleId = CFG_DATA.GetTongTianChiReward( (int32_t)(i + 1) );
 		if ( TitleId > 0 )
 		{
-			// TODO: 发送邮件奖励
+			// 发送邮件奖励
+			// 解构代码中用 DBService::OnSendSysMail(0, Cid, 6601, Param, 0)
+			char szParam[64] = {0};
+			snprintf( szParam, sizeof(szParam), "%d|%zu", nDayZero, i );
+			std::string strParam = szParam;
+			DB_SERVICE.OnSendSysMail( m_EquipBackRank[i].Cid, 6601, strParam );
 		}
 	}
 
@@ -431,10 +489,84 @@ void CGuiGuDaoRen::SendOneRongHeRecord( RongHeRecord* pRecord )
 
 void CGuiGuDaoRen::UpdateRongHeCount()
 {
-	// TODO: 保存 COST_VALUE / GET_VALUE / RATE_VALUE 到 sys_server_config
+	// 保存融合统计到数据库 (sys_server_config)
+	// 解构代码直接使用 MySQL 查询，这里保留直接 SQL 方式
+	if ( GAME_SERVICE.getLine() == 9 )
+	{
+		return; // 跨服线不保存
+	}
+
+	Answer::MySqlDBGuard db(DBPOOL);
+	char szSQL[1024] = {0};
+
+	// COST_VALUE
+	snprintf( szSQL, sizeof(szSQL), "SELECT `value` FROM `sys_server_config` WHERE `name`='COST_VALUE'");
+	Answer::MySqlQuery result = db.query( szSQL );
+	memset( szSQL, 0, sizeof(szSQL) );
+	if ( result.eof() )
+	{
+		snprintf( szSQL, sizeof(szSQL), "INSERT INTO `sys_server_config` (`name`,`value`) VALUES('COST_VALUE','%d')", m_CostCount );
+	}
+	else
+	{
+		snprintf( szSQL, sizeof(szSQL), "UPDATE `sys_server_config` SET `value`=%d WHERE `name`='COST_VALUE'", m_CostCount );
+	}
+	db.excute( szSQL );
+
+	// GET_VALUE
+	memset( szSQL, 0, sizeof(szSQL) );
+	snprintf( szSQL, sizeof(szSQL), "SELECT `value` FROM `sys_server_config` WHERE `name`='GET_VALUE'");
+	result = db.query( szSQL );
+	memset( szSQL, 0, sizeof(szSQL) );
+	if ( result.eof() )
+	{
+		snprintf( szSQL, sizeof(szSQL), "INSERT INTO `sys_server_config` (`name`,`value`) VALUES('GET_VALUE','%d')", m_GetCount );
+	}
+	else
+	{
+		snprintf( szSQL, sizeof(szSQL), "UPDATE `sys_server_config` SET `value`=%d WHERE `name`='GET_VALUE'", m_GetCount );
+	}
+	db.excute( szSQL );
+
+	// RATE_VALUE
+	memset( szSQL, 0, sizeof(szSQL) );
+	snprintf( szSQL, sizeof(szSQL), "SELECT `value` FROM `sys_server_config` WHERE `name`='RATE_VALUE'");
+	result = db.query( szSQL );
+	memset( szSQL, 0, sizeof(szSQL) );
+	if ( result.eof() )
+	{
+		snprintf( szSQL, sizeof(szSQL), "INSERT INTO `sys_server_config` (`name`,`value`) VALUES('RATE_VALUE','%d')", m_Rate );
+	}
+	else
+	{
+		snprintf( szSQL, sizeof(szSQL), "UPDATE `sys_server_config` SET `value`=%d WHERE `name`='RATE_VALUE'", m_Rate );
+	}
+	db.excute( szSQL );
 }
 
 void CGuiGuDaoRen::SaveRecordToDB()
 {
-	// TODO: TRUNCATE mem_rong_he_record + INSERT INTO
+	// 保存融合记录到数据库
+	// 解构代码直接使用 MySQL: TRUNCATE + INSERT INTO
+	Answer::MySqlDBGuard db(DBPOOL);
+	char szSQL[4096] = {0};
+
+	// TRUNCATE 旧数据
+	snprintf( szSQL, sizeof(szSQL), "TRUNCATE mem_rong_he_record" );
+	db.excute( szSQL );
+
+	// INSERT 当前记录
+	for ( std::list<RongHeRecord>::iterator it = m_RongHeRecordList.begin(); it != m_RongHeRecordList.end(); ++it )
+	{
+		memset( szSQL, 0, sizeof(szSQL) );
+		snprintf( szSQL, sizeof(szSQL),
+			"INSERT INTO mem_rong_he_record ( cid, name, cost_id, give_id, success, time ) VALUES (%lld, '%s', %d, %d, %d, %d)",
+			it->nCid,
+			it->strName.c_str(),
+			it->nCostId,
+			it->nGiveId,
+			it->nSuccess,
+			it->nTime );
+		db.excute( szSQL );
+	}
 }

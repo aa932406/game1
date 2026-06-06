@@ -120,7 +120,7 @@ void CDropItemGroup::init(Map *pMap, const Position &centerPos, Player *pOwner, 
 			Player* owner = pOwner;
 			if (owner != NULL )
 			{
-				if ( droperType == ET_PLAYER )	//Íæ¼ÒpkµôÂäÃ»ÓÐ¹éÊô,±ãÓÚ¸´»î¼ñÆð
+				if ( droperType == ET_PLAYER )	//ï¿½ï¿½ï¿½pkï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ð¹ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				{
 					m_dropItems[i].init(dropItems[i].itemId, dropItems[i].itemClass, dropItems[i].bindType, dropItems[i].itemCount, dropItems[i].costType, dropItems[i].costValue, 0,dropItems[i].endTime,dropItems[i].srcId );		
 				}
@@ -420,6 +420,26 @@ int32_t CDropItemGroup::pick(Player &player, EntityId_t dropid)
 
 	broadcastRemoveDropItem(dropid);
 	return ERR_OK;
+}
+
+bool CDropItemGroup::hasItems() const
+{
+	for (int32_t i = 0; i < MAX_DROPITEM_SIZE; ++i)
+	{
+		if (m_dropItems[i].getItemId() > 0 && m_dropItems[i].getItemClass() > 0)
+			return true;
+	}
+	return false;
+}
+
+EntityId_t CDropItemGroup::getFirstDropItemId() const
+{
+	for (int32_t i = 0; i < MAX_DROPITEM_SIZE; ++i)
+	{
+		if (m_dropItems[i].getItemId() > 0 && m_dropItems[i].getItemClass() > 0)
+			return m_dropItems[i].getEntityId();
+	}
+	return 0;
 }
 
 int16_t CDropItemGroup::getDropItemCount()

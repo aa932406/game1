@@ -41,6 +41,7 @@ int32_t DELTA_Y[] = { 1, 1, 0, -1, -1, -1, 0,  1 };
 Map::Map()
 {
 	bzero(&m_lastLocalNow, sizeof(m_lastLocalNow));
+	m_NeedUpdate = 0;
 }
 
 //Map::Map(const CfgMap &cfgmap, Kingdom *kingdom)
@@ -1304,11 +1305,30 @@ void Map::removeLittleHelper(CLittleHelper *pLittleHelper)
 	}
 }
 
-CDropItem* Map::GetNearestDropItem(Unit *pUnit)
+bool Map::GetNearestDropPos(Unit *pUnit, Position& outPos, EntityId_t& outDropId)
 {
-	// TODO: CDropItem doesn't expose position info directly.
-	// This requires adding a position getter to CDropItemGroup.
-	return NULL;
+	if (NULL == pUnit)
+		return false;
+
+	int32_t nMinDist = 9999;
+	Position unitPos = pUnit->getCurrentTile();
+
+	for (DropItemGroupList::iterator it = m_dropItems.begin(); it != m_dropItems.end(); ++it)
+	{
+		CDropItemGroup* pGroup = *it;
+		if (NULL == pGroup || !pGroup->hasItems())
+			continue;
+
+		Position groupPos = pGroup->getCenterPos();
+		int32_t nDist = unitPos.tileDistance(groupPos);
+		if (nDist < nMinDist && nDist <= 15)
+		{
+			nMinDist = nDist;
+			outPos = groupPos;
+			outDropId = pGroup->getFirstDropItemId();
+		}
+	}
+	return nMinDist < 9999;
 }
 
 void Map::addPet( CObjPet* pet )
@@ -3020,4 +3040,17 @@ void Map::OnKillMonster( EntityId_t MonsterId )
 			break;
 		}
 	}
+}
+
+void Map::ResetRefreshMonster()
+{
+	int32_t nNow = getNow();
+	for ( std::map<int32_t, int32_t>::iterator it = m_MonsterReviveMap.begin(); it != m_MonsterReviveMap.end(); ++it )
+	{
+		if ( it->second > 0 )
+		{
+			it->second = nNow;
+		}
+	}
+	m_NeedUpdate = 1;
 }

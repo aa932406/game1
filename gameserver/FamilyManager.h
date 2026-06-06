@@ -12,6 +12,7 @@ public:
 	void		Init();
 	void		OnUpdateFamilyInfo( Answer::NetPacket* inPacket );
 	FamilyInfo	GetFamilyInfo( FamilyId_t nId );
+	void		SendSocialFinishBoss( FamilyId_t nFamilyId, int32_t ActId, int8_t result );
 
 private:
 	void		addFamilyInfo( const FamilyInfo& info );

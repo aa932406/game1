@@ -203,6 +203,13 @@ enum CurrencyChangeReason
 
 //=========================================================================================
 //ħʯ
+#define GCR_KILL_PIG			2089		// 击杀家族BOSS猪
+
+#define GCR_WU_HUN_SHOP_BUY		2087		// 武魂商店购买
+#define GCR_WU_HUN_SHOP_REFRESH		2088		// 武魂商店刷新
+
+#define GCR_XIN_MAI_MAP_REVIVE		2086		// 星脉地图复活
+
 	GCR_START							= 2000,
 	GCR_QUICK_TASK						= 2001,		//��������
 	GCR_ACHIEVEMENT_EXCHANGE			= 2002,		//�ɾͶһ�
@@ -290,15 +297,22 @@ enum CurrencyChangeReason
 	GCR_RONG_HE_HUI_SHOU		= 2080,
 	GCR_EQUIP_GOLD_BACK			= 2081,		// 装备金币回购
 	GCR_EQUIP_BUY_BACK			= 2082,		// 装备回购
+	GCR_KUN_LEVEL_UP			= 2086,		// 鲲升级
+	GCR_BUY_LIAN_HUA_TIME		= 2087,		// 购买炼化次数
+	GCR_KUN_KAST_FINING_COST	= 2088,		// 快速炼丹消耗
+	GCR_LING_ZHU_JI_HUO		= 2089,		// 灵珠激活
+	GCR_XIN_MO_LEVEL_UP		= 2090,		// 心魔升级
+	GCR_CHANGE_XIN_QING		= 2091,		// 改变心情消耗
+	GCR_DOUBLE_BACK_EQUIP		= 2092,		// 装备回购双倍
 
 	//==================================================================================
-//Ԫ��
-	VCR_STRART							= 3000,
+//Ԫ��VCR_STRART						= 3000,
 	VCR_KILL_MONSTER					= 3001,		// �������
 	VCR_BASE_ILLUSION					= 3002,		// ���ó����
 	VCR_GROW_ILLUSION					= 3003,		// ���ó����
 	VCR_LUCKY_ILLUSION					= 3004,		// ���ó�����
 	VCR_EXP_ILLUSION					= 3005,		// ���ó�����
+	VCR_EQUIP_BACK_TASK				= 3006,		// 装备回购任务活力
 
 
 //=======================================================================================
@@ -306,6 +320,8 @@ enum CurrencyChangeReason
 	SCR_ON_CHOU_JIANG					= 4000,		//�齱
 	SCR_KILL_BOSS						= 4001,		//ɱ��
 	SCR_BUY_ITEM						= 4002,		//������Ʒ
+	SCR_XING_MAI_LEVEL_UP			= 4003,		//�Ǳ�ʤ��
+	SCR_XING_MAI_ACTIVE_SLOT		= 4004,		//�ǱҼ���slot
 
 //=======================================================================================
 // ����
@@ -428,6 +444,12 @@ enum ITEM_ADD_REASON
 	IACR_DA_ZHE_QUAN		= 306,
 	IACR_GUI_GU_DAO_REN		= 307,	// 鬼谷道人回收
 	IACR_EQUIP_BUY_BACK			= 308,	// 装备回购获得
+	IACR_CANG_BAO_TU_GET		= 309,	// 宝藏图获得奖励
+	IACR_XIN_MO_XIN_QING_REWARD	= 310,	// 心魔心情奖励
+	IACR_EQUIP_BACK_TASK_GET	= 311,	// 装备回购任务获得
+	IACR_PALTFORM_DA_TING	= 320,	// 平台答题奖励
+	IACR_PALTFORM_VIP		= 321,	// 平台VIP奖励
+	IACR_PLATFORM_REWARD	= 322,	// 平台奖励
 };
 
 enum ITEM_DEL_REASON
@@ -489,6 +511,24 @@ enum ITEM_DEL_REASON
 	IDCR_EQUIP_RONG_HE_DIS	= 50,
 	IDCR_GUI_GU_DAO_REN		= 51,	// 鬼谷道人扣除
 	IDCR_BACK_EQUIP_COUNT	= 52,	// 装备回收
+	IDCR_SPECIAL_TREASURE_MAP	= 53,	// 特殊宝藏图
+	IDCR_DAN_TIAN_GET		= 54,	// 丹田获取灵珠
+	IDCR_BAO_ZHU_HUI_SHOU		= 55,	// 宝珠回收
+	IDCR_LING_ZHU_LEVEL_UP		= 56,	// 灵珠升级消耗
+	IDCR_KUN_WEI_YANG		= 57,	// 鲲喂养消耗
+	IDCR_JI_HUO_XIN_MO		= 58,	// 激活心魔
+	IDCR_XIN_MO_QI_QING_LEVEL_UP	= 59,	// 七情升级消耗
+	IDCR_XIN_MO_EQUIP_JIN_HUA	= 60,	// 装备进化消耗
+	IDCR_XIN_MO_BAG_GET		= 61,	// 心魔背包领取
+	IDCR_PALTFORM_DA_TING		= 62,	// 平台答题奖励
+	IDCR_PALTFORM_VIP		= 63,	// 平台VIP奖励
+	IDCR_PLATFORM_REWARD		= 64,	// 平台奖励
+	IDCR_KAI_FU_RECHARGE_SUM	= 65,	// 开服累计充值
+	IDCR_KAI_FU_XIAO_FEI_SUM	= 66,	// 开服累计消费
+	IDCR_KAI_FU_CHOU_JIANG		= 67,	// 开服抽奖
+	IDCR_SHANG_REN			= 68,	// 商人奖励
+	IDCR_EQUIP_BACK_TASK	= 69,	// 装备回购任务
+	IDCT_RONG_HE_BACK		= 70,	// 融合回收
 	};
 
 enum ItemEffectType
@@ -1602,5 +1642,39 @@ struct ActLittleHelperInfo
 	int32_t nSkin;
 	int32_t nTimes;
 };
+
+// ========== 命格系统枚举 ==========
+enum ICR_MING_GE
+{
+    ICR_MING_GE_LEVEL_UP   = 900,	// 命格升级
+    ICR_SHI_QU_MING_GE     = 901,	// 失去命格
+    ICR_MING_GE_LOCK       = 902,	// 命格上锁
+    ICR_MING_GE_DEC        = 903,	// 命格分解
+    ICR_MING_GE_DUI_HUAN   = 904,	// 命格兑换
+    ICR_MING_GE_LIE_MING   = 905,	// 猎命
+    ICR_MING_GE_DRESS      = 906,	// 装备命格
+    ICR_MING_GE_UNDRESS    = 907,	// 卸下命格
+    ICR_BAG_USE            = 908,	// 道具使用
+    ICR_CANG_BAO_TU        = 909,	// 使用普通宝藏图
+	ICR_SUPER_TE_HUI        = 910,	// 超级特惠
+	ICR_JEWEL_PAVILION        = 911,	// 宝石阁
+	IDR_MONTHLY_CHOU_JIANG        = 912,	// 月抽奖
+	ICR_360_JIA_SU_QIU        = 913,	// 360加速球
+	ICR_360_GAME_APP        = 914,	// 360游戏App奖励
+	ICR_SPEED_360_REWARD        = 915,	// 360急速奖励
+	ICR_SOU_GOU_SKIN_LOGIN        = 916,
+	// 武魂商店
+	ICR_WU_HUN_SHOP_BUY        = 917,
+	// 测试服奖励
+	ICR_TEST_SERVER        = 918,	// 武魂商店购买
+};
+
+typedef int32_t ITEM_CHANGE_REASON;
+
+#define GCR_DEC_MING_GE     2083		// 分解命格
+#define GCR_LIE_MING        2084		// 猎命
+#define GCR_BUY_NPC         2085		// 购买猎命NPC#define GCR_BUY_SUPER_TE_HUI         250       // 超级特惠购买
+#define GCR_JEWEL_PAVILION         251       // 宝石阁购买
+#define GCR_SHANG_REN         252       // 商人购买
 
 #define WAR_VICTORY_BOSS_ID  477115		//��սʤ��bossid

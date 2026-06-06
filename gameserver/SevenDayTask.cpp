@@ -3,6 +3,9 @@
 #include "GameService.h"
 #include "Timer.h"
 #include "Bag.h"
+#include "CharWing.h"
+#include "JueWei.h"
+#include "Equip.h"
 
 // Helper: calculate days between now and a timestamp
 static int32_t Diff24Hour( int32_t nOldTime )
@@ -110,19 +113,20 @@ void CSevenDayTask::OpenSevenDayTask()
     if ( m_pPlayer->getLevel() > 99 && m_OpenTime <= 0 )
     {
         // Check server diff day
-        // TODO: getServerDiffDay is not available, skip server day check
-        // if ( CFG_DATA.getServerDiffDay( SVT_NORMAL ) + 1 <= 7 )
+        if ( CFG_DATA.getServerDiffDay( 0 ) + 1 <= 7 )
         {
             m_OpenTime = m_pPlayer->getNow();
             UpdateTaskState( 1, m_pPlayer->getLevel(), false );
             UpdateTaskState( 2, m_pPlayer->getRecord( 1148 ), false );
-            // TODO: missing cross-module calls
-            // CExtCharWing::GetLevel, CExtCharJueWei::GetJueWei,
-            // CExtEquip::GetEquipAllGemLevel, CExtEquip::GetEquipAllUpPosLevel
-            // UpdateTaskState( 3, wingLevel, false );
-            // UpdateTaskState( 4, jueWei, false );
-            // UpdateTaskState( 5, totalGemLevel, false );
-            // UpdateTaskState( 6, totalUpPosLevel, false );
+            // Cross-module calls
+            int32_t wingLevel = m_pPlayer->GetCharWing().GetLevel();
+            UpdateTaskState( 3, wingLevel, false );
+            int32_t jueWei = m_pPlayer->GetPlayerJueWei().GetJueWei();
+            UpdateTaskState( 4, jueWei, false );
+            int32_t totalGemLevel = m_pPlayer->GetEquip().GetEquipAllGemLevel();
+            UpdateTaskState( 5, totalGemLevel, false );
+            int32_t totalUpPosLevel = m_pPlayer->GetEquip().GetEquipAllUpPosLevel();
+            UpdateTaskState( 6, totalUpPosLevel, false );
             SendIcon();
             SendTaskSTate();
         }

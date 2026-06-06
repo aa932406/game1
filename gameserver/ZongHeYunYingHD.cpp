@@ -376,8 +376,7 @@ void CZongHeYunYingHD::sendLineSocialPlayerInfo(int8_t connid, int8_t nType, con
     packet->writeInt32(info.nScore);
     packet->writeInt32(info.nTime);
     packet->setSize(packet->getWOffset());
-    // TODO: sendPacket API not available
-			//GAME_SERVICE.sendPacket(connid, packet);
+    GAME_SERVICE.sendPacketTo(connid, packet);
 }
 
 void CZongHeYunYingHD::checkRankInvalid(int8_t connid, int8_t nType)
@@ -596,17 +595,11 @@ void CZongHeYunYingHD::sendRechargeDailyRankReward()
                     (size_t)i < m_vRechargeRankDailyReward.size() &&
                     (size_t)i < m_vRechargeRankDailyMail.size())
                 {
-                                        // TODO: DBService::OnSendSysMail not available
-                    /*
                     DB_SERVICE.OnSendSysMail(
-                        connid,
                         vRank[j].nCharId,
                         m_vRechargeRankDailyMail[i],
-                        &m_vRechargeRankDailyReward[i],
-                        IACR_ZHYYHD_RECHARGE_RANK_DAILY_REWARD,
-                        "",
-                        0);
-                    */
+                        m_vRechargeRankDailyReward[i],
+                        "");
                 }
             }
         }

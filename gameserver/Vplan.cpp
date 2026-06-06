@@ -676,3 +676,8 @@ int32_t CVplan::OnGetSWVipBarReward( Answer::NetPacket* inPacket )
 	SendSwVipBarIcon();
 	return 0;
 }
+
+int32_t CVplan::GetPlatformVipLevel() const
+{
+	return m_PlatformVip;
+}

@@ -4001,8 +4001,8 @@ int32_t CExtEquip::onBackEquip( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	// TODO: fix queryBagInfo signature
-	// m_pPlayer->queryBagInfo( inPacket );
+	Int32Vector vSlot;
+	m_pPlayer->queryBagInfo( inPacket, vSlot );
 	int32_t nCount = 0;
 	std::map<int32_t, int32_t> mCurrMap;
 	std::vector<int32_t> vRemoveSlot;
@@ -4406,7 +4406,7 @@ int32_t CExtEquip::onMoFuDuiHuan( Answer::NetPacket* inPacket )
 		return ERR_SYETEM_ERR;
 	}
 	// Apply mofu to equipment
-	m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ = nMoFuId;
+	m_vMemMoFu[nEquipPos] = nMoFuId;
 	m_pPlayer->recalcAttr();
 	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
@@ -4423,12 +4423,12 @@ int32_t CExtEquip::onMoFuHuiShou( Answer::NetPacket* inPacket )
 	{
 		return ERR_SYETEM_ERR;
 	}
-	if ( m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ <= 0 )
+	if ( m_vMemMoFu[nEquipPos] <= 0 )
 	{
 		return ERR_SYETEM_ERR;
 	}
 	// Return some resources
-	const CfgMoFu* pCfgMoFu = CFG_DATA.GetMoFuTable().GetMoFu( m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ );
+	const CfgMoFu* pCfgMoFu = CFG_DATA.GetMoFuTable().GetMoFu( m_vMemMoFu[nEquipPos] );
 	if ( NULL != pCfgMoFu && pCfgMoFu->nRecycleItemId > 0 )
 	{
 		MemChrBag recycleBag = {};
@@ -4437,7 +4437,7 @@ int32_t CExtEquip::onMoFuHuiShou( Answer::NetPacket* inPacket )
 		recycleBag.itemCount = pCfgMoFu->nRecycleItemCount;
 		recycleBag.bind = IBS_BIND;
 	}
-	m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ = 0;
+	m_vMemMoFu[nEquipPos] = 0;
 	m_pPlayer->recalcAttr();
 	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
@@ -4454,8 +4454,15 @@ int32_t CExtEquip::onRelieveBind( Answer::NetPacket* inPacket )
 	{
 		return ERR_SYETEM_ERR;
 	}
-	// Check gold cost for unbinding
-	int32_t nCostGold = 0 /* TODO: CFG_DATA.GetEquipTable().GetUnbindCost( nEquipPos, m_nEquipLevel[nEquipPos] ) */;
+	// Gold cost for unbinding: based on equipment grade
+	int32_t nCostGold = 50;
+	const MemChrBag& equipSlot = GetEquipSlot( (int8_t)nEquipPos );
+	if ( equipSlot.itemId > 0 )
+	{
+		const CfgEquip* pCfg = CFG_DATA.GetEquipTable().GetEquip( equipSlot.itemId );
+		if ( pCfg != NULL && pCfg->m_Grade > 0 )
+			nCostGold = 50 * pCfg->m_Grade;
+	}
 	if ( nCostGold > 0 )
 	{
 		if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, nCostGold, GCR_RELIEVE_BIND ) )
@@ -4463,7 +4470,9 @@ int32_t CExtEquip::onRelieveBind( Answer::NetPacket* inPacket )
 			return ERR_SYETEM_ERR;
 		}
 	}
-	/* TODO: SetEquipBind( nEquipPos, false ) */;
+	// Unbind equipped item
+	m_vMemEquip[nEquipPos].bind = IBS_UNBIND;
+	m_pPlayer->recalcAttr();
 	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
@@ -4510,7 +4519,7 @@ int32_t CExtEquip::OnXinMoEquipHuiShou( Answer::NetPacket* inPacket )
 	// Clear all enhancements on this equipment position and return resources
 	m_vMemStrengthen[nEquipPos] = 0;
 	m_vMemPosLevel[nEquipPos] = 0;
-	m_vMemMoFu[nEquipPos] /* TODO: declare in .h */ = 0;
+	m_vMemMoFu[nEquipPos] = 0;
 	for ( int32_t i = 0; i < MAX_GEM_SLOT; ++i )
 	{
 		m_vMemGem[nEquipPos][i] = 0;

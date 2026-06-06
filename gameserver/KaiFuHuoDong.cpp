@@ -851,7 +851,7 @@ int32_t CKaiFuHuoDong::HaveRewardCount( Player* pPlayer )
 			}
 			break;
 		case 5: // Wing level
-			if ( /* TODO: Wing module not ported */ 0 /* pPlayer->GetCharWing().GetLevel() */ >= it->second.Conditions )
+			if ( pPlayer->GetCharWing().GetLevel() >= it->second.Conditions )
 			{
 				if ( GetLimitCount( it->first ) < it->second.LimitCount )
 					++Count;

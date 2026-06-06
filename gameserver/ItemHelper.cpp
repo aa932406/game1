@@ -1,4 +1,3 @@
-
 #include "stdafx.h"
 #include "ItemHelper.h"
 #include "CfgData.h"
@@ -28,15 +27,6 @@ int32_t CItemHelper::GetItemType( int32_t nId, int8_t nClass )
 			}
 		}
 		break;
-	case IC_GEM:
-		{
-			const CfgItemGem* pGem = CFG_DATA.GetItemGemTable().GetItemGem( nId );
-			if ( pGem != NULL )
-			{
-				nType = pGem->m_nType;
-			}
-		}
-		break;
 	default:
 		break;
 	}
@@ -45,98 +35,37 @@ int32_t CItemHelper::GetItemType( int32_t nId, int8_t nClass )
 
 MemChrBagVector CItemHelper::parseItemString(int32_t id, const std::string &strItems)
 {
-	MemChrBagVector items;
-
-	if (!strItems.empty())
-	{
-		StringVector items_receive = StringUtility::split(strItems, "|");
-		for (StringVector::iterator it = items_receive.begin(); it != items_receive.end(); ++it)
-		{
-			StringVector item = StringUtility::split(*it, ":");
-			if (item.size() == 3)
-			{
-				MemChrBag itemData = {};
-				itemData.itemId			= atoi(item[0].c_str());
-				itemData.itemClass		= atoi(item[1].c_str());
-				itemData.itemCount		= atoi(item[2].c_str());
-				items.push_back(itemData);
-			}
-			else if ( item.size() == 4 )
-			{
-				MemChrBag itemData = {};
-				itemData.itemId			= atoi(item[0].c_str());
-				itemData.itemClass		= atoi(item[1].c_str());
-				itemData.itemCount		= atoi(item[2].c_str());
-				itemData.bind			= atoi(item[3].c_str());
-				items.push_back(itemData);
-			}
-			else if ( item.size() == 5 )
-			{
-				MemChrBag itemData = {};
-				itemData.itemId			= atoi(item[0].c_str());
-				itemData.itemClass		= atoi(item[1].c_str());
-				itemData.itemCount		= atoi(item[2].c_str());
-				itemData.bind			= atoi(item[3].c_str());
-				itemData.endTime		= atoi(item[4].c_str());
-				items.push_back(itemData);
-			}
-			else
-			{
-				LOG_ERROR("CfgData::parseItemString wrong data with id = %d, string = %s\n", id, strItems.c_str());
-			}
-		}
-	}
-
-	return items;
+	return parseItemVectorString(strItems);
 }
 
 MemChrBagVector CItemHelper::parseItemVectorString(const std::string &strItems)
 {
 	MemChrBagVector items;
-
 	if (!strItems.empty())
 	{
 		StringVector items_receive = StringUtility::split(strItems, "|");
 		for (StringVector::iterator it = items_receive.begin(); it != items_receive.end(); ++it)
 		{
 			StringVector item = StringUtility::split(*it, ":");
-			if (item.size() == 3)
+			if (item.size() >= 3)
 			{
-				MemChrBag itemData = {};
-				itemData.itemId			= atoi(item[0].c_str());
-				itemData.itemClass		= atoi(item[1].c_str());
-				itemData.itemCount		= atoi(item[2].c_str());
-				items.push_back(itemData);
-			}
-			else if ( item.size() == 4 )
-			{
-				MemChrBag itemData = {};
-				itemData.itemId			= atoi(item[0].c_str());
-				itemData.itemClass		= atoi(item[1].c_str());
-				itemData.itemCount		= atoi(item[2].c_str());
-				itemData.bind			= atoi(item[3].c_str());
-				items.push_back(itemData);
-			}
-			else if ( item.size() == 5 )
-			{
-				MemChrBag itemData = {};
-				itemData.itemId			= atoi(item[0].c_str());
-				itemData.itemClass		= atoi(item[1].c_str());
-				itemData.itemCount		= atoi(item[2].c_str());
-				itemData.bind			= atoi(item[3].c_str());
-				itemData.endTime		= atoi(item[4].c_str());
-				items.push_back(itemData);
+				MemChrBag bag;
+				memset(&bag, 0, sizeof(bag));
+				bag.itemId = atoi(item[0].c_str());
+				bag.itemClass = (int8_t)atoi(item[1].c_str());
+				bag.itemCount = atoi(item[2].c_str());
+				if (item.size() >= 4) bag.bind = (int8_t)atoi(item[3].c_str());
+				if (item.size() >= 5) bag.endTime = atoi(item[4].c_str());
+				items.push_back(bag);
 			}
 		}
 	}
-
 	return items;
 }
 
 std::list<ItemData> CItemHelper::parseItemDataListString(const std::string &strItems)
 {
 	std::list<ItemData> items;
-
 	if (!strItems.empty())
 	{
 		StringVector items_receive = StringUtility::split(strItems, "|");
@@ -153,6 +82,19 @@ std::list<ItemData> CItemHelper::parseItemDataListString(const std::string &strI
 			}
 		}
 	}
-
 	return items;
+}
+
+void CItemHelper::parseRateItemDataString(RateItem& outItem, const std::string& strData)
+{
+	StringVector parts = StringUtility::split(strData, ":");
+	if (parts.size() >= 6)
+	{
+		outItem.nItemId = atoi(parts[0].c_str());
+		outItem.nItemClass = atoi(parts[1].c_str());
+		outItem.nItemCount = atoi(parts[2].c_str());
+		outItem.nBind = (int8_t)atoi(parts[3].c_str());
+		outItem.nRate = atoi(parts[4].c_str());
+		outItem.nGongGaoId = atoi(parts[5].c_str());
+	}
 }

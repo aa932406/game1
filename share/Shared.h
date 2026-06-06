@@ -3,10 +3,14 @@
 #include "Attribute.h"
 #include "PDUDefine.h"
 #include "Type.h"
-#include "stdafx.h"
+#include "../libanswer/include/StringUtility.h"
 #include <vector>
-#include <sstream>
+#include <list>
+#include <map>
 #include <set>
+#include <sstream>
+#include <string>
+#include <cstring>
 #define MAX_CONNECTION 10000
 #define MAX_SQL_LENGTH 4096
 

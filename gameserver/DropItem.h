@@ -58,6 +58,10 @@ public:
 	void appendInfo(Answer::NetPacket *packet);
 	int32_t getBroadCastItem();
 
+	const Position& getCenterPos() const { return m_centerPos; }
+	bool hasItems() const;
+	EntityId_t getFirstDropItemId() const;
+
 private:
 	int16_t getDropItemCount();
 

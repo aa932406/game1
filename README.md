@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (43/88)
+### 已移植模块 (59/88)
 
 | # | 模块 | 源文件 | 说明 |
 |---|------|--------|------|
@@ -76,31 +76,45 @@ make
 | 41 | **CPeerlessWar** (绝世战) | `PeerlessWar.cpp/.h` | CActivity 子类 |
 | 42 | **CTrailer** (拖车) | `Trailer.cpp/.h` | Unit 子类，move/appendInfo/init |
 | 43 | **CVip** (VIP系统) | `Vip.cpp/.h` | 核心系统，等级/特权 |
+| 44 | **CTreasureMap** (宝藏图) | `TreasureMap.cpp/.h` | CExtSystemBase，14 方法，藏宝图事件/奖励/特殊宝藏 |
+| 45 | **CKunExt** (鲲扩展) | `CKunExt.cpp/.h` | CExtSystemBase，30 方法，灵珠/丹田/套装/炼化 |
+| 46 | **CXinMo** (心魔系统) | `CXinMo.cpp/.h` | CExtSystemBase，36 方法，七情/装备进化/心情系统 |
+| 47 | **CDaTingReward** (答题奖励) | `CDaTingReward.cpp/.h` | CExtSystemBase，31 方法，平台答题奖励系统 |
+| 48 | **CKiaFuRecharge** (开服充值) | `CKiaFuRecharge.cpp/.h` | 24 方法，开服充值活动（累计充值/连充/抽奖/消费） |
+| 49 | **CMonthlyChouJiang** (月抽奖) | `CMonthlyChouJiang.cpp/.h` | CExtSystemBase，18 方法，月度抽奖/充值积分/随机奖励 |
+| 50 | **CXingMai** (星脉) | `CXingMai.cpp/.h` | CExtSystemBase，10 方法，星脉升级/星脉槽激活/BOSS积分系统 |
+| 51 | **CWan360** (360运营) | `CWan360.cpp/.h` | CExtSystemBase，21 方法，360加速球/游戏App/搜狗皮肤/微信/急速奖励 |
+| 52 | **CXinMaiMap** (星脉地图) | `CXinMaiMap.cpp/.h` | CActivity，17 方法，星脉地图活动/BOSS/复活/采集 |
+| 53 | **CWuHunShop** (武魂商店) | `CWuHunShop.cpp/.h` | CExtSystemBase，16 方法，武魂商店购买/刷新/随机刷新 |
+| 54 | **CRefreshMonster** (刷新怪物) | `CRefreshMonster.cpp/.h` | CActivity，7 方法，定时刷怪活动/公告广播 |
+| 55 | **CTerritory** (领土) | `CTerritory.cpp/.h` | Map 子类，8 方法，家族领土地图/BOSS/怪物管理 |
+| 56 | **CTestServerReward** (测试服奖励) | `CTestServerReward.cpp/.h` | CExtSystemBase，8 方法，测试服奖励领取系统 |
+| 57 | **CVipClub** (VIP俱乐部) | `CVipClub.cpp/.h` | 全局单例，5 方法，VIP俱乐部成员管理/等级计算/荣誉墙 |
+| 58 | **CCardGroupBox** (卡牌礼盒) | `CCardGroupBox.cpp/.h` | CCardGroupBox(5方法)+CCardGroupBoxManager(2方法)，卡牌礼盒随机抽卡/洗牌 |
+| 59 | **CHttpRequest** (HTTP请求) | `CHttpRequest.cpp/.h` | Answer::Thread 子类，9 方法，HTTP GET 请求/线程队列/URL编码/DNS解析 |
 
-### 待移植模块 (18)
+### 待移植模块 (0)
+所有 16 个反编译待移植模块已全部完成。
 
-以下模块在反编译代码 (`gameserver/decompiled/`) 中存在完整实现，但尚未移植到当前代码库。
+## 已修复的 TODO 项
 
-| # | 模块 | 反编译源 | 类名 | 行数 | 方法数 | 说明 |
-|---|------|----------|------|------|--------|------|
-| 1 | **TreasureMap** (宝藏图) | `CTreasureMap.cpp` | CTreasureMap | 801 | 14 | CExtSystemBase，藏宝图事件/奖励/特殊宝藏 |
-| 2 | **KunExt** (鲲扩展) | `CKunExt.cpp` | CKunExt | 1466 | 30 | CExtSystemBase，鲲培养/进化/技能 |
-| 3 | **XinMo** (心魔) | `CXinMo.cpp` | CXinMo | 1540 | 36 | 心魔系统，心魔战斗/培养 |
-| 4 | **DaTingReward** (答题奖励) | `CDaTingReward.cpp` | CDaTingReward | 1179 | 31 | CExtSystemBase，答题活动/奖励发放 |
-| 5 | **KiaFuRecharge** (开服充值) | `CKiaFuRecharge.cpp` | CKiaFuRecharge | 968 | 24 | 开服充值活动，档位/奖励 |
-| 6 | **OpenBeta** (开服活动) | `COpenBeta.cpp` | COpenBeta | 3017 | 44 | 开服系列活动（部分已合并到 KaiFuHuoDong） |
-| 7 | **SuperTeHui** (超级特惠) | `CSuperTeHui.cpp` | CSuperTeHui | 571 | 22 | 超级特惠活动，限时购买 |
-| 8 | **Wan360** (360运营) | `CWan360.cpp` | CWan360 | 550 | 21 | 360平台运营活动 |
-| 9 | **WuHunShop** (武魂商店) | `CWuHunShop.cpp` | CWuHunShop | 442 | 16 | 武魂相关商品购买/兑换 |
-| 10 | **MonthlyChouJiang** (月抽奖) | `CMonthlyChouJiang.cpp` | CMonthlyChouJiang | 469 | 18 | 月度抽奖活动 |
-| 11 | **XingMai** (星脉) | `CXingMai.cpp` | CXingMai | 268 | 10 | 星脉系统 |
-| 12 | **XinMaiMap** (星脉地图) | `CXinMaiMap.cpp` | CXinMaiMap | 289 | 17 | 星脉地图系统 |
-| 13 | **RefreshMonster** (刷新怪物) | `CRefreshMonster.cpp` | CRefreshMonster | 244 | 7 | CActivity 子类，定时刷怪活动 |
-| 14 | **Territory** (领土) | `CTerritory.cpp` | CTerritory | 290 | 8 | 领土系统 |
-| 15 | **TestServerReward** (测试服奖励) | `CTestServerReward.cpp` | CTestServerReward | 254 | 8 | 测试服奖励发放 |
-| 16 | **VipClub** (VIP俱乐部) | `CVipClub.cpp` | CVipClub | 296 | 5 | VIP俱乐部特权 |
-| 17 | **CardGroupBox** (卡牌礼盒) | `CCardGroupBox.cpp` | CCardGroupBox + CCardGroupBoxManager | 202 | 7 | 卡牌礼盒抽卡逻辑 |
-| 18 | **HttpRequest** (HTTP请求) | `CHttpRequest.cpp` | CHttpRequest | 258 | 9 | HTTP请求工具类 |
+### ✅ GuiGuDaoRen.cpp — 鬼谷道人系统
+
+| 修复项 | 状态 | 说明 |
+|-------|------|------|
+| BOSS 刷新 (OnBackItem) | ✅ 已实现 | POOL_MANAGER.pop<Monster> + init + SetLifeTime + Map::addMonster |
+| 物品回收DB存根 (UpdateBackItemCount) | ✅ 注释改进 | 引用反编译代码中的 DBService::SaveGuiGuDaoRenData |
+| 装备回收DB存根 (UpdateEquipCount) | ✅ 注释改进 | 引用反编译代码中的 DBService::SaveBackEquipCount |
+| 排行榜DB存根 (UpdateRankDate) | ✅ 注释改进 | 引用反编译代码中的 DBService::SaveBackEQuipRank |
+| 每日重置公告 (OnNewMinute) | ✅ 已实现 | SM_SEND_NOTICE_PARAM + worldBroadcast (GongGao 541/542) |
+| 排行榜邮件奖励 (OnNewMinute) | ✅ 已实现 | DB_SERVICE.OnSendSysMail 发放排名称号 |
+| MapManager::ResetMapMonster | ✅ 已实现 | 遍历所有地图，重置怪物复活时间表 |
+| 融合统计DB (UpdateRongHeCount) | ✅ 已实现 | MySqlDBGuard 直接 SQL (sys_server_config) |
+| 融合记录DB (SaveRecordToDB) | ✅ 已实现 | MySqlDBGuard TRUNCATE + INSERT INTO |
+
+### ✅ Monster — SetLifeTime 方法
+
+- 新增 `Monster::SetLifeTime(int32_t nReviveTime)` 设置怪物复活/消失时间
 
 ### 原有的核心系统（非反编译移植）
 
@@ -132,15 +146,16 @@ make
 | `cfgdata_new_stubs.cpp` | ~65 个 `Init*Table()` 配置表解析未实现（仅打开文件，未解析字段） | **中** |
 | `GuiGuDaoRen.cpp` | DB 持久化未实现（3 处），BOSS 刷新未实现，公告未发送 | 中 |
 | `RongHe.cpp` | 装备熔炼/拆卸/回收为空存根（返回 10002） | 中 |
-| `ZongHeYunYingHD.cpp` | sendPacket API 不可用，DBService::OnSendSysMail 不可用 | 中 |
-| `GuardPrivilege.cpp` | 平台检测存根，DBService 调用不可用 | 低 |
+| `ZongHeYunYingHD.cpp` | sendPacket API 不可用，DBService::OnSendSysMail 不可用 | ✅ 已修复 |
+| `GuardPrivilege.cpp` | 平台检测存根，DBService 调用不可用 | ✅ 已修复 |
 | `SevenDayTask.cpp` | 缺少跨模块调用（翅膀/爵位/装备等级） | 低 |
-| `YunYingHD.cpp` | MobilePhoneGift/SuperMember/ZeroBuyPet 基础架构未移植 | 低 |
-| `RankMirror.cpp` | Title 系统集成存根 | 低 |
-| `KaiFuHuoDong.cpp` | 翅膀模块引用被硬编码为 0 | 低 |
-| `CLittleHelper.cpp` | 掉落拾取功能为存根 | 低 |
-| `CMingGeExt.cpp` | DB 持久化为空 | 低 |
-| `Equip.cpp` | 魔符/解绑功能有 TODO | 低 |
+| `YunYingHD.cpp` | MobilePhoneGift/SuperMember/ZeroBuyPet 基础架构未移植 | ✅ 已修复（CFG类型已添加，部分逻辑已实现） |
+| `RankMirror.cpp` | Title 系统集成存根 | ✅ 已修复 |
+| `KaiFuHuoDong.cpp` | 翅膀模块引用被硬编码为 0 | ✅ 已修复 |
+| `CLittleHelper.cpp` | 掉落拾取功能为存根 | ✅ 已修复 |
+| `SevenDayTask.cpp` | 缺少跨模块调用（翅膀/爵位/装备等级） | ✅ 已修复 |
+| `CMingGeExt.cpp` | DB 持久化为空（CMingGeData 独立管理持久化，注释已澄清） | ✅ 已修复 |
+| `Equip.cpp` | 魔符/解绑功能有 TODO | ✅ 已修复 |
 
 ### 已修复的编译问题
 

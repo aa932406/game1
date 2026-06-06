@@ -58,14 +58,10 @@ void CLittleHelperData::SaveRewardState( std::string *pStr )
     if ( pStr->empty() )
         return;
     
-#if 0
-    // Stub: StringUtility::split API needs verification
-    std::vector<std::string> vt;
-    Answer::StringUtility::split( &vt, pStr, "|", 0 );
+    StringVector vt = Answer::StringUtility::split( *pStr, "|" );
     for ( size_t i = 0; i < vt.size(); ++i )
     {
-        std::vector<std::string> socreVt;
-        Answer::StringUtility::split( &socreVt, &vt[i], ":", 0 );
+        StringVector socreVt = Answer::StringUtility::split( vt[i], ":" );
         if ( socreVt.size() == 3 )
         {
             ActLittleHelperInfo stu;
@@ -75,7 +71,6 @@ void CLittleHelperData::SaveRewardState( std::string *pStr )
             m_ActLittleHelperInfoMap[stu.nId] = stu;
         }
     }
-#endif
 }
 
 void CLittleHelperData::PackageData( Answer::NetPacket *packet )

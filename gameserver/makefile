@@ -4,13 +4,25 @@ OBJPATH = obj
 
 CXX = x86_64-linux-gnu-g++
 
-CFLAGS = -g -O2 -Wall -I../share -I../libanswer/include -I/usr/include/mysql -DLIBANSWER_LINUX
+CFLAGS = -g -O2 -Wall -I.. -I../share -I../libanswer/include -I../mysql/include -DLIBANSWER_LINUX
 CCOMLINE = $(CXX) -c $(CFLAGS) $< -o $@
 
 LFLAGS = -L/usr/lib/x86_64-linux-gnu -lmysqlclient -lpthread -lz -lssl -lcrypto -lzstd
 LLIB = -L../libanswer/obj -lanswer
 
 OBJS = $(patsubst %.cpp, $(OBJPATH)/%.o, $(notdir $(wildcard *.cpp)))
+OBJS += $(OBJPATH)/CKunExt.o 	$(OBJPATH)/CXinMo.o \
+	$(OBJPATH)/CDaTingReward.o \
+	$(OBJPATH)/CKiaFuRecharge.o \
+	$(OBJPATH)/CSuperTeHui.o \
+	$(OBJPATH)/CMonthlyChouJiang.o \
+	$(OBJPATH)/CXingMai.o \
+	$(OBJPATH)/CWan360.o \
+	$(OBJPATH)/CWuHunShop.o \
+	$(OBJPATH)/CTestServerReward.o \
+	$(OBJPATH)/CVipClub.o \
+	$(OBJPATH)/CCardGroupBox.o \
+	$(OBJPATH)/CHttpRequest.o
 DS = $(OBJS:.o=.d)
 
 $(OBJPATH)/%.d : %.cpp

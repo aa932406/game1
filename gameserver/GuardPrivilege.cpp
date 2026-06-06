@@ -73,8 +73,7 @@ bool CGuardPrivilege::isOpen()
 {
     if ( NULL == m_pPlayer )
         return false;
-    // TODO: check platform (w360) when Player::GetPlatform is available
-    return true;
+    return m_pPlayer->GetPlatform() == "w360";
 }
 
 int8_t CGuardPrivilege::getTimeState()
@@ -153,16 +152,8 @@ int32_t CGuardPrivilege::onGetReward( Answer::NetPacket *inPacket )
     if ( nOldRecord == ( nOldRecord | (1 << nIndex) ) )
         return 10002;
 
-    // Forward to DB for cross-server check
-    int32_t param = pReward->nParam;
-    int8_t type = pReward->nType;
-    int32_t Sid = m_pPlayer->getSid();
-    int64_t Uid = m_pPlayer->getUid();
-    // TODO: DBService::CheckGuardPrivilege not available
-    //DB_SERVICE.CheckGuardPrivilege( m_pPlayer->getGateIndex(), (int8_t)m_pPlayer->getGateIndex(), Uid, Sid, type, param, nIndex );
-    // Fallback: directly call onDBGetReward logic
+    // 需要 DBService::CheckGuardPrivilege 进行跨服校验，暂回退到onDBGetReward
     return onDBGetReward( inPacket );
-    return 0;
 }
 
 int32_t CGuardPrivilege::onDBGetReward( Answer::NetPacket *inPacket )

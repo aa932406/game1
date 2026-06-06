@@ -1126,13 +1126,15 @@ int32_t Player::leaveDungeon()
 	Map	*pTargetMap = MAP_MANAGER.GetMap( m_oldPosition.mapid );
 	if (pTargetMap == NULL )
 	{
-		LOG_DUNGEON("leave dungeon is  null faile  oldmap id %d,kingdom id %d\n",m_oldPosition.mapid, GetRunnerId() );
+		LOG_DUNGEON("leave dungeon is  null faile  oldmap id %d,kingdom id %d
+",m_oldPosition.mapid, GetRunnerId() );
 		return ERR_INVALID_DATA;
 	}
 
 	if (pTargetMap == pDungeon)
 	{
-		LOG_DUNGEON("====  id %d,kingdom id %d\n",m_oldPosition.mapid, GetRunnerId());
+		LOG_DUNGEON("====  id %d,kingdom id %d
+",m_oldPosition.mapid, GetRunnerId());
 		return ERR_INVALID_DATA;
 	}
 
@@ -2431,7 +2433,8 @@ void Player::addLogoutPacket(int32_t reason, int32_t param)
 	}
 	else
 	{
-		LOG_INFO("Player::addLogoutPacket with m_pMap == NULL, cid = %lld\n", m_chr.cid);
+		LOG_INFO("Player::addLogoutPacket with m_pMap == NULL, cid = %lld
+", m_chr.cid);
 		setGateIndex(-1);
 		saveToDB(reason, param);
 		GAME_SERVICE.onPlayerLogout(this, m_cgindex);
@@ -3104,7 +3107,8 @@ void Player::checkNetPackets()
 		ProcId_t nProc = packet->getProc();
 
 #ifdef _DEBUG
-		//printf ( "Player::checkNetPackets() on net packet procId = %d\n", nProc );
+		//printf ( "Player::checkNetPackets() on net packet procId = %d
+", nProc );
 #endif
 		if ( !isAlive() && !isDeadProc( nProc ) )
 		{
@@ -3208,7 +3212,8 @@ int32_t Player::onLogout(Answer::NetPacket *inPacket)
 	}
 	else
 	{
-		LOG_INFO("Player %d logout with Map = NULL\n", getCid());
+		LOG_INFO("Player %d logout with Map = NULL
+", getCid());
 	}
 
 	return ERR_LEAVE_KINGDOM;
@@ -8151,6 +8156,42 @@ void Player::RecalcAttr()
 	recalcAttr();
 }
 
+void Player::AddBeiGongAttr( int32_t nType, int32_t nVal )
+{
+	// TODO: implement BeiGong attribute logic
+}
+
+// ===== 平台答题/微端系统支持 =====
+
+int32_t Player::GetContinueLoginCount() const
+{
+    return m_sysUser.continue_login_count;
+}
+
+bool Player::IsMiniClient() const
+{
+    std::string platform = const_cast<Player*>(this)->GetPlatform();
+    return platform == "weiduan" || platform == "mini";
+}
+
+void Player::SendIconState(ShowIcon* pIcon)
+{
+    if (NULL == pIcon)
+        return;
+
+    NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_ONE_ICON);
+    if (NULL == packet)
+        return;
+
+    packet->writeInt32(pIcon->nId);
+    packet->writeInt8(pIcon->nState);
+    packet->writeInt32(pIcon->nLeftTime);
+    packet->writeInt8(pIcon->IconLeft);
+    packet->writeInt32(pIcon->IconRight);
+    packet->writeInt8(pIcon->Effects);
+    packet->setSize(packet->getWOffset());
+    GAME_SERVICE.sendPacketTo(m_cgindex, packet);
+}
 void Player::InitExtSystems()
 {
 	//�ɾ�ϵͳҪ���ȼ���
@@ -8224,6 +8265,8 @@ void Player::InitExtSystems()
 	m_CharLittlerHelper.Init( this );
 	m_ExtSysMgr.Register( &m_CharLittlerHelper );
 
+	m_CMingGeExt.Init( this );
+	m_ExtSysMgr.Register( &m_CMingGeExt );
 	m_CLevelRefining.Init( this );
 	m_ExtSysMgr.Register( &m_CLevelRefining );
 
@@ -8300,6 +8343,36 @@ void Player::InitExtSystems()
 
 	m_extFlopDraw.Init( this );
 	m_ExtSysMgr.Register( &m_extFlopDraw );
+
+	m_PlayerTreasureMap.Init( this );
+	m_ExtSysMgr.Register( &m_PlayerTreasureMap );
+
+	m_CKunExt.Init( this );
+	m_ExtSysMgr.Register( &m_CKunExt );
+
+	m_CXinMo.Init( this );
+	m_ExtSysMgr.Register( &m_CXinMo );
+
+	m_DaTingReward.Init( this );
+	m_ExtSysMgr.Register( &m_DaTingReward );
+
+	m_SuperTeHui.Init( this );
+	m_ExtSysMgr.Register( &m_SuperTeHui );
+
+	m_MonthlyChouJiang.Init( this );
+	m_ExtSysMgr.Register( &m_MonthlyChouJiang );
+
+	m_CXingMai.Init( this );
+	m_ExtSysMgr.Register( &m_CXingMai );
+
+	m_Wan360.Init( this );
+	m_ExtSysMgr.Register( &m_Wan360 );
+	m_WuHunShop.Init( this );
+	m_ExtSysMgr.Register( &m_WuHunShop );
+
+	m_TestServerReward.Init( this );
+	m_ExtSysMgr.Register( &m_TestServerReward );
+
 	/*
 	* EXT_INIT_WXJ
 	* ���ν�����ϵͳע�������֮��

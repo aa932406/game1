@@ -52,7 +52,7 @@ void MapManager::initRunner()
 
 void MapManager::initMap()
 {
-	// ·Ç¸±±¾µØÍ¼
+	// ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
 	const CfgMapTable &cfgAllMap = CFG_DATA.getMapAll();
 	for ( CfgMapTable::const_iterator it = cfgAllMap.begin(); it != cfgAllMap.end(); ++it )
 	{
@@ -186,5 +186,18 @@ int32_t MapManager::newDungenId()
 {
 	Answer::MutexGuard lock( m_mapLock );
 	return m_DungenId++;
+}
+
+void MapManager::ResetMapMonster()
+{
+	Answer::MutexGuard lock( m_mapLock );
+	for ( MapMap::iterator iter = m_maps.begin(); iter != m_maps.end(); ++iter )
+	{
+		Map* pMap = iter->second;
+		if ( pMap != NULL )
+		{
+			pMap->ResetRefreshMonster();
+		}
+	}
 }
 

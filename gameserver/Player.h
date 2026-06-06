@@ -48,6 +48,16 @@
 #include "ShiZhuang.h"
 #include "LevelRefining.h"
 #include "CharLittlerHelper.h"
+#include "CMingGeExt.h"
+#include "TreasureMap.h"
+#include "CKunExt.h"
+#include "CXinMo.h"
+#include "CDaTingReward.h"
+#include "CMonthlyChouJiang.h"
+#include "CXingMai.h"
+#include "CWan360.h"
+#include "CWuHunShop.h"
+#include "CTestServerReward.h"
 
 #include "Trade.h"
 #include "PlayerMail.h"
@@ -134,6 +144,7 @@ public:
 	void init( PlayerDBData& dbData );
 
 	int16_t getGateIndex() const;
+	int16_t getConnId() const { return m_cgindex; }
 	void setGateIndex(int16_t index);
 	void appendInfo(Answer::NetPacket *packet);
 	//int32_t getFamilyContribute() const;
@@ -232,6 +243,9 @@ public:
 
 	void updateRecord(int32_t id, int32_t param);
 	int32_t getRecord(int32_t id) const;
+	int32_t GetContinueLoginCount() const;
+	bool IsMiniClient() const;
+	void SendIconState(ShowIcon* pIcon);
 	void clearRecordRange(int32_t start, int32_t end, int32_t diffDay);
 
 	void onKillMonster(int32_t mid, int32_t level, int32_t exp, bool isBoss );
@@ -290,6 +304,7 @@ public:
 	std::string getOpenKey();
 	void setPf(std::string pf);
 	std::string getPf();
+	std::string GetPlatform() { return getPf(); }
 	void setPfKey(std::string pfKey);
 	std::string getPfKey();
 
@@ -315,6 +330,7 @@ public:
 	bool	IsDead() const;
 	int64_t	GetDieTick() const;
 	void	RecalcAttr();
+	void	AddBeiGongAttr( int32_t nType, int32_t nVal );
 private:
 	typedef int32_t (Player::*NetPacketHandler)(Answer::NetPacket*);
 	static void setNetPacketHandler(int32_t proc, NetPacketHandler handler);
@@ -686,6 +702,10 @@ private:			CLevelRefining			m_CLevelRefining;
 public:				CharLittlerHelper&		GetCharLittlerHelper() { return m_CharLittlerHelper; }
 private:			CharLittlerHelper			m_CharLittlerHelper;
 
+	friend class CMingGeExt;
+public:				CMingGeExt&			GetCMingGeExt() { return m_CMingGeExt; }
+private:			CMingGeExt				m_CMingGeExt;
+
 	friend class CExtMagicBox;
 public:				CExtMagicBox&			GetMagicBox() { return m_extMagicBox; }
 private:			CExtMagicBox			m_extMagicBox;
@@ -693,10 +713,37 @@ private:			CExtMagicBox			m_extMagicBox;
 	friend class CVplan;
 	friend class CNationalDayHd;
 	friend class CSevenDayTask;
+	friend class CTreasureMap;
+	friend class CKunExt;
+	friend class CXinMo;
+	friend class CDaTingReward;
+	friend class CMonthlyChouJiang;
+	friend class CXingMai;
+	friend class CWan360;
+	friend class CWuHunShop;
+	friend class CTestServerReward;
+public:
+					CTreasureMap&			GetPlayerTreasureMap() { return m_PlayerTreasureMap; }
+					CKunExt&				GetKunExt() { return m_CKunExt; }
+					CXinMo&					GetXinMo() { return m_CXinMo; }
+				CDaTingReward&			GetDaTingReward() { return m_DaTingReward; }
+				CMonthlyChouJiang&		GetMonthlyChouJiang() { return m_MonthlyChouJiang; }
+				CXingMai&			GetXingMai() { return m_CXingMai; }
+				CWan360&			GetWan360() { return m_Wan360; }
+				CWuHunShop&		GetWuHunShop() { return m_WuHunShop; }
 public:				CVplan&				GetVplan() { return m_extVplan; }
 private:			CVplan				m_extVplan;
 	CNationalDayHd				m_CNationalDayHd;
 	CSevenDayTask				m_SevenDayTask;
+	CTreasureMap				m_PlayerTreasureMap;
+	CKunExt					m_CKunExt;
+	CXinMo					m_CXinMo;
+	CDaTingReward				m_DaTingReward;
+	CMonthlyChouJiang			m_MonthlyChouJiang;
+	CXingMai				m_CXingMai;
+	CWan360				m_Wan360;
+	CWuHunShop			m_WuHunShop;
+	CTestServerReward		m_TestServerReward;
 
 /*
 * EXT_SYS_ZK

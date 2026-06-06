@@ -53,7 +53,7 @@ private:
 	void	setLevelRank( CharId_t nCharId, int32_t nIndex );
 	void	setWeiWangRank( CharId_t nCharId, int32_t nIndex );
 
-	// 标题/称号辅助（存根 - 待与 Title 系统集成）
+	// 标题/称号辅助（委托给 GameService 处理在线玩家）
 	void	onCheckTitle( CharId_t nCharId, int32_t nTitleId, int8_t nParam );
 	void	onRemoveTitle( CharId_t nCharId, int32_t nTitleId );
 

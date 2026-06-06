@@ -16,6 +16,8 @@
 #include "CampWar.h"
 #include "PeerlessWar.h"
 #include "ActivityWorldBoss.h"
+#include "CXinMaiMap.h"
+#include "CRefreshMonster.h"
 #include "CrossTower.h"
 #include "KaiFuBoss.h"
 #include "UltimateChallenge.h"
@@ -66,6 +68,8 @@ void CActivityManager::Init()
 		case ATI_ULTIMATE_CHALLENGE:	pActivity = new CUltimateChallenge( cfgActivity );				break;
 		case ATI_RONG_LIAN:			pActivity = new CRongLian( cfgActivity );						break;
 		case ATI_YA_BIAO:			pActivity = new CYaBiao( cfgActivity );							break;
+		case ATI_XIN_MAI_MAP:	pActivity = new CXinMaiMap( cfgActivity );			break;
+		case ATI_REFRESH_MONSTER:	pActivity = new CRefreshMonster( cfgActivity );		break;			break;
 		default: break;
 		}
 		if ( pActivity != NULL )

@@ -35,6 +35,8 @@ public:
 	void		DelDungeon( int32_t nId );
 	void		PostMsg( int32_t nRunnerId, GameMsgCode msgcode, void *ptr1=NULL, void *ptr2=NULL, int32_t iparam1=0, int32_t iparam2=0,void *ptr3=NULL );
 
+	void		ResetMapMonster();
+
 private:
 	void		initRunner();
 	void		initMap();

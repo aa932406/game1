@@ -93,6 +93,7 @@
     void InitQQZoneRewardTable();
     void InitRefreshMonsterCfgListMap();
     void InitRongHeCfg();
+    void InitEquipRongHeTable();
     void InitScoreShopTable();
     void InitSelectItemCfgMap();
     void InitShangRenCfgMap();

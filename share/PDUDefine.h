@@ -497,6 +497,17 @@ enum MSG_CM_CODE
 	CM_LITTLE_HELPER_WORK					= 530,			//小助手工作
 	CM_LITTLE_HELPER_REST					= 531,			//小助手休息
 	CM_LITTLE_HELPER_BUY					= 532,			//购买小助手			//�����ʿ
+
+	// 命格系统
+	CM_MING_GE_LEVEL_UP					= 533,			// 命格升级
+	CM_MING_GE_PICKUP					= 534,			// 拾取命格
+	CM_MING_GE_LOCK						= 535,			// 命格锁定
+	CM_MING_GE_DEC						= 536,			// 命格分解
+	CM_MING_GE_DUI_HUAN					= 537,			// 命格兑换
+	CM_MING_GE_LIE_MING					= 538,			// 猎命
+	CM_MING_GE_DRESS					= 539,			// 装备命格
+	CM_MING_GE_UNDRESS					= 540,			// 卸下命格
+	CM_MING_GE_BUY_NPC					= 541,			// 购买猎命NPC
 	//�ɾ�
 	CM_ACHIEVEMENT_GET_REWARD					= 510,			//��ȡ�ɾͽ���
 	CM_ACHIEVEMENT_UP_XUN_ZHANG					= 511,			//����ѫ��
@@ -508,6 +519,42 @@ enum MSG_CM_CODE
 	CM_ASK_VAR_VICTORY_INFO						= 516,			//����սʤ�����Ϣ
 	CM_GET_VAR_VICTORY_REWARD					= 517,			//����սʤ������
 	//ɱ��ͳ��
+	// 国庆活动
+	// 宝藏图协议
+	CM_ASK_TREASURE_MAP_INFO			= 610,
+	CM_GET_TREASURE_MAP_REWARD			= 611,
+	CM_ASK_SPECIAL_TREASURE_MAP_INFO	= 612,
+	CM_GET_SPECIAL_TREASURE_MAP_REWARD	= 613,
+
+	// 鲲灵系统协议
+	CM_KUN_LING_LEVEL_UP			= 550,
+	CM_KUN_GET_LING_ZHU			= 551,
+	CM_KUN_RECOVERY_LING_ZHU		= 552,
+	CM_KUN_FAST_FINING			= 553,
+	CM_KUN_LING_ZHU_LEVEL_UP		= 554,
+	CM_KUN_BUY_LIAN_HUA_TIME		= 555,
+	CM_KUN_WEI_YANG			= 556,
+
+	// 心魔系统协议
+	CM_XIN_MO_LEVEL			= 560,
+	CM_ACTIVE_XIN_MO		= 561,
+	CM_XIN_MO_JIN_HUA		= 562,
+	CM_XIN_MO_GET_ITEM		= 563,
+	CM_XIN_MO_TIDY		= 564,
+	CM_XIN_MO_DEC		= 565,
+	CM_QI_QING_LEVEL_UP	= 566,
+	CM_XIN_QING			= 567,
+
+	// 平台答题奖励协议
+	CM_REQUEST_DA_TING_INFO		= 570,
+	CM_GET_DA_TING_REWARD		= 571,
+	CM_FROM_DA_TING		= 572,
+	CM_REQUEST_PLATFORM_VIP_INFO	= 573,
+	CM_GET_PLATFORM_VIP_REWARD	= 574,
+	CM_GET_PLATFORM_REWARD		= 575,
+	CM_GET_MINI_CLIENT_REWARD	= 576,
+	CM_REQUEST_MINI_CLIENT_INFO	= 577,
+
 	// 国庆活动
 	CM_ASK_NATIONAL_DAY_INFO		= 620,
 	CM_ASK_NATIONAL_DAY_EXP		= 621,
@@ -1413,6 +1460,9 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	SM_LITTLE_HELPER_INFO					= 11530,		// 小助手信息
 	SM_LITTLE_HELPER_SYNS					= 11531,		// 小助手外观同步
 	SM_REFIN_INFO								= 11532,		// 精炼信息
+	SM_MING_GE_INFO						= 11533,		// 命格信息
+	SM_MING_GE_BAG_INFO					= 11534,		// 命格背包信息
+	SM_MING_GE_SLOT_INFO				= 11535,		// 命格单格信息
 	// 武魂
 	SM_WU_HUN_INFO					= 0x2EA1,	// 武魂信息
 	SM_WU_HUN_SLOT					= 0x2EA2,	// 武魂槽位变化

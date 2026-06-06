@@ -29,16 +29,17 @@ enum NATIONAL_HD_TYPE
     HHT_RECHARGE    = 5,
     HHT_YJSK        = 6,
     HHT_KILL_BOSS   = 7,
-};
-
-// 参数对结构
+};// 参数对结构
+#ifndef PARAM2_DEFINED
+#define PARAM2_DEFINED
 struct Param2
 {
-    Param2() : nParam1(0), nParam2(0) {}
-    Param2(int32_t p1, int32_t p2) : nParam1(p1), nParam2(p2) {}
-    int32_t nParam1;
-    int32_t nParam2;
+	Param2() : nParam1(0), nParam2(0) {}
+	Param2(int32_t p1, int32_t p2) : nParam1(p1), nParam2(p2) {}
+	int32_t nParam1;
+	int32_t nParam2;
 };
+#endif
 
 class CNationalDayHd
 {

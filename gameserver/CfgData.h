@@ -10,6 +10,7 @@
 #include "Shared.h"
 #include "../share/DataStruct.h"
 #include "actStructs.h"
+#include "CDaTingReward.h"
 
 struct AddAttribute
 {
@@ -744,6 +745,15 @@ struct CfgLevelGift
 };
 typedef std::map<int32_t,CfgLevelGift> CfgLevelGiftTable;
 
+#ifndef PARAM2_DEFINED
+#define PARAM2_DEFINED
+struct Param2
+{
+	Param2() : nParam1(0), nParam2(0) {}
+	int32_t nParam1;
+	int32_t nParam2;
+};
+#endif
 struct CfgItemBase 
 {
 	int32_t id;
@@ -764,6 +774,7 @@ struct CfgItemBase
 
 struct CfgItem : public CfgItemBase
 {
+	CfgItem() { RongHeReceovery.nParam1 = 0; RongHeReceovery.nParam2 = 0; }
 	std::string effect;//����Ч��
 	std::string use_method;
 	int32_t downgrade;
@@ -774,6 +785,7 @@ struct CfgItem : public CfgItemBase
 	int32_t broadcast;
 	int32_t valid_time;
 	int32_t item_Grade;
+	Param2	RongHeReceovery;	// 物品回收参数 (货币类型:货币数量)
 };
 typedef std::map<int32_t, CfgItem*> CfgItemTable;
 
@@ -1440,6 +1452,7 @@ struct CfgEquip
 	AttrAddon	m_StarAttr[MAX_EQUIP_BASE_ATTR_COUNT];		// ǿ����������
 	int32_t		m_nWuHunExp;								// ��꾭��
 	int8_t		m_nBroadcast;								// �����Ƿ񹫸�
+	int8_t		m_CanRongHe;								// �Ƿ���ں��� (0=��, >0=��)
 };
 typedef std::map<int32_t, CfgEquip> CfgEquipMap;
 
@@ -1669,6 +1682,31 @@ struct EquipBackCfg
 };
 typedef std::map<int32_t, EquipBackCfg> EquipBackCfgMap;
 
+struct EquipStrengthenCfg
+{
+	EquipStrengthenCfg() { CleanUp(); }
+	void CleanUp()
+	{
+		nLevel = 0;
+		nPos = 0;
+		memset(&ConstItem, 0, sizeof(ConstItem));
+		nAttrRate = 0;
+		nDropRate = 0;
+		vAttrAddon.clear();
+		nNeedPos = 0;
+		nGongGaoId = 0;
+	}
+	int32_t				nLevel;			// Level
+	int32_t				nPos;			// SlotType (装备部位)
+	ItemData			ConstItem;		// Item (消耗道具)
+	int32_t				nAttrRate;		// BasicAttr (基础属性加成)
+	int32_t				nDropRate;		// DropProbability
+	AttrAddonVector		vAttrAddon;		// ActivationAttr (激活属性)
+	int32_t				nNeedPos;		// ActivationType (需要部位)
+	int32_t				nGongGaoId;		// GongGao (公告ID)
+};
+typedef std::map<std::pair<int32_t, int32_t>, EquipStrengthenCfg> EquipStrengthenMap;
+
 class CfgEquipTable
 {
 public:
@@ -1851,8 +1889,26 @@ public:
 		return NULL;
 	}
 
+	void AddEequipStrengthenCfg( const EquipStrengthenCfg& stu )
+	{
+		std::pair<int32_t, int32_t> key = std::make_pair( stu.nLevel, stu.nPos );
+		m_mEquipStrengthen[key] = stu;
+	}
+
+	const EquipStrengthenCfg* GetEequipStrengthenCfg( int32_t nLevel, int32_t nPos ) const
+	{
+		std::pair<int32_t, int32_t> key = std::make_pair( nLevel, nPos );
+		EquipStrengthenMap::const_iterator iter = m_mEquipStrengthen.find( key );
+		if ( iter != m_mEquipStrengthen.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
 private:
 	EquipBackCfgMap			m_mEquipBack;
+	EquipStrengthenMap		m_mEquipStrengthen;
 };
 
 // ��ʯ��
@@ -2399,7 +2455,22 @@ private:
 // ���Գ�ʼ����Ӧ�İٷֱ�
 class CfgPetAttrInitRateTable
 {
-	friend class CfgData;
+	friend class CfgData; 
+
+// Auto-generated from decompiled code
+struct CfgActiveSkill
+{
+    CfgActiveSkill() : nId(0), nTalent(0), nGroupId(0), nDistance(0), nCd(0) {}
+    int32_t nId;
+    int32_t nTalent;
+    int32_t nGroupId;
+    int32_t nDistance;
+    int32_t nCd;
+    AttrAddonVector vAttrAddon;
+};
+typedef std::map<int32_t, CfgActiveSkill> CfgActiveSkillMap;
+
+class CfgData;
 public:
 	CfgPetAttrInitRateTable()
 	{
@@ -3250,6 +3321,15 @@ struct WarVictoryHd		//��ս�
 typedef std::map<int8_t,WarVictoryHd> WarVictoryHdMap;
 
 
+// CfgFamilyBoss
+struct CfgFamilyBoss
+{
+    CfgFamilyBoss() : BossMid(0), FamilyExp(0), GongGaoId(0) {}
+    int32_t BossMid;
+    int32_t FamilyExp;
+    int32_t GongGaoId;
+};
+
 class CfgFamilyTable
 {
 public:
@@ -3264,6 +3344,8 @@ public:
 		}
 		bzero( m_vTotomActiveLevel, sizeof( m_vTotomActiveLevel ) );
 		bzero( m_vFamilyPosition, sizeof( m_vFamilyPosition ) );
+		m_mFamilyBoss.clear();
+		m_mFamilyBossByMid.clear();
 	}
 
 	bool Add( const CfgFamily& family )
@@ -3280,6 +3362,13 @@ public:
 		}
 
 		m_vFamilyPosition[nPosition] = position;
+		return true;
+	}
+
+	bool AddFamilyBoss( int32_t nKey, const CfgFamilyBoss& boss )
+	{
+		m_mFamilyBoss[nKey] = boss;
+		m_mFamilyBossByMid[boss.BossMid] = boss;
 		return true;
 	}
 
@@ -3303,6 +3392,7 @@ public:
 		return &m_vFamily[nLevel-1];
 	}
 
+	const CfgFamilyBoss* GetFamilyBoss( int32_t FamilyLevel, int32_t BossId ) const;
 	int32_t GetTotomActiveLevel( int32_t nTotomId ) const
 	{
 		if ( nTotomId <= 0 || nTotomId > MAX_PET_ID )
@@ -3325,7 +3415,9 @@ public:
 private:
 	CfgFamily			m_vFamily[MAX_FAMILY_LEVEL];
 	int32_t				m_vTotomActiveLevel[MAX_PET_ID+1];						// ͼ�ڼ���������ŵȼ�
-	CfgFamilyPosition	m_vFamilyPosition[FAMILY_POSITION_COUNT];				// ����ְλ����
+	CfgFamilyPosition	m_vFamilyPosition[FAMILY_POSITION_COUNT];
+	std::map<int32_t, CfgFamilyBoss>	m_mFamilyBoss;
+	std::map<int32_t, CfgFamilyBoss>	m_mFamilyBossByMid;				// ����ְλ����
 };
 
 struct TeamBuff 
@@ -4533,6 +4625,18 @@ struct RongHeCfg
 };
 typedef std::map<int32_t, RongHeCfg> RongHeCfgMap;
 
+// 装备融合配置 (MixGem.txt)
+struct EquipRongHe
+{
+	EquipRongHe() { nItemId = 0; nMaxEquip = 0; nAttrRate = 0; }
+	int32_t nItemId;
+	int32_t nMaxEquip;
+	int32_t nAttrRate;
+};
+typedef std::map<int32_t, EquipRongHe> EquipRongHeMap;
+
+// 物品回收参数 (nParam1 = 货币类型, nParam2 = 货币数量)
+
 // 装备熔炼信息
 struct RongLianInfo
 {
@@ -4544,6 +4648,7 @@ struct RongLianInfo
 };
 typedef std::map<int32_t, RongLianInfo> RongLianInfoMap;
 
+// 装备强化配置 (MieShenRongLian.txt)
 class SevenTaskTable
 {
 public:
@@ -4643,7 +4748,196 @@ struct RateItem
 	int8_t	nBind;
 	int32_t	nGongGaoId;
 };
+// RefreshMonsterCfg
+struct RefreshMonsterCfg
+{
+    RefreshMonsterCfg()
+        : nStartTime(0), LastFreshTime(0), nDiffTime(0), nIndex(0), GongGaoId(0) {}
+    int32_t nStartTime;     // OpenTime
+    mutable int32_t LastFreshTime;  // Runtime tracking (mutable for const list)
+    int32_t nDiffTime;      // Interval
+    int32_t nIndex;         // Typeid
+    int32_t GongGaoId;      // Language
+};
+typedef std::list<RefreshMonsterCfg> RefreshMonsterCfgList;
+
+// CfgWuHunShop
+struct CfgWuHunShop
+{
+    CfgWuHunShop() : Index(0), Rate(0), Const(0), ShowCost(0), CutPic(0) {}
+    int32_t Index;
+    int32_t Rate;
+    int32_t Const;
+    int32_t ShowCost;
+    int32_t CutPic;
+    MemChrBag Item;
+};
+typedef std::list<CfgWuHunShop> CfgWuHunShopList;
+
+// ClbAimCfg - VIP club aim config (ClubAim.txt)
+struct ClbAimCfg
+{
+    ClbAimCfg() : nId(0), nNeedVipLevel(0), nNeedCount(0), nAddDropTimes(0) {}
+    int32_t nId;
+    int32_t nNeedVipLevel;
+    int32_t nNeedCount;
+    int32_t nAddDropTimes;
+};
+typedef std::list<ClbAimCfg> ClbAimCfgList;
+
+// TestServerReward
+struct TestServerReward
+{
+    TestServerReward() : nType(0), nParm(0), nGongId(0) {}
+    int32_t nType;
+    int32_t nParm;
+    MemChrBagVector vItems;
+    int32_t nGongId;
+};
+typedef std::map<int32_t, TestServerReward> TestServerRewardMap;
+
+// Wan360Reward
+struct Wan360Reward
+{
+    Wan360Reward() : Index(0) {}
+    int32_t Index;
+    MemChrBagVector Items;
+};
+typedef std::map<int32_t, Wan360Reward> Wan360RewardMap;
+
+// Speed360Reward
+struct Speed360Reward
+{
+    Speed360Reward() : StartTime(0), EndTime(0) {}
+    int32_t StartTime;
+    int32_t EndTime;
+    MemChrBagVector Rewards;
+};
+
+// CfgSouGouSkin
+struct CfgSouGouSkin
+{
+    CfgSouGouSkin() : nIcon(0) {}
+    std::string platform;
+    MemChrBagVector vReward;
+    int32_t nIcon;
+};
+typedef std::map<std::string, CfgSouGouSkin> CfgSouGouSkinMap;
+
+// CfgWeiXingGift (WeiXin.txt)
+struct CfgWeiXingGift
+{
+    CfgWeiXingGift() : nIconId(0) {}
+    std::string strPlatform;
+    int32_t nIconId;
+    MemChrBagVector vReward;
+};
+typedef std::map<std::string, CfgWeiXingGift> CfgWeiXingGiftMap;
+
+// CfgSuperMember (SuperMember.txt)
+struct CfgSuperMember
+{
+	CfgSuperMember() : nGold(0), nQQ(0), nIcon(0) {}
+	std::string	strPlatform;
+	int32_t		nGold;
+	int32_t		nQQ;
+	int32_t		nIcon;
+};
+typedef std::map<std::string, CfgSuperMember> CfgSuperMemberMap;
+
+// CfgMobilePhoneGift (MobilePhoneGift.txt)
+struct CfgMobilePhoneGift
+{
+	CfgMobilePhoneGift() : nIcon(0) {}
+	std::string		strPlatform;
+	int32_t			nIcon;
+	MemChrBagVector	vItem;
+};
+typedef std::map<std::string, CfgMobilePhoneGift> CfgMobilePhoneGiftMap;
+
+// CfgAdultGift (ShenFenYanZheng.txt)
+struct CfgAdultGift
+{
+	CfgAdultGift() : nIconId(0) {}
+	std::string		strPlatform;
+	int32_t			nIconId;
+	MemChrBagVector	vReward;
+};
+typedef std::map<std::string, CfgAdultGift> CfgAdultGiftMap;
+
+class CfgAdultGiftTable
+{
+public:
+	void Add( const CfgAdultGift& stu ) { m_map[stu.strPlatform] = stu; }
+	const CfgAdultGift* GetAdultGift( const std::string& platform ) const;
+	const CfgAdultGiftMap& GetMap() const { return m_map; }
+private:
+	CfgAdultGiftMap	m_map;
+	friend class CfgData;
+};
+
+// ZeroBuyPetCfg
+struct ZeroBuyPetCfg
+{
+	ZeroBuyPetCfg() : nGold(0), nMailId(0) {}
+	int32_t		nGold;
+	int32_t		nMailId;
+	MemChrBag	cItems;
+};
+
 typedef std::list<RateItem> RateItemList;
+
+// XingMaiCfg
+struct XingMaiCfg
+{
+    XingMaiCfg() : Level(0), PlayerLevel(0), GongGaoId(0), NeedBossScore(0), BossScoreLimit(0) {}
+    int32_t Level;
+    int32_t PlayerLevel;
+    ItemDataList CostItems;
+    int32_t GongGaoId;
+    AddAttrList AttrList;
+    int32_t NeedBossScore;
+    int32_t BossScoreLimit;
+};
+typedef std::map<int32_t, XingMaiCfg> XingMaiCfgMap;
+
+struct CfgXingMaiSlot
+{
+    CfgXingMaiSlot() : nIndex(0), nLevel(0), nScore(0) {}
+    int8_t nIndex;
+    int32_t nLevel;
+    int32_t nScore;
+};
+typedef std::map<int32_t, CfgXingMaiSlot> CfgXingMaiSlotMap;
+
+// MonthlyChouJiangCfg
+struct MonthlyChouJiangCfg
+{
+    MonthlyChouJiangCfg() : nId(0), nRecharges(0), nAddValues(0), nGetTimes(0) {}
+    int32_t nId;
+    int32_t nRecharges;
+    int32_t nAddValues;
+    int32_t nGetTimes;
+};
+typedef std::map<int32_t, MonthlyChouJiangCfg> MonthlyChouJiangCfgMap;
+
+// MonthlyChouJiangTable
+class MonthlyChouJiangTable
+{
+public:
+    MonthlyChouJiangTable();
+    ~MonthlyChouJiangTable();
+
+    void AddMonthlyChouJiangItemMap(int32_t nMonth, int32_t nId, const RateItem& item);
+    void AddMonthlyChouJiangCfg(const MonthlyChouJiangCfg& cfg);
+    const MonthlyChouJiangCfgMap* GetMonthlyChouJiangCfgMap() const { return &m_CfgMap; }
+    bool RandRateItem(RateItem& outItem, int32_t nMonth, std::list<int32_t>& excludeList) const;
+
+private:
+    typedef std::map<int32_t, RateItem> MonthItemMap;
+    std::map<int32_t, MonthItemMap> m_MonthItems;
+    MonthlyChouJiangCfgMap m_CfgMap;
+};
 
 // WuHun Config
 struct WuHunItem
@@ -4719,6 +5013,840 @@ typedef std::map<int32_t, CreateWuHun> CreateWuHunMap;
 
 
 
+
+
+#include "CMingGeTable.h"
+#include "TreasureMap.h"
+#include "CKunExt.h"
+#include "CXinMo.h"
+#include "CDaTingReward.h"
+
+struct TreasureHunterCfg
+{
+	TreasureHunterCfg() : nId(0), nRequire(0), GongGaoId(0), nType(0) {}
+	int32_t nId;
+	MemChrBagVector Items;
+	int32_t nRequire;
+	int32_t GongGaoId;
+	int32_t nType;
+};
+typedef std::map<int32_t, TreasureHunterCfg> TreasureHunterCfgMap;
+
+// SuperTeHui
+struct SuperTeHuiCfg
+{
+    SuperTeHuiCfg() : nIndex(0), nNeedVip(0), nPrice(0), nGongGaoId(0) {}
+    int32_t nIndex;
+    int32_t nNeedVip;
+    MemChrBagVector Items;
+    int32_t nPrice;
+    int32_t nGongGaoId;
+};
+typedef std::map<int32_t, SuperTeHuiCfg> SuperTeHuiCfgMap;
+
+// JewelPavilion
+struct JewelPavilionCfg
+{
+    JewelPavilionCfg() : nDay(0), nIndex(0), nPrice(0) {}
+    int32_t nDay;
+    int32_t nIndex;
+    MemChrBag Item;
+    int32_t nPrice;
+};
+typedef std::map<std::pair<int32_t, int32_t>, JewelPavilionCfg> JewelPavilionCfgMap;
+
+// ShangRen
+struct ShangRenCfg
+{
+    ShangRenCfg() : nId(0), nPrice(0) {}
+    int32_t nId;
+    MemChrBagVector vItem;
+    int32_t nPrice;
+};
+typedef std::map<int32_t, ShangRenCfg> ShangRenCfgMap;
+
+//========================================================================
+struct CrossTowerCfg
+{
+	CrossTowerCfg()
+	{
+		MapId		= 0;
+		NextMapId	= 0;
+		LastMapId	= 0;
+		MaxPlayer	= 0;
+		MaxScore	= 0;
+		MinScore	= 0;
+		KillCount	= 0;
+		Floor		= 0;
+		MailId		= 0;
+	}
+
+	int32_t				MapId;
+	int32_t				NextMapId;
+	int32_t				LastMapId;
+	int32_t				MaxPlayer;
+	int32_t				MaxScore;
+	int32_t				MinScore;
+	int32_t				KillCount;
+	int32_t				Floor;
+	std::vector<MemChrBag>	RewardVt;
+	std::vector<MemChrBag>	TopRewardVt;
+	int32_t				MailId;
+};
+typedef std::map<int32_t, CrossTowerCfg> CrossTowerCfgMap;
+
+// ===== CfgGemLevelUp Config =====
+struct CfgGemLevelUp
+{
+    CfgGemLevelUp()
+        : nNeedItemId(0), nNeedItemCount(0), nCostMoney(0), nNextGemId(0), nBroadId(0)
+    {}
+    int32_t nNeedItemId;
+    int32_t nNeedItemCount;
+    int32_t nCostMoney;
+    int32_t nNextGemId;
+    int32_t nBroadId;
+};
+
+class CfgGemLevelUpTable
+{
+public:
+    CfgGemLevelUpTable() {}
+    ~CfgGemLevelUpTable() {}
+
+    void Add(int32_t nId, const CfgGemLevelUp& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgGemLevelUp* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgGemLevelUp>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgGemLevelUp> m_mData;
+};
+
+// ===== CfgMoFu Config =====
+struct CfgMoFu
+{
+    CfgMoFu()
+        : nId(0), nCostGold(0), nRecycleItemId(0), nRecycleItemCount(0)
+    {}
+    int32_t nId;
+    int32_t nCostGold;
+    int32_t nRecycleItemId;
+    int32_t nRecycleItemCount;
+};
+
+class CfgMoFuTable
+{
+public:
+    CfgMoFuTable() {}
+    ~CfgMoFuTable() {}
+
+    void Add(int32_t nId, const CfgMoFu& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgMoFu* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgMoFu>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgMoFu> m_mData;
+};
+
+// ===== CfgShenYaoEquip Config =====
+struct CfgShenYaoEquip
+{
+    CfgShenYaoEquip()
+        : nCostGold(0)
+    {}
+    AttrAddonVector m_vAddAttr;
+    int32_t nCostGold;
+};
+
+typedef std::map<std::pair<int32_t, int32_t>, CfgShenYaoEquip> CfgShenYaoEquipMap;
+
+class CfgShenYaoEquipTable
+{
+public:
+    CfgShenYaoEquipTable() {}
+    ~CfgShenYaoEquipTable() {}
+
+    void Add(int32_t nPos, int32_t nLevel, const CfgShenYaoEquip& stu)
+    {
+        m_mData[std::make_pair(nPos, nLevel)] = stu;
+    }
+
+    const CfgShenYaoEquip* Get(int32_t nPos, int32_t nLevel) const
+    {
+        std::map<std::pair<int32_t, int32_t>, CfgShenYaoEquip>::const_iterator it = m_mData.find(std::make_pair(nPos, nLevel));
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    CfgShenYaoEquipMap m_mData;
+};
+
+// ===== CfgEquipStrengthen Config =====
+struct CfgEquipStrengthen
+{
+    CfgEquipStrengthen()
+        : m_nGongGaoId(0)
+    {
+        memset(&m_CostItem, 0, sizeof(m_CostItem));
+    }
+    AttrAddonVector m_vAddAttr;
+    ItemData m_CostItem;
+    int32_t m_nGongGaoId;
+};
+
+class CfgEquipStrengthenTable
+{
+public:
+    CfgEquipStrengthenTable() {}
+    ~CfgEquipStrengthenTable() {}
+
+    void Add(int32_t nPos, int32_t nLevel, const CfgEquipStrengthen& stu)
+    {
+        m_mData[std::make_pair(nPos, nLevel)] = stu;
+    }
+
+    const CfgEquipStrengthen* Get(int32_t nPos, int32_t nLevel) const
+    {
+        std::map<std::pair<int32_t, int32_t>, CfgEquipStrengthen>::const_iterator it = m_mData.find(std::make_pair(nPos, nLevel));
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<std::pair<int32_t, int32_t>, CfgEquipStrengthen> m_mData;
+};
+
+// ===== CfgEquipUpPos Config =====
+struct CfgEquipUpPos
+{
+    CfgEquipUpPos()
+        : m_nNeedLevel(0), m_nTotalRate(0), m_nRate(0), m_nGongGaoId(0)
+    {
+        memset(&m_CostItem, 0, sizeof(m_CostItem));
+    }
+    AttrAddonVector m_vAddAttr;
+    int32_t m_nNeedLevel;
+    ItemData m_CostItem;
+    int32_t m_nTotalRate;
+    int32_t m_nRate;
+    int32_t m_nGongGaoId;
+};
+
+class CfgEquipUpPosTable
+{
+public:
+    CfgEquipUpPosTable() {}
+    ~CfgEquipUpPosTable() {}
+
+    void Add(int32_t nPos, int32_t nLevel, const CfgEquipUpPos& stu)
+    {
+        m_mData[std::make_pair(nPos, nLevel)] = stu;
+    }
+
+    const CfgEquipUpPos* Get(int32_t nPos, int32_t nLevel) const
+    {
+        std::map<std::pair<int32_t, int32_t>, CfgEquipUpPos>::const_iterator it = m_mData.find(std::make_pair(nPos, nLevel));
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<std::pair<int32_t, int32_t>, CfgEquipUpPos> m_mData;
+};
+
+// ===== CfgCurrencyDuiHuan Config =====
+struct CfgCurrencyDuiHuan
+{
+    CfgCurrencyDuiHuan()
+        : m_nMoShi(0), m_nShengYaoBi(0), m_nJinBi(0), m_nDailyLimit(0)
+    {}
+    int32_t m_nMoShi;
+    int32_t m_nShengYaoBi;
+    int32_t m_nJinBi;
+    int32_t m_nDailyLimit;
+};
+
+class CfgCurrencyDuiHuanMap
+{
+public:
+    CfgCurrencyDuiHuanMap() {}
+    ~CfgCurrencyDuiHuanMap() {}
+    void Add(int32_t nId, const CfgCurrencyDuiHuan& stu)    {
+        m_mData[nId] = stu;    }
+    const CfgCurrencyDuiHuan* Get(int32_t nId) const    {        std::map<int32_t, CfgCurrencyDuiHuan>::const_iterator it = m_mData.find(nId);        if (it != m_mData.end()) return &it->second;        return NULL;    }
+private:    std::map<int32_t, CfgCurrencyDuiHuan> m_mData;};
+
+// ===== CfgMoFuSuit Config =====
+struct CfgMoFuSuit
+{
+    CfgMoFuSuit()
+        : nSuitId(0), nNeedCount(0)
+    {}
+    int32_t nSuitId;
+    int32_t nNeedCount;
+    AttrAddonVector vAddAttr;
+};
+class CfgMoFuSuitMap
+{
+public:
+    CfgMoFuSuitMap() {}
+    ~CfgMoFuSuitMap() {}
+    void Add(int32_t nSuitId, const CfgMoFuSuit& stu)    {        m_mData[nSuitId] = stu;    }
+    const CfgMoFuSuit* Get(int32_t nSuitId) const    {        std::map<int32_t, CfgMoFuSuit>::const_iterator it = m_mData.find(nSuitId);        if (it != m_mData.end()) return &it->second;        return NULL;    }
+private:    std::map<int32_t, CfgMoFuSuit> m_mData;};
+
+// ===== CfgPetEquip Config =====
+struct CfgPetEquip
+{
+    CfgPetEquip()
+        : nId(0), nPetId(0), nEquipId(0), nAttrType(0), nAttrValue(0), nLevel(0)
+    {}
+    int32_t nId;
+    int32_t nPetId;
+    int32_t nEquipId;
+    int32_t nAttrType;
+    int32_t nAttrValue;
+    int32_t nLevel;
+};
+typedef std::map<int32_t, CfgPetEquip> CfgPetEquipMap;
+
+class CfgPetEquipTable
+{
+public:
+    CfgPetEquipTable() {}
+    ~CfgPetEquipTable() {}
+
+    void Add(int32_t nId, const CfgPetEquip& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgPetEquip* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgPetEquip>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgPetEquip> m_mData;
+};
+
+// ===== CfgCityWar Config =====
+struct CfgCityWar
+{
+    CfgCityWar()
+        : nId(0), nMapId(0), nDuration(0), nRewardExp(0), nRewardMoney(0),
+          nNeedLevel(0), nMinPlayer(0), nMaxPlayer(0)
+    {}
+    int32_t nId;
+    int32_t nMapId;
+    int32_t nDuration;
+    int32_t nRewardExp;
+    int32_t nRewardMoney;
+    int32_t nNeedLevel;
+    int32_t nMinPlayer;
+    int32_t nMaxPlayer;
+};
+typedef std::map<int32_t, CfgCityWar> CfgCityWarMap;
+
+class CfgCityWarTable
+{
+public:
+    CfgCityWarTable() {}
+    ~CfgCityWarTable() {}
+
+    void Add(int32_t nId, const CfgCityWar& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgCityWar* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgCityWar>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgCityWar> m_mData;
+};
+
+// ===== CfgCampWar Config =====
+struct CfgCampWar
+{
+    CfgCampWar()
+        : nId(0), nMapId(0), nDuration(0), nNeedLevel(0), nRewardExp(0), nRewardMoney(0)
+    {}
+    int32_t nId;
+    int32_t nMapId;
+    int32_t nDuration;
+    int32_t nNeedLevel;
+    int32_t nRewardExp;
+    int32_t nRewardMoney;
+};
+typedef std::map<int32_t, CfgCampWar> CfgCampWarMap;
+
+class CfgCampWarTable
+{
+public:
+    CfgCampWarTable() {}
+    ~CfgCampWarTable() {}
+
+    void Add(int32_t nId, const CfgCampWar& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgCampWar* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgCampWar>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgCampWar> m_mData;
+};
+
+// ===== CfgPeerlessWar Config =====
+struct CfgPeerlessWar
+{
+    CfgPeerlessWar()
+        : nId(0), nMapId(0), nDuration(0), nNeedLevel(0), nRewardExp(0), nRewardMoney(0), nMaxPlayer(0)
+    {}
+    int32_t nId;
+    int32_t nMapId;
+    int32_t nDuration;
+    int32_t nNeedLevel;
+    int32_t nRewardExp;
+    int32_t nRewardMoney;
+    int32_t nMaxPlayer;
+};
+typedef std::map<int32_t, CfgPeerlessWar> CfgPeerlessWarMap;
+
+class CfgPeerlessWarTable
+{
+public:
+    CfgPeerlessWarTable() {}
+    ~CfgPeerlessWarTable() {}
+
+    void Add(int32_t nId, const CfgPeerlessWar& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgPeerlessWar* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgPeerlessWar>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgPeerlessWar> m_mData;
+};
+
+// ===== CfgWorldBoss Config =====
+struct CfgWorldBoss
+{
+    CfgWorldBoss()
+        : nId(0), nBossId(0), nMapId(0), nLevel(0), nReviveTime(0),
+          nRewardExp(0), nRewardMoney(0), nHp(0), nAttack(0), nDefense(0)
+    {}
+    int32_t nId;
+    int32_t nBossId;
+    int32_t nMapId;
+    int32_t nLevel;
+    int32_t nReviveTime;
+    int32_t nRewardExp;
+    int32_t nRewardMoney;
+    int32_t nHp;
+    int32_t nAttack;
+    int32_t nDefense;
+};
+typedef std::map<int32_t, CfgWorldBoss> CfgWorldBossMap;
+
+class CfgWorldBossTable
+{
+public:
+    CfgWorldBossTable() {}
+    ~CfgWorldBossTable() {}
+
+    void Add(int32_t nId, const CfgWorldBoss& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgWorldBoss* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgWorldBoss>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgWorldBoss> m_mData;
+};
+
+// ===== CfgGemAdd Config =====
+struct CfgGemAdd
+{
+    CfgGemAdd()
+        : nId(0), nGemType(0), nAddRate(0), nEffectValue(0)
+    {}
+    int32_t nId;
+    int32_t nGemType;
+    int32_t nAddRate;
+    int32_t nEffectValue;
+};
+typedef std::map<int32_t, CfgGemAdd> CfgGemAddMap;
+
+class CfgGemAddTable
+{
+public:
+    CfgGemAddTable() {}
+    ~CfgGemAddTable() {}
+
+    void Add(int32_t nId, const CfgGemAdd& stu)
+    {
+        m_mData[nId] = stu;
+    }
+
+    const CfgGemAdd* Get(int32_t nId) const
+    {
+        std::map<int32_t, CfgGemAdd>::const_iterator it = m_mData.find(nId);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int32_t, CfgGemAdd> m_mData;
+};
+
+// ===== BaoKuFuBen Config =====
+struct BaoKuFuBen
+{
+    BaoKuFuBen() : nMapId(0), nLevel(0), nNeedLevel(0), nCostItemId(0), nCostItemCount(0) {}
+    int32_t nMapId;
+    int32_t nLevel;
+    int32_t nNeedLevel;
+    int32_t nCostItemId;
+    int32_t nCostItemCount;
+};
+typedef std::map<int32_t, BaoKuFuBen> BaoKuFuBenMap;
+
+// ===== BaoKuRandom Config =====
+struct BaoKuRandom
+{
+    BaoKuRandom() : nId(0), nRate(0), nItemId(0), nItemCount(0) {}
+    int32_t nId;
+    int32_t nRate;
+    int32_t nItemId;
+    int32_t nItemCount;
+};
+typedef std::map<int, BaoKuRandom> BaoKuRandomMap;
+
+// ===== CfgDropRecord Config =====
+struct CfgDropRecord
+{
+    CfgDropRecord() : nId(0), nDropId(0), nProbability(0) {}
+    int32_t nId;
+    int32_t nDropId;
+    int32_t nProbability;
+};
+typedef std::map<int32_t, CfgDropRecord> CfgDropRecordMap;
+
+// ===== CfgDungeonSummon Config =====
+struct CfgDungeonSummon
+{
+    CfgDungeonSummon() : nId(0), nMonsterId(0), nCount(0), nWave(0) {}
+    int32_t nId;
+    int32_t nMonsterId;
+    int32_t nCount;
+    int32_t nWave;
+};
+typedef std::map<int32_t, CfgDungeonSummon> CfgDungeonSummonMap;
+
+// ===== ShiQuCfg Config =====
+struct ShiQuCfg
+{
+    ShiQuCfg() : nId(0), nNeedLevel(0), nGold(0) {}
+    int32_t nId;
+    int32_t nNeedLevel;
+    int32_t nGold;
+};
+typedef std::map<int32_t, ShiQuCfg> ShiQuCfgMap;
+
+// ===== CfgMiniClient Config =====
+struct CfgMiniClient
+{
+    CfgMiniClient() : nId(0), nPlatform(0), nUrl(""), nVersion("") {}
+    int32_t nId;
+    int32_t nPlatform;
+    std::string nUrl;
+    std::string nVersion;
+};
+typedef std::map<int32_t, CfgMiniClient> CfgMiniClientMap;
+
+// ===== VipEquipPosLevelUp Config =====
+struct VipEquipPosLevelUp
+{
+    VipEquipPosLevelUp() : nPos(0), nLevel(0), nNeedVip(0), nCostGold(0) {}
+    int32_t nPos;
+    int32_t nLevel;
+    int32_t nNeedVip;
+    int32_t nCostGold;
+};
+typedef std::map<std::pair<int32_t, int32_t>, VipEquipPosLevelUp> VipEquipPosLevelUpMap;
+
+// ===== VipEQuipPosSuit Config =====
+struct VipEQuipPosSuit
+{
+    VipEQuipPosSuit() : nSuitId(0), nCount(0), nAttrRate(0) {}
+    int32_t nSuitId;
+    int32_t nCount;
+    int32_t nAttrRate;
+};
+typedef std::map<int32_t, VipEQuipPosSuit> VipEQuipPosSuitMap;
+
+// ===== CVipClubLuckyDrop Config =====
+struct CVipClubLuckyDrop
+{
+    CVipClubLuckyDrop() : nIndex(0), nRate(0), nTotalRate(0) {}
+    int32_t nIndex;
+    int32_t nRate;
+    int32_t nTotalRate;
+    MemChrBagVector vItem;
+};
+typedef std::map<int32_t, CVipClubLuckyDrop> CVipClubLuckyDropMap;
+
+// ===== CfgYYSuperBuff Config =====
+struct CfgYYSuperBuff
+{
+    CfgYYSuperBuff() : nId(0), nBuffId(0), nBuffLevel(0) {}
+    int32_t nId;
+    int32_t nBuffId;
+    int32_t nBuffLevel;
+};
+typedef std::map<int32_t, CfgYYSuperBuff> CfgYYSuperBuffMap;
+
+// ===== ChristmasDuiHuan Config =====
+struct ChristmasDuiHuan
+{
+    ChristmasDuiHuan() : nId(0), nNeedItemId(0), nNeedItemCount(0), nGetItemId(0), nGetItemCount(0) {}
+    int32_t nId;
+    int32_t nNeedItemId;
+    int32_t nNeedItemCount;
+    int32_t nGetItemId;
+    int32_t nGetItemCount;
+};
+typedef std::map<int32_t, ChristmasDuiHuan> ChristmasDuiHuanMap;
+
+// ===== ContributionCfg Config =====
+struct ContributionCfg
+{
+    ContributionCfg() : nLevel(0), nNeedContribution(0), nAttrRate(0) {}
+    int32_t nLevel;
+    int32_t nNeedContribution;
+    int32_t nAttrRate;
+};
+typedef std::map<int32_t, ContributionCfg> ContributionCfgMap;
+
+// ===== DamnationCfg Config =====
+struct DamnationCfg
+{
+    DamnationCfg() : nId(0), nType(0), nParam(0), nRewardExp(0), nRewardMoney(0) {}
+    int32_t nId;
+    int32_t nType;
+    int32_t nParam;
+    int32_t nRewardExp;
+    int32_t nRewardMoney;
+};
+typedef std::map<int32_t, DamnationCfg> DamnationCfgMap;
+
+// ===== DiligenceCfg Config =====
+struct DiligenceCfg
+{
+    DiligenceCfg() : nDay(0), nNeedLogin(0), nRewardId(0) {}
+    int32_t nDay;
+    int32_t nNeedLogin;
+    int32_t nRewardId;
+};
+typedef std::map<int32_t, DiligenceCfg> DiligenceCfgMap;
+
+// ===== DuiHuanLimit Config =====
+struct DuiHuanLimit
+{
+    DuiHuanLimit() : nId(0), nLimit(0) {}
+    int32_t nId;
+    int32_t nLimit;
+};
+typedef std::map<int32_t, DuiHuanLimit> DuiHuanLimitMap;
+
+// ===== FunctionOpenMail Config =====
+struct FunctionOpenMail
+{
+    FunctionOpenMail() : nFuncId(0), nMailId(0) {}
+    int32_t nFuncId;
+    int32_t nMailId;
+};
+typedef std::map<int32_t, FunctionOpenMail> FunctionOpenMailMap;
+
+// ===== GoblinCfg Config =====
+struct GoblinCfg
+{
+    GoblinCfg() : nId(0), nMonsterId(0), nRate(0) {}
+    int32_t nId;
+    int32_t nMonsterId;
+    int32_t nRate;
+};
+typedef std::map<int32_t, GoblinCfg> GoblinCfgMap;
+
+// ===== GuWuCfg Config =====
+struct GuWuCfg
+{
+    GuWuCfg() : nId(0), nLevel(0), nCostGold(0), nAddPercent(0) {}
+    int32_t nId;
+    int32_t nLevel;
+    int32_t nCostGold;
+    int32_t nAddPercent;
+};
+typedef std::map<int32_t, GuWuCfg> GuWuCfgMap;
+
+// ===== HoeCfg Config =====
+struct HoeCfg
+{
+    HoeCfg() : nLevel(0), nNeedExp(0), nCostGold(0) {}
+    int32_t nLevel;
+    int32_t nNeedExp;
+    int32_t nCostGold;
+};
+typedef std::map<int32_t, HoeCfg> HoeCfgMap;
+
+// ===== LuDaShiVip Config =====
+struct LuDaShiVip
+{
+    LuDaShiVip() : nLevel(0), nNeedExp(0) {}
+    int32_t nLevel;
+    int32_t nNeedExp;
+    MemChrBag Gift;
+};
+typedef std::map<int32_t, LuDaShiVip> LuDaShiVipMap;
+
+// ===== SpecialBossMapCfg Config =====
+struct SpecialBossMapCfg
+{
+    SpecialBossMapCfg() : nMapId(0), nBossId(0), nRate(0) {}
+    int32_t nMapId;
+    int32_t nBossId;
+    int32_t nRate;
+};
+typedef std::map<int32_t, SpecialBossMapCfg> SpecialBossMapCfgMap;
+
+// ===== UltimateChallengeCfg Config =====
+struct UltimateChallengeCfg
+{
+    UltimateChallengeCfg() : nLevel(0), nMonsterId(0), nRewardExp(0), nRewardMoney(0) {}
+    int32_t nLevel;
+    int32_t nMonsterId;
+    int32_t nRewardExp;
+    int32_t nRewardMoney;
+};
+typedef std::map<int32_t, UltimateChallengeCfg> UltimateChallengeCfgMap;
+
+// ===== WingEquipPolish Config =====
+struct WingEquipPolish
+{
+    WingEquipPolish() : nId(0), nLevel(0), nCostGold(0), nAttrType(0), nAttrValue(0) {}
+    int32_t nId;
+    int32_t nLevel;
+    int32_t nCostGold;
+    int32_t nAttrType;
+    int32_t nAttrValue;
+};
+typedef std::map<int32_t, WingEquipPolish> WingEquipPolishMap;
+
+// ===== WinRefiningCfg Config =====
+struct WinRefiningCfg
+{
+    WinRefiningCfg() : nLevel(0), nCostGold(0), nRate(0) {}
+    int32_t nLevel;
+    int32_t nCostGold;
+    int32_t nRate;
+};
+typedef std::map<int32_t, WinRefiningCfg> WinRefiningCfgMap;
+
+// ===== XunLeiCfg Config =====
+struct XunLeiCfg
+{
+    XunLeiCfg() : nLevel(0), nNeedExp(0) {}
+    int32_t nLevel;
+    int32_t nNeedExp;
+    MemChrBag Reward;
+};
+typedef std::map<int32_t, XunLeiCfg> XunLeiCfgMap;
+
+// ===== CfgTalentActive Config =====
+struct CfgTalentActive
+{
+    CfgTalentActive() : nId(0) {}
+    int32_t nId;
+    std::list<ItemData> lItems;
+};
+typedef std::map<int32_t, CfgTalentActive> CfgTalentActiveMap;
+
+
+
+
+// ===== Missing typedefs for decompiled code =====
+struct ActDropItem
+{
+    ActDropItem() : nMinLevel(0), nMaxLevel(0), nMapType(0), nId(0), nClass(0), nCount(0), nBind(0), nRate(0), nStartTime(0), nEndTime(0), nProbability(0) {}
+    int32_t nMinLevel;
+    int32_t nMaxLevel;
+    int32_t nMapType;
+    int32_t nId;
+    int32_t nClass;
+    int32_t nCount;
+    int32_t nBind;
+    int32_t nRate;
+    int32_t nStartTime;
+    int32_t nEndTime;
+    int32_t nProbability;
+};
+typedef std::list<ActDropItem> ActDropItemList;
+
+typedef std::vector<BuffAttr> BuffAttrVector;
+
+typedef std::vector<int32_t> Int32VtVector;
+
+typedef std::list<Param2> Param2List;
+
+struct GroupMonster { int32_t nGroupId; int32_t nMonsterId; int32_t nCount; };
+typedef std::vector<GroupMonster> GroupMonsterVector;
+
+typedef std::list<AddAttribute> TalentAddonList;
+
+struct TaskDrop { int32_t nTaskId; int32_t nDropId; int32_t nProbability; };
+typedef std::list<TaskDrop> TaskDropList;
 
 
 class CfgData
@@ -4858,7 +5986,10 @@ public:
 	const CfgFamilyTask&			GetFamilyTaskTable() const;
 	const CfgPetKnightTable&		GetPetKnightTable() const;
 	const CfgFamilyPetRegistTable&	GetFamilyPetRegistTable() const;
-	const CfgFamilyTable&			GetFamilyTable() const;
+	const TestServerReward*			GetTestServerReward( int32_t nId ) const;
+	ActDropItemList				GetAcrDropList( int32_t nId ) const;
+
+	int32_t					GetAttrBattle( int32_t nAttr ) const;	const CfgFamilyTable&			GetFamilyTable() const;
 	const CfgCharPetTable&			GetCharPetTable() const;
 	const CfgTeamTable&				GetTeamTable() const;
 	const CfgInsidePetTable&		GetInsidePetTable() const;
@@ -4942,6 +6073,16 @@ public:
 	CfgEverydayChongZhi*		GetEveryDayChongZhiCfg( int8_t Index );
 	CTouZiCfg&					GetTouZhiCfg();
 	KaiFuHuoDongCfg&			GetKaiFuHuoDongCfg();
+	const CrossTowerCfg*		GetCrossTowerCfg( int32_t MapId ) const;
+	void					InitCrossTowerCfgMap();
+		void					fetchDungeonNpc();
+		void					fetchMonsterAI();
+		void					fetchMonsterAdjustTable();
+		void					InitGroupIconTable();
+		void					InitActiveSkillTable();
+		void					InitPassiveSkillTable();
+		void					InitTrigSkillTable();
+		void					InitTalentTable();
 	LittleHelperCfg*				GetLittleHelperCfg( int32_t nId );
 	LittleHelperCfgMap&			GetLittleHelperCfgTable();
 	LevelRefinCfg*				GetRefining( int32_t nLevel );
@@ -5127,6 +6268,165 @@ private:
 	void InitTianLingTable();
 	void InitZhanHunTable();
 	void InitSunAndMoonTable();
+	void Init360RewardTable();
+	void Init360RewardTypeTable();
+	void InitActDropTable();
+	void InitAdultGiftTable();
+	void InitAttrBattleTable();
+	void InitBFZLEnterCostTable();
+	void InitBaoKuFuBen();
+	void InitBeastShrineEnterCostTable();
+	void InitBlacketMarketTable();
+	void InitBlueDailyRewardTable();
+	void InitBlueLevelRewardTable();
+	void InitBlueRewardTable();
+	void InitBossDistribution();
+	void InitBossFirstKilledTable();
+	void InitBuyGiftTable();
+	void InitCachetCfg();
+	void InitCampWarContKillTable();
+	void InitCampWarRewardTable();
+	void InitCarrierAttrTable();
+	void InitCarrierTable();
+	void InitChargeDungeon();
+	void InitChristmasDuiHuanTable();
+	void InitCityWarContRewardTable();
+	void InitClbAimCfg();
+	void InitCycleTowerTable();
+	void InitDaZheQuanTable();
+	void InitDamnationTable();
+	void InitDiligenceCfgMap();
+	void InitDuiHuanLimitTable();
+	void InitDungeonScoreTable();
+	void InitDungeonSummon();
+	void InitEquipBackTask();
+	void InitEquipBlessTable();
+	void InitEquipBoxTable();
+	void InitEquipDecomposeTable();
+	void InitEquipPosSuitTable();
+	void InitEquipRongHeTable();
+	void InitEquipUpPhase();
+	void InitEquipUpPosTable();
+	void InitExchangeTable();
+	void InitFamilyDonateTable();
+	void InitFamilyDungeonTable();
+	void InitFamilyMedalTable();
+	void InitFamilySkillTable();
+	void InitFamilyWarReliveTable();
+	void InitFlopTable();
+	void InitFunctionOpenMailMap();
+	void InitGameTable();
+	void InitGemLevelUpTable();
+	void InitGemOpenHoleTable();
+	void InitGemSuitTable();
+	void InitGoblinData();
+	void InitGoblinTable();
+	void InitGoldEggTable();
+	void InitGongMinTable();
+	void InitGroupMonster();
+	void InitGuWuCfgMap();
+	void InitGuardPrivilegeTable();
+	void InitGuiGuDaoRenTable();
+	void InitHoeTable();
+	void InitJewelPavilionTable();
+	void InitJueWeiTable();
+	void InitKunLingTable();
+	void InitLaDaShiHuiYuan();
+	void InitLevelChatTimesTable();
+	void InitLibraryTable();
+	void InitLimitTimeTable();
+	void InitLuckDropTable();
+	void InitMYSJRewardTable();
+	void InitMaintainCompensateTable();
+	void InitMapRoadTable();
+	void InitMiniClientMap();
+	void InitMiniClientTable();
+	void InitMoFuTable();
+	void InitMobilePhoneGiftTable();
+	void InitMonsterAddAttrTable();
+	void InitMonsterRandTable();
+	void InitMonthlyChouJiangTable();
+	void InitMysteryGiftTable();
+	void InitMysteryShopTable();
+	void InitOutLinkFestivalTable();
+	void InitPetAttrTable();
+	void InitPetEquipTable();
+	void InitPetUpStarTable();
+	void InitPlatformDaTingMap();
+	void InitPlatformReward();
+	void InitPlatformVipMap();
+	void InitQQGameRewardTable();
+	void InitQQZoneRewardTable();
+	void InitRefreshMonsterCfgListMap();
+	void InitRongHeCfg();
+	void InitScoreShopTable();
+	void InitSevenTaskTable();
+	void InitShenWeiTaskTable();
+	void InitShenYaoPosSuitTable();
+	void InitShenYaoPosTable();
+	void InitShouHuRefining();
+	void InitShunWangTable();
+	void InitSouGouDaTing();
+	void InitSouGouSkinTable();
+	void InitSpeciaEquipCfgMap();
+	void InitSpeciaSkillDistanceTable();
+	void InitSpecialBossMapCfgMap();
+	void InitSpecialMap();
+	void InitSpecialMonster();
+	void InitSpecialTreasureMapRandTable();
+	void InitSpeed360Reward();
+	void InitStrengthenTable();
+	void InitSuperMemberTable();
+	void InitSuperTeHuiTable();
+	void InitSystemOpenReward();
+	void InitTGPDailyRewardTable();
+	void InitTGPLevelRewardTable();
+	void InitTGPRewardTable();
+	void InitTalentActiveTable();
+	void InitTalentPageTable();
+	void InitTaskCycleRewardTable();
+	void InitTencentSevenDayLoginTable();
+	void InitTestServerReward();
+	void InitTitleTable();
+	void InitTongTianChiRanTable();
+	void InitTouZiTable();
+	void InitTrailerTable();
+	void InitTreasureMapTabale();
+	void InitUltimateChallengeCfg();
+	void InitVplanTable();
+	void InitWeiXinTable();
+	void InitWingCfgTable();
+	void InitWingEquipPolish();
+	void InitWishRewardTable();
+	void InitWuHunCreateTable();
+	void InitWuHunItemTable();
+	void InitWuHunShopTable();
+	void InitXianYaoTaskTable();
+	void InitXinMoTable();
+	void InitXingMaiSlotTable();
+	void InitXingMaiTable();
+	void InitXunLeiTable();
+	void InitYYDaTing();
+	void InitYYVip();
+	void InitYellowDailyRewardTable();
+	void InitYellowLevelRewardTable();
+	void InitYellowRewardTable();
+	void InitCampWarTable();
+	void InitChouJiangTable();
+	void InitCityWarTable();
+	void InitCurrencyDuiHuanTable();
+	void InitDropRecordTable();
+	void InitEquipStrengthenTable();
+	void InitGemAddTable();
+	void InitMoFuSuitTable();
+	void InitPeerlessWarTable();
+	void InitShenYaoEquipTable();
+	void InitWorldBossTable();
+
+	void InitDrawTable();
+	void InitShangRenCfgMap();
+	void InitSelectItemCfgMap();
+	void InitMingGeTable();
 private:
 	CfgMapEventList	m_emptyEvents;
 	CfgActivityTable m_activities;
@@ -5286,6 +6586,7 @@ private:
 	SevenTaskTable			m_SevenTaskTable;
 	DaZheQuanMap			m_DaZheQuanMap;
 	RongHeCfgMap			m_RongHeCfgMap;
+	EquipRongHeMap			m_EquipRongHeMap;
 	CachetCfgMap			m_CachetCfg;
 	CfgCarrierTable			m_cfgCarrierTable;
 	CfgWingTable			m_cfgWing;
@@ -5323,6 +6624,7 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const DaZheQuan*			GetDaZheQuanCfg( int32_t nIndex ) const;
 	const CfgCachet*			GetCfgCachet( int32_t nLevel ) const;
 	const RongHeCfg*			GetRongHeCfg( int32_t nIndex ) const;
+	const EquipRongHe*		GetEquipRongHe( int32_t nItemId ) const;
 	int32_t					GetCachetLevel( int64_t nHonor ) const;
 	const SevenTaskTable*			GetSevenTaskTable();
 
@@ -5336,7 +6638,94 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const CfgMysteryShopTable*		GetMysteryShopTable() const { return &m_cfgMysteryShopTable; }
 	GuiGuDaoRenCfg* GetGuiGuDaoRenCfg( int32_t nNpcId );
 	int32_t GetTongTianChiReward( int32_t nIndex );
+	const CMingGeTable&		GetMingGeTable() const { return m_MingGeTable; }
+	const TreasureMapTabale&	GetTreasureMapTabale() const { return m_TreasureMapTabale; }
+	const SpecialTreasureMapRandCfgList&	GetSpecialTreasureMapRandCfgList() const { return m_SpecialTreasureMapRandCfgList; }
+	const KunLingTable&		GetKunLingTable() const { return m_KunLingTable; }
+	const XinMoTable&		GetXinMoTable() const { return m_XinMoTable; }
+	const PlatformDaTingMap*	GetPlatformDaTingMap() const { return &m_PlatformDaTingMap; }
+	const PlatformDaTing*		GetGetPlatformDaTingCfg(const std::string& platform, int32_t nIndex) const;
+	const PlatformVipMap*		GetPlatformVipMap() const { return &m_PlatformVipMap; }
+	const PlatformVip*		GetGetPlatformVipCfg(const std::string& platform, int32_t nIndex) const;
+	const PlatformRewardCfgMap*	GetPlatformRewardCfgMap() const { return &m_PlatformRewardCfgMap; }
+	const PlatformRewardCfg*	GetGetPlatformRewardCfg(const std::string& platform, int32_t nIndex) const;
+	const MiniClientCfgMap*	GetMiniClientMap() const { return &m_MiniClientMap; }
+	const MiniClientCfg*		GetMiniClientCfg(const std::string& platform, int32_t nIndex) const;
+	const TreasureHunterCfg*	GetTreasureHunterCfg(int32_t nId) const;
+	const TreasureHunterCfgMap*	GetTreasureHunterCfgMap() const { return &m_TreasureHunterCfgMap; }
+
+	const SuperTeHuiCfg*		GetSuperTeHuiCfg(int32_t nIndex) const;
+	const SuperTeHuiCfgMap*		GetSuperTeHuiCfgMap() const { return &m_SuperTeHuiCfgMap; }
+	const JewelPavilionCfg*		GetJewelPavilionCfg(int32_t nDay, int32_t nIndex) const;
+	const JewelPavilionCfgMap*	GetJewelPavilionCfgMap() const { return &m_JewelPavilionCfgMap; }
+	const ShangRenCfg*		GetShangRenCfg(int32_t nId) const;
+	const ShangRenCfgMap*		GetShangRenCfgMap() const { return &m_ShangRenCfgMap; }
+	const XingMaiCfg*			GetXingMaiCfg(int32_t nLevel) const;
+	const CfgXingMaiSlot*		GetXingMaiSlot(int8_t nIndex) const;
+
+	const Speed360Reward*		Get360Reward() const { return &m_Speed360Reward; }
+	const Wan360Reward*		Get360RewardCfg(int32_t nIndex) const;
+	int32_t			Get360RewardIcon(const std::string& platform) const;
+	const CfgSouGouSkin*		GetSouGouSkin(const std::string& platform) const;
+	const CfgWeiXingGift*		GetWeiXinGift(const std::string& platform) const;
+	const CfgSuperMember*		GetSuperMember(const std::string& platform) const;
+	const CfgMobilePhoneGift*	GetMobilePhoneGift(const std::string& platform) const;
+	const CfgAdultGiftTable*	GetAdultGiftTable() const { return &m_cfgAdultGiftTable; }
+	const ZeroBuyPetCfg*		GetZeroBuyPetCfg() const { return &m_ZeroBuyPetCfg; }
+
+	const MonthlyChouJiangTable*	GetMonthlyChouJiangTable() const { return &m_MonthlyChouJiangTable; }
+	const ClbAimCfgList&	GetClbAimCfgList() const { return m_ClbAimCfgList; }
 private:
+	CMingGeTable				m_MingGeTable;
+	TreasureMapTabale			m_TreasureMapTabale;
+	SpecialTreasureMapRandCfgList		m_SpecialTreasureMapRandCfgList;
+	KunLingTable				m_KunLingTable;
+	XinMoTable				m_XinMoTable;
+	PlatformDaTingMap			m_PlatformDaTingMap;
+	PlatformVipMap				m_PlatformVipMap;
+	PlatformRewardCfgMap		m_PlatformRewardCfgMap;
+	MiniClientCfgMap			m_MiniClientMap;
+	TreasureHunterCfgMap		m_TreasureHunterCfgMap;
+	SuperTeHuiCfgMap		m_SuperTeHuiCfgMap;
+	JewelPavilionCfgMap		m_JewelPavilionCfgMap;
+	CrossTowerCfgMap		m_CrossTowerCfgMap;
+	ShangRenCfgMap		m_ShangRenCfgMap;
+	Wan360RewardMap			m_Wan360RewardMap;
+	std::map<std::string, int32_t>	m_Wan360RewardTypeMap;
+	CfgSouGouSkinMap		m_cfgSouGouSkin;
+	Speed360Reward			m_Speed360Reward;
+	CfgWeiXingGiftMap		m_WeiXinGiftTable;
+	CfgSuperMemberMap		m_cfgSuperMember;
+	CfgMobilePhoneGiftMap	m_CfgMobilePhoneGift;
+	CfgAdultGiftTable		m_cfgAdultGiftTable;
+	ZeroBuyPetCfg			m_ZeroBuyPetCfg;
+	XingMaiCfgMap			m_XingMaiCfgTable;
+	CfgXingMaiSlotMap		m_cfgXingMaiSlotTable;
+	MonthlyChouJiangTable		m_MonthlyChouJiangTable;
+	ClbAimCfgList		m_ClbAimCfgList;
+	// ===== New table members =====
+	CfgGemLevelUpTable		m_cfgGemLevelUp;
+	CfgMoFuTable		m_cfgMoFu;
+	CfgShenYaoEquipTable	m_cfgShenYao;
+	CfgEquipStrengthenTable	m_cfgEquipStrengthen;
+	CfgEquipUpPosTable		m_cfgEquipUpPos;
+	CfgCurrencyDuiHuanMap	m_cfgCurrencyDuiHuan;
+	CfgMoFuSuitMap		m_cfgMoFuSuit;
+	CfgPetEquipTable		m_cfgPetEquip;
+	CfgCityWarTable		m_cfgCityWar;
+	CfgCampWarTable		m_cfgCampWar;
+	CfgPeerlessWarTable		m_cfgPeerlessWar;
+	CfgWorldBossTable		m_cfgWorldBoss;
+	CfgGemAddTable		m_cfgGemAdd;
+	BaoKuFuBenMap		m_BaoKuFuBen;
+	BaoKuRandomMap		m_BaoKuRandomMap;
+	TestServerRewardMap	m_TestServerRewardMap;
+	std::map<int32_t, std::list<ActDropItem> >	m_ActDropItemListMap;
+
+
+	CfgSkillTable				m_cfgSkillTable;
+	std::map<int32_t, int32_t>		m_cfgAttrBattle;
+	std::map<int32_t, int32_t>		m_cfgBFZLEnterCostTable;
 };
 
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

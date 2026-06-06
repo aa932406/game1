@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
 	FAMILY_MANAGER.Init();
 	WORLDBOSS.Init();
 	KAI_FU_HUO_DONG.Init();
+	KIA_FU_RECHARGE.Init();
 	EQUIP_BACK.Init();
 
 	// ������ʱ���߳�

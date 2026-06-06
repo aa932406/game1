@@ -245,16 +245,25 @@ void CLittleHelper::onStand()
 {
     if ( m_pPlayer && m_pMap )
         ChangeTarget();
-}
-
-void CLittleHelper::ChangeTarget()
+}void CLittleHelper::ChangeTarget()
 {
-    if ( !m_pMap )
-        return;
-    // TODO: Implement drop item pickup - CDropItem doesn't expose position info
-    // Simplified: stand by default, waiting for full drop integration
-    m_TarDropId = 0;
-    m_WorkState = LHWS_STAND;
+	if ( !m_pMap || !m_pPlayer )
+		return;
+	// Scan nearby drop items and pick the nearest one
+	Position dropPos;
+	EntityId_t dropId = 0;
+	if ( ((Map*)m_pMap)->GetNearestDropPos( this, dropPos, dropId ) )
+	{
+		m_TarDropId = dropId;
+		setTargetTile( dropPos.x, dropPos.y );
+		broadcastMove();
+		m_WorkState = LHWS_WALK_PICK;
+	}
+	else
+	{
+		m_TarDropId = 0;
+		m_WorkState = LHWS_STAND;
+	}
 }
 
 void CLittleHelper::onFollow()
@@ -265,36 +274,38 @@ void CLittleHelper::onFollow()
     Position curTile = getCurrentTile();
     if ( curTile.x == param.x && curTile.y == param.y )
         m_WorkState = LHWS_STAND;
-}
-
-void CLittleHelper::onWalkPick()
+}void CLittleHelper::onWalkPick()
 {
-    if ( !m_pPlayer || !m_pMap )
-        return;
-    if ( !m_TarDropId )
-    {
-        m_WorkState = LHWS_STAND;
-        return;
-    }
-    // TODO: Integrate with CDropItemGroup for actual pickup
-    Position param = getTargetTile();
-    Position curTile = getCurrentTile();
-    if ( curTile.x == param.x && curTile.y == param.y )
-    {
-        m_WorkState = LHWS_PICK;
-        m_PickTick = m_pPlayer->getTick();
-    }
+	if ( !m_pPlayer || !m_pMap )
+		return;
+	if ( !m_TarDropId )
+	{
+		m_WorkState = LHWS_STAND;
+		return;
+	}
+	Position param = getTargetTile();
+	Position curTile = getCurrentTile();
+	if ( curTile.x == param.x && curTile.y == param.y )
+	{
+		m_WorkState = LHWS_PICK;
+		m_PickTick = m_pPlayer->getTick();
+	}
 }
 
 void CLittleHelper::onPick()
 {
-    if ( !m_pPlayer || !m_pMap )
-        return;
-    if ( m_pPlayer->getTick() - m_PickTick <= 400 )
-        return;
-    // TODO: Integrate with CDropItemGroup for actual pickup
-    m_TarDropId = 0;
-    m_WorkState = LHWS_STAND;
+	if ( !m_pPlayer || !m_pMap )
+		return;
+	if ( m_pPlayer->getTick() - m_PickTick <= 400 )
+		return;
+	// Pick up the drop item using CDropItemGroup::pick
+	CDropItemGroup* pGroup = ((Map*)m_pMap)->getDropItemGroup( m_TarDropId );
+	if ( pGroup != NULL )
+	{
+		pGroup->pick( *m_pPlayer, m_TarDropId );
+	}
+	m_TarDropId = 0;
+	m_WorkState = LHWS_STAND;
 }
 
 Position CLittleHelper::getFollowTile( int32_t tx, int32_t ty, Direction dir )

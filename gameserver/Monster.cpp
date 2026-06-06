@@ -330,6 +330,10 @@ bool Monster::isBoss() const
 {
 	return m_cfgmonster.boss_sign > 0;
 }
+int32_t Monster::getBossSign() const
+{
+	return m_cfgmonster.boss_sign;
+}
 
 int32_t	Monster::getAITarget() const
 {
@@ -681,7 +685,7 @@ void Monster::onAttack()
 					break;
 				case SR_SOLO:
 					{
-						// ¼ì²â¼¼ÄÜÊÇ·ñ¿ÉÒÔ¶ÔÄ¿±êÊ©·Å
+						// ï¿½ï¿½â¼¼ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ô¶ï¿½Ä¿ï¿½ï¿½Ê©ï¿½ï¿½
 						skill.unitAction( *this, m_target, attackValue );
 						if ( !m_pCfgSkill->beneficial && m_target.type == ET_PLAYER )
 						{
@@ -726,7 +730,7 @@ void Monster::onAttack()
 
 				if (m_cfgmonster.type == MT_TRAP)
 				{
-					setHP( 0 );		// ÏÝÚåÖ»ÄÜÊ¹ÓÃÒ»´Î
+					setHP( 0 );		// ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ê¹ï¿½ï¿½Ò»ï¿½ï¿½
 					return;
 				}
 				else
@@ -1097,7 +1101,7 @@ void Monster::generateFightDrop(DropItem (&dropItems)[MAX_DROPITEM_SIZE], Player
 				{
 					int32_t groupProbability = RANDOM.generate(1, 100000);
 					int32_t probability = it->probability;
-					// ·Ç¸±±¾¹ÖÎï ¸ù¾ÝµÈ¼¶½µµÍµôÂä
+					// ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ÝµÈ¼ï¿½ï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½
 					if ( !isDungeonMonster() )
 					{
 						if ( m_cfgmonster.boss_sign != 0 )
@@ -1158,7 +1162,7 @@ void Monster::generateFightDrop(DropItem (&dropItems)[MAX_DROPITEM_SIZE], Player
 	{
 		return;
 	}
-	//´¦Àí½ð±ÒµôÂä
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½
 	int32_t MaxRate = 1000;
 	if ( getLevel() < 60 )
 	{
@@ -1170,7 +1174,7 @@ void Monster::generateFightDrop(DropItem (&dropItems)[MAX_DROPITEM_SIZE], Player
 	{
 		DropTimes = 1;
 	}
-	else if ( Rate <= 50 ) //µôÒ»µØ½ð±Ò
+	else if ( Rate <= 50 ) //ï¿½ï¿½Ò»ï¿½Ø½ï¿½ï¿½
 	{
 		DropTimes    = 6;
 	}
@@ -1356,6 +1360,11 @@ bool Monster::SpiderQueenCanRevive()
 void Monster::SetDieType( int8_t Type )
 {
 	m_DieType = Type;
+}
+
+void Monster::SetLifeTime( int32_t nReviveTime )
+{
+	m_ReviveTime = nReviveTime;
 }
 
 void Monster::CheckAddHp( int64_t CurTick )

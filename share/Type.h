@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 
 typedef	int64_t		EntityId_t;
 typedef	int64_t		CharId_t;
