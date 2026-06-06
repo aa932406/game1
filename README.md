@@ -77,6 +77,31 @@ make
 | 42 | **CTrailer** (拖车) | `Trailer.cpp/.h` | Unit 子类，move/appendInfo/init |
 | 43 | **CVip** (VIP系统) | `Vip.cpp/.h` | 核心系统，等级/特权 |
 
+### 待移植模块 (18)
+
+以下模块在反编译代码 (`gameserver/decompiled/`) 中存在完整实现，但尚未移植到当前代码库。
+
+| # | 模块 | 反编译源 | 类名 | 行数 | 方法数 | 说明 |
+|---|------|----------|------|------|--------|------|
+| 1 | **TreasureMap** (宝藏图) | `CTreasureMap.cpp` | CTreasureMap | 801 | 14 | CExtSystemBase，藏宝图事件/奖励/特殊宝藏 |
+| 2 | **KunExt** (鲲扩展) | `CKunExt.cpp` | CKunExt | 1466 | 30 | CExtSystemBase，鲲培养/进化/技能 |
+| 3 | **XinMo** (心魔) | `CXinMo.cpp` | CXinMo | 1540 | 36 | 心魔系统，心魔战斗/培养 |
+| 4 | **DaTingReward** (答题奖励) | `CDaTingReward.cpp` | CDaTingReward | 1179 | 31 | CExtSystemBase，答题活动/奖励发放 |
+| 5 | **KiaFuRecharge** (开服充值) | `CKiaFuRecharge.cpp` | CKiaFuRecharge | 968 | 24 | 开服充值活动，档位/奖励 |
+| 6 | **OpenBeta** (开服活动) | `COpenBeta.cpp` | COpenBeta | 3017 | 44 | 开服系列活动（部分已合并到 KaiFuHuoDong） |
+| 7 | **SuperTeHui** (超级特惠) | `CSuperTeHui.cpp` | CSuperTeHui | 571 | 22 | 超级特惠活动，限时购买 |
+| 8 | **Wan360** (360运营) | `CWan360.cpp` | CWan360 | 550 | 21 | 360平台运营活动 |
+| 9 | **WuHunShop** (武魂商店) | `CWuHunShop.cpp` | CWuHunShop | 442 | 16 | 武魂相关商品购买/兑换 |
+| 10 | **MonthlyChouJiang** (月抽奖) | `CMonthlyChouJiang.cpp` | CMonthlyChouJiang | 469 | 18 | 月度抽奖活动 |
+| 11 | **XingMai** (星脉) | `CXingMai.cpp` | CXingMai | 268 | 10 | 星脉系统 |
+| 12 | **XinMaiMap** (星脉地图) | `CXinMaiMap.cpp` | CXinMaiMap | 289 | 17 | 星脉地图系统 |
+| 13 | **RefreshMonster** (刷新怪物) | `CRefreshMonster.cpp` | CRefreshMonster | 244 | 7 | CActivity 子类，定时刷怪活动 |
+| 14 | **Territory** (领土) | `CTerritory.cpp` | CTerritory | 290 | 8 | 领土系统 |
+| 15 | **TestServerReward** (测试服奖励) | `CTestServerReward.cpp` | CTestServerReward | 254 | 8 | 测试服奖励发放 |
+| 16 | **VipClub** (VIP俱乐部) | `CVipClub.cpp` | CVipClub | 296 | 5 | VIP俱乐部特权 |
+| 17 | **CardGroupBox** (卡牌礼盒) | `CCardGroupBox.cpp` | CCardGroupBox + CCardGroupBoxManager | 202 | 7 | 卡牌礼盒抽卡逻辑 |
+| 18 | **HttpRequest** (HTTP请求) | `CHttpRequest.cpp` | CHttpRequest | 258 | 9 | HTTP请求工具类 |
+
 ### 原有的核心系统（非反编译移植）
 
 | 模块 | 文件 | 说明 |
