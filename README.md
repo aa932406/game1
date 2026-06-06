@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (37/88)
+### 已移植模块 (38/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -68,12 +68,13 @@ make
 | **CCharWuHun** (武魂) | `CharWuHun.cpp/.h` | ~538 | 12 方法 (穿戴/卸下/创建/天赋/套装)，CExtSystemBase 子类
 | **CBossKilledReward** (BOSS击杀奖励) | `BossKilledReward.cpp/.h` | ~397 | 12 方法 (领取/加载/保存/图标)，CExtSystemBase 子类
 | **CGuiGuDaoRen** (鬼谷道人) | `GuiGuDaoRen.cpp/.h` | ~450 | 19 方法 (物品回收/装备回收/排行榜/每日重置/融合记录)，Answer::Singleton 全局单继
+| **CLittleHelper** (小助手) | `CLittleHelper.cpp/.h` + `CLittleHelperData.cpp/.h` + `CharLittlerHelper.cpp/.h` + `LittleHelperCard.cpp/.h` | ~550 | 30+ 方法 (跟随/拾取/购买/工作/休息/外观同步)，Entity+CExtSystemBase 组合，含 Unit 子类 + 玩家扩展 + 卡片效果
 
 ### 数据层变更
 
 | 文件 | 变更说明 |
 |------|----------|
-| `CfgData.h` | 添加 GuardPrivilege/SpecialEquip/BlackMarket/TianLing/OutLinkFestival/Carrier/Draw/Exchange/MysteryGift/MysteryShop/WishReward/MagicBox 配置结构体和成员 |
+| `CfgData.h` | 添加 GuardPrivilege/SpecialEquip/BlackMarket/TianLing/OutLinkFestival/Carrier/Draw/Exchange/MysteryGift/MysteryShop/WishReward/MagicBox/LittleHelper 配置结构体和成员 |
 | `CfgData.cpp` | 完善配置解析方法 (Init*Table) 和 Get 方法；添加 InitMagicBoxTable 存根 |
 | `DataStructs.h` | 添加 IACR_AUCTION_BUY/CANCEL/SELECT_ITEM, IDCR_SELECT_ITEM/DISCARD, GCR/GCC/MCR_AUTO_USE, GCR_MYSTERY_GIFT_BUY, GCR_MYSTERY_SHOP_REFRESH/BUY, IACR_MYSTERY_SHOP_BUY_GET, IDCR_MYSTERY_SHOP_BUY_COST |
 | `share/DataStruct.h` | 添加 ExchangeRecord 结构体 + ExchangeDBData 类; 添加 MysteryShop 结构体 + MysteryShopDBData 类; 添加 MagicBoxDBData 类; 添加 CharWishInfo 结构体 + CharWishDBData 类 (SaveToSqlString/LoadFromDB/PackageData/UnPackageData) |
@@ -113,7 +114,6 @@ make
 | 34 | KiaFuRecharge | `CKiaFuRecharge.cpp` | — | 开服充值 |
 | 35 | KunExt | `CKunExt.cpp` | — | 鲲系统 |
 | 36 | LevelRefining | `CLevelRefining.cpp` | — | 装备精炼 |
-| 37 | LittleHelper | `CLittleHelper.cpp` | — | 小助手 |
 | 38 | MingGeExt | `CMingGeExt.cpp` | — | 命格 |
 | 39 | MoneyRewardTask | `CMoneyRewardTask.cpp` | ~2,560 | 金币奖励任务 |
 | 40 | MonthlyChouJiang | `CMonthlyChouJiang.cpp` | — | 月卡抽奖 |
