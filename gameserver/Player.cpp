@@ -2457,6 +2457,7 @@ void Player::sendBasicInfo()
 //	sendPvpInfo();
 	sendChrLoginInInfo();
 	m_extCharSoul.SendSoulInfo();
+	m_extShiZhuang.SendShiZhuangInfo();
 	m_extTaskCycle.SendTaskCycle();
 	m_KillMonsterTongJi.SendKillMonsterInfo();
 	m_PlayerDailyActivity.SendDailyActivityInfo();
@@ -2845,6 +2846,7 @@ void Player::recalcAttr()
 	m_Fighting.AddFighting();
 	m_extCharInsidePet.AddAttrToTarget( this );
 	m_extCharSoul.AddCharAttr();
+	m_extShiZhuang.AddPlayerAttr();
 	m_PlayerVip.AddVipAttr();
 	m_PlayerGuanWei.AddGuanWeiAttr();
 	AddAppendAttr();
@@ -8205,6 +8207,9 @@ void Player::InitExtSystems()
 
 	m_extRongHe.Init( this );
 	m_ExtSysMgr.Register( &m_extRongHe );
+
+	m_extShiZhuang.Init( this );
+	m_ExtSysMgr.Register( &m_extShiZhuang );
 
 	/*
 	* EXT_INIT_ZK

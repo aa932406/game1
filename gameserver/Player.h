@@ -43,6 +43,7 @@
 #include "SevenDayTask.h"
 #include "ShenWei.h"
 #include "RongHe.h"
+#include "ShiZhuang.h"
 
 #include "Trade.h"
 #include "PlayerMail.h"
@@ -632,6 +633,10 @@ private:			CShenWei			m_extShenWei;
 	friend class CRongHe;
 public:				CRongHe&			GetRongHe() { return m_extRongHe; }
 private:			CRongHe			m_extRongHe;
+
+	friend class CExtCharShiZhuang;
+public:				CExtCharShiZhuang&		GetShiZhuang() { return m_extShiZhuang; }
+private:			CExtCharShiZhuang		m_extShiZhuang;
 
 	friend class CExtCharMysteryGift;
 private:			CExtCharMysteryGift		m_extCharMysteryGift;

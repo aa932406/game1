@@ -2128,6 +2128,131 @@ private:
 	FlopDrawCfgMap m_mFlopDrawCfg;
 };
 
+// ========== 时装系统配置 ==========
+
+// 时装单品配置
+struct CfgShiZhuang
+{
+    CfgShiZhuang()
+        : nId(0), nType(0), nSuitId(0), nSort(0), nPriority(0), nQuality(0)
+    {
+    }
+
+    int32_t nId;
+    int32_t nType;
+    int32_t nSuitId;
+    int32_t nSort;
+    int32_t nPriority;
+    int32_t nQuality;
+    std::string strName;
+    std::string strIcon;
+    std::string strDesc;
+    std::string strMaleAvatar;
+    std::string strFemaleAvatar;
+    AddAttrList vAttr;
+};
+
+// 时装等级配置
+struct CfgShiZhuangLevel
+{
+    CfgShiZhuangLevel()
+        : nType(0), nLevel(0), nLevelExp(0), nNeedLevel(0), nCostItem(0),
+          nGetExp(0), nSmallCritRate(0), nLargeCritRate(0), nBroadcast(0)
+    {
+    }
+
+    int8_t nType;
+    int32_t nLevel;
+    int32_t nLevelExp;
+    int32_t nNeedLevel;
+    int32_t nCostItem;
+    int32_t nGetExp;
+    int32_t nSmallCritRate;
+    int32_t nLargeCritRate;
+    int32_t nBroadcast;
+    AddAttrList vAttr;
+};
+
+// 时装升阶配置
+struct ShiZhuLevelUp
+{
+    ShiZhuLevelUp()
+        : nId(0), nLevel(0)
+    {
+    }
+
+    int32_t nId;
+    int32_t nLevel;
+    ItemDataList lCostItem;
+    AddAttrList lAttr;
+};
+
+// 时装套装配置
+struct ShiZhuangSuitInfo
+{
+    int32_t nLevel;
+    int32_t nSuitLevel;
+};
+
+struct ShiZhuangSuitCfg
+{
+    int32_t nSuidId;
+    int32_t nCount;
+    std::list<ShiZhuangSuitInfo> lInfo;
+};
+
+class CfgShiZhuangTable
+{
+public:
+    CfgShiZhuangTable() { CleanUp(); }
+    ~CfgShiZhuangTable() {}
+
+    void CleanUp()
+    {
+        m_mShiZhuang.clear();
+        m_mShiZhuangLevel.clear();
+        m_ShiZhuangSuitCfgMap.clear();
+    }
+
+    void AddShiZhuang(const CfgShiZhuang& stu)
+    {
+        m_mShiZhuang[stu.nId] = stu;
+    }
+
+    void AddShiZhuangLevel(const CfgShiZhuangLevel& stu)
+    {
+        m_mShiZhuangLevel[std::make_pair(stu.nType, stu.nLevel)] = stu;
+    }
+
+    void AddShiZhuangSuitInfo(ShiZhuangSuitCfg* p_stu)
+    {
+        if (p_stu) m_ShiZhuangSuitCfgMap[p_stu->nSuidId] = *p_stu;
+    }
+
+    const CfgShiZhuang* GetShiZhuang(int32_t nId) const
+    {
+        std::map<int32_t, CfgShiZhuang>::const_iterator it = m_mShiZhuang.find(nId);
+        if (it != m_mShiZhuang.end()) return &it->second;
+        return NULL;
+    }
+
+    const CfgShiZhuangLevel* GetShiZhuangLevel(int8_t nType, int32_t nLevel) const
+    {
+        std::map<std::pair<int8_t, int32_t>, CfgShiZhuangLevel>::const_iterator it =
+            m_mShiZhuangLevel.find(std::make_pair(nType, nLevel));
+        if (it != m_mShiZhuangLevel.end()) return &it->second;
+        return NULL;
+    }
+
+    int32_t GetShiZhuangSuitLevel(int32_t SuitId, int32_t nLevel, int32_t nCount) const;
+    void GetShiZhuangSuitAttr(AddAttrList& outList, int32_t SuitId, int32_t nLevel, int32_t nCount) const;
+
+private:
+    std::map<int32_t, CfgShiZhuang> m_mShiZhuang;
+    std::map<std::pair<int8_t, int32_t>, CfgShiZhuangLevel> m_mShiZhuangLevel;
+    std::map<int32_t, ShiZhuangSuitCfg> m_ShiZhuangSuitCfgMap;
+};
+
 
 struct CfgBagSlotOpenTime 
 {
@@ -4272,6 +4397,29 @@ struct CfgCachet
 };
 typedef std::map<int32_t, CfgCachet> CachetCfgMap;
 
+// 鬼谷道人配置
+struct GuiGuDaoRenCfg
+{
+	GuiGuDaoRenCfg() { CleanUp(); }
+	void CleanUp()
+	{
+		nNpcId = 0;
+		nMaxCount = 0;
+		vItemData.clear();
+		vItem.clear();
+		lRefreshMonster.clear();
+		vMapId.clear();
+	}
+	int32_t					nNpcId;
+	int32_t					nMaxCount;
+	std::vector<ItemData>		vItemData;
+	std::vector<MemChrBag>		vItem;
+	std::list<int32_t>	lRefreshMonster;
+	Int32Vector				vMapId;
+};
+
+typedef std::map<int32_t, GuiGuDaoRenCfg> GuiGuDaoRenCfgMap;
+
 // 融合物品
 struct RongHeItem
 {
@@ -4627,6 +4775,8 @@ public:
 	const CfgItemCombiTable&		GetItemCombiTable() const;
 	const CfgMagicBoxTable*		GetMagicBoxTable() const { return &m_cfgMagicBox; }
 	const CfgFlopDrawTable*		GetFlopDrawTable() const { return &m_cfgFlopDraw; }
+	const ShiZhuLevelUp*		GetShiZhuLevelUp( int32_t nId, int32_t nLevel ) const;
+	const CfgShiZhuangTable*		GetShiZhuangTable() const { return &m_cfgShiZhuang; }
 	const CfgBagSlotOpenTimeTable&	GetBagSlotOpenTimeTable() const;
 	const CfgPetTable&				GetPetTable() const;
 	const CfgPetEggTable&			GetPetEggTable() const;
@@ -4829,7 +4979,10 @@ private:
 	void InitItemGemTable();				// ��ʼ����ʯ��
 	void InitItemCombiTable();				// ��ʼ���ϳɱ�
 	void InitMagicBoxTable();
-	void InitFlopDrawTable();				// 初始化翻牌抽奖配置表				// ��ʼ��ħ�б�
+	void InitFlopDrawTable();				// 初始化翻牌抽奖配置表
+	void InitShiZhuangTable();				// 初始化时装配置表
+	void InitShiZhuangLevelTable();			// 初始化时装等级配置表
+	void InitShiZhuLevelUp();				// 初始化时装升阶配置表				// ��ʼ��ħ�б�
 	void InitBagSlotOpenTimeTable();		// ��ʼ����������ʱ���
 	void InitPlayerInitPetTable();			// ��ʼ������Я�������
 	void InitPetPackageTable();				// ��ʼ����������
@@ -4971,6 +5124,7 @@ private:
 	CfgItemCombiTable		m_cfgItemCombi;				// �ϳɱ�
 	CfgMagicBoxTable		m_cfgMagicBox;
 	CfgFlopDrawTable		m_cfgFlopDraw;
+	CfgShiZhuangTable		m_cfgShiZhuang;
 	ShenWeiTaskCfgMap		m_cfgShenWeiTask;
 	BackEquipTaskMap		m_cfgBackEquipTask;				// 翻牌抽奖配置				// ħ�з���
 	CfgBagSlotOpenTimeTable	m_cfgBagSlotOpenTime;		// ��������ʱ���
@@ -5103,6 +5257,9 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const CfgExchangeTable*		GetExchangeTable() const { return &m_cfgExchangeTable; }
 	const CfgMysteryGiftTable*	GetMysteryGiftTable() const { return &m_cfgMysteryGiftTable; }
 	const CfgMysteryShopTable*		GetMysteryShopTable() const { return &m_cfgMysteryShopTable; }
+	GuiGuDaoRenCfg* GetGuiGuDaoRenCfg( int32_t nNpcId );
+	int32_t GetTongTianChiReward( int32_t nIndex );
 private:
 };
+
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

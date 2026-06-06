@@ -220,7 +220,8 @@ enum CurrencyChangeReason
 	GCR_GET_DROP_ITEM					= 2010,		//����ʰȡ
 	GCR_AUTOBUYBAG						= 2011,		//�Զ�������Ʒ
 	GCR_MOUNT_QUALITY_UP				= 2012,		// ��������
-	GCR_EQUIP_UPGRADE_AUTOBUY			= 2013,		// װ�������Զ�����
+	GCR_EQUIP_UPGRADE_AUTOBUY			= 2013,
+	GCR_SHI_ZHUANG_PEI_YANG			= 2020,	// 时装培养
 	GCR_EQUIP_UPQUALITY_AUTOBUY			= 2014,		// װ����Ʒ�Զ�����
 	GCR_EQUIP_UPSTAR_AUTOBUY			= 2015,		// װ�������Զ�����
 	GCR_BAG_SLOT_OPEN					= 2016,		// ��������
@@ -423,6 +424,7 @@ enum ITEM_ADD_REASON
 	IACR_XUN_LEI			= 304,
 	IACR_SG_GAME_APP		= 305,
 	IACR_DA_ZHE_QUAN		= 306,
+	IACR_GUI_GU_DAO_REN		= 307,	// 鬼谷道人回收
 };
 
 enum ITEM_DEL_REASON
@@ -472,6 +474,8 @@ enum ITEM_DEL_REASON
 	IDCR_GET_BOSS_KILLED_REWARD		= 40,
 	IDCR_FESTIVAL_ACT_2			= 41,
 	IDCR_WU_HUN_CREATE			= 42,
+	IDCR_SHI_ZHUANG_PEI_YANG		= 50,	// 时装培养
+	IDCR_SHI_ZHUANG_LEVEL_UP		= 51,	// 时装升阶
 	IDCR_OPEN_BETA_LI_QUAN			= 43,
 	IDCR_SELECT_ITEM			= 44,
 	IDCR_DISCARD				= 45,
@@ -480,6 +484,8 @@ enum ITEM_DEL_REASON
 	IDCR_RONG_HE_GET		= 48,
 	IDCR_EQUIP_RONG_HE		= 49,
 	IDCR_EQUIP_RONG_HE_DIS	= 50,
+	IDCR_GUI_GU_DAO_REN		= 51,	// 鬼谷道人扣除
+	IDCR_BACK_EQUIP_COUNT	= 52,	// 装备回收
 	};
 
 enum ItemEffectType

@@ -8618,6 +8618,26 @@ int32_t CfgData::GetCachetLevel( int64_t nHonor ) const
 	return nLevel;
 }
 
+GuiGuDaoRenCfg* CfgData::GetGuiGuDaoRenCfg( int32_t nNpcId )
+{
+	GuiGuDaoRenCfgMap::iterator iter = m_GuiGuDaoRenCfgMap.find( nNpcId );
+	if ( iter != m_GuiGuDaoRenCfgMap.end() )
+	{
+		return &iter->second;
+	}
+	return NULL;
+}
+
+int32_t CfgData::GetTongTianChiReward( int32_t nIndex ) const
+{
+	if ( nIndex > 0 && (uint32_t)nIndex <= m_TongTianChiRewardList.size() )
+	{
+		return m_TongTianChiRewardList[nIndex - 1];
+	}
+	return 0;
+}
+
+
 void CfgData::InitCampWarContKillTable()
 {
     CDBCFile TabFile(0);
@@ -10810,6 +10830,11 @@ void CfgData::InitShenYaoPosTable()
     }
 }
 
+const ShiZhuLevelUp* CfgData::GetShiZhuLevelUp( int32_t nId, int32_t nLevel ) const
+{
+    return NULL; // TODO: implement lookup from m_cfgShiZhuang
+}
+
 void CfgData::InitShiZhuLevelUp()
 {
     CDBCFile TabFile(0);
@@ -12804,3 +12829,38 @@ const DaZheQuan* CfgData::GetDaZheQuanCfg( int32_t nIndex ) const
 		return &it->second;
 	return NULL;
 }
+
+// ========== CfgShiZhuangTable 方法 ==========
+
+int32_t CfgShiZhuangTable::GetShiZhuangSuitLevel( int32_t SuitId, int32_t nLevel, int32_t nCount ) const
+{
+    std::map<int32_t, ShiZhuangSuitCfg>::const_iterator it = m_ShiZhuangSuitCfgMap.find( SuitId );
+    if ( it == m_ShiZhuangSuitCfgMap.end() )
+    {
+        return 0;
+    }
+    if ( it->second.nCount > nCount )
+    {
+        return 0;
+    }
+    int32_t nSuitId = 0;
+    for ( std::list<ShiZhuangSuitInfo>::const_iterator itInfo = it->second.lInfo.begin();
+          itInfo != it->second.lInfo.end(); ++itInfo )
+    {
+        if ( itInfo->nLevel > 0 )
+        {
+            if ( itInfo->nLevel > nLevel )
+                return nSuitId;
+            nSuitId = itInfo->nSuitLevel;
+        }
+    }
+    return nSuitId;
+}
+
+void CfgShiZhuangTable::GetShiZhuangSuitAttr( AddAttrList& outList, int32_t SuitId, int32_t nLevel, int32_t nCount ) const
+{
+    // TODO: implement suit attr lookup from m_ShiZhuangSuitCfgMap
+    outList.clear();
+}
+
+

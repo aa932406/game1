@@ -654,6 +654,10 @@ enum MSG_CM_CODE
 	CM_GUI_GU_DAO_REN_ASK_BACK_EQUIP_COUNT	= 951,		// 鬼谷道人询问装备回收次数
 	CM_GUI_GU_DAO_REN_BACK_EQUIP			= 952,		// 鬼谷道人装备回收
 	CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK	= 953,		// 鬼谷道人装备回收排行榜
+	CM_SHI_ZHUANG_REQUEST_INFO			= 960,		// 请求时装信息
+	CM_SHI_ZHUANG_PEI_YANG				= 961,		// 时装培养
+	CM_SHI_ZHUANG_WEAR					= 962,		// 时装穿戴/卸下
+	CM_SHI_ZHUANG_LEVEL_UP				= 963,		// 时装升阶
 
 	/*
 	* CM_WXJ	900~998
@@ -1369,6 +1373,10 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 
 	// 称号系统
 	SM_SEND_TITLE_INFO				= 11920,	// 称号信息
+
+	// 时装系统
+	SM_SHI_ZHUANG_INFO				= 12060,	// 时装信息
+	SM_SHI_ZHUANG_PEI_YANG_RESULT	= 12061,	// 时装培养结果
 
 	/*
 	* SM_WXJ	11900~11999

@@ -29,7 +29,7 @@ make
 
 从反编译代码 (`gameserver/decompiled/`) 中移植缺失模块到当前代码库。
 
-### 已移植模块 (33/88)
+### 已移植模块 (34/88)
 
 | 模块 | 源文件 | 行数 | 说明 |
 |------|--------|------|------|
@@ -63,6 +63,7 @@ make
 | **CYaBiao** (押镖) | `YaBiao.cpp/.h` | ~16 | 4 方法 (析构/ready/start/timeEnd)，CActivity子类
 | **CShenWei** (神威) | `ShenWei.cpp/.h` | ~42 | 5 方法 (OnDaySwitch/AddCharAttr/GetRankAttr/GetShenWeiLevel)，CExtSystemBase子类
 | **CRongHe** (融合) | `RongHe.cpp/.h` | ~130 | 15 方法 (OnRongLian/装备熔炼/拆卸/回收)，CExtSystemBase子类
+| **CShiZhuang** (时装) | `ShiZhuang.cpp/.h` | ~943 | 26 方法 (培养/穿戴/升阶/套装效果)，CExtSystemBase 子类
 | **CGuiGuDaoRen** (鬼谷道人) | `GuiGuDaoRen.cpp/.h` | ~450 | 19 方法 (物品回收/装备回收/排行榜/每日重置/融合记录)，Answer::Singleton 全局单继
 
 ### 数据层变更
@@ -120,7 +121,6 @@ make
 | 43 | ObjCarrier | `CObjCarrier.cpp` | — | 对象载具 |
 | 44 | ObjState | `CObjState.cpp` | — | 对象状态 |
 | 46 | RefreshMonster | `CRefreshMonster.cpp` | — | 刷新怪物 |
-| 51 | ShiZhuang | `CShiZhuang.cpp` | — | 时装 |
 | 52 | SqiderQueen | `CSqiderQueen.cpp` | — | 蜘蛛女王 |
 | 53 | SuperTeHui | `CSuperTeHui.cpp` | — | 超级特惠 |
 | 54 | Territory | `CTerritory.cpp` | — | 领土战 |

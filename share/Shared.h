@@ -1137,6 +1137,9 @@ enum PlayerInfoIndex
 	PII_CLOTH,
 	PII_GUAN_WEI,
 	PII_TIAN_LIN,
+	PII_SHI_ZHUANG_WEAPON,	// 时装武器外观
+	PII_SHI_ZHUANG_CLOTHES,	// 时装衣服外观
+	PII_SHI_ZHUANG_EFFECT,	// 时装特效ID
 };
 
 struct MemChrEquip // ����

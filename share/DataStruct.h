@@ -5925,6 +5925,78 @@ public:
 		strSuccessIds = inPacket->readUTF8(true);
 	}
 };
+class ShiZhuangDBData : public IDataStruct
+{
+public:
+    ShiZhuangDBData(){ CleanUp(); }
+    virtual ~ShiZhuangDBData(){}
+    virtual void SaveToSqlString(SqlStringList& sqls, char (&szSQL)[MAX_SQL_LENGTH], CharId_t nCid) {}
+    virtual bool LoadFromDB(Answer::MySqlDBGuard& db, char (&szSQL)[MAX_SQL_LENGTH], int32_t nUid, int32_t nSid, CharId_t nCid) { return true; }
+    void CleanUp()
+    {
+        m_EffectId = 0;
+        m_ShiZhuangLevel.clear();
+        for ( int32_t i = 0; i < 3; ++i )
+        {
+            m_vShiZhuang[i].m_nWear = 0;
+            m_vShiZhuang[i].m_nLevel = 0;
+            m_vShiZhuang[i].m_nExp = 0;
+            m_vShiZhuang[i].m_lActive.clear();
+        }
+    }
+    virtual void PackageData(Answer::NetPacket* pPkt)
+    {
+        pPkt->writeInt32(m_EffectId);
+        pPkt->writeInt32((int32_t)m_ShiZhuangLevel.size());
+        for (size_t i = 0; i < m_ShiZhuangLevel.size(); ++i)
+            pPkt->writeInt32(m_ShiZhuangLevel[i]);
+        for (int32_t i = 0; i < 3; ++i)
+        {
+            pPkt->writeInt32(m_vShiZhuang[i].m_nWear);
+            pPkt->writeInt32(m_vShiZhuang[i].m_nLevel);
+            pPkt->writeInt32(m_vShiZhuang[i].m_nExp);
+            pPkt->writeInt32((int32_t)m_vShiZhuang[i].m_lActive.size());
+            for (auto& kv : m_vShiZhuang[i].m_lActive)
+            {
+                pPkt->writeInt32(kv.first);
+                pPkt->writeInt32(kv.second);
+            }
+        }
+    }
+    virtual void UnPackageData(Answer::NetPacket* pPkt, CharId_t nCid)
+    {
+        CleanUp();
+        m_EffectId = pPkt->readInt32();
+        int32_t lvSize = pPkt->readInt32();
+        for (int32_t i = 0; i < lvSize; ++i)
+            m_ShiZhuangLevel.push_back(pPkt->readInt32());
+        for (int32_t i = 0; i < 3; ++i)
+        {
+            m_vShiZhuang[i].m_nWear = pPkt->readInt32();
+            m_vShiZhuang[i].m_nLevel = pPkt->readInt32();
+            m_vShiZhuang[i].m_nExp = pPkt->readInt32();
+            int32_t actSize = pPkt->readInt32();
+            for (int32_t j = 0; j < actSize; ++j)
+            {
+                int32_t id = pPkt->readInt32();
+                m_vShiZhuang[i].m_lActive[id] = pPkt->readInt32();
+            }
+        }
+    }
+
+    struct ShiZhuangSlot
+    {
+        int32_t m_nWear;
+        int32_t m_nLevel;
+        int32_t m_nExp;
+        std::map<int32_t, int32_t> m_lActive;
+    };
+
+    int32_t m_EffectId;
+    std::vector<int32_t> m_ShiZhuangLevel;
+    ShiZhuangSlot m_vShiZhuang[3];
+};
+
 class PlayerDBData : public IDataStruct
 {
 public:
@@ -6298,6 +6370,7 @@ CGoblinData	m_CGoblinData;
 	CKunData				m_KunData;
 	MysteryShopDBData			m_MysteryShopDBData;
 	PortalDBData				m_PortalDBData;
+	ShiZhuangDBData			m_ShiZhuangData;
 };
 
 struct PlayerDBSql 
