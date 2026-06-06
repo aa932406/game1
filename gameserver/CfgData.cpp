@@ -176,8 +176,8 @@ bool CfgData::init(int32_t equipIdInterval, int32_t viceGeneralIdInterval,int32_
 	InitTouZiTable();
 	InitGroupMonster();
 	InitPkDropRateTable();
-	InitEquipBackTable();
 	InitStrengthenTable();
+	InitEquipBackTable();
 	InitBuyFaBaoResTable();
 	InitXingMaiTable();
 	InitXingMaiSlotTable();
@@ -9112,30 +9112,7 @@ void CfgData::InitDungeonSummon()
     }
 }
 
-void CfgData::InitEquipBackTable()
-{
-    CDBCFile TabFile(0);
-    bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/EquipRecovery.txt");
-    if (ret == false)
-    {
-        LOG_ERROR("open ./ServerConfig/Tables/EquipRecovery.txt failed, please check!!!");
-        return;
-    }
 
-    int32_t iBaseTableCount = TabFile.GetRecordsNum();
-    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
-    if (iBaseColumnCount <= 0)
-    {
-        return;
-    }
-
-    for (int32_t i = 0; i < iBaseTableCount; ++i)
-    {
-        // TODO: parse and store record
-        // Reference decompiled code for field mapping
-        // ./ServerConfig/Tables/EquipRecovery.txt
-    }
-}
 
 void CfgData::InitEquipBackTask()
 {
@@ -12864,3 +12841,52 @@ void CfgShiZhuangTable::GetShiZhuangSuitAttr( AddAttrList& outList, int32_t Suit
 }
 
 
+
+
+void CfgData::InitEquipBackTable()
+{
+	CDBCFile TabFile(0);
+	bool ret = TabFile.OpenFromTXT( "./ServerConfig/Tables/EquipRecovery.txt" );
+	if ( ret == false )
+	{
+		LOG_ERROR("open FILE_ITEM_EQUIP_BACK failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount	= TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount	= TabFile.GetFieldsNum();
+	if ( iBaseColumnCount <= 0 )
+	{
+		return;
+	}
+
+	for ( int32_t i = 0; i < iBaseTableCount; ++i )
+	{
+		EquipBackCfg stu;
+		int32_t nIndex = 0;
+
+		stu.nId			= TabFile.Search_Posistion( i, nIndex )->iValue;
+		stu.nType		= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+
+		++nIndex;
+		std::string EquipList = TabFile.Search_Posistion( i, nIndex )->pString;
+		StringVector vStr;
+		StringUtility::split( vStr, EquipList, "|" );
+		for ( StringVector::iterator iter = vStr.begin(); iter != vStr.end(); ++iter )
+		{
+			stu.nEquipList.push_back( atoi( iter->c_str() ) );
+		}
+
+		stu.nRecovType		= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+		stu.nRecovValues	= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+		stu.nBuyBackType	= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+		stu.nBuyBackValue	= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+		stu.nOpenDay		= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+		stu.nLimitNum		= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+		++nIndex;
+		nIndex += 3;
+		stu.nDisplayDay		= TabFile.Search_Posistion( i, ++nIndex )->iValue;
+
+		m_cfgEquip.AddEquipBack( stu );
+	}
+}

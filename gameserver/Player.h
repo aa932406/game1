@@ -5,6 +5,7 @@
 #include "Task.h"
 #include "TaskCycle.h"
 #include "Achievement.h"
+#include "BossKilledReward.h"
 #include "Unit.h"
 #include "actStructs.h"
 #include "Dungeon.h"
@@ -32,6 +33,7 @@
 #include "CharExchange.h"
 #include "CharMysteryGift.h"
 #include "CharMysteryShop.h"
+#include "CharWuHun.h"
 #include "CharPortal.h"
 #include "CharTitle.h"
 #include "CharHallOfFame.h"
@@ -628,11 +630,17 @@ public:				CExtCharExchange&		GetCharExchange();
 
 	friend class CShenWei;
 public:				CShenWei&			GetShenWei() { return m_extShenWei; }
-private:			CShenWei			m_extShenWei;
-
-	friend class CRongHe;
+private:			CShenWei			m_extShenWei;	friend class CRongHe;
 public:				CRongHe&			GetRongHe() { return m_extRongHe; }
-private:			CRongHe			m_extRongHe;
+private:			CRongHe				m_extRongHe;
+
+	friend class CCharWuHun;
+public:				CCharWuHun&			GetCharWuHun() { return m_extCharWuHun; }
+private:			CCharWuHun			m_extCharWuHun;
+
+	friend class CBossKilledReward;
+public:				CBossKilledReward&		GetBossKilledReward() { return m_BossKilledReward; }
+private:			CBossKilledReward		m_BossKilledReward;
 
 	friend class CExtCharShiZhuang;
 public:				CExtCharShiZhuang&		GetShiZhuang() { return m_extShiZhuang; }
@@ -803,7 +811,7 @@ private:
 	int32_t			onBeginGather(Answer::NetPacket *inPacket);
 	int32_t			onEndGather(Answer::NetPacket *inPacket);
 	int32_t			OnKaiFuHuoDongOperator( Answer::NetPacket *inPacket );
-
+	int32_t			OnEquipBackOperator( Answer::NetPacket *inPacket );
 
 	EntityId_t m_plantId;				//���ڲɼ��Ĳɼ���
 	int64_t	   m_startGatherTick;	

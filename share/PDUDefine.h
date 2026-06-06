@@ -351,6 +351,12 @@ enum MSG_CM_CODE
 //============================================
 // ���ﻹ�кö�Э�������
 //============================================
+	// 武魂
+	CM_WU_HUN_INFO							= 653,			// 请求武魂信息
+	CM_WU_HUN_DRESS						= 654,			// 装备武魂
+	CM_WU_HUN_UNDRESS					= 655,			// 卸下武魂
+	CM_WU_HUN_CREATE					= 656,			// 创建武魂
+
 	CM_ACTIVITY_BANQUET_TOAST				= 400,
 
 	/*
@@ -441,6 +447,9 @@ enum MSG_CM_CODE
 	//����boss֮��
 	CM_BUY_ENTER_BOSS_HOME						= 467,			//����boss֮��
 	CM_LEAVE_BOSS_HOME							= 468,			//�뿪boss֮��
+
+	// BOSS击杀奖励
+	CM_GET_BOSS_KILLED_REWARD					= 545,			//领取BOSS击杀奖励
 	//����vip�һ���ͼ
 	CM_ENTER_VIP_GUA_JI_MAP						= 469,			//����vip�һ���ͼ
 	//����ħ������
@@ -566,6 +575,10 @@ enum MSG_CM_CODE
 	CM_XINMO_EQUIP_HUISHOU					= 782,			// 心魔装备回收
 	CM_CURRENCY_DUIHUAN							= 783,			// 货币兑换
 	CM_SYNC_GOLD								= 784,			// 同步金币
+	// 装备回购
+	CM_EQUIP_BACK_GOLD_BACK					= 855,			// 装备金币回购
+	CM_EQUIP_BACK_BUY_BACK					= 856,			// 装备回购
+	CM_EQUIP_BACK_INFO						= 857,			// 装备回购信息
 
 	// ========== ���°汾�·������� ==========
 	CM_PET_FIGHT								= 757,			// �ս
@@ -1243,8 +1256,10 @@ enum MSG_SM_CODE
 	//��ʾ��Ϣ
 	SM_GM_BROADCAST						= 11477,		// GM��̨���͹���
 
-// 国庆活动
-SM_NATIONAL_DAY_LEVEL_INFO		= 10308,
+// 国庆活动	// BOSS击杀奖励
+	SM_BOSS_KILLED_REWARD_INFO		= 0x283E,		// BOSS击杀奖励信息
+
+	SM_NATIONAL_DAY_LEVEL_INFO		= 10308,
 SM_NATIONAL_DAY_HD_INFO			= 10309,
 	SM_SEND_NOTICE_PARAM		= 11478,		//������ʾ��Ϣ����
 	//��θ��
@@ -1256,6 +1271,9 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	// boss֮��
 	SM_SEND_BOSS_HOME_INFO				= 11485,		//����boss֮����Ϣ
 	SM_SEND_BOSS_CHANGE					= 11486,		//boss��Ϣ�ı�
+	// 翻牌抽奖
+	SM_FLOP_RECORD						= 11482,		//发送翻牌记录
+	SM_FLOP_ONE_RECORD					= 11483,		//发送单次翻牌结果
 	// �ɼ�
 	SM_PLANT_GAIN_ITEM					= 11489,		//���Ͳɼ���ȡ��Ʒ
 	//��Դ�һ�
@@ -1311,6 +1329,12 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	SM_SEND_CURRENCY_INFO				= 11720,
 	SM_GUI_GU_DAO_REN_EQUIP_COUNT		= 11721,		// 鬼谷道人装备回收计数
 	SM_GUI_GU_DAO_REN_EQUIP_RANK		= 11722,		// 鬼谷道人装备回收排行
+
+	// 装备回购
+	SM_EQUIP_BACK_INFO				= 11723,		// 装备回购信息
+	SM_EQUIP_BACK_ONE_RECORD			= 11724,		// 装备回购单条记录
+	SM_EQUIP_BACK_COUNT_CHANGE		= 11725,		// 装备回购数量变化
+	SM_EQUIP_BACK_LIMIT_CHANGE		= 11726,		// 装备回购限购变化
 
 	// ����
 	SM_SEND_PET_INFO					= 11730,	// ���ͻ�����Ϣ
@@ -1377,6 +1401,10 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	// 时装系统
 	SM_SHI_ZHUANG_INFO				= 12060,	// 时装信息
 	SM_SHI_ZHUANG_PEI_YANG_RESULT	= 12061,	// 时装培养结果
+
+	// 武魂
+	SM_WU_HUN_INFO					= 0x2EA1,	// 武魂信息
+	SM_WU_HUN_SLOT					= 0x2EA2,	// 武魂槽位变化
 
 	/*
 	* SM_WXJ	11900~11999

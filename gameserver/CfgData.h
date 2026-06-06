@@ -1616,6 +1616,35 @@ public:
 };
 typedef std::map<int32_t, CfgEquipSuit> CfgEquipSuitMap;
 
+// 装备回购配置
+struct EquipBackCfg
+{
+	EquipBackCfg()
+	{
+		nId = 0;
+		nType = 0;
+		nLimitNum = 0;
+		nDisplayDay = 0;
+		nOpenDay = 0;
+		nRecovType = 0;
+		nRecovValues = 0;
+		nBuyBackType = 0;
+		nBuyBackValue = 0;
+	}
+
+	int32_t				nId;			// 配置ID
+	std::list<int32_t>	nEquipList;		// 装备ID列表
+	int32_t				nType;			// 类型 1=金币回购 2=开服回购
+	int32_t				nLimitNum;		// 限购次数
+	int32_t				nDisplayDay;	// 显示天数
+	int32_t				nOpenDay;		// 开服天数
+	int32_t				nRecovType;		// 回收货币类型
+	int32_t				nRecovValues;	// 回收货币数量
+	int32_t				nBuyBackType;	// 回购货币类型
+	int32_t				nBuyBackValue;	// 回购货币数量
+};
+typedef std::map<int32_t, EquipBackCfg> EquipBackCfgMap;
+
 class CfgEquipTable
 {
 public:
@@ -1782,6 +1811,24 @@ private:
 	CfgEquipSuitMap			m_mEquipSuit;
 	Int32Int32Map			m_mWuHunHoleExp;
 	Int32Int32Map			m_mWuHunMoHunExp;
+public:
+	void AddEquipBack( const EquipBackCfg& stu )
+	{
+		m_mEquipBack[stu.nId] = stu;
+	}
+
+	const EquipBackCfg* GetEquipBackCfg( int32_t nId ) const
+	{
+		EquipBackCfgMap::const_iterator iter = m_mEquipBack.find( nId );
+		if ( iter != m_mEquipBack.end() )
+		{
+			return &(iter->second);
+		}
+		return NULL;
+	}
+
+private:
+	EquipBackCfgMap			m_mEquipBack;
 };
 
 // ��ʯ��
@@ -4980,6 +5027,7 @@ private:
 	void InitItemCombiTable();				// ��ʼ���ϳɱ�
 	void InitMagicBoxTable();
 	void InitFlopDrawTable();				// 初始化翻牌抽奖配置表
+	void InitEquipBackTable();				// 初始化装备回购配置表
 	void InitShiZhuangTable();				// 初始化时装配置表
 	void InitShiZhuangLevelTable();			// 初始化时装等级配置表
 	void InitShiZhuLevelUp();				// 初始化时装升阶配置表				// ��ʼ��ħ�б�

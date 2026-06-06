@@ -20,6 +20,7 @@
 #include "EquipManager.h"
 #include "PoolManager.h"
 #include "EquipRansom.h"
+#include "EquipBack.h"
 #include "WorldBoss.h"
 #include "DaTiHD.h"
 #include "FamilyWar.h"
@@ -689,6 +690,9 @@ void Player::initNetPacketHandlers()
 	setNetPacketHandler(CM_ASK_KAI_FU_HUO_DAO_INFO,&Player::OnKaiFuHuoDongOperator);
 	setNetPacketHandler(CM_GET_KAI_FU_HUO_DAO_WARD,&Player::OnKaiFuHuoDongOperator);
 	setNetPacketHandler(CM_ASK_KAI_FU_HUO_DONG_STATE,&Player::OnKaiFuHuoDongOperator);
+	setNetPacketHandler(CM_EQUIP_BACK_GOLD_BACK,&Player::OnEquipBackOperator);
+	setNetPacketHandler(CM_EQUIP_BACK_BUY_BACK,&Player::OnEquipBackOperator);
+	setNetPacketHandler(CM_EQUIP_BACK_INFO,&Player::OnEquipBackOperator);
 }
 
 void Player::init( PlayerDBData& dbData )
@@ -2846,6 +2850,7 @@ void Player::recalcAttr()
 	m_Fighting.AddFighting();
 	m_extCharInsidePet.AddAttrToTarget( this );
 	m_extCharSoul.AddCharAttr();
+	m_extCharWuHun.AddCharAttr();
 	m_extShiZhuang.AddPlayerAttr();
 	m_PlayerVip.AddVipAttr();
 	m_PlayerGuanWei.AddGuanWeiAttr();
@@ -8208,6 +8213,12 @@ void Player::InitExtSystems()
 	m_extRongHe.Init( this );
 	m_ExtSysMgr.Register( &m_extRongHe );
 
+	m_extCharWuHun.Init( this );
+	m_ExtSysMgr.Register( &m_extCharWuHun );
+
+	m_BossKilledReward.Init( this );
+	m_ExtSysMgr.Register( &m_BossKilledReward );
+
 	m_extShiZhuang.Init( this );
 	m_ExtSysMgr.Register( &m_extShiZhuang );
 
@@ -8278,8 +8289,33 @@ void Player::InitExtSystems()
 
 	m_WarVictory.Init( this );
 	m_ExtSysMgr.Register( &m_WarVictory );
+
+	m_extFlopDraw.Init( this );
+	m_ExtSysMgr.Register( &m_extFlopDraw );
 	/*
 	* EXT_INIT_WXJ
 	* ���ν�����ϵͳע�������֮��
 	*/
+}
+
+
+int32_t Player::OnEquipBackOperator( Answer::NetPacket *inPacket )
+{
+	if ( NULL == inPacket )
+	{
+		return 10002;
+	}
+
+	switch ( inPacket->getProc() )
+	{
+	case CM_EQUIP_BACK_GOLD_BACK:
+		return EQUIP_BACK.OnGoldBack( this, inPacket );
+	case CM_EQUIP_BACK_BUY_BACK:
+		return EQUIP_BACK.OnBuyBack( this, inPacket );
+	case CM_EQUIP_BACK_INFO:
+		EQUIP_BACK.SendEquipBackInfo( this );
+		return 0;
+	default:
+		return 2;
+	}
 }

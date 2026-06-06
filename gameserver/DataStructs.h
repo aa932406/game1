@@ -288,6 +288,8 @@ enum CurrencyChangeReason
 	GCR_NATIONAL_BUY_LEVEL		= 2078,
 	GCR_DA_ZHE_QUAN			= 2079,
 	GCR_RONG_HE_HUI_SHOU		= 2080,
+	GCR_EQUIP_GOLD_BACK			= 2081,		// 装备金币回购
+	GCR_EQUIP_BUY_BACK			= 2082,		// 装备回购
 
 	//==================================================================================
 //Ԫ��
@@ -425,6 +427,7 @@ enum ITEM_ADD_REASON
 	IACR_SG_GAME_APP		= 305,
 	IACR_DA_ZHE_QUAN		= 306,
 	IACR_GUI_GU_DAO_REN		= 307,	// 鬼谷道人回收
+	IACR_EQUIP_BUY_BACK			= 308,	// 装备回购获得
 };
 
 enum ITEM_DEL_REASON
