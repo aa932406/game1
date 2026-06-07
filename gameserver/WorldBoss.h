@@ -17,6 +17,24 @@ const int32_t  WarVictoryBossReviveTime[WarVictoryBossReviveTimeCount] = { 1020,
 #define REVIVE_TIME		30		// 蜘蛛女王复活窗口（分钟）
 #define WAR_VICTORY_BOSS_REVIVE_TIME 120 //战争胜利boss复活窗口
 
+// 掉落记录
+struct DropRecord
+{
+	DropRecord() : nCharId(0), nMapId(0), nMid(0), nRecord(0), nTime(0), nSpecial(0) {}
+	DropRecord( const std::string& _name, CharId_t _cid, int32_t _mapid, int32_t _mid,
+				int32_t _record, int32_t _time, int32_t _special )
+		: strName(_name), nCharId(_cid), nMapId(_mapid), nMid(_mid),
+		  nRecord(_record), nTime(_time), nSpecial(_special) {}
+
+	std::string	strName;
+	CharId_t	nCharId;
+	int32_t		nMapId;
+	int32_t		nMid;
+	int32_t		nRecord;
+	int32_t		nTime;
+	int32_t		nSpecial;
+};
+
 // 击杀者信息（Top5 记录）
 struct KillerInfo
 {
@@ -76,7 +94,9 @@ public:
 	~CWorldBoss();
 	
 public:
-	void			Init();
+	void			Init(int32_t line = 0);
+	void			InitDBInfo();
+	void			InitDropRecord();
 	Position		GetRevivePos( int32_t BossId );
 	void			PacketBossInfo( Answer::NetPacket *packet, int8_t BossType );
 	void			PacketBossHomeInfo( Answer::NetPacket *packet, int32_t MapId );
@@ -96,13 +116,21 @@ public:
 	void			Update( int64_t CurTick );
 	void			GongGao( int32_t GongGaoId, Player* pPlayer = NULL );
 
-	// ===== 反编译新增方法 =====
+	// ===== 2019新增方法 =====
 	int32_t			GetBossLevel( int32_t nBossId );
-	void			OnBossSummon( int32_t nBossId, Monster* pMonster );
-	void			OnBossKilled( int32_t nBossId, int32_t nNowTime, Monster* pMonster, Player* pKiller = NULL );
+	void			adjustBossAttr( CfgMonster* cfgMonster, int32_t nLevel );
+	void			OnAddBoss( Map* pMap, const CfgMonster* cfgMonster, const CfgMapMonster* cfgMapMonster );
+	void			OnBossSummon( int32_t nBossId, Map* pMap, Monster* pMonster );
+	void			OnBossKilled( int32_t nBossId, int32_t nNowTime, Map* pMap, Monster* pMonster, Player* pKiller = NULL );
 	void			broadcastBossKilled( int32_t nMid, const std::string& strKillerName, CharId_t nKillerId );
 	void			broadcastBossRevive( int32_t nMid, int32_t nBossId, int32_t nMapId );
 	int32_t			GetBossRevie( int32_t nBossId );
+	void			UpdateWorldBossInfo( const WorldBossInfo& info );
+	void			saveBossInfo( const WorldBossInfo& info );
+	void			AddDropRecord( const std::string& name, CharId_t cid, MapId_t mapid, int32_t mid, int32_t record, int32_t time );
+	void			SendDropRecord( int8_t connid, int16_t nGateIndex );
+	void			SendRuinsBossInfo( Player* player, int32_t nBossType, int32_t nMapId );
+	void			UpdateRuinsBossInfo( Map* pMap, const WorldBossInfo& info, int32_t nNowTime );
 
 private:
 	MonsterList		m_MonsterList;			// 蜘蛛女王列表
@@ -110,6 +138,10 @@ private:
 	Monster*		m_WarVictoryBoss;		// 战争胜利BOSS
 	int64_t			m_lastUpdateTick;
 	Answer::Mutex	m_Lock;					// 线程锁（用于 m_mBossMap 访问）
+
+	std::list<DropRecord>	m_dropRecords;			// 普通掉落记录
+	std::list<DropRecord>	m_dropRecordsSpecial;	// 特殊掉落记录
+	Answer::Mutex	m_RecordLock;			// m_dropRecords 读写锁
 };
 
 #define WORLDBOSS Answer::Singleton<CWorldBoss>::instance()

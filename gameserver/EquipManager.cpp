@@ -17,8 +17,12 @@ CEquipManager::~CEquipManager()
 {
 }
 
-void CEquipManager::Init()
+void CEquipManager::Init(int32_t line)
 {
+	// 跨服模式下跳过初始化
+	if (line == 9)
+		return;
+
 	MySqlDBGuard db(DBPOOL);
 
 	MemEquip equip;
@@ -87,7 +91,7 @@ MemEquip CEquipManager::CreateMemEquip( int32_t nBaseId, int32_t nServerId, Char
 			RwLockWrGuard lock( m_rwEquipLock );
 			m_mEquipTable[equip.id] = equip;
 		}
-		DB_SERVICE.insertMemEquip( equip );
+		DB_SERVICE.insertMemEquip( 0, equip );
 	}
 	return equip;
 }
@@ -107,37 +111,40 @@ MemEquip CEquipManager::GetMemEquip( EquipId_t nEquipId )
 	return equip;
 }
 
-void CEquipManager::UpdateMemEquip( const MemEquip &equip )
+void CEquipManager::UpdateMemEquip( int8_t connid, const MemEquip &equip, int32_t nReason )
 {
-	bool bSuccess = false;
 	{
 		RwLockWrGuard lock( m_rwEquipLock );
-		MemEquipTable::iterator iter = m_mEquipTable.find( equip.id );
+		m_mEquipTable[equip.id] = equip;
+	}
+
+	DB_SERVICE.updateMemEquip( connid, equip, nReason );
+}
+
+void CEquipManager::DeleteMemEquip( int8_t connid, EquipId_t nEquipId, int32_t nReason )
+{
+	MemEquip equip;
+	bool bFound = false;
+	{
+		RwLockWrGuard lock( m_rwEquipLock );
+		MemEquipTable::iterator iter = m_mEquipTable.find( nEquipId );
 		if ( iter != m_mEquipTable.end() )
 		{
-			iter->second = equip;
-			bSuccess = true;
+			equip = iter->second;
+			m_mEquipTable.erase( iter );
+			bFound = true;
 		}
 	}
 
-	if ( bSuccess )
+	if ( bFound )
 	{
-		DB_SERVICE.updateMemEquip( equip );
+		DB_SERVICE.deleteMemEquip( connid, equip, nReason );
 	}
-}
-
-void CEquipManager::DeleteMemEquip( EquipId_t nEquipId )
-{
-	{
-		RwLockWrGuard lock( m_rwEquipLock );
-		m_mEquipTable.erase( nEquipId );
-	}
-	DB_SERVICE.deleteMemEquip( nEquipId );
 }
 
 int32_t CEquipManager::GetAddAttrCount( int8_t nQuality )
 {
-	// �˴�ֱ����߻�Լ��
+	// 此处直接与策划约定
 // 	switch ( nQuality )
 // 	{
 // 	case IQ_PURPLE:		return 3;
@@ -174,74 +181,95 @@ void CEquipManager::PacketEquipInfo( Answer::NetPacket *packet, const MemEquipVe
 	}
 }
 
-void CEquipManager::SendPlayerEquipInfo( const Player& player )
+void CEquipManager::SendPlayerEquipInfo( Player* pPlayer )
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_EQUIP_INFO );
-	if( NULL == packet )
+	if ( NULL == pPlayer )
 	{
 		return;
 	}
 
-	int32_t nCount = 0;
-	packet->writeInt32( nCount );
-	RwLockWrGuard lock( m_rwEquipLock );
-	MemEquipTable::const_iterator iter = m_mEquipTable.begin();
-	MemEquipTable::const_iterator eiter = m_mEquipTable.end();
-	for ( ; iter != eiter; ++iter )
+	MemEquipVector vEquip;
 	{
-		const MemEquip& equip = iter->second;
-		if ( equip.owner != player.getCid() )
+		RwLockWrGuard lock( m_rwEquipLock );
+		MemEquipTable::const_iterator iter = m_mEquipTable.begin();
+		MemEquipTable::const_iterator eiter = m_mEquipTable.end();
+		for ( ; iter != eiter; ++iter )
 		{
-			continue;
+			const MemEquip& equip = iter->second;
+			if ( equip.owner != pPlayer->getCid() )
+			{
+				continue;
+			}
+			vEquip.push_back( equip );
 		}
-		packet->writeInt64( equip.id );
-		packet->writeInt32( equip.nFlag );
-		packet->writeInt32( equip.base );
-		packet->writeInt32( equip.star );
-		packet->writeInt32( equip.starLucky );
-		packet->writeInt32( equip.addAttr );
-		packet->writeInt32( equip.UpGradeLucky );
-		packet->writeInt32( equip.UpQuality );
-		for ( int32_t i = 0; i < EQUIP_GEM_COUNT; i++ )
-		{
-			packet->writeInt32( equip.GemHole[i] );
-		}
-		++nCount;
 	}
 
-	if ( nCount > 0 )
+	if ( !vEquip.empty() )
 	{
-		uint32_t oldwoffset = packet->getWOffset();
-		packet->setWOffset( 0 );
-		packet->writeInt32( nCount );
-		packet->setWOffset( oldwoffset );
-		packet->setSize( oldwoffset );
-		GAME_SERVICE.sendPacketTo( player.getGateIndex(), packet );
-	}
-	else
-	{
-		packet->destroy();
+		SendPlayerEquipInfo( pPlayer, vEquip );
 	}
 }
 
-int64_t CEquipManager::getEquipId( int32_t nServerId ) const
+void CEquipManager::SendPlayerEquipInfo( Player* pPlayer, const MemEquip &equip )
 {
-	char szSql[MAX_SQL_LENGTH] = {};
-	snprintf( szSql, sizeof( szSql ) - 1, "call NewEquipId(%d,@OutEquipId)", nServerId );
-
-	MySqlDBGuard db(DBPOOL);
-	MySqlQuery result = db.query( szSql );
-	if ( !result.eof() )
+	if ( NULL == pPlayer )
 	{
-		int32_t nNewEquipId = result.getIntValue( 0 );
-		if ( nNewEquipId > 0 )
-		{
-			return ( static_cast<CharId_t>( nServerId ) << 32 ) + nNewEquipId;
-		}
+		return;
 	}
 
-	LOG_ERROR( "CEquipManager::GetEquipId() FAIL! time=%d\n", TIMER.GetNow() );
-	return 0;
+	int8_t connid = (int8_t)pPlayer->getConnId();
+	NetPacket *packet = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, SM_EQUIP_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+
+	packet->writeInt32( 1 );
+	equip.PackageClientData( packet );
+	uint32_t offset = packet->getWOffset();
+	packet->setSize( offset );
+	GAME_SERVICE.sendPacketTo( connid, pPlayer->getGateIndex(), packet );
+}
+
+void CEquipManager::SendPlayerEquipInfo( Player* pPlayer, const MemEquipVector &vEquip )
+{
+	if ( NULL == pPlayer )
+	{
+		return;
+	}
+
+	int8_t connid = (int8_t)pPlayer->getConnId();
+	NetPacket *packet = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, SM_EQUIP_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+
+	packet->writeInt32( vEquip.size() );
+	MemEquipVector::const_iterator iter = vEquip.begin();
+	MemEquipVector::const_iterator eiter = vEquip.end();
+	for ( ; iter != eiter; ++iter )
+	{
+		iter->PackageClientData( packet );
+	}
+	uint32_t offset = packet->getWOffset();
+	packet->setSize( offset );
+	GAME_SERVICE.sendPacketTo( connid, pPlayer->getGateIndex(), packet );
+}
+
+void CEquipManager::BroadcastEquipInfo( const MemEquip &equip )
+{
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_EQUIP_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+
+	packet->writeInt32( 1 );
+	equip.PackageClientData( packet );
+	uint32_t offset = packet->getWOffset();
+	packet->setSize( offset );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CEquipManager::ChangeOwner( EquipId_t nEquipId, CharId_t nOwner )
@@ -269,4 +297,78 @@ void CEquipManager::ChangeOwner( EquipId_t nEquipId, CharId_t nOwner )
 	}
 
 	pPlayer->sendEquipInfo( equip );
+}
+
+int64_t CEquipManager::getEquipId( int32_t nServerId ) const
+{
+	// 跨服模式统一使用 serverId=0
+	int32_t useServerId = nServerId;
+	if ( GAME_SERVICE.getLine() == 9 )
+	{
+		useServerId = 0;
+	}
+
+	RwLockWrGuard lock( m_IdLock );
+	std::map<int, ServerNewId>::iterator iter = m_mNewId.find( useServerId );
+	if ( iter != m_mNewId.end() )
+	{
+		// 缓存中的ID已用完，从DB重新获取范围
+		if ( iter->second.nNextId >= iter->second.nMaxId )
+		{
+			CEquipManager* self = const_cast<CEquipManager*>(this);
+			self->getEquipIdFromDB( useServerId, iter->second.nNextId, iter->second.nMaxId );
+		}
+		int64_t ret = iter->second.nNextId;
+		iter->second.nNextId = ret + 1;
+		return ret;
+	}
+	else
+	{
+		// 首次请求该服号的ID，从DB获取
+		ServerNewId newId;
+		newId.nNextId = 0;
+		newId.nMaxId = 0;
+		CEquipManager* self = const_cast<CEquipManager*>(this);
+		self->getEquipIdFromDB( useServerId, newId.nNextId, newId.nMaxId );
+		m_mNewId[useServerId] = newId;
+		int64_t ret = newId.nNextId;
+		m_mNewId[useServerId].nNextId = ret + 1;
+		return ret;
+	}
+}
+
+void CEquipManager::getEquipIdFromDB( int32_t nServerId, int64_t &nNextId, int64_t &nMaxId )
+{
+	char szSql[MAX_SQL_LENGTH] = {};
+
+	MySqlDBGuard db(DBPOOL);
+	if ( GAME_SERVICE.getLine() == 9 )
+	{
+		// 跨服模式
+		MySqlQuery result = db.query( "call NewEquipId(@OutEquipId)" );
+		if ( !result.eof() )
+		{
+			nNextId = result.getInt64Value( "OutEquipId", 0 );
+			nMaxId = nNextId + 20;
+		}
+		else
+		{
+			LOG_ERROR( "CEquipManager::GetEquipId() FAIL! time=%d\n", TIMER.GetNow() );
+		}
+	}
+	else
+	{
+		snprintf( szSql, sizeof( szSql ) - 1, "call NewEquipId(%d,@OutEquipId)", nServerId );
+		MySqlQuery result = db.query( szSql );
+		if ( !result.eof() )
+		{
+			int32_t nNewEquipId = result.getIntValue( 0 );
+			nNextId = ( static_cast<int64_t>( nServerId ) << 32 ) + nNewEquipId;
+			nMaxId = nNextId + 20;
+		}
+		else
+		{
+			LOG_ERROR( "CEquipManager::GetEquipId() FAIL! time=%d\n", TIMER.GetNow() );
+		}
+	}
 }

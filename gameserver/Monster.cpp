@@ -159,6 +159,18 @@ void Monster::postDamage(int32_t damge, UnitHandle launcher)
 	}
 }
 
+void Monster::OnLevelUp(const CfgMonster& cfgMonster)
+{
+	SetAttrValue( CObjAttrs::ATTR_HP,			cfgMonster.hp			);
+	SetAttrValue( CObjAttrs::ATTR_PHY_ATK_MIN,	cfgMonster.phy_atk_min	);
+	SetAttrValue( CObjAttrs::ATTR_PHY_ATK_MAX,	cfgMonster.phy_atk_max	);
+	SetAttrValue( CObjAttrs::ATTR_MAG_ATK_MIN,	cfgMonster.mag_atk_min	);
+	SetAttrValue( CObjAttrs::ATTR_MAG_ATK_MAX,	cfgMonster.mag_atk_max	);
+	SetAttrValue( CObjAttrs::ATTR_PHY_DEF,		cfgMonster.phy_def		);
+	SetAttrValue( CObjAttrs::ATTR_MAG_DEF,		cfgMonster.mag_def		);
+	FillHP();
+}
+
 void Monster::init(const CfgMonster &cfgmonster, const CfgMapMonster &cfgmapmonster, Buff* pBuff)
 {
 	SetAttrValue( CObjAttrs::ATTR_HP,			cfgmonster.hp			);

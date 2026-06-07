@@ -9,7 +9,7 @@ public:
 	~FamilyManager();
 
 public:
-	void		Init();
+	void		Init(int32_t line = 0);
 	void		OnUpdateFamilyInfo( Answer::NetPacket* inPacket );
 	FamilyInfo	GetFamilyInfo( FamilyId_t nId );
 	void		SendSocialFinishBoss( FamilyId_t nFamilyId, int32_t ActId, int8_t result );

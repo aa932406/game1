@@ -1697,3 +1697,107 @@ typedef int32_t ITEM_CHANGE_REASON;
 #define GCR_SHANG_REN         252       // 商人购买
 
 #define WAR_VICTORY_BOSS_ID  477115		//��սʤ��bossid
+
+//////////////////////////////////////////////////////////////////////////
+// FamilyInfo - family info data struct
+//////////////////////////////////////////////////////////////////////////
+struct FamilyInfo
+{
+	FamilyInfo()
+		: nId(0), nLevel(0), nMemberCard(0), FamilyTaskCount(0)
+		, nBossPoints(0), FamilyLeaderCid(0), Battle(0), Territory(0)
+		, MedalLevel(0), nBossState(0)
+	{}
+
+	void CleanUp();
+	bool IsDeclareWarFamily(FamilyId_t nFamilyId);
+	void UnPackageData(Answer::NetPacket* packet);
+
+	FamilyId_t nId;
+	int32_t nLevel;
+	int8_t  nMemberCard;
+	std::string strName;
+	int32_t FamilyTaskCount;
+	int32_t nBossPoints;
+	int64_t FamilyLeaderCid;
+	std::string FamilyLeaderName;
+	int32_t Battle;
+	int8_t  Territory;
+	int32_t MedalLevel;
+	int8_t  nBossState;
+	std::set<int64_t> DeclareFamilies;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// KillerInfo - world boss killer info
+//////////////////////////////////////////////////////////////////////////
+struct KillerInfo
+{
+	KillerInfo()
+		: nCharId(0), nTime(0)
+	{}
+
+	int64_t nCharId;
+	std::string strName;
+	int32_t nTime;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// WorldBossInfo - world boss info data
+//////////////////////////////////////////////////////////////////////////
+class Answer::NetPacket;
+
+struct WorldBossInfo
+{
+	WorldBossInfo()
+		: nBossId(0), nLevel(0), nExp(0), nMid(0)
+		, nBossType(0), nMapId(0), nReviveTime(0), nState(0)
+	{}
+
+	void PackageBossInfo(Answer::NetPacket* packet) const;
+	void PackageBossInfo(Answer::NetPacket* packet, int32_t nNowTime) const;
+	void UnPackageBossInfo(Answer::NetPacket* inPacket);
+	void AddKiller(const KillerInfo& info);
+
+	int32_t nBossId;
+	int32_t nLevel;
+	int32_t nExp;
+	int32_t nMid;
+	int32_t nBossType;
+	int32_t nMapId;
+	int32_t nReviveTime;
+	int8_t  nState;
+	KillerInfo vKiller[5];
+};
+
+//////////////////////////////////////////////////////////////////////////
+// PlayerScoreRankGreater - comparator for player score ranking
+//////////////////////////////////////////////////////////////////////////
+struct PlayerScore
+{
+	int64_t nCharId;
+	int32_t nDamage;
+};
+
+struct PlayerScoreRankGreater
+{
+	bool operator()(const PlayerScore* _Left, const PlayerScore* _Right) const
+	{
+		return _Left && _Right && _Left->nDamage > _Right->nDamage;
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
+// MGLog - mingge log data
+//////////////////////////////////////////////////////////////////////////
+struct MGLog
+{
+	void PackageData(Answer::NetPacket* packet) const;
+
+	int64_t Cid;
+	int32_t MingGeId;
+	int8_t  Flag;
+	int32_t BagType;
+	int32_t Reason;
+	int32_t Time;
+};

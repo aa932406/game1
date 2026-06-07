@@ -17,9 +17,13 @@ FamilyManager::~FamilyManager()
 
 }
 
-void FamilyManager::Init()
+void FamilyManager::Init(int32_t line)
 {
-	// ³õÊ¼»¯¾üÍÅ
+	// è·¨æœæ¨¡å¼ä¸‹è·³è¿‡åˆå§‹åŒ–
+	if (line == 9)
+		return;
+
+	// åˆå§‹åŒ–å†›å›¢
 	MySqlDBGuard db(DBPOOL);
 	char szSQL[MAX_SQL_LENGTH] = {};
 	snprintf(szSQL, sizeof(szSQL)-1, "SELECT * FROM `mem_family` WHERE `delflag`=0");
@@ -33,7 +37,7 @@ void FamilyManager::Init()
 		info.strName	= result.getStringValue("name");
 		info.nLevel		= result.getIntValue("level");
 
-		// Í¼ÌÚÔö¼ÓÕ½¶·Á¦
+		// å›¾è…¾å¢žåŠ æˆ˜æ–—åŠ›
 		bzero( szSQL, sizeof( szSQL ) ); 
 		snprintf(szSQL, sizeof(szSQL)-1, "SELECT * FROM `mem_family_totom` WHERE `family_id`=%lld", info.nId );
 		MySqlQuery totoms = db.query(szSQL);
@@ -137,4 +141,52 @@ void FamilyManager::deleteFamilyInfo( FamilyId_t nFamilyId )
 {
 	Answer::MutexGuard lock( m_Lock );
 	m_mFamilyInfo.erase( nFamilyId );
+}
+
+//////////////////////////////////////////////////////////////////////////
+// FamilyInfo methods
+//////////////////////////////////////////////////////////////////////////
+void FamilyInfo::CleanUp()
+{
+	nId = 0;
+	nLevel = 0;
+	nMemberCard = 0;
+	strName.clear();
+	FamilyTaskCount = 0;
+	nBossPoints = 0;
+	FamilyLeaderCid = 0;
+	FamilyLeaderName.clear();
+	Battle = 0;
+	Territory = 0;
+	MedalLevel = 0;
+	nBossState = 0;
+	DeclareFamilies.clear();
+}
+
+bool FamilyInfo::IsDeclareWarFamily(FamilyId_t nFamilyId)
+{
+	return DeclareFamilies.find(nFamilyId) != DeclareFamilies.end();
+}
+
+void FamilyInfo::UnPackageData(Answer::NetPacket* packet)
+{
+	if (!packet) return;
+	nId = packet->readInt64();
+	{ std::string tmp; packet->readUTF8(tmp); strName = tmp; }
+	nLevel = packet->readInt32();
+	nMemberCard = packet->readInt8();
+	FamilyTaskCount = packet->readInt32();
+	nBossPoints = packet->readInt32();
+	FamilyLeaderCid = packet->readInt64();
+	{ std::string tmp; packet->readUTF8(tmp); FamilyLeaderName = tmp; }
+	Battle = packet->readInt32();
+	Territory = packet->readInt8();
+	MedalLevel = packet->readInt32();
+	nBossState = packet->readInt8();
+	int32_t count = packet->readInt32();
+	for (int32_t i = 0; i < count; ++i)
+	{
+		int64_t familyId = packet->readInt64();
+		DeclareFamilies.insert(familyId);
+	}
 }

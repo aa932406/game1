@@ -12,8 +12,12 @@ CEquipBack::~CEquipBack()
 {
 }
 
-void CEquipBack::Init()
+void CEquipBack::Init(int32_t line)
 {
+	// 跨服模式下跳过初始化
+	if (line == 9)
+		return;
+
 	// Runtime data is loaded asynchronously via DBService callbacks
 	// Configuration data is loaded via CfgData::InitEquipBackTable()
 }

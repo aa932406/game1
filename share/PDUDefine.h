@@ -1380,7 +1380,10 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	SM_SEND_VIP_INFO					= 11481,		//����vip��Ϣ
 	// boss֮��
 	SM_SEND_BOSS_HOME_INFO				= 11485,		//����boss֮����Ϣ
-	SM_SEND_BOSS_CHANGE					= 11486,		//boss��Ϣ�ı�
+	SM_SEND_BOSS_CHANGE					= 11486,		//boss change
+	SM_SEND_DROP_RECORD					= 11990,		//drop record
+	SM_SEND_RUINS_BOSS_INFO				= 11991,		//ruins boss info placeholder
+	SM_SEND_RUINS_BOSS_CHANGE				= 11992,	//ruins boss change
 	// 翻牌抽奖
 	SM_FLOP_RECORD						= 11482,		//发送翻牌记录
 	SM_FLOP_ONE_RECORD					= 11483,		//发送单次翻牌结果

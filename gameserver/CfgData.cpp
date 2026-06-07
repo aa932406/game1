@@ -25,10 +25,10 @@ CfgData::~CfgData()
 
 }
 
-bool CfgData::init(int32_t equipIdInterval, int32_t viceGeneralIdInterval,int32_t lackeyInterval, int32_t debug)
+bool CfgData::init(int32_t line, int32_t debug)
 {
-	// Decompiled-compatible init ordering
-	fetchServerConfig();
+	// 2019版：fetchServerConfig 接受 line 参数
+	fetchServerConfig(line);
 	fetchActivity();
 	fetchcfExActivity();
 	fetchAnnoucementTime();
@@ -5541,15 +5541,31 @@ int32_t CfgData::getServerDiffDay( int32_t serverType ) const
 //	}
 //}
 
-void CfgData::fetchServerConfig()
+void CfgData::fetchServerConfig(int32_t line)
 {
+	// 跨服模式下跳过
+	if (line == 9)
+		return;
+
 	MySqlDBGuard db(DBPOOL);
 
-	MySqlQuery result = db.query("SELECT `value` FROM `sys_server_config` WHERE `name`='create_time'");
+	// 读取服务器配置（2019版：从 sys_server_start 表读取）
+	MySqlQuery result = db.query("SELECT * FROM `sys_server_start`");
+	if (!result.eof())
+	{
+		m_heFuTime = result.getIntValue("he_fu_time", 0);
+		m_kaiFuTime = result.getIntValue("kai_fu_time", 0);
+		m_serverType = result.getIntValue("type", 0);
+	}
+
+	// 兼容旧版：读取 create_time
+	result = db.query("SELECT `value` FROM `sys_server_config` WHERE `name`='create_time'");
 	if (!result.eof())
 	{
 		m_createTime = atoi(result.getStringValue(0));
 	}
+
+	// 兼容旧版：读取/写入 startGame_time
 	result = db.query("SELECT `value` FROM `sys_server_config` WHERE `name`='startGame_time'");
 	if (!result.eof())
 	{
@@ -9843,76 +9859,6 @@ void CfgData::InitCycleTowerTable()
 }
 
 //#####################################
-void CfgData::InitDamnationTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  DamnationCfg *v3; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-140h] BYREF
-  DamnationCfg stu; // [rsp+A0h] [rbp-B0h] BYREF
-  std::list<ItemData> strItems; // [rsp+E0h] [rbp-70h] BYREF
-  bool bCombi[15]; // [rsp+F0h] [rbp-60h] BYREF
-  char v8; // [rsp+FFh] [rbp-51h] BYREF
-  std::list<AddAttribute> __x; // [rsp+100h] [rbp-50h] BYREF
-  _BYTE v10[15]; // [rsp+110h] [rbp-40h] BYREF
-  char v11; // [rsp+11Fh] [rbp-31h] BYREF
-  int32_t v12[3]; // [rsp+120h] [rbp-30h] BYREF
-  char v13; // [rsp+12Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+130h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+134h] [rbp-1Ch]
-  int32_t i; // [rsp+138h] [rbp-18h]
-  int32_t nIndex; // [rsp+13Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Curse.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileDamnat);
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        DamnationCfg::DamnationCfg(&stu);
-        stu.Level = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v8);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.CostItems, &strItems);
-        std::list<ItemData>::~list(&strItems);
-        
-        ++nIndex;
-        
-        std::string::string(v10, "./ServerConfig/Tables/Curse.txt", &v11);
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v12, v2->pString, &v13);
-        CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v12,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.AttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
-        
-        stu.Probability = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.HpPecent = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        nIndex += 3;
-        stu.CostMoney = readFile.Search_Posistion( i, nIndex++)->iValue;
-        v3 = std::map<int,DamnationCfg>::operator[](&this->m_DamnationCfgTable, &stu.Level);
-        DamnationCfg::operator=(v3, &stu);
-        /* DamnationCfg::~DamnationCfg(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
 DamnationCfg *CfgData::GetDamnationCfg(int32_t Level)
@@ -10297,190 +10243,6 @@ const CfgDungeonSummon *CfgData::GetDungeonSummon(int32_t nDungeon, int32_t nInd
 }
 
 //#####################################
-void CfgData::InitEquipBackTask()
-{
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  std::string *v4; // rax
-  const char *v5; // rax
-  BackEquipTask *v6; // rax
-  const CDBCFile::FIELD *v7; // rax
-  std::string *v8; // rax
-  std::string *v9; // rax
-  const char *v10; // rax
-  std::string *v11; // rax
-  const char *v12; // rax
-  std::map<int,std::list<Param2>> *v13; // rax
-  std::list<Param2> *v14; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-250h] BYREF
-  BackEquipTask stu; // [rsp+A0h] [rbp-1C0h] BYREF
-  Param2 stu_0; // [rsp+F0h] [rbp-170h] BYREF
-  StringVector TaskRates; // [rsp+100h] [rbp-160h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it_0; // [rsp+120h] [rbp-140h] BYREF
-  StringVector TaskRateVetcor; // [rsp+130h] [rbp-130h] BYREF
-  Param2List param; // [rsp+150h] [rbp-110h] BYREF
-  std::string TaskRate; // [rsp+160h] [rbp-100h] BYREF
-  int32_t Times; // [rsp+168h] [rbp-F8h] BYREF
-  int32_t Level; // [rsp+16Ch] [rbp-F4h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+170h] [rbp-F0h] BYREF
-  StringVector ItemVetcor; // [rsp+180h] [rbp-E0h] BYREF
-  std::string NeedEquipString; // [rsp+1A0h] [rbp-C0h] BYREF
-  char v28; // [rsp+1AFh] [rbp-B1h] BYREF
-  MemChrBagVector __x; // [rsp+1B0h] [rbp-B0h] BYREF
-  std::string strItems; // [rsp+1D0h] [rbp-90h] BYREF
-  char v31; // [rsp+1DFh] [rbp-81h] BYREF
-  std::string delims; // [rsp+1E0h] [rbp-80h] BYREF
-  char v33; // [rsp+1EFh] [rbp-71h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+1F0h] [rbp-70h] BYREF
-  int v35; // [rsp+1F8h] [rbp-68h] BYREF
-  char v36; // [rsp+1FFh] [rbp-61h] BYREF
-  std::string v37; // [rsp+200h] [rbp-60h] BYREF
-  char v38; // [rsp+20Fh] [rbp-51h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v39; // [rsp+210h] [rbp-50h] BYREF
-  std::string v40; // [rsp+220h] [rbp-40h] BYREF
-  char v41; // [rsp+22Ah] [rbp-36h] BYREF
-  int32_t iBaseTableCount; // [rsp+22Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+230h] [rbp-30h]
-  int32_t i; // [rsp+234h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+238h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+240h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+244h] [rbp-1Ch]
-  int32_t i_0; // [rsp+248h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+24Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TaskRecovery.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_EQUIP_BACK_TASK failed,please check!!!\n");
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        memset(&stu, 0, sizeof(stu));
-        /* /* std::vector<int>::vector(&stu.Equips); */ */
-        std::vector<MemChrBag>::vector(&stu.Items);
-        nIndex = 0;
-        stu.Index = readFile.Search_Posistion( i, 0)->iValue;
-        ++nIndex;
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        NeedEquipString.assign(v2->pString);
-        
-        stu.PlayerLevelMin = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.PlayerLevelMax = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.Star = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.GetCurr = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v3 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v3->pString);
-        CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Items, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
-        
-        stu.RandGold = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        delims = "|";
-        Answer::StringUtility::split(&ItemVetcor, &NeedEquipString, &delims, 0);
-        
-        for ( it._M_current = std::vector<std::string>::begin(&ItemVetcor)._M_current;
-              __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&it) )
-        {
-          __rhs._M_current = std::vector<std::string>::end(&ItemVetcor)._M_current;
-          if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&it, &__rhs) )
-            break;
-          v4 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator*(&it);
-          v5 = (const char *)std::string::c_str(v4);
-          v35 = atoi(v5);
-          std::vector<int>::push_back(&stu.Equips, &v35);
-        }
-        v6 = std::map<int,BackEquipTask>::operator[](&this->m_EquipBackTable, &stu.Index);
-        BackEquipTask::operator=(v6, &stu);
-        std::vector<std::string>::~vector(&ItemVetcor);
-        /* /* BackEquipTask::~BackEquipTask(&stu); - auto cleanup */ - auto cleanup */
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/RecoveryTaskRate.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_EQUIP_BACK_TASK failed,please check!!!\n");
-    }
-    else
-    {
-      iBaseTableCount_0 = readFile.GetRecordsNum();
-      iBaseColumnCount_0 = readFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          memset(&stu, 0, sizeof(stu));
-          std::vector<int>::vector(&stu.Equips);
-          std::vector<MemChrBag>::vector(&stu.Items);
-          nIndex_0 = 0;
-          Level = readFile.Search_Posistion( i_0, 0)->iValue;
-          Times = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          
-          v7 = readFile.Search_Posistion( i_0, nIndex_0);
-          TaskRate.assign(v7->pString);
-          
-          ++nIndex_0;
-          std::list<Param2>::list(&param);
-          
-          v37 = "|";
-          Answer::StringUtility::split(&TaskRateVetcor, &TaskRate, &v37, 0);
-          
-          for ( it_0._M_current = std::vector<std::string>::begin(&TaskRateVetcor)._M_current;
-                __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&it_0) )
-          {
-            v39._M_current = std::vector<std::string>::end(&TaskRateVetcor)._M_current;
-            if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&it_0, &v39) )
-              break;
-            
-            v40 = ":";
-            v8 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator*(&it_0);
-            Answer::StringUtility::split(&TaskRates, v8, &v40, 0);
-            
-            if ( std::vector<std::string>::size(&TaskRates) == 2 )
-            {
-              Param2::Param2(&stu_0, 0, 0);
-              v9 = std::vector<std::string>::operator[](&TaskRates, 0);
-              v10 = (const char *)std::string::c_str(v9);
-              stu_0.nParam1 = atoi(v10);
-              v11 = std::vector<std::string>::operator[](&TaskRates, 1u);
-              v12 = (const char *)std::string::c_str(v11);
-              stu_0.nParam2 = atoi(v12);
-              std::list<Param2>::push_back(&param, &stu_0);
-            }
-            std::vector<std::string>::~vector(&TaskRates);
-          }
-          v13 = std::map<int,std::map<int,std::list<Param2>>>::operator[](&this->m_EquipBackTaskRate, &Level);
-          v14 = std::map<int,std::list<Param2>>::operator[](v13, &Times);
-          std::list<Param2>::operator=(v14, &param);
-          std::vector<std::string>::~vector(&TaskRateVetcor);
-          std::list<Param2>::~list(&param);
-          BackEquipTask::~BackEquipTask(&stu);
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 int32_t CfgData::GetEquipBackTaskId(int32_t PlayerLevel, int32_t Times)
@@ -10558,102 +10320,8 @@ BackEquipTask *CfgData::GetBackEquipTask(int32_t Index)
 }
 
 //#####################################
-void CfgData::InitEquipBlessTable()
-{
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgEquipBless stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/LuckyValue.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileEquipB_0);
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgEquipBless::CfgEquipBless(&stu);
-        stu.nBless = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nAddRate = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        stu.nRemineRate = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nBroad = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        CfgEquipBlessTable::Add(&this->m_cfgEquipBlessTable, &stu);
-        /* CfgEquipBless::~CfgEquipBless(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
-void CfgData::InitEquipBoxTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-120h] BYREF
-  CfgEquipBox stu; // [rsp+A0h] [rbp-90h] BYREF
-  std::list<Param2> __x; // [rsp+E0h] [rbp-50h] BYREF
-  _BYTE v5[15]; // [rsp+F0h] [rbp-40h] BYREF
-  char v6; // [rsp+FFh] [rbp-31h] BYREF
-  int32_t v7[3]; // [rsp+100h] [rbp-30h] BYREF
-  char v8; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/cfg_item_gift_equip.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_ITEM_EQUIP_BOX_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        CfgEquipBox::CfgEquipBox(&stu);
-        nIndex = 0;
-        stu.nId = readFile.Search_Posistion( i, 0)->iValue;
-        stu.vEquipId[1] = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.vEquipId[2] = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.vEquipId[3] = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nWeight = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nBind = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        std::string::string(v5, "./ServerConfig/Tables/EquipPosSuit.txt", &v6);
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v7, v1->pString, &v8);
-        CfgData::paraseParam2List(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v7,
-          (const std::string *const)(unsigned int)i);
-        std::list<Param2>::operator=(&stu.lstStar, &__x);
-        std::list<Param2>::~list(&__x);
-        
-        stu.nProbility = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        CfgEquipBoxTable::AddEquipBox(&this->m_cfgEquipBoxTalbe, &stu);
-        /* CfgEquipBox::~CfgEquipBox(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitEquipDecomposeTable()
@@ -13710,90 +13378,6 @@ AddAttrList CfgData::GetGoblinSuitAttr(int32_t nId)
 }
 
 //#####################################
-void CfgData::InitGoldEggTable()
-{
-  int v1; // ebx
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgGoldEgg stu; // [rsp+A0h] [rbp-70h] BYREF
-  int iValue; // [rsp+C8h] [rbp-48h]
-  int32_t iBaseTableCount; // [rsp+D8h] [rbp-38h]
-  int32_t iBaseColumnCount; // [rsp+DCh] [rbp-34h]
-  int32_t i; // [rsp+E0h] [rbp-30h]
-  int32_t nIndex; // [rsp+E4h] [rbp-2Ch]
-  int32_t iBaseTableCount_0; // [rsp+ECh] [rbp-24h]
-  int32_t iBaseColumnCount_0; // [rsp+F0h] [rbp-20h]
-  int32_t i_0; // [rsp+F4h] [rbp-1Ch]
-  int32_t nIndex_0; // [rsp+F8h] [rbp-18h]
-  int32_t nId; // [rsp+FCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ItemGoldEggOpen.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_GOLD_EGG_OPEN_TABLE failed,please check!!!\n");
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgGoldEgg::CfgGoldEgg(&stu);
-        stu.nId = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nGroupId = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nOpenTimes = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nCostMoney = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nCostGold = readFile.Search_Posistion( i, nIndex++)->iValue;
-        CfgGoldEggTable::AddGoldEgg(&this->m_cfgGoldEggTable, &stu);
-        /* CfgGoldEgg::~CfgGoldEgg(&stu); - auto cleanup */
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ItemGoldEgg.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_GOLD_EGG_TABLE failed,please check!!!\n");
-    }
-    else
-    {
-      iBaseTableCount_0 = readFile.GetRecordsNum();
-      iBaseColumnCount_0 = readFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          nIndex_0 = 0;
-          memset(&stu, 0, sizeof(stu));
-          iValue = 0;
-          nId = readFile.Search_Posistion( i_0, 0)->iValue;
-          stu.nId = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          LOBYTE(stu.nGroupId) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          stu.nOpenTimes = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          LOBYTE(stu.nCostMoney) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          stu.nCostGold = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          *((_BYTE *)&stu.nCostGold + 4) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          LODWORD(stu.lstItem._M_impl._M_node._M_next) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          HIDWORD(stu.lstItem._M_impl._M_node._M_next) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          LODWORD(stu.lstItem._M_impl._M_node._M_prev) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          HIDWORD(stu.lstItem._M_impl._M_node._M_prev) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          iValue = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          CfgGoldEggTable::AddGoldEggProduce(&this->m_cfgGoldEggTable, nId, (const CfgGoldEggItem *const)&stu);
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitGongMinTable()
@@ -14078,163 +13662,6 @@ GuWuCfg *CfgData::GetGuWuCfg(int32_t Level)
 }
 
 //#####################################
-void CfgData::InitGuiGuDaoRenTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const std::string *v2; // rax
-  std::string *v3; // rax
-  const char *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  std::string *v9; // rax
-  const char *v10; // rax
-  const CDBCFile::FIELD *v11; // rax
-  const CDBCFile::FIELD *v12; // rax
-  const CDBCFile::FIELD *v13; // rax
-  GuiGuDaoRenCfg *v14; // rax
-  int64_t v15; // rax
-  CDBCFile TabFile(0); // [rsp+20h] [rbp-250h] BYREF
-  GuiGuDaoRenCfg stu; // [rsp+B0h] [rbp-1C0h] BYREF
-  RefreshMonster tmpStu; // [rsp+110h] [rbp-160h] BYREF
-  StringVector vstr; // [rsp+120h] [rbp-150h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin; // [rsp+140h] [rbp-130h] BYREF
-  StringVector SplitStr; // [rsp+150h] [rbp-120h] BYREF
-  std::string RefreshMonsterString; // [rsp+170h] [rbp-100h] BYREF
-  char v23; // [rsp+17Fh] [rbp-F1h] BYREF
-  std::string delims; // [rsp+180h] [rbp-F0h] BYREF
-  char v25; // [rsp+18Fh] [rbp-E1h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+190h] [rbp-E0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+1A0h] [rbp-D0h] BYREF
-  std::string v28; // [rsp+1B0h] [rbp-C0h] BYREF
-  char v29; // [rsp+1BFh] [rbp-B1h] BYREF
-  ItemData __x; // [rsp+1C0h] [rbp-B0h] BYREF
-  std::string strItem; // [rsp+1D0h] [rbp-A0h] BYREF
-  char v32; // [rsp+1DFh] [rbp-91h] BYREF
-  MemChrBag v33; // [rsp+1E0h] [rbp-90h] BYREF
-  std::string v34; // [rsp+200h] [rbp-70h] BYREF
-  char v35; // [rsp+20Fh] [rbp-61h] BYREF
-  Int32Vector v36; // [rsp+210h] [rbp-60h] BYREF
-  std::string path; // [rsp+230h] [rbp-40h] BYREF
-  char v38; // [rsp+23Fh] [rbp-31h] BYREF
-  std::string str; // [rsp+240h] [rbp-30h] BYREF
-  char v40; // [rsp+24Ah] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+24Ch] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+250h] [rbp-20h]
-  int32_t i; // [rsp+254h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+258h] [rbp-18h]
-  int32_t j; // [rsp+25Ch] [rbp-14h]
-  ItemData v47; // 0:kr00_12.12
-
-  
-  if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/TaoistTask.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_GUI_GU_DAO_REN_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = TabFile.GetRecordsNum();
-    iBaseColumnCount = TabFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      std::map<int,GuiGuDaoRenCfg>::clear(&this->m_GuiGuDaoRenCfgMap);
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        memset(&stu, 0, sizeof(stu));
-        std::list<RefreshMonster>::list(&stu.lRefreshMonster);
-        /* std::vector<ItemData>::vector(&stu.vItemData); */
-        /* /* /* std::vector<MemChrBag>::vector(&stu.vItem); */ */ */
-        /* std::vector<int>::vector(&stu.vMapId); */
-        nIndex = 0;
-        stu.nNpcId = TabFile.Search_Posistion( i, 0)->iValue;
-        stu.nMaxCount = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v1 = TabFile.Search_Posistion( i, nIndex);
-        RefreshMonsterString.assign(v1->pString);
-        
-        ++nIndex;
-        
-        delims = "|";
-        Answer::StringUtility::split(&SplitStr, &RefreshMonsterString, &delims, 0);
-        
-        __i._M_current = std::vector<std::string>::begin(&SplitStr)._M_current;
-        __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::__normal_iterator<std::string *>(
-          &iterBegin,
-          &__i);
-        while ( 1 )
-        {
-          __rhs._M_current = std::vector<std::string>::end(&SplitStr)._M_current;
-          if ( !__gnu_cxx::operator!=<std::string const*,std::string *,std::vector<std::string>>(&iterBegin, &__rhs) )
-            break;
-          
-          v28 = ":";
-          v2 = __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator*(&iterBegin);
-          Answer::StringUtility::split(&vstr, v2, &v28, 0);
-          
-          if ( std::vector<std::string>::size(&vstr) == 4 )
-          {
-            *(_QWORD *)&tmpStu.nCount = 0;
-            *(_QWORD *)&tmpStu.AliveTime = 0;
-            v3 = std::vector<std::string>::operator[](&vstr, 0);
-            v4 = (const char *)std::string::c_str(v3);
-            tmpStu.nCount = atoi(v4);
-            v5 = std::vector<std::string>::operator[](&vstr, 1u);
-            v6 = (const char *)std::string::c_str(v5);
-            tmpStu.BossId = atoi(v6);
-            v7 = std::vector<std::string>::operator[](&vstr, 2u);
-            v8 = (const char *)std::string::c_str(v7);
-            tmpStu.AliveTime = atoi(v8);
-            v9 = std::vector<std::string>::operator[](&vstr, 3u);
-            v10 = (const char *)std::string::c_str(v9);
-            tmpStu.GongGaoId = atoi(v10);
-            std::list<RefreshMonster>::push_back(&stu.lRefreshMonster, &tmpStu);
-          }
-          std::vector<std::string>::~vector(&vstr);
-          __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iterBegin);
-        }
-        std::vector<ItemData>::reserve(&stu.vItemData, 3u);
-        std::vector<MemChrBag>::reserve(&stu.vItem, 3u);
-        for ( j = 0; j <= 2; ++j )
-        {
-          
-          v11 = TabFile.Search_Posistion( i, nIndex);
-          strItem.assign(v11->pString);
-          v47 = CItemHelper::parseItemDataString(&strItem);
-          LODWORD(v15) = v47.m_nId;
-          BYTE4(v15) = v47.m_nClass;
-          *(_QWORD *)&__x.m_nId = v15;
-          __x.m_nCount = v47.m_nCount;
-          std::vector<ItemData>::push_back(&stu.vItemData, &__x);
-          
-          ++nIndex;
-          
-          v12 = TabFile.Search_Posistion( i, nIndex);
-          v34.assign(v12->pString);
-          CItemHelper::parseItemString(&v33, &v34);
-          std::vector<MemChrBag>::push_back(&stu.vItem, &v33);
-          
-          ++nIndex;
-        }
-        
-        path = "./ServerConfig/Tables/TaoistTask.txt";
-        
-        v13 = TabFile.Search_Posistion( i, nIndex);
-        str.assign(v13->pString);
-        CfgData::paraseInt32Vector(&v36, this, &str, &path, 0);
-        std::vector<int>::operator=(&stu.vMapId, &v36);
-        std::vector<int>::~vector(&v36);
-        
-        ++nIndex;
-        v14 = std::map<int,GuiGuDaoRenCfg>::operator[](&this->m_GuiGuDaoRenCfgMap, &stu.nNpcId);
-        GuiGuDaoRenCfg::operator=(v14, &stu);
-        std::vector<std::string>::~vector(&SplitStr);
-        /* GuiGuDaoRenCfg::~GuiGuDaoRenCfg(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
 GuiGuDaoRenCfg *CfgData::GetGuiGuDaoRenCfg(int32_t NpcId)
@@ -15026,59 +14453,6 @@ void CfgData::InitLibraryTable()
 }
 
 //#####################################
-void CfgData::InitLimitTimeTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const char *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  std::string strTime; // [rsp+A0h] [rbp-50h] BYREF
-  CfgLimitTime stu; // [rsp+B0h] [rbp-40h] BYREF
-  char v6; // [rsp+BFh] [rbp-31h] BYREF
-  std::string p_StringTime; // [rsp+C0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t nIndex; // [rsp+DCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/LimitTime.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_LIMIT_TIME_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        *(_QWORD *)&stu.nIndex = 0;
-        stu.nTime = 0;
-        stu.nIndex = readFile.Search_Posistion( i, 0)->iValue;
-        stu.nType = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        strTime.assign(v1->pString);
-        
-        ++nIndex;
-        if ( stu.nType == 2 )
-        {
-          p_StringTime = strTime;
-          Answer::DayTime::StringToIntTime(p_StringTime);
-        }
-        else if ( stu.nType == 3 || stu.nType == 1 )
-        {
-          v2 = (const char *)std::string::c_str(&strTime);
-          stu.nTime = atoi(v2);
-        }
-        CfgLimitTimeTable::AddLimitTime(&this->m_cfgLimitTimeTable, &stu);
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitLittleHelperCfg()
@@ -15615,146 +14989,6 @@ void CfgData::InitMapRoadTable()
 }
 
 //#####################################
-void CfgData::InitMingGeTable()
-{
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  int v3; // ebx
-  CDBCFile readFile(0); // [rsp+10h] [rbp-1B0h] BYREF
-  CMingGeCfg stu; // [rsp+A0h] [rbp-120h] BYREF
-  Param2 stu_1; // [rsp+E0h] [rbp-E0h] BYREF
-  MingGeDrawCost stu_0; // [rsp+F0h] [rbp-D0h]
-  std::list<AddAttribute> __x; // [rsp+100h] [rbp-C0h] BYREF
-  _BYTE v9[15]; // [rsp+110h] [rbp-B0h] BYREF
-  char v10; // [rsp+11Fh] [rbp-A1h] BYREF
-  int32_t v11[3]; // [rsp+120h] [rbp-A0h] BYREF
-  char v12; // [rsp+12Fh] [rbp-91h] BYREF
-  CMingGeCfg p_stu; // [rsp+130h] [rbp-90h] BYREF
-  int32_t iBaseTableCount; // [rsp+174h] [rbp-4Ch]
-  int32_t iBaseColumnCount; // [rsp+178h] [rbp-48h]
-  int32_t i; // [rsp+17Ch] [rbp-44h]
-  int32_t nIndex; // [rsp+180h] [rbp-40h]
-  int32_t iBaseTableCount_0; // [rsp+188h] [rbp-38h]
-  int32_t iBaseColumnCount_0; // [rsp+18Ch] [rbp-34h]
-  int32_t i_0; // [rsp+190h] [rbp-30h]
-  int32_t nIndex_0; // [rsp+194h] [rbp-2Ch]
-  int32_t iBaseTableCount_1; // [rsp+19Ch] [rbp-24h]
-  int32_t iBaseColumnCount_1; // [rsp+1A0h] [rbp-20h]
-  int32_t i_1; // [rsp+1A4h] [rbp-1Ch]
-  int32_t nIndex_1; // [rsp+1A8h] [rbp-18h]
-  int32_t nType; // [rsp+1ACh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MingGe.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileMingGe);
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CMingGeCfg::CMingGeCfg(&stu);
-        stu.nId = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(v9, "./ServerConfig/Tables/MingGe.txt", &v10);
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v11, v2->pString, &v12);
-        CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v11,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.lAttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
-        
-        stu.nType = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nCanPickup = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nQuality = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nDecExp = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nDecMoney = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nUpExp = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nNextId = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nCostChip = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        CMingGeCfg::CMingGeCfg(&p_stu, &stu);
-        CMingGeTable::AddMingGeCfg(&this->m_CMingGeTable, &p_stu);
-        /* CMingGeCfg::~CMingGeCfg(&p_stu); - auto cleanup */
-        /* CMingGeCfg::~CMingGeCfg(&stu); - auto cleanup */
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MingGeDrawCost.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileMingGe_0);
-      v3 = 0;
-    }
-    else
-    {
-      iBaseTableCount_0 = readFile.GetRecordsNum();
-      iBaseColumnCount_0 = readFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          nIndex_0 = 0;
-          stu_0.nType = readFile.Search_Posistion( i_0, 0)->iValue;
-          stu_0.nConstMoney = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          stu_0.nConstGold = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          stu_0.nRate = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          CMingGeTable::AddMingGeDrawCost(&this->m_CMingGeTable, stu_0);
-        }
-        v3 = 1;
-      }
-      else
-      {
-        v3 = 0;
-      }
-    }
-    if ( v3 )
-    {
-      
-      if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MingGeDraw.txt") )
-      {
-        Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileMingGe_1);
-      }
-      else
-      {
-        iBaseTableCount_1 = readFile.GetRecordsNum();
-        iBaseColumnCount_1 = readFile.GetFieldsNum();
-        if ( iBaseColumnCount_1 > 0 )
-        {
-          for ( i_1 = 0; i_1 < iBaseTableCount_1; ++i_1 )
-          {
-            nIndex_1 = 0;
-            nType = readFile.Search_Posistion( i_1, 0)->iValue;
-            ++nIndex_1;
-            Param2::Param2(&stu_1, 0, 0);
-            stu_1.nParam1 = readFile.Search_Posistion( i_1, nIndex_1++)->iValue;
-            stu_1.nParam2 = readFile.Search_Posistion( i_1, nIndex_1++)->iValue;
-            CMingGeTable::AddMingGeDrawRate(&this->m_CMingGeTable, nType, stu_1);
-          }
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 int32_t CfgData::GetMonsterReviveTime(int32_t Time, int32_t BossId)
@@ -16141,88 +15375,32 @@ void CfgData::InitClbAimCfg()
     }
 }
 
-void CfgData::InitEquipBackTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  std::string *v2; // rax
-  const char *v3; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-190h] BYREF
-  EquipBack stu; // [rsp+A0h] [rbp-100h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter; // [rsp+E0h] [rbp-C0h] BYREF
-  StringVector vStr; // [rsp+F0h] [rbp-B0h] BYREF
-  std::string EquipList; // [rsp+110h] [rbp-90h] BYREF
-  char v9; // [rsp+11Fh] [rbp-81h] BYREF
-  std::string delims; // [rsp+120h] [rbp-80h] BYREF
-  char v11; // [rsp+12Fh] [rbp-71h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+130h] [rbp-70h] BYREF
-  int __x; // [rsp+13Ch] [rbp-64h] BYREF
-  EquipBack p_stu; // [rsp+140h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+180h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+184h] [rbp-1Ch]
-  int32_t i; // [rsp+188h] [rbp-18h]
-  int32_t nIndex; // [rsp+18Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/EquipRecovery.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_ITEM_EQUIP_BACK failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        EquipBack::EquipBack(&stu);
-        nIndex = 0;
-        stu.nId = readFile.Search_Posistion( i, 0)->iValue;
-        stu.nType = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        EquipList.assign(v1->pString);
-        
-        ++nIndex;
-        
-        delims = "|";
-        Answer::StringUtility::split(&vStr, &EquipList, &delims, 0);
-        
-        for ( iter._M_current = std::vector<std::string>::begin(&vStr)._M_current;
-              __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&iter) )
-        {
-          __rhs._M_current = std::vector<std::string>::end(&vStr)._M_current;
-          if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&iter, &__rhs) )
-            break;
-          v2 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator->(&iter);
-          v3 = (const char *)std::string::c_str(v2);
-          __x = atoi(v3);
-          std::list<int>::push_back(&stu.nEquipList, &__x);
-        }
-        stu.nRecovType = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nRecovValues = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nBuyBackType = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nBuyBackValue = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nOpenDay = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nLimitNum = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        nIndex += 3;
-        stu.nDisplayDay = readFile.Search_Posistion( i, nIndex++)->iValue;
-        EquipBack::EquipBack(&p_stu, &stu);
-        CfgEquipTable::AddEquipBack(&this->m_cfgEquip, &p_stu);
-        /* EquipBack::~EquipBack(&p_stu); - auto cleanup */
-        std::vector<std::string>::~vector(&vStr);
-        /* EquipBack::~EquipBack(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 void CfgData::InitFamilyWarReliveTable()
 {
     // NOTICE: CfgFamilyWarRelive struct and m_relive member belong to CfgFamilyWarTable class, not CfgData. No config file was found.
     // This function is kept as a stub for future implementation.
+}
+
+//////////////////////////////////////////////////////////////////////////
+// CfgFamilyWarTable methods
+//////////////////////////////////////////////////////////////////////////
+void CfgFamilyWarTable::AddJoinReward(int32_t nLevel, int32_t nExp)
+{
+	CfgFamilyWarJoinReward reward;
+	reward.level = nLevel;
+	reward.addExp = nExp;
+	m_reward.push_back(reward);
+}
+
+int32_t CfgFamilyWarTable::GetJoinReward(int32_t nLevel) const
+{
+	for (auto it = m_reward.begin(); it != m_reward.end(); ++it)
+	{
+		if (it->level >= nLevel)
+			return it->addExp;
+	}
+	return 0;
 }
 
 void CfgData::InitGameTable()
@@ -18896,53 +18074,6 @@ void CfgData::InitTGPRewardTable()
 }
 
 //#####################################
-void CfgData::InitTalentPageTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgTalentPage stu; // [rsp+A0h] [rbp-70h] BYREF
-  std::list<int> __x; // [rsp+C0h] [rbp-50h] BYREF
-  int32_t size[3]; // [rsp+D0h] [rbp-40h] BYREF
-  char v6; // [rsp+DFh] [rbp-31h] BYREF
-  std::string path; // [rsp+E0h] [rbp-30h] BYREF
-  char v8; // [rsp+EEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+F0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+F4h] [rbp-1Ch]
-  int32_t i; // [rsp+F8h] [rbp-18h]
-  int32_t nIndex; // [rsp+FCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/SkillTree.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "Open FILE_TALENT_PAGE_TABLE fail, please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgTalentPage::CfgTalentPage(&stu);
-        stu.job = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(size, "./ServerConfig/Tables/SkillTree.txt", &v6);
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        path.assign(v1->pString);
-        CfgData::paraseInt32List((CfgData *const)&__x, (const std::string *const)this, &path, (int32_t)size);
-        std::list<int>::operator=(&stu.talents, &__x);
-        std::list<int>::~list(&__x);
-        
-        ++nIndex;
-        CfgTalentTable::AddTalentPage(&this->m_cfgTalentTable, &stu);
-        /* /* CfgTalentPage::~CfgTalentPage(&stu); - auto cleanup */ - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::fetchTask()
@@ -19942,34 +19073,6 @@ int32_t CfgData::getServerDiffDay(SERVER_TYPE nType)
 }
 
 //#####################################
-void CfgData::fetchServerConfig(int32_t line)
-{
-  Answer::DBPool *v2; // rax
-  Answer::MySqlQuery *v3; // rax
-  char szSQL[4096]; // [rsp+10h] [rbp-1060h] BYREF
-  Answer::MySqlDBGuard db; // [rsp+1010h] [rbp-60h] BYREF
-  Answer::MySqlQuery result; // [rsp+1040h] [rbp-30h] BYREF
-
-  if ( line != 9 )
-  {
-    memset(szSQL, 0, sizeof(szSQL));
-    snprintf(szSQL, 0xFFFu, "SELECT * FROM `sys_server_start`");
-    v2 = Answer::Singleton<Answer::DBPool>::instance();
-    Answer::MySqlDBGuard::MySqlDBGuard(&db, v2);
-    v3 = Answer::MySqlDBGuard::query(&db, szSQL);
-    Answer::MySqlQuery::MySqlQuery(&result, v3);
-    if ( !Answer::MySqlQuery::eof(&result) )
-    {
-      this->m_heFuTime = Answer::MySqlQuery::getIntValue(&result, "he_fu_time", 0);
-      this->m_kaiFuTime = Answer::MySqlQuery::getIntValue(&result, "kai_fu_time", 0);
-      this->m_serverType = Answer::MySqlQuery::getIntValue(&result, "type", 0);
-    }
-    Answer::/* /* MySqlQuery::~MySqlQuery(&result); - auto cleanup */ - auto cleanup */
-    Answer::/* /* MySqlDBGuard::~MySqlDBGuard(&db); - auto cleanup */ - auto cleanup */
-  }
-}
-
-//#####################################
 void CfgData::updateServerStartTime(int32_t kaiFuTime)
 {
   COpenBeta *v2; // rax
@@ -20668,8 +19771,6 @@ void CfgData::InitYellowLevelRewardTable()
 }
 
 //#####################################
-void CfgData::InitTalentActiveTable()
-void CfgData::InitZhanHunTable()
 {
     CDBCFile TabFile(0);
     bool ret = TabFile.OpenFromTXT("./ServerConfig/Tables/ZhanHun.txt");
@@ -20762,53 +19863,6 @@ void CfgData::InitZhanHunTable()
 }
 
 //#####################################
-void CfgData::InitTalentPageTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgTalentPage stu; // [rsp+A0h] [rbp-70h] BYREF
-  std::list<int> __x; // [rsp+C0h] [rbp-50h] BYREF
-  int32_t size[3]; // [rsp+D0h] [rbp-40h] BYREF
-  char v6; // [rsp+DFh] [rbp-31h] BYREF
-  std::string path; // [rsp+E0h] [rbp-30h] BYREF
-  char v8; // [rsp+EEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+F0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+F4h] [rbp-1Ch]
-  int32_t i; // [rsp+F8h] [rbp-18h]
-  int32_t nIndex; // [rsp+FCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/SkillTree.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "Open FILE_TALENT_PAGE_TABLE fail, please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgTalentPage::CfgTalentPage(&stu);
-        stu.job = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(size, "./ServerConfig/Tables/SkillTree.txt", &v6);
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        path.assign(v1->pString);
-        CfgData::paraseInt32List((CfgData *const)&__x, (const std::string *const)this, &path, (int32_t)size);
-        std::list<int>::operator=(&stu.talents, &__x);
-        std::list<int>::~list(&__x);
-        
-        ++nIndex;
-        CfgTalentTable::AddTalentPage(&this->m_cfgTalentTable, &stu);
-        CfgTalentPage::~CfgTalentPage(&stu);
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::fetchTask()
@@ -21808,34 +20862,6 @@ int32_t CfgData::getServerDiffDay(SERVER_TYPE nType)
 }
 
 //#####################################
-void CfgData::fetchServerConfig(int32_t line)
-{
-  Answer::DBPool *v2; // rax
-  Answer::MySqlQuery *v3; // rax
-  char szSQL[4096]; // [rsp+10h] [rbp-1060h] BYREF
-  Answer::MySqlDBGuard db; // [rsp+1010h] [rbp-60h] BYREF
-  Answer::MySqlQuery result; // [rsp+1040h] [rbp-30h] BYREF
-
-  if ( line != 9 )
-  {
-    memset(szSQL, 0, sizeof(szSQL));
-    snprintf(szSQL, 0xFFFu, "SELECT * FROM `sys_server_start`");
-    v2 = Answer::Singleton<Answer::DBPool>::instance();
-    Answer::MySqlDBGuard::MySqlDBGuard(&db, v2);
-    v3 = Answer::MySqlDBGuard::query(&db, szSQL);
-    Answer::MySqlQuery::MySqlQuery(&result, v3);
-    if ( !Answer::MySqlQuery::eof(&result) )
-    {
-      this->m_heFuTime = Answer::MySqlQuery::getIntValue(&result, "he_fu_time", 0);
-      this->m_kaiFuTime = Answer::MySqlQuery::getIntValue(&result, "kai_fu_time", 0);
-      this->m_serverType = Answer::MySqlQuery::getIntValue(&result, "type", 0);
-    }
-    Answer::MySqlQuery::~MySqlQuery(&result);
-    Answer::MySqlDBGuard::~MySqlDBGuard(&db);
-  }
-}
-
-//#####################################
 void CfgData::updateServerStartTime(int32_t kaiFuTime)
 {
   COpenBeta *v2; // rax
@@ -21905,78 +20931,6 @@ void CfgData::sendNewItems(const CfgItemTable *const items)
 }
 
 //#####################################
-void CfgData::InitTalentTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-150h] BYREF
-  CfgTalent stu; // [rsp+A0h] [rbp-C0h] BYREF
-  std::list<ItemData> strItems; // [rsp+F0h] [rbp-70h] BYREF
-  bool bCombi[15]; // [rsp+100h] [rbp-60h] BYREF
-  char v7; // [rsp+10Fh] [rbp-51h] BYREF
-  std::list<int> __x; // [rsp+110h] [rbp-50h] BYREF
-  int32_t size[3]; // [rsp+120h] [rbp-40h] BYREF
-  char v10; // [rsp+12Fh] [rbp-31h] BYREF
-  std::string path; // [rsp+130h] [rbp-30h] BYREF
-  char v12; // [rsp+13Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+140h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+144h] [rbp-1Ch]
-  int32_t i; // [rsp+148h] [rbp-18h]
-  int32_t nIndex; // [rsp+14Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/SkillTalent.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "Open FILE_TALENT_TABLE fail, please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgTalent::CfgTalent(&stu);
-        stu.id = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.Level = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.skillid = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.maxLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.Playerlevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        ++nIndex;
-        ++nIndex;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v7);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.costItem, &strItems);
-        std::list<ItemData>::~list(&strItems);
-        
-        ++nIndex;
-        
-        std::string::string(size, "./ServerConfig/Tables/SkillTalent.txt", &v10);
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        path.assign(v2->pString);
-        CfgData::paraseInt32List((CfgData *const)&__x, (const std::string *const)this, &path, (int32_t)size);
-        std::list<int>::operator=(&stu.powerSkills, &__x);
-        std::list<int>::~list(&__x);
-        
-        ++nIndex;
-        ++nIndex;
-        stu.battle = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        stu.Point = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        CfgTalentTable::AddTalent(&this->m_cfgTalentTable, &stu);
-        /* CfgTalent::~CfgTalent(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitTaskCycleRewardTable()
@@ -22166,112 +21120,6 @@ TianLingCfg *CfgData::GetTianLingCfg(int32_t TianLingLevel)
 }
 
 //#####################################
-void CfgData::InitTitleTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-1F0h] BYREF
-  CfgTitle title; // [rsp+A0h] [rbp-160h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+100h] [rbp-100h] BYREF
-  StringVector strParams; // [rsp+110h] [rbp-F0h] BYREF
-  std::string dressattr; // [rsp+130h] [rbp-D0h] BYREF
-  std::string getttr; // [rsp+140h] [rbp-C0h] BYREF
-  std::string params; // [rsp+150h] [rbp-B0h] BYREF
-  char v14; // [rsp+15Dh] [rbp-A3h] BYREF
-  char v15; // [rsp+15Eh] [rbp-A2h] BYREF
-  char v16; // [rsp+15Fh] [rbp-A1h] BYREF
-  std::string delims; // [rsp+160h] [rbp-A0h] BYREF
-  char v18; // [rsp+16Fh] [rbp-91h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+170h] [rbp-90h] BYREF
-  int __x; // [rsp+17Ch] [rbp-84h] BYREF
-  AttrAddonVector v21; // [rsp+180h] [rbp-80h] BYREF
-  std::string path; // [rsp+1A0h] [rbp-60h] BYREF
-  char v23; // [rsp+1AFh] [rbp-51h] BYREF
-  AttrAddonVector v24; // [rsp+1B0h] [rbp-50h] BYREF
-  std::string v25; // [rsp+1D0h] [rbp-30h] BYREF
-  char v26; // [rsp+1DEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+1E0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+1E4h] [rbp-1Ch]
-  int32_t i; // [rsp+1E8h] [rbp-18h]
-  int32_t nIndex; // [rsp+1ECh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Title.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_TITLE_TABLE failed,please check!!");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        CfgTitle::CfgTitle(&title);
-        nIndex = 0;
-        title.nId = readFile.Search_Posistion( i, 0)->iValue;
-        ++nIndex;
-        title.nType = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        params.assign(v1->pString);
-        
-        v2 = readFile.Search_Posistion( i, ++nIndex);
-        std::string::operator=(&title.sPlatform, v2->pString);
-        title.nJob = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        title.nSex = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        title.nSpecial = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        title.nPriority = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v3 = readFile.Search_Posistion( i, nIndex);
-        getttr.assign(v3->pString);
-        
-        ++nIndex;
-        
-        v4 = readFile.Search_Posistion( i, nIndex);
-        dressattr.assign(v4->pString);
-        
-        ++nIndex;
-        
-        delims = ":";
-        Answer::StringUtility::split(&strParams, &params, &delims, 0);
-        
-        for ( it._M_current = std::vector<std::string>::begin(&strParams)._M_current;
-              __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&it) )
-        {
-          __rhs._M_current = std::vector<std::string>::end(&strParams)._M_current;
-          if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&it, &__rhs) )
-            break;
-          v5 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator->(&it);
-          v6 = (const char *)std::string::c_str(v5);
-          __x = atoi(v6);
-          std::vector<int>::push_back(&title.vParams, &__x);
-        }
-        
-        path = "./ServerConfig/Tables/Title.txt";
-        paraseAttrAddon(v21, getttr, path);
-        std::vector<AttrAddon>::operator=(&title.vGetAttr, &v21);
-        std::vector<AttrAddon>::~vector(&v21);
-        
-        v25 = "./ServerConfig/Tables/Title.txt";
-        paraseAttrAddon(v24, dressattr, v25);
-        std::vector<AttrAddon>::operator=(&title.vDressAttr, &v24);
-        std::vector<AttrAddon>::~vector(&v24);
-        
-        CfgTitleTable::Add(&this->m_cfgTitleTable, &title);
-        std::vector<std::string>::~vector(&strParams);
-        /* CfgTitle::~CfgTitle(&title); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitTongTianChiRanTable()
@@ -22330,108 +21178,6 @@ int32_t CfgData::GetTongTianChiReward(int32_t nId)
 }
 
 //#####################################
-void CfgData::InitTouZiTable()
-{
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-1B0h] BYREF
-  SevenTouZi stu; // [rsp+A0h] [rbp-120h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-F0h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-D0h] BYREF
-  char v8; // [rsp+FFh] [rbp-C1h] BYREF
-  SevenTouZi p_stu; // [rsp+100h] [rbp-C0h] BYREF
-  MemChrBagVector v10; // [rsp+130h] [rbp-90h] BYREF
-  std::string v11; // [rsp+150h] [rbp-70h] BYREF
-  char v12; // [rsp+15Fh] [rbp-61h] BYREF
-  MonthTouZi v13; // [rsp+160h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+18Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+190h] [rbp-30h]
-  int32_t i; // [rsp+194h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+198h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+1A0h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+1A4h] [rbp-1Ch]
-  int32_t i_0; // [rsp+1A8h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+1ACh] [rbp-14h]
-
-  
-  if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/QiRiTouZi.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_SEVEN_DAY_TOU_ZI_TABEL failed,please check!!");
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = TabFile.GetRecordsNum();
-    iBaseColumnCount = TabFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        memset(&stu, 0, sizeof(stu));
-        std::vector<MemChrBag>::vector(&stu.vItem);
-        stu.nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nType = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nCondition = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        v2 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
-        CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vItem, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
-        
-        ++nIndex;
-        SevenTouZi::SevenTouZi(&p_stu, &stu);
-        CfgTouZiTable::AddSevenTouZi(&this->m_cfgTouZiTable, &p_stu);
-        SevenTouZi::~SevenTouZi(&p_stu);
-        SevenTouZi::~SevenTouZi(&stu);
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/ChaoJiTouZi.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_MONTH_TOU_ZI_TABLE failed,please check!!");
-    }
-    else
-    {
-      iBaseTableCount_0 = TabFile.GetRecordsNum();
-      iBaseColumnCount_0 = TabFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          nIndex_0 = 0;
-          memset(&stu, 0, 36);
-          std::vector<MemChrBag>::vector((std::vector<MemChrBag> *const)&stu.nCondition);
-          stu.nId = TabFile.Search_Posistion( i_0, nIndex_0++)->iValue;
-          ++nIndex_0;
-          
-          v3 = TabFile.Search_Posistion( i_0, nIndex_0);
-          v11.assign(v3->pString);
-          CItemHelper::parseItemVectorString(&v10, &v11);
-          std::vector<MemChrBag>::operator=((std::vector<MemChrBag> *const)&stu.nCondition, &v10);
-          std::vector<MemChrBag>::~vector(&v10);
-          
-          LODWORD(stu.vItem._M_impl._M_end_of_storage) = TabFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          MonthTouZi::MonthTouZi(&v13, (const MonthTouZi *const)&stu);
-          CfgTouZiTable::AddMonthTouZi(&this->m_cfgTouZiTable, &v13);
-          MonthTouZi::~MonthTouZi(&v13);
-          MonthTouZi::~MonthTouZi((MonthTouZi *const)&stu);
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitTrailerTable()
@@ -22560,225 +21306,6 @@ void CfgData::InitTrailerTable()
 }
 
 //#####################################
-void CfgData::InitTreasureMapTabale()
-{
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  int *v8; // rbx
-  std::string *v9; // rax
-  const char *v10; // rax
-  std::string *v11; // rax
-  const char *v12; // rax
-  const std::string *v14; // rax
-  std::string *v15; // rax
-  const char *v16; // rax
-  std::string *v17; // rax
-  const char *v18; // rax
-  std::string *v19; // rax
-  const char *v20; // rax
-  const CDBCFile::FIELD *v21; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-320h] BYREF
-  TreasureMapCfg stu; // [rsp+A0h] [rbp-290h] BYREF
-  TreasureMapEventCfg stu_0; // [rsp+100h] [rbp-230h] BYREF
-  MapPos stuPos; // [rsp+120h] [rbp-210h] BYREF
-  StringVector vstr_0; // [rsp+130h] [rbp-200h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin_0; // [rsp+150h] [rbp-1E0h] BYREF
-  StringVector SplitStr_0; // [rsp+160h] [rbp-1D0h] BYREF
-  StringVector vstr; // [rsp+180h] [rbp-1B0h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin; // [rsp+1A0h] [rbp-190h] BYREF
-  StringVector SplitStr; // [rsp+1B0h] [rbp-180h] BYREF
-  std::string MapPosString; // [rsp+1D0h] [rbp-160h] BYREF
-  std::string RateString; // [rsp+1E0h] [rbp-150h] BYREF
-  char v34; // [rsp+1EEh] [rbp-142h] BYREF
-  char v35; // [rsp+1EFh] [rbp-141h] BYREF
-  std::string delims; // [rsp+1F0h] [rbp-140h] BYREF
-  char v37; // [rsp+1FFh] [rbp-131h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+200h] [rbp-130h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+210h] [rbp-120h] BYREF
-  std::string v40; // [rsp+220h] [rbp-110h] BYREF
-  char v41; // [rsp+22Bh] [rbp-105h] BYREF
-  int __k; // [rsp+22Ch] [rbp-104h] BYREF
-  std::string v43; // [rsp+230h] [rbp-100h] BYREF
-  char v44; // [rsp+23Fh] [rbp-F1h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v45; // [rsp+240h] [rbp-F0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v46; // [rsp+250h] [rbp-E0h] BYREF
-  std::string v47; // [rsp+260h] [rbp-D0h] BYREF
-  char v48; // [rsp+26Fh] [rbp-C1h] BYREF
-  Position v49; // [rsp+270h] [rbp-C0h] BYREF
-  TreasureMapCfg p_stu; // [rsp+280h] [rbp-B0h] BYREF
-  TreasureMapEventCfg v51; // [rsp+2E0h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+2FCh] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+300h] [rbp-30h]
-  int32_t i; // [rsp+304h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+308h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+310h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+314h] [rbp-1Ch]
-  int32_t i_0; // [rsp+318h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+31Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TreasureMapBase.txt") )
-  {
-    Answer::Logger::print(
-      Answer::LogLevel::LOG_LEVEL_ERROR,
-      "open FILE_TREASURE_MAP_CFG_TABLE failed,please check!!!\n");
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        memset(&stu, 0, sizeof(stu));
-        std::map<int,int>::map(&stu.m_EventRate);
-        std::vector<MapPos>::vector(&stu.m_MaxPosVector);
-        nIndex = 0;
-        stu.m_ItemId = readFile.Search_Posistion( i, 0)->iValue;
-        ++nIndex;
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        RateString.assign(v2->pString);
-        
-        ++nIndex;
-        
-        v3 = readFile.Search_Posistion( i, nIndex);
-        MapPosString.assign(v3->pString);
-        
-        ++nIndex;
-        if ( std::operator!=<char>(&RateString, &byte_8C33CF) && std::operator!=<char>(&RateString, "-1") )
-        {
-          
-          delims = "|";
-          Answer::StringUtility::split(&SplitStr, &RateString, &delims, 0);
-          
-          __i._M_current = std::vector<std::string>::begin(&SplitStr)._M_current;
-          __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::__normal_iterator<std::string *>(
-            &iterBegin,
-            &__i);
-          while ( 1 )
-          {
-            __rhs._M_current = std::vector<std::string>::end(&SplitStr)._M_current;
-            if ( !__gnu_cxx::operator!=<std::string const*,std::string *,std::vector<std::string>>(&iterBegin, &__rhs) )
-              break;
-            
-            v40 = ":";
-            v5 = __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator*(&iterBegin);
-            Answer::StringUtility::split(&vstr, v5, &v40, 0);
-            
-            if ( std::vector<std::string>::size(&vstr) == 2 )
-            {
-              v6 = std::vector<std::string>::operator[](&vstr, 0);
-              v7 = (const char *)std::string::c_str(v6);
-              __k = atoi(v7);
-              v8 = std::map<int,int>::operator[](&stu.m_EventRate, &__k);
-              v9 = std::vector<std::string>::operator[](&vstr, 1u);
-              v10 = (const char *)std::string::c_str(v9);
-              *v8 = atoi(v10);
-              LODWORD(v8) = stu.m_MaxProbability;
-              v11 = std::vector<std::string>::operator[](&vstr, 1u);
-              v12 = (const char *)std::string::c_str(v11);
-              stu.m_MaxProbability = (_DWORD)v8 + atoi(v12);
-            }
-            std::vector<std::string>::~vector(&vstr);
-            __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iterBegin);
-          }
-          std::vector<std::string>::~vector(&SplitStr);
-        }
-        if ( std::operator!=<char>(&MapPosString, &byte_8C33CF) && std::operator!=<char>(&MapPosString, "-1") )
-        {
-          
-          v43 = "|";
-          Answer::StringUtility::split(&SplitStr_0, &MapPosString, &v43, 0);
-          
-          v45._M_current = std::vector<std::string>::begin(&SplitStr_0)._M_current;
-          __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::__normal_iterator<std::string *>(
-            &iterBegin_0,
-            &v45);
-          while ( 1 )
-          {
-            v46._M_current = std::vector<std::string>::end(&SplitStr_0)._M_current;
-            if ( !__gnu_cxx::operator!=<std::string const*,std::string *,std::vector<std::string>>(&iterBegin_0, &v46) )
-              break;
-            
-            v47 = ":";
-            v14 = __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator*(&iterBegin_0);
-            Answer::StringUtility::split(&vstr_0, v14, &v47, 0);
-            
-            if ( std::vector<std::string>::size(&vstr_0) == 3 )
-            {
-              Position::Position(&v49, 0, 0);
-              stuPos.m_MapId = 0;
-              stuPos.m_Pos = v49;
-              v15 = std::vector<std::string>::operator[](&vstr_0, 0);
-              v16 = (const char *)std::string::c_str(v15);
-              stuPos.m_MapId = atoi(v16);
-              v17 = std::vector<std::string>::operator[](&vstr_0, 1u);
-              v18 = (const char *)std::string::c_str(v17);
-              stuPos.m_Pos.x = atoi(v18);
-              v19 = std::vector<std::string>::operator[](&vstr_0, 2u);
-              v20 = (const char *)std::string::c_str(v19);
-              stuPos.m_Pos.y = atoi(v20);
-              std::vector<MapPos>::push_back(&stu.m_MaxPosVector, &stuPos);
-            }
-            std::vector<std::string>::~vector(&vstr_0);
-            __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iterBegin_0);
-          }
-          std::vector<std::string>::~vector(&SplitStr_0);
-        }
-        TreasureMapCfg::TreasureMapCfg(&p_stu, &stu);
-        TreasureMapTabale::AddTreasureMapCfg(&this->m_TreasureMapTabale, &p_stu);
-        TreasureMapCfg::~TreasureMapCfg(&p_stu);
-        TreasureMapCfg::~TreasureMapCfg(&stu);
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TreasureMapEvent.txt") )
-    {
-      Answer::Logger::print(
-        Answer::LogLevel::LOG_LEVEL_ERROR,
-        "open FILE_TREASURE_MAP_EVENT_TABLE failed,please check!!!\n");
-    }
-    else
-    {
-      iBaseTableCount_0 = readFile.GetRecordsNum();
-      iBaseColumnCount_0 = readFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          memset(&stu_0, 0, 20);
-          std::string::string(&stu_0.m_EventParam);
-          nIndex_0 = 0;
-          stu_0.m_EventId = readFile.Search_Posistion( i_0, 0)->iValue;
-          stu_0.m_EventType = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          v21 = readFile.Search_Posistion( i_0, ++nIndex_0);
-          std::string::operator=(&stu_0.m_EventParam, v21->pString);
-          stu_0.m_GongGaoId = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          TreasureMapEventCfg::TreasureMapEventCfg(&v51, &stu_0);
-          TreasureMapTabale::AddTreasureMapEventCfg(&this->m_TreasureMapTabale, &v51);
-          TreasureMapEventCfg::~TreasureMapEventCfg(&v51);
-          TreasureMapEventCfg::~TreasureMapEventCfg(&stu_0);
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitTrigSkillTable()
@@ -23094,349 +21621,8 @@ void CfgData::InitVplanTable()
 }
 
 //#####################################
-void CfgData::InitWingCfgTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-1D0h] BYREF
-  WingCfg stu; // [rsp+A0h] [rbp-140h] BYREF
-  std::list<ItemData> strItems; // [rsp+100h] [rbp-E0h] BYREF
-  bool bCombi[15]; // [rsp+110h] [rbp-D0h] BYREF
-  char v7; // [rsp+11Fh] [rbp-C1h] BYREF
-  AttrAddonVector __x; // [rsp+120h] [rbp-C0h] BYREF
-  std::string path; // [rsp+140h] [rbp-A0h] BYREF
-  char v10; // [rsp+14Fh] [rbp-91h] BYREF
-  std::string addonAttr; // [rsp+150h] [rbp-90h] BYREF
-  char v12; // [rsp+15Fh] [rbp-81h] BYREF
-  WingCfg p_stu; // [rsp+160h] [rbp-80h] BYREF
-  int32_t iBaseTableCount; // [rsp+1C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+1C4h] [rbp-1Ch]
-  int32_t i; // [rsp+1C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+1CCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/AttributeWing.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_WING_CFG_TABEL failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        memset(&stu, 0, sizeof(stu));
-        std::list<ItemData>::list(&stu.ConstItems);
-        /* std::vector<AttrAddon>::vector(&stu.AddonVector); */
-        nIndex = 0;
-        stu.Level = readFile.Search_Posistion( i, 0)->iValue;
-        ++nIndex;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v7);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.ConstItems, &strItems);
-        std::list<ItemData>::~list(&strItems);
-        
-        stu.StartPoints = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.SuccessPoints = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.MaxPoints = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.Rate = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.FailAddPoints = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.SkillId = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.SkillLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.IsClear = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        path = "./ServerConfig/Tables/AttributeWing.txt";
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v2->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.AddonVector, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
-        
-        ++nIndex;
-        WingCfg::WingCfg(&p_stu, &stu);
-        CfgWingTable::AddWingCfg(&this->m_cfgWing, &p_stu);
-        /* WingCfg::~WingCfg(&p_stu); - auto cleanup */
-        /* WingCfg::~WingCfg(&stu); - auto cleanup */
-      }
-    }
-  }
-}
 
 //#####################################
-void CfgData::InitWingEquipPolish()
-{
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  int v4; // ebx
-  const CDBCFile::FIELD *v5; // rax
-  std::list<AddAttribute> *v6; // rax
-  int v7; // ebx
-  const CDBCFile::FIELD *v8; // rax
-  const CDBCFile::FIELD *v9; // rax
-  std::list<AddAttribute> *v10; // rax
-  CDBCFile TabFile(0); // [rsp+20h] [rbp-2F0h] BYREF
-  WingEquipPolish stu; // [rsp+B0h] [rbp-260h] BYREF
-  AddAttrList AddAttrs_0; // [rsp+F0h] [rbp-220h] BYREF
-  int32_t nId_0; // [rsp+10Ch] [rbp-204h] BYREF
-  AddAttrList AddAttrs; // [rsp+110h] [rbp-200h] BYREF
-  int32_t nId; // [rsp+12Ch] [rbp-1E4h] BYREF
-  std::list<AddAttribute> __x; // [rsp+130h] [rbp-1E0h] BYREF
-  _BYTE v18[15]; // [rsp+140h] [rbp-1D0h] BYREF
-  char v19; // [rsp+14Fh] [rbp-1C1h] BYREF
-  int32_t v20[3]; // [rsp+150h] [rbp-1C0h] BYREF
-  char v21; // [rsp+15Fh] [rbp-1B1h] BYREF
-  std::list<ItemData> strItems; // [rsp+160h] [rbp-1B0h] BYREF
-  bool bCombi[15]; // [rsp+170h] [rbp-1A0h] BYREF
-  char v24; // [rsp+17Fh] [rbp-191h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,WingEquipPolish> >,bool> v25; // [rsp+180h] [rbp-190h]
-  _BYTE v26[64]; // [rsp+190h] [rbp-180h] BYREF
-  std::pair<int,int> __a; // [rsp+1D0h] [rbp-140h] BYREF
-  _BYTE v28[15]; // [rsp+1E0h] [rbp-130h] BYREF
-  char v29; // [rsp+1EFh] [rbp-121h] BYREF
-  int32_t v30[3]; // [rsp+1F0h] [rbp-120h] BYREF
-  char v31; // [rsp+1FFh] [rbp-111h] BYREF
-  std::list<ItemData> v32; // [rsp+200h] [rbp-110h] BYREF
-  bool v33[15]; // [rsp+210h] [rbp-100h] BYREF
-  char v34; // [rsp+21Fh] [rbp-F1h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,WinRefiningCfg> >,bool> v35; // [rsp+220h] [rbp-F0h]
-  _BYTE v36[64]; // [rsp+230h] [rbp-E0h] BYREF
-  std::pair<int,int> v37; // [rsp+270h] [rbp-A0h] BYREF
-  _BYTE v38[15]; // [rsp+280h] [rbp-90h] BYREF
-  char v39; // [rsp+28Fh] [rbp-81h] BYREF
-  int32_t v40[4]; // [rsp+290h] [rbp-80h] BYREF
-  char v41; // [rsp+2A2h] [rbp-6Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+2A4h] [rbp-6Ch]
-  int32_t iBaseColumnCount; // [rsp+2A8h] [rbp-68h]
-  int32_t i; // [rsp+2ACh] [rbp-64h]
-  int32_t nIndex; // [rsp+2B0h] [rbp-60h]
-  int32_t nType; // [rsp+2B4h] [rbp-5Ch]
-  int32_t nLevel; // [rsp+2B8h] [rbp-58h]
-  int32_t iBaseTableCount_0; // [rsp+2C0h] [rbp-50h]
-  int32_t iBaseColumnCount_0; // [rsp+2C4h] [rbp-4Ch]
-  int32_t i_0; // [rsp+2C8h] [rbp-48h]
-  int32_t nIndex_0; // [rsp+2CCh] [rbp-44h]
-  int32_t iBaseTableCount_1; // [rsp+2D4h] [rbp-3Ch]
-  int32_t iBaseColumnCount_1; // [rsp+2D8h] [rbp-38h]
-  int32_t i_1; // [rsp+2DCh] [rbp-34h]
-  int32_t nIndex_1; // [rsp+2E0h] [rbp-30h]
-  int32_t nType_0; // [rsp+2E4h] [rbp-2Ch]
-  int32_t nLevel_0; // [rsp+2E8h] [rbp-28h]
-  int32_t iBaseTableCount_2; // [rsp+2F0h] [rbp-20h]
-  int32_t iBaseColumnCount_2; // [rsp+2F4h] [rbp-1Ch]
-  int32_t i_2; // [rsp+2F8h] [rbp-18h]
-  int32_t nIndex_2; // [rsp+2FCh] [rbp-14h]
-
-  
-  if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WingEquipPolish.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_GOBLIN_SUIT_TABLE failed,please check!!!\n");
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = TabFile.GetRecordsNum();
-    iBaseColumnCount = TabFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      std::map<std::pair<int,int>,WingEquipPolish>::clear(&this->m_WingEquipPolishCfgMap);
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        memset(&stu, 0, 52);
-        std::list<AddAttribute>::list(&stu.lAttrList);
-        std::list<ItemData>::list(&stu.lCostList);
-        nType = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(v18, "./ServerConfig/Tables/StarSpaceLevel.txt", &v19);
-        
-        v2 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v20, v2->pString, &v21);
-        CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v20,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.lAttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
-        
-        ++nIndex;
-        
-        v3 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v3->pString, &v24);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.lCostList, &strItems);
-        std::list<ItemData>::~list(&strItems);
-        
-        stu.nConstMoney = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.SuitId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.GongGaoId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        __a = std::make_pair<int,int>(nType, nLevel);
-        std::pair<std::pair const<int,int>,WingEquipPolish>::pair(
-          (std::pair<const std::pair<int,int>,WingEquipPolish> *const)v26,
-          &__a,
-          &stu);
-        v25 = std::map<std::pair<int,int>,WingEquipPolish>::insert(
-                &this->m_WingEquipPolishCfgMap,
-                (const std::pair<const std::pair<int,int>,WingEquipPolish> *const)v26);
-        std::pair<std::pair const<int,int>,WingEquipPolish>::~pair((std::pair<const std::pair<int,int>,WingEquipPolish> *const)v26);
-        /* WingEquipPolish::~WingEquipPolish(&stu); - auto cleanup */
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WingEquipPolishSuit.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_GOBLIN_SUIT_TABLE failed,please check!!!\n");
-      v4 = 0;
-    }
-    else
-    {
-      iBaseTableCount_0 = TabFile.GetRecordsNum();
-      iBaseColumnCount_0 = TabFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        std::map<int,std::list<AddAttribute>>::clear(&this->m_WingEquipPolishSuitMap);
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          nIndex_0 = 0;
-          nId = TabFile.Search_Posistion( i_0, 0)->iValue;
-          ++nIndex_0;
-          
-          std::string::string(v28, "./ServerConfig/Tables/StarSpaceSuit.txt", &v29);
-          
-          v5 = TabFile.Search_Posistion( i_0, nIndex_0);
-          std::string::string(v30, v5->pString, &v31);
-          CfgData::parseAddAttribues(
-            (CfgData *const)&AddAttrs,
-            (const std::string *const)this,
-            (int32_t)v30,
-            (const std::string *const)(unsigned int)nIndex_0);
-          
-          ++nIndex_0;
-          v6 = std::map<int,std::list<AddAttribute>>::operator[](&this->m_WingEquipPolishSuitMap, &nId);
-          std::list<AddAttribute>::operator=(v6, &AddAttrs);
-          std::list<AddAttribute>::~list(&AddAttrs);
-        }
-        v4 = 1;
-      }
-      else
-      {
-        v4 = 0;
-      }
-    }
-    if ( v4 )
-    {
-      
-      if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WingEquipRefine.txt") )
-      {
-        Answer::Logger::print(
-          Answer::LogLevel::LOG_LEVEL_ERROR,
-          "open FILE_WING_EQUIP_REFINING failed,please check!!!\n");
-        v7 = 0;
-      }
-      else
-      {
-        iBaseTableCount_1 = TabFile.GetRecordsNum();
-        iBaseColumnCount_1 = TabFile.GetFieldsNum();
-        if ( iBaseColumnCount_1 > 0 )
-        {
-          std::map<std::pair<int,int>,WinRefiningCfg>::clear(&this->m_WinRefiningCfgMap);
-          for ( i_1 = 0; i_1 < iBaseTableCount_1; ++i_1 )
-          {
-            nIndex_1 = 0;
-            memset(&stu, 0, 44);
-            std::list<ItemData>::list((std::list<ItemData> *const)&stu.lAttrList._M_impl._M_node._M_prev);
-            nType_0 = TabFile.Search_Posistion( i_1, nIndex_1++)->iValue;
-            nLevel_0 = TabFile.Search_Posistion( i_1, nIndex_1++)->iValue;
-            
-            v8 = TabFile.Search_Posistion( i_1, nIndex_1);
-            std::string::string(v33, v8->pString, &v34);
-            CItemHelper::parseItemDataListString((const std::string *const)&v32, (bool)v33);
-            std::list<ItemData>::operator=((std::list<ItemData> *const)&stu.lAttrList._M_impl._M_node._M_prev, &v32);
-            std::list<ItemData>::~list(&v32);
-            
-            LODWORD(stu.lAttrList._M_impl._M_node._M_next) = TabFile.Search_Posistion( i_1, ++nIndex_1)->iValue;
-            LODWORD(stu.lCostList._M_impl._M_node._M_prev) = TabFile.Search_Posistion( i_1, ++nIndex_1)->iValue;
-            stu.nConstMoney = TabFile.Search_Posistion( i_1, ++nIndex_1)->iValue;
-            ++nIndex_1;
-            v37 = std::make_pair<int,int>(nType_0, nLevel_0);
-            std::pair<std::pair const<int,int>,WinRefiningCfg>::pair(
-              (std::pair<const std::pair<int,int>,WinRefiningCfg> *const)v36,
-              &v37,
-              (const WinRefiningCfg *const)&stu);
-            v35 = std::map<std::pair<int,int>,WinRefiningCfg>::insert(
-                    &this->m_WinRefiningCfgMap,
-                    (const std::pair<const std::pair<int,int>,WinRefiningCfg> *const)v36);
-            std::pair<std::pair const<int,int>,WinRefiningCfg>::~pair((std::pair<const std::pair<int,int>,WinRefiningCfg> *const)v36);
-            WinRefiningCfg::~WinRefiningCfg((WinRefiningCfg *const)&stu);
-          }
-          v7 = 1;
-        }
-        else
-        {
-          v7 = 0;
-        }
-      }
-      if ( v7 )
-      {
-        
-        if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WingEquipRefineSuit.txt") )
-        {
-          Answer::Logger::print(
-            Answer::LogLevel::LOG_LEVEL_ERROR,
-            "open FILE_WING_EQUIP_REFINING_SUIT failed,please check!!!\n");
-        }
-        else
-        {
-          iBaseTableCount_2 = TabFile.GetRecordsNum();
-          iBaseColumnCount_2 = TabFile.GetFieldsNum();
-          if ( iBaseColumnCount_2 > 0 )
-          {
-            std::map<int,std::list<AddAttribute>>::clear(&this->m_WingEquipRefiningSuitMap);
-            for ( i_2 = 0; i_2 < iBaseTableCount_2; ++i_2 )
-            {
-              nIndex_2 = 0;
-              nId_0 = TabFile.Search_Posistion( i_2, 0)->iValue;
-              ++nIndex_2;
-              
-              std::string::string(v38, "./ServerConfig/Tables/StarSpaceSuit.txt", &v39);
-              
-              v9 = TabFile.Search_Posistion( i_2, nIndex_2);
-              std::string::string(v40, v9->pString, &v41);
-              CfgData::parseAddAttribues(
-                (CfgData *const)&AddAttrs_0,
-                (const std::string *const)this,
-                (int32_t)v40,
-                (const std::string *const)(unsigned int)nIndex_2);
-              
-              ++nIndex_2;
-              v10 = std::map<int,std::list<AddAttribute>>::operator[](&this->m_WingEquipRefiningSuitMap, &nId_0);
-              std::list<AddAttribute>::operator=(v10, &AddAttrs_0);
-              std::list<AddAttribute>::~list(&AddAttrs_0);
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 WingEquipPolish *CfgData::GetWingEquipPolishCfg(int32_t nType, int32_t nLevel)
@@ -23543,51 +21729,6 @@ AddAttrList CfgData::GetWingEquipRefiningSuitAttr(int32_t nId)
 }
 
 //#####################################
-void CfgData::InitWishRewardTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgWishReward stu; // [rsp+A0h] [rbp-70h] BYREF
-  MemChrBagVector __x; // [rsp+C0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+E0h] [rbp-30h] BYREF
-  char v6; // [rsp+EAh] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+ECh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+F0h] [rbp-20h]
-  int32_t i; // [rsp+F4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+F8h] [rbp-18h]
-  int32_t nId; // [rsp+FCh] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/WishReward.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_WISH_REWARD_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgWishReward::CfgWishReward(&stu);
-        nId = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nTime = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        v1 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
-        CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
-        
-        ++nIndex;
-        CfgWishRewardTable::Add(&this->m_cfgWishRewardTable, nId, &stu);
-        CfgWishReward::~CfgWishReward(&stu);
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitWuHunCreateTable()
@@ -23699,70 +21840,6 @@ CreateWuHun *CfgData::GetCreateWuHun(int32_t nId)
 }
 
 //#####################################
-void CfgData::InitWuHunItemTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  WuHunItem *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-120h] BYREF
-  WuHunItem stu; // [rsp+A0h] [rbp-90h] BYREF
-  std::list<AddAttribute> __x; // [rsp+E0h] [rbp-50h] BYREF
-  _BYTE v6[15]; // [rsp+F0h] [rbp-40h] BYREF
-  char v7; // [rsp+FFh] [rbp-31h] BYREF
-  int32_t v8[3]; // [rsp+100h] [rbp-30h] BYREF
-  char v9; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
-
-  
-  if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WuHun.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_WU_HUN_ITEM_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = TabFile.GetRecordsNum();
-    iBaseColumnCount = TabFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        memset(&stu, 0, sizeof(stu));
-        std::list<AddAttribute>::list(&stu.lAttrList);
-        stu.nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nType = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nQuality = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.nNeedQuality = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(v6, "./ServerConfig/Tables/WuHun.txt", &v7);
-        
-        v1 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v8, v1->pString, &v9);
-        CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v8,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.lAttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
-        
-        stu.nTalentId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nTalentLevel = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        nIndex += 8;
-        stu.overlay = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        nIndex += 3;
-        stu.nDressLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        v2 = std::map<int,WuHunItem>::operator[](&this->m_WuHunItemMap, &stu.nId);
-        WuHunItem::operator=(v2, &stu);
-        WuHunItem::~WuHunItem(&stu);
-      }
-    }
-  }
-}
 
 //#####################################
 WuHunItem *CfgData::GetWuHunItem(int32_t nId)
@@ -23783,60 +21860,6 @@ WuHunItem *CfgData::GetWuHunItem(int32_t nId)
 }
 
 //#####################################
-void CfgData::InitWuHunShopTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  std::list<CfgWuHunShop> *v2; // rax
-  CfgWuHunShop *v3; // rax
-  MemChrBag v4; // [rsp+0h] [rbp-130h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-108h]
-  CDBCFile TabFile(0); // [rsp+30h] [rbp-100h] BYREF
-  CfgWuHunShop stu; // [rsp+C0h] [rbp-70h] BYREF
-  int32_t ShopId; // [rsp+FCh] [rbp-34h] BYREF
-  std::string strItem; // [rsp+100h] [rbp-30h] BYREF
-  char v10; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
-
-  thisa = this;
-  
-  if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/MysterShop.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open FILE_WU_HUN_SHOP_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = TabFile.GetRecordsNum();
-    iBaseColumnCount = TabFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        memset(&stu, 0, sizeof(stu));
-        stu.Index = TabFile.Search_Posistion( i, 0)->iValue;
-        ShopId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        
-        v1 = TabFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
-        CItemHelper::parseItemString(&v4, &strItem);
-        stu.Item = v4;
-        
-        stu.Rate = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        stu.Const = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        v2 = std::map<int,std::list<CfgWuHunShop>>::operator[](&thisa->m_CfgWuHunShopMap, &ShopId);
-        std::list<CfgWuHunShop>::push_back(v2, &stu);
-        v3 = std::map<int,CfgWuHunShop>::operator[](&thisa->m_CfgWuHunShopItemMap, &stu.Index);
-        *v3 = stu;
-      }
-    }
-  }
-}
 
 //#####################################
 // local variable allocation has failed, the output may be wrong!
@@ -24024,461 +22047,6 @@ int32_t CfgData::getXiangYaoStart(int32_t TaskId)
 }
 
 //#####################################
-void CfgData::InitXinMoTable()
-{
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  int v3; // ebx
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  int v6; // ebx
-  const CDBCFile::FIELD *v7; // rax
-  const CDBCFile::FIELD *v8; // rax
-  std::string *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  int v14; // ebx
-  const CDBCFile::FIELD *v15; // rax
-  const CDBCFile::FIELD *v16; // rax
-  int v17; // ebx
-  int v18; // ebx
-  const CDBCFile::FIELD *v19; // rax
-  const CDBCFile::FIELD *v20; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-470h] BYREF
-  XinMoCfg stu; // [rsp+A0h] [rbp-3E0h] BYREF
-  int iValue; // [rsp+D0h] [rbp-3B0h]
-  XinQingCfg stu_0; // [rsp+E0h] [rbp-3A0h]
-  Param2 Param; // [rsp+F0h] [rbp-390h] BYREF
-  StringVector vParam; // [rsp+100h] [rbp-380h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter; // [rsp+120h] [rbp-360h] BYREF
-  StringVector strParams; // [rsp+130h] [rbp-350h] BYREF
-  std::string RateString; // [rsp+150h] [rbp-330h] BYREF
-  std::list<AddAttribute> __x; // [rsp+160h] [rbp-320h] BYREF
-  _BYTE v31[15]; // [rsp+170h] [rbp-310h] BYREF
-  char v32; // [rsp+17Fh] [rbp-301h] BYREF
-  int32_t v33[3]; // [rsp+180h] [rbp-300h] BYREF
-  char v34; // [rsp+18Fh] [rbp-2F1h] BYREF
-  XinMoCfg p_Stu; // [rsp+190h] [rbp-2F0h] BYREF
-  std::list<ItemData> strItems; // [rsp+1C0h] [rbp-2C0h] BYREF
-  bool bCombi[15]; // [rsp+1D0h] [rbp-2B0h] BYREF
-  char v38; // [rsp+1DFh] [rbp-2A1h] BYREF
-  std::list<AddAttribute> v39; // [rsp+1E0h] [rbp-2A0h] BYREF
-  _BYTE v40[15]; // [rsp+1F0h] [rbp-290h] BYREF
-  char v41; // [rsp+1FFh] [rbp-281h] BYREF
-  int32_t v42[3]; // [rsp+200h] [rbp-280h] BYREF
-  char v43; // [rsp+20Fh] [rbp-271h] BYREF
-  QiQingCfg v44; // [rsp+210h] [rbp-270h] BYREF
-  std::list<ItemData> v45; // [rsp+240h] [rbp-240h] BYREF
-  bool v46[14]; // [rsp+250h] [rbp-230h] BYREF
-  char v47; // [rsp+25Eh] [rbp-222h] BYREF
-  char v48; // [rsp+25Fh] [rbp-221h] BYREF
-  std::string delims; // [rsp+260h] [rbp-220h] BYREF
-  char v50; // [rsp+26Fh] [rbp-211h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+270h] [rbp-210h] BYREF
-  std::string v52; // [rsp+280h] [rbp-200h] BYREF
-  char v53; // [rsp+28Fh] [rbp-1F1h] BYREF
-  EquipJinHua v54; // [rsp+290h] [rbp-1F0h] BYREF
-  std::list<ItemData> v55; // [rsp+2C0h] [rbp-1C0h] BYREF
-  bool v56[15]; // [rsp+2D0h] [rbp-1B0h] BYREF
-  char v57; // [rsp+2DFh] [rbp-1A1h] BYREF
-  std::list<AddAttribute> v58; // [rsp+2E0h] [rbp-1A0h] BYREF
-  _BYTE v59[15]; // [rsp+2F0h] [rbp-190h] BYREF
-  char v60; // [rsp+2FFh] [rbp-181h] BYREF
-  int32_t v61[3]; // [rsp+300h] [rbp-180h] BYREF
-  char v62; // [rsp+30Fh] [rbp-171h] BYREF
-  XinMoQiQingLevelUpCfg v63; // [rsp+310h] [rbp-170h] BYREF
-  MemChrBagVector v64; // [rsp+350h] [rbp-130h] BYREF
-  std::string v65; // [rsp+370h] [rbp-110h] BYREF
-  char v66; // [rsp+37Fh] [rbp-101h] BYREF
-  XinQingReward p_stu; // [rsp+380h] [rbp-100h] BYREF
-  Int32Vector v68; // [rsp+3A0h] [rbp-E0h] BYREF
-  std::string path; // [rsp+3C0h] [rbp-C0h] BYREF
-  char v70; // [rsp+3CFh] [rbp-B1h] BYREF
-  std::string str; // [rsp+3D0h] [rbp-B0h] BYREF
-  char v72; // [rsp+3E2h] [rbp-9Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+3E4h] [rbp-9Ch]
-  int32_t iBaseColumnCount; // [rsp+3E8h] [rbp-98h]
-  int32_t i; // [rsp+3ECh] [rbp-94h]
-  int32_t nIndex; // [rsp+3F0h] [rbp-90h]
-  int32_t iBaseTableCount_0; // [rsp+3F8h] [rbp-88h]
-  int32_t iBaseColumnCount_0; // [rsp+3FCh] [rbp-84h]
-  int32_t i_0; // [rsp+400h] [rbp-80h]
-  int32_t nIndex_0; // [rsp+404h] [rbp-7Ch]
-  int32_t iBaseTableCount_1; // [rsp+40Ch] [rbp-74h]
-  int32_t iBaseColumnCount_1; // [rsp+410h] [rbp-70h]
-  int32_t i_1; // [rsp+414h] [rbp-6Ch]
-  int32_t nIndex_1; // [rsp+418h] [rbp-68h]
-  int32_t iBaseTableCount_2; // [rsp+420h] [rbp-60h]
-  int32_t iBaseColumnCount_2; // [rsp+424h] [rbp-5Ch]
-  int32_t i_2; // [rsp+428h] [rbp-58h]
-  int32_t nIndex_2; // [rsp+42Ch] [rbp-54h]
-  int32_t iBaseTableCount_3; // [rsp+434h] [rbp-4Ch]
-  int32_t iBaseColumnCount_3; // [rsp+438h] [rbp-48h]
-  int32_t i_3; // [rsp+43Ch] [rbp-44h]
-  int32_t nIndex_3; // [rsp+440h] [rbp-40h]
-  int32_t iBaseTableCount_4; // [rsp+448h] [rbp-38h]
-  int32_t iBaseColumnCount_4; // [rsp+44Ch] [rbp-34h]
-  int32_t i_4; // [rsp+450h] [rbp-30h]
-  int32_t nIndex_4; // [rsp+454h] [rbp-2Ch]
-  int32_t nId; // [rsp+458h] [rbp-28h]
-  int32_t iBaseTableCount_5; // [rsp+460h] [rbp-20h]
-  int32_t iBaseColumnCount_5; // [rsp+464h] [rbp-1Ch]
-  int32_t i_5; // [rsp+468h] [rbp-18h]
-  int32_t nIndex_5; // [rsp+46Ch] [rbp-14h]
-
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/XinMoLevel.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileXinMoL);
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        memset(&stu, 0, 44);
-        std::list<AddAttribute>::list(&stu.Attr);
-        stu.XinMoLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.CostMoney = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.ConstShenYaoBi = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.ConstExp = readFile.Search_Posistion( i, nIndex++)->iValue;
-        stu.NeedQiQingLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(v31, "./ServerConfig/Tables/XinMoLevel.txt", &v32);
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v33, v2->pString, &v34);
-        CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v33,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.Attr, &__x);
-        std::list<AddAttribute>::~list(&__x);
-        
-        stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        XinMoCfg::XinMoCfg(&p_Stu, &stu);
-        XinMoTable::AddXingMoCfg(&this->m_XinMoTable, &p_Stu);
-        /* XinMoCfg::~XinMoCfg(&p_Stu); - auto cleanup */
-        /* XinMoCfg::~XinMoCfg(&stu); - auto cleanup */
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/XinMoQiQing.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileXinMoQ);
-      v3 = 0;
-    }
-    else
-    {
-      iBaseTableCount_0 = readFile.GetRecordsNum();
-      iBaseColumnCount_0 = readFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          nIndex_0 = 0;
-          memset(&stu, 0, 44);
-          std::list<ItemData>::list((std::list<ItemData> *const)&stu.ConstShenYaoBi);
-          std::list<AddAttribute>::list(&stu.Attr);
-          stu.XinMoLevel = readFile.Search_Posistion( i_0, nIndex_0++)->iValue;
-          
-          v4 = readFile.Search_Posistion( i_0, nIndex_0);
-          std::string::string(bCombi, v4->pString, &v38);
-          CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-          std::list<ItemData>::operator=((std::list<ItemData> *const)&stu.ConstShenYaoBi, &strItems);
-          std::list<ItemData>::~list(&strItems);
-          
-          ++nIndex_0;
-          
-          std::string::string(v40, "./ServerConfig/Tables/XinMoQiQing.txt", &v41);
-          
-          v5 = readFile.Search_Posistion( i_0, nIndex_0);
-          std::string::string(v42, v5->pString, &v43);
-          CfgData::parseAddAttribues(
-            (CfgData *const)&v39,
-            (const std::string *const)this,
-            (int32_t)v42,
-            (const std::string *const)(unsigned int)nIndex_0);
-          std::list<AddAttribute>::operator=(&stu.Attr, &v39);
-          std::list<AddAttribute>::~list(&v39);
-          
-          stu.GongGaoId = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          QiQingCfg::QiQingCfg(&v44, (const QiQingCfg *const)&stu);
-          XinMoTable::AddQiQingCfg(&this->m_XinMoTable, &v44);
-          /* QiQingCfg::~QiQingCfg(&v44); - auto cleanup */
-          QiQingCfg::~QiQingCfg((QiQingCfg *const)&stu);
-        }
-        v3 = 1;
-      }
-      else
-      {
-        v3 = 0;
-      }
-    }
-    if ( v3 )
-    {
-      
-      if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/XinMoJingHua.txt") )
-      {
-        Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileXingMo);
-        v6 = 0;
-      }
-      else
-      {
-        iBaseTableCount_1 = readFile.GetRecordsNum();
-        iBaseColumnCount_1 = readFile.GetFieldsNum();
-        if ( iBaseColumnCount_1 > 0 )
-        {
-          for ( i_1 = 0; i_1 < iBaseTableCount_1; ++i_1 )
-          {
-            nIndex_1 = 0;
-            memset(&stu, 0, 44);
-            std::list<ItemData>::list((std::list<ItemData> *const)&stu.ConstShenYaoBi);
-            std::list<Param2>::list((std::list<Param2> *const)&stu.Attr);
-            stu.XinMoLevel = readFile.Search_Posistion( i_1, nIndex_1++)->iValue;
-            
-            v7 = readFile.Search_Posistion( i_1, nIndex_1);
-            std::string::string(v46, v7->pString, &v47);
-            CItemHelper::parseItemDataListString((const std::string *const)&v45, (bool)v46);
-            std::list<ItemData>::operator=((std::list<ItemData> *const)&stu.ConstShenYaoBi, &v45);
-            std::list<ItemData>::~list(&v45);
-            
-            ++nIndex_1;
-            
-            v8 = readFile.Search_Posistion( i_1, nIndex_1);
-            RateString.assign(v8->pString);
-            
-            ++nIndex_1;
-            
-            delims = "|";
-            Answer::StringUtility::split(&strParams, &RateString, &delims, 0);
-            
-            for ( iter._M_current = std::vector<std::string>::begin(&strParams)._M_current;
-                  __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&iter) )
-            {
-              __rhs._M_current = std::vector<std::string>::end(&strParams)._M_current;
-              if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&iter, &__rhs) )
-                break;
-              
-              v52 = ":";
-              v9 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator*(&iter);
-              Answer::StringUtility::split(&vParam, v9, &v52, 0);
-              
-              if ( std::vector<std::string>::size(&vParam) == 2 )
-              {
-                Param2::Param2(&Param, 0, 0);
-                v10 = std::vector<std::string>::operator[](&vParam, 0);
-                v11 = (const char *)std::string::c_str(v10);
-                Param.nParam1 = atoi(v11);
-                v12 = std::vector<std::string>::operator[](&vParam, 1u);
-                v13 = (const char *)std::string::c_str(v12);
-                Param.nParam2 = atoi(v13);
-                stu.GongGaoId += Param.nParam2;
-                std::list<Param2>::push_back((std::list<Param2> *const)&stu.Attr, &Param);
-              }
-              std::vector<std::string>::~vector(&vParam);
-            }
-            EquipJinHua::EquipJinHua(&v54, (const EquipJinHua *const)&stu);
-            XinMoTable::AddEquipJinHuaCfg(&this->m_XinMoTable, &v54);
-            /* EquipJinHua::~EquipJinHua(&v54); - auto cleanup */
-            std::vector<std::string>::~vector(&strParams);
-            EquipJinHua::~EquipJinHua((EquipJinHua *const)&stu);
-          }
-          v6 = 1;
-        }
-        else
-        {
-          v6 = 0;
-        }
-      }
-      if ( v6 )
-      {
-        
-        if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/QiQingJinJie.txt") )
-        {
-          Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileXingMo_0);
-          v14 = 0;
-        }
-        else
-        {
-          iBaseTableCount_2 = readFile.GetRecordsNum();
-          iBaseColumnCount_2 = readFile.GetFieldsNum();
-          if ( iBaseColumnCount_2 > 0 )
-          {
-            for ( i_2 = 0; i_2 < iBaseTableCount_2; ++i_2 )
-            {
-              nIndex_2 = 0;
-              XinMoQiQingLevelUpCfg::XinMoQiQingLevelUpCfg((XinMoQiQingLevelUpCfg *const)&stu);
-              stu.XinMoLevel = readFile.Search_Posistion( i_2, nIndex_2++)->iValue;
-              stu.CostMoney = readFile.Search_Posistion( i_2, nIndex_2++)->iValue;
-              
-              v15 = readFile.Search_Posistion( i_2, nIndex_2);
-              std::string::string(v56, v15->pString, &v57);
-              CItemHelper::parseItemDataListString((const std::string *const)&v55, (bool)v56);
-              std::list<ItemData>::operator=((std::list<ItemData> *const)&stu.ConstShenYaoBi, &v55);
-              std::list<ItemData>::~list(&v55);
-              
-              LODWORD(stu.Attr._M_impl._M_node._M_next) = readFile.Search_Posistion( i_2, ++nIndex_2)->iValue;
-              ++nIndex_2;
-              
-              std::string::string(v59, "./ServerConfig/Tables/QiQingJinJie.txt", &v60);
-              
-              v16 = readFile.Search_Posistion( i_2, nIndex_2);
-              std::string::string(v61, v16->pString, &v62);
-              CfgData::parseAddAttribues(
-                (CfgData *const)&v58,
-                (const std::string *const)this,
-                (int32_t)v61,
-                (const std::string *const)(unsigned int)nIndex_2);
-              std::list<AddAttribute>::operator=(
-                (std::list<AddAttribute> *const)&stu.Attr._M_impl._M_node._M_prev,
-                &v58);
-              std::list<AddAttribute>::~list(&v58);
-              
-              iValue = readFile.Search_Posistion( i_2, ++nIndex_2)->iValue;
-              ++nIndex_2;
-              XinMoQiQingLevelUpCfg::XinMoQiQingLevelUpCfg(&v63, (const XinMoQiQingLevelUpCfg *const)&stu);
-              XinMoTable::AddXinMoQiQingLevelUpCfg(&this->m_XinMoTable, &v63);
-              /* XinMoQiQingLevelUpCfg::~XinMoQiQingLevelUpCfg(&v63); - auto cleanup */
-              XinMoQiQingLevelUpCfg::~XinMoQiQingLevelUpCfg((XinMoQiQingLevelUpCfg *const)&stu);
-            }
-            v14 = 1;
-          }
-          else
-          {
-            v14 = 0;
-          }
-        }
-        if ( v14 )
-        {
-          
-          if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/XinQing.txt") )
-          {
-            Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileXingMo_0);
-            v17 = 0;
-          }
-          else
-          {
-            iBaseTableCount_3 = readFile.GetRecordsNum();
-            iBaseColumnCount_3 = readFile.GetFieldsNum();
-            if ( iBaseColumnCount_3 > 0 )
-            {
-              for ( i_3 = 0; i_3 < iBaseTableCount_3; ++i_3 )
-              {
-                nIndex_3 = 0;
-                stu_0.nLeftCount = readFile.Search_Posistion( i_3, 0)->iValue;
-                stu_0.nAppearCount = readFile.Search_Posistion( i_3, ++nIndex_3)->iValue;
-                stu_0.Rate = readFile.Search_Posistion( i_3, ++nIndex_3)->iValue;
-                ++nIndex_3;
-                XinMoTable::AddXinQingCfg(&this->m_XinMoTable, stu_0);
-              }
-              v17 = 1;
-            }
-            else
-            {
-              v17 = 0;
-            }
-          }
-          if ( v17 )
-          {
-            
-            if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/XinQingReward.txt") )
-            {
-              Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileXinMoX);
-              v18 = 0;
-            }
-            else
-            {
-              iBaseTableCount_4 = readFile.GetRecordsNum();
-              iBaseColumnCount_4 = readFile.GetFieldsNum();
-              if ( iBaseColumnCount_4 > 0 )
-              {
-                for ( i_4 = 0; i_4 < iBaseTableCount_4; ++i_4 )
-                {
-                  nIndex_4 = 0;
-                  nId = readFile.Search_Posistion( i_4, 0)->iValue;
-                  ++nIndex_4;
-                  memset(&stu, 0, 32);
-                  std::vector<MemChrBag>::vector((std::vector<MemChrBag> *const)&stu.ConstShenYaoBi);
-                  
-                  v19 = readFile.Search_Posistion( i_4, nIndex_4);
-                  v65.assign(v19->pString);
-                  CItemHelper::parseItemVectorString(&v64, &v65);
-                  std::vector<MemChrBag>::operator=((std::vector<MemChrBag> *const)&stu.ConstShenYaoBi, &v64);
-                  std::vector<MemChrBag>::~vector(&v64);
-                  
-                  stu.XinMoLevel = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  ++nIndex_4;
-                  XinQingReward::XinQingReward(&p_stu, (const XinQingReward *const)&stu);
-                  XinMoTable::AddXinQingReward(&this->m_XinMoTable, nId, &p_stu);
-                  /* XinQingReward::~XinQingReward(&p_stu); - auto cleanup */
-                  XinQingReward::~XinQingReward((XinQingReward *const)&stu);
-                }
-                v18 = 1;
-              }
-              else
-              {
-                v18 = 0;
-              }
-            }
-            if ( v18 )
-            {
-              
-              if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Energy.txt") )
-              {
-                Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileEnergy);
-              }
-              else
-              {
-                iBaseTableCount_5 = readFile.GetRecordsNum();
-                iBaseColumnCount_5 = readFile.GetFieldsNum();
-                if ( iBaseColumnCount_5 > 0 )
-                {
-                  for ( i_5 = 0; i_5 < iBaseTableCount_5; ++i_5 )
-                  {
-                    nIndex_5 = 1;
-                    this->m_EnergyCfg.MaxEnergy = readFile.Search_Posistion( i_5, 1)->iValue;
-                    this->m_EnergyCfg.EnergyTime = readFile.Search_Posistion( i_5, ++nIndex_5)->iValue;
-                    ++nIndex_5;
-                    
-                    path = "./ServerConfig/Tables/Energy.txt";
-                    
-                    v20 = readFile.Search_Posistion( i_5, nIndex_5);
-                    str.assign(v20->pString);
-                    CfgData::paraseInt32Vector2(&v68, this, &str, &path, 0);
-                    std::vector<int>::operator=(&this->m_EnergyCfg.EnergyPrice, &v68);
-                    std::vector<int>::~vector(&v68);
-                    
-                    this->m_EnergyCfg.BuyAddEnergy = readFile.Search_Posistion( i_5, ++nIndex_5)->iValue;
-                    ++nIndex_5;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 // local variable allocation has failed, the output may be wrong!
@@ -24855,65 +22423,6 @@ void CfgData::InitYellowDailyRewardTable()
 }
 
 //#####################################
-void CfgData::InitYellowLevelRewardTable()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-150h] BYREF
-  CfgTencentGift gift; // [rsp+A0h] [rbp-C0h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-80h] BYREF
-  std::string strItems; // [rsp+100h] [rbp-60h] BYREF
-  char v7; // [rsp+10Fh] [rbp-51h] BYREF
-  MemChrBagVector v8; // [rsp+110h] [rbp-50h] BYREF
-  std::string v9; // [rsp+130h] [rbp-30h] BYREF
-  char v10; // [rsp+13Ah] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+13Ch] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+140h] [rbp-20h]
-  int32_t i; // [rsp+144h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+148h] [rbp-18h]
-  int32_t nId; // [rsp+14Ch] [rbp-14h]
-
-  
-  if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/YellowLevelReward.txt") )
-  {
-    Answer::Logger::print(
-      Answer::LogLevel::LOG_LEVEL_ERROR,
-      "open FILE_YELLOW_LEVEL_REWARD_TABLE failed,please check!!!\n");
-  }
-  else
-  {
-    iBaseTableCount = TabFile.GetRecordsNum();
-    iBaseColumnCount = TabFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        CfgTencentGift::CfgTencentGift(&gift);
-        nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        gift.nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
-        CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&gift.vRewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
-        
-        ++nIndex;
-        
-        v2 = TabFile.Search_Posistion( i, nIndex);
-        v9.assign(v2->pString);
-        CItemHelper::parseItemVectorString(&v8, &v9);
-        std::vector<MemChrBag>::operator=(&gift.vVipRewards, &v8);
-        std::vector<MemChrBag>::~vector(&v8);
-        
-        ++nIndex;
-        CfgTencentTable::AddYellowLevelGift(&this->m_cfgTencentTable, nId, &gift);
-        CfgTencentGift::~CfgTencentGift(&gift);
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::InitYellowRewardTable()
@@ -25030,4 +22539,2147 @@ const RefreshMonsterCfgList& CfgData::GetRefreshMonsterCfgList() const
         return m_RefreshMonsterCfgListMap.begin()->second;
     static RefreshMonsterCfgList emptyList;
     return emptyList;
+}
+
+// ===== 2019 Version Config Table Implementations =====
+
+void CfgData::InitGuiGuDaoRenTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/TaoistTask.txt"))
+	{
+		LOG_ERROR("open FILE_GUI_GU_DAO_REN_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	m_GuiGuDaoRenCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		GuiGuDaoRenCfg stu;
+		memset(&stu, 0, sizeof(stu));
+		int32_t nIndex = 0;
+
+		stu.nNpcId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nMaxCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse RefreshMonster string
+		std::string strRefreshMonster = TabFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector SplitStr = StringUtility::split(strRefreshMonster, "|");
+		for (auto& str : SplitStr)
+		{
+			StringVector vstr = StringUtility::split(str, ":");
+			if (vstr.size() == 4)
+			{
+				RefreshMonster tmp;
+				tmp.nCount = atoi(vstr[0].c_str());
+				tmp.BossId = atoi(vstr[1].c_str());
+				tmp.AliveTime = atoi(vstr[2].c_str());
+				tmp.GongGaoId = atoi(vstr[3].c_str());
+				stu.lRefreshMonster.push_back(tmp);
+			}
+		}
+
+		// Parse 3 item data entries
+		for (int32_t j = 0; j < 3; ++j)
+		{
+			std::string strItem = TabFile.Search_Posistion(i, nIndex++)->pString;
+			ItemData itemData = CItemHelper::parseItemDataString(strItem);
+			stu.vItemData.push_back(itemData);
+
+			std::string strItem2 = TabFile.Search_Posistion(i, nIndex++)->pString;
+			MemChrBag bagItem;
+			CItemHelper::parseItemString(bagItem, strItem2);
+			stu.vItem.push_back(bagItem);
+		}
+
+		// Parse MapId
+		std::string strMapId = TabFile.Search_Posistion(i, nIndex++)->pString;
+		Int32Vector vMapId;
+		paraseInt32Vector(vMapId, strMapId, "./ServerConfig/Tables/TaoistTask.txt", 0);
+		stu.vMapId = vMapId;
+
+		m_GuiGuDaoRenCfgMap[stu.nNpcId] = stu;
+	}
+}
+
+GuiGuDaoRenCfg* CfgData::GetGuiGuDaoRenCfg(int32_t nNpcId)
+{
+	auto it = m_GuiGuDaoRenCfgMap.find(nNpcId);
+	return it != m_GuiGuDaoRenCfgMap.end() ? &it->second : nullptr;
+}
+
+void CfgData::InitEquipBackTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/EquipRecovery.txt"))
+	{
+		LOG_ERROR("open FILE_ITEM_EQUIP_BACK failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		EquipBack stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse EquipList
+		std::string strEquipList = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strEquipList, "|");
+		for (auto& str : vStr)
+		{
+			stu.nEquipList.push_back(atoi(str.c_str()));
+		}
+
+		stu.nRecovType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRecovValues = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nBuyBackType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nBuyBackValue = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nOpenDay = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLimitNum = readFile.Search_Posistion(i, nIndex++)->iValue;
+		nIndex += 3; // skip 3 columns
+		stu.nDisplayDay = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		m_cfgEquip.AddEquipBack(&stu);
+	}
+}
+
+void CfgData::InitEquipBackTask()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/EquipRecoveryTask.txt"))
+	{
+		LOG_ERROR("open FILE_EQUIP_BACK_TASK failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	m_EquipBackTaskCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		EquipBackTaskCfg stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nNeedCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRewardType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRewardCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		m_EquipBackTaskCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitStrengthenTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/EquipStrengthen.txt"))
+	{
+		LOG_ERROR("open FILE_STRENGTHEN_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	m_EquipStrengthenCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		EquipStrengthenCfg stu;
+		int32_t nIndex = 0;
+
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attribute list
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_EquipStrengthenCfgMap[stu.nLevel] = stu;
+	}
+}
+
+void CfgData::InitEquipBoxTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/EquipBox.txt"))
+	{
+		LOG_ERROR("open FILE_EQUIP_BOX_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	m_EquipBoxTable.m_map.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgEquipBox stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		for (int32_t j = 0; j < 5; ++j)
+			stu.vEquipId[j] = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nBind = (int8_t)readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse star rate list
+		std::string strStar = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strStar, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vParam = StringUtility::split(str, ":");
+			if (vParam.size() == 2)
+			{
+				Param2 p;
+				p.nParam1 = atoi(vParam[0].c_str());
+				p.nParam2 = atoi(vParam[1].c_str());
+				stu.lstStar.push_back(p);
+			}
+		}
+
+		m_EquipBoxTable.m_map[stu.nId] = stu;
+	}
+}
+
+const CfgEquipBoxTable* CfgData::GetEquipBoxTable() const
+{
+	return &m_EquipBoxTable;
+}
+
+void CfgData::InitGoldEggTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/GoldEgg.txt"))
+	{
+		LOG_ERROR("open FILE_GOLD_EGG_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	m_GoldEggTable.m_map.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgGoldEgg stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nGroupId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostGold = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nOpenTimes = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nStartDate = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nEndDate = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse items
+		int32_t nItemCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+		for (int32_t j = 0; j < nItemCount; ++j)
+		{
+			CfgGoldEggItem item;
+			item.nItemId = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nItemClass = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nItemCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nBind = (int8_t)readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nProbability = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nLimitTime = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nBroadcast = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nJob = (int8_t)readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nMinLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+			item.nMaxLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+			stu.lstItem.push_back(item);
+		}
+
+		m_GoldEggTable.m_map[stu.nId] = stu;
+	}
+}
+
+const CfgGoldEggTable* CfgData::GetGoldEggTable() const
+{
+	return &m_GoldEggTable;
+}
+
+void CfgData::InitLimitTimeTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/LimitTime.txt"))
+	{
+		LOG_ERROR("open FILE_LIMIT_TIME_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_LimitTimeTable.m_map.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgLimitTime stu;
+		stu.nId = readFile.Search_Posistion(i, 0)->iValue;
+		stu.nTime = readFile.Search_Posistion(i, 1)->iValue;
+		m_LimitTimeTable.m_map[stu.nId] = stu;
+	}
+}
+
+const CfgLimitTimeTable* CfgData::GetLimitTimeTable() const
+{
+	return &m_LimitTimeTable;
+}
+
+void CfgData::InitTalentTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/Talent.txt"))
+	{
+		LOG_ERROR("open FILE_TALENT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_TalentCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgTalent stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nPageId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostValue = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nNeedLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_TalentCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitTalentPageTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/TalentPage.txt"))
+	{
+		LOG_ERROR("open FILE_TALENT_PAGE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_TalentPageCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgTalentPage stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostValue = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse talent list
+		std::string strTalents = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strTalents, "|");
+		for (auto& str : vStr)
+			stu.vTalents.push_back(atoi(str.c_str()));
+
+		m_TalentPageCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitTalentActiveTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/TalentActive.txt"))
+	{
+		LOG_ERROR("open FILE_TALENT_ACTIVE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_TalentActiveCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgTalentActive stu;
+		stu.nId = readFile.Search_Posistion(i, 0)->iValue;
+		stu.nType = readFile.Search_Posistion(i, 1)->iValue;
+		stu.nParam = readFile.Search_Posistion(i, 2)->iValue;
+		m_TalentActiveCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitTitleTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/Title.txt"))
+	{
+		LOG_ERROR("open FILE_TITLE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_TitleCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgTitle stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nTimeType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nTime = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+		stu.nGongGaoId = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		m_TitleCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitWingCfgTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/WingEquip.txt"))
+	{
+		LOG_ERROR("open FILE_WING_CFG_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_WingEquipCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgWingEquip stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nQuality = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostItem = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_WingEquipCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitWingEquipPolish()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/WingPolish.txt"))
+	{
+		LOG_ERROR("open FILE_WING_EQUIP_POLISH failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_WingPolishCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgWingPolish stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostItem = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_WingPolishCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitEquipBlessTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/EquipBless.txt"))
+	{
+		LOG_ERROR("open FILE_EQUIP_BLESS_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_EquipBlessMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgEquipBless stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_EquipBlessMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitDamnationTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/Damnation.txt"))
+	{
+		LOG_ERROR("open FILE_DAMNATION_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_DamnationCfgTable.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgDamnation stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse cost items
+		std::string strCostItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vItems = StringUtility::split(strCostItems, "|");
+		for (auto& str : vItems)
+			stu.CostItems.push_back(atoi(str.c_str()));
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.AttrList.push_back(attr);
+			}
+		}
+
+		stu.nHpPecent = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nProbability = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nGongGaoId = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		m_DamnationCfgTable[stu.nId] = stu;
+	}
+}
+
+DamnationCfg* CfgData::GetDamnationCfg(int32_t Level)
+{
+	auto it = m_DamnationCfgTable.find(Level);
+	return it != m_DamnationCfgTable.end() ? &it->second : nullptr;
+}
+
+void CfgData::InitMingGeTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/MingGe.txt"))
+	{
+		LOG_ERROR("open FILE_MING_GE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_MingGeCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgMingGe stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostValue = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_MingGeCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitRongHeCfg()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/RongHe.txt"))
+	{
+		LOG_ERROR("open FILE_RONG_HE_CFG failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_RongHeCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		RongHeCfg stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostValue = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse reward items
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strItems, "|");
+		for (auto& str : vStr)
+		{
+			MemChrBag bagItem;
+			StringVector vItem = StringUtility::split(str, ":");
+			if (vItem.size() >= 3)
+			{
+				bagItem.itemId = atoi(vItem[0].c_str());
+				bagItem.itemClass = atoi(vItem[1].c_str());
+				bagItem.itemCount = atoi(vItem[2].c_str());
+				if (vItem.size() > 3)
+					bagItem.bind = (int8_t)atoi(vItem[3].c_str());
+				stu.vItem.push_back(bagItem);
+			}
+		}
+
+		m_RongHeCfgMap[stu.nId] = stu;
+	}
+}
+
+const RongHeCfg* CfgData::GetRongHeCfg(int32_t nIndex) const
+{
+	auto it = m_RongHeCfgMap.find(nIndex);
+	return it != m_RongHeCfgMap.end() ? &it->second : nullptr;
+}
+
+void CfgData::InitEquipRongHeTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/EquipRongHe.txt"))
+	{
+		LOG_ERROR("open FILE_EQUIP_RONG_HE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_EquipRongHeCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		EquipRongHeCfg stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nDstEquipId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse source equip list
+		std::string strSrc = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vSrc = StringUtility::split(strSrc, "|");
+		for (auto& str : vSrc)
+			stu.vSrcEquip.push_back(atoi(str.c_str()));
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_EquipRongHeCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitXingMaiTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/XingMai.txt"))
+	{
+		LOG_ERROR("open FILE_XING_MAI_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_XingMaiCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgXingMai stu;
+		int32_t nIndex = 0;
+
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostValue = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		// Parse attributes
+		std::string strAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		StringVector vStr = StringUtility::split(strAttr, "|");
+		for (auto& str : vStr)
+		{
+			StringVector vAttr = StringUtility::split(str, ":");
+			if (vAttr.size() == 2)
+			{
+				AddAttribute attr;
+				attr.m_nAddAttrType = (uint8_t)atoi(vAttr[0].c_str());
+				attr.m_nAddAttrValue = atoi(vAttr[1].c_str());
+				stu.lAttrList.push_back(attr);
+			}
+		}
+
+		m_XingMaiCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitXingMaiSlotTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/XingMaiSlot.txt"))
+	{
+		LOG_ERROR("open FILE_XING_MAI_SLOT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	m_XingMaiSlotCfgMap.clear();
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgXingMaiSlot stu;
+		stu.nId = readFile.Search_Posistion(i, 0)->iValue;
+		stu.nSlotIndex = readFile.Search_Posistion(i, 1)->iValue;
+		stu.nNeedLevel = readFile.Search_Posistion(i, 2)->iValue;
+		stu.nCostType = readFile.Search_Posistion(i, 3)->iValue;
+		stu.nCostValue = readFile.Search_Posistion(i, 4)->iValue;
+		m_XingMaiSlotCfgMap[stu.nId] = stu;
+	}
+}
+
+const XingMaiCfg* CfgData::GetXingMaiCfg(int32_t nLevel) const
+{
+	auto it = m_XingMaiCfgMap.find(nLevel);
+	return it != m_XingMaiCfgMap.end() ? &it->second : nullptr;
+}
+
+void CfgData::InitXinMoTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/XinMo.txt"))
+	{
+		LOG_ERROR("open FILE_XIN_MO_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgXinMo stu;
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nHp = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nAttack = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nDefence = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nHit = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nDodge = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCrit = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nTough = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nExp = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_XinMoCfgMap[stu.nId] = stu;
+	}
+}
+
+// ===== 42 Missing Init Function Implementations =====
+
+int32_t CfgData::InitXuWuTask(int32_t Level, int32_t Times)
+{
+	Int32Vector TaskIdVt;
+	for (auto it = m_tasks.begin(); it != m_tasks.end(); ++it)
+	{
+		if (it->second.type == 9
+			&& it->second.level <= Level && it->second.max_level >= Level
+			&& it->second.group == Times)
+		{
+			TaskIdVt.push_back(it->first);
+		}
+	}
+	if (!TaskIdVt.empty())
+	{
+		std::random_shuffle(TaskIdVt.begin(), TaskIdVt.end());
+		return TaskIdVt.front();
+	}
+	return 0;
+}
+
+int32_t CfgData::InitXinMoTask(int32_t Level, int32_t Times)
+{
+	Int32Vector TaskIdVt;
+	for (auto it = m_tasks.begin(); it != m_tasks.end(); ++it)
+	{
+		if (it->second.type == 42
+			&& it->second.level <= Level && it->second.max_level >= Level
+			&& it->second.group == Times)
+		{
+			TaskIdVt.push_back(it->first);
+		}
+	}
+	if (!TaskIdVt.empty())
+	{
+		std::random_shuffle(TaskIdVt.begin(), TaskIdVt.end());
+		return TaskIdVt.front();
+	}
+	return 0;
+}
+
+void CfgData::InitSpecialTreasureMapRandTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/SpecialTreasureMap.txt"))
+	{
+		LOG_ERROR("open FILE_SPECIAL_TREASURE_MAP_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		SpecialTreasureMapRandCfg stu;
+		memset(&stu, 0, sizeof(stu));
+		int32_t nIndex = 0;
+		stu.nItemId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vGetItems, strItems);
+		stu.nRate = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItem = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemString(stu.vShowItem, strItem);
+		stu.nGongGaoId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SpecialTreasureMapRandCfgList.push_back(stu);
+	}
+}
+
+void CfgData::InitDaZheQuanTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/ItemDiscount.txt"))
+	{
+		LOG_ERROR("open FILE_DA_ZHE_QUAN_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		DaZheQuan stu;
+		memset(&stu, 0, sizeof(stu));
+		int32_t nIndex = 0;
+		stu.Index = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.CurrencyType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.CurrencyValues = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.Items, strItems);
+		m_DaZheQuanMap[stu.Index] = stu;
+	}
+}
+
+void CfgData::InitQQGameRewardTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/QQGameDaTing.txt"))
+	{
+		LOG_ERROR("open FILE_QQGAME_REWARD_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgQQGift gift;
+		gift.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		gift.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		++nIndex; // skip column
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(gift.vReward, strItems);
+		gift.nCondition = TabFile.Search_Posistion(i, ++nIndex)->iValue;
+		m_cfgTencentTable.AddQQGameGift(gift);
+	}
+}
+
+void CfgData::InitTGPDailyRewardTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/TGPEverydayReward.txt"))
+	{
+		LOG_ERROR("open FILE_TGP_DAILY_REWARD_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgTGPGift gift;
+		memset(&gift, 0, sizeof(gift));
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		gift.strPF = strPF;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(gift.vReward, strItems);
+		m_cfgTencentTable.AddTGPDailyGift(gift);
+	}
+}
+
+void CfgData::InitTGPLevelRewardTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/TGPLevelReward.txt"))
+	{
+		LOG_ERROR("open FILE_TGP_LEVEL_REWARD_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgTGPGift gift;
+		memset(&gift, 0, sizeof(gift));
+		gift.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		gift.strPF = strPF;
+		gift.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(gift.vReward, strItems);
+		m_cfgTencentTable.AddTGPLevelGift(gift);
+	}
+}
+
+void CfgData::InitPassiveSkillTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/SkillPassiveAttr.txt"))
+	{
+		LOG_ERROR("Open FILE_PASSIVE_SKILL_TABLE fail, please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgPassiveSkill stu;
+		memset(&stu, 0, sizeof(stu));
+		stu.id = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.type = readFile.Search_Posistion(i, nIndex++)->iValue;
+		++nIndex; // skip name
+		std::string addonAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(stu.vAttrs, addonAttr, i, "./ServerConfig/Tables/SkillPassiveAttr.txt");
+		std::string talentStr = readFile.Search_Posistion(i, nIndex++)->pString;
+		parseAddAttribues(stu.lTalentAddon, talentStr, i, "./ServerConfig/Tables/SkillPassiveAttr.txt");
+		++nIndex;
+		m_cfgSkillTable.AddPassiveSkill(stu);
+	}
+}
+
+void CfgData::InitPetAttrTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/PetAttr.txt"))
+	{
+		LOG_ERROR("open FILE_PET_ATTR_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgPetData pet;
+		pet.m_nPetId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string addonAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(pet.m_vBaseAttr, addonAttr, i, "./ServerConfig/Tables/PetAttr.txt");
+		m_cfgPetTable.AddAttr(pet);
+	}
+}
+
+void CfgData::InitPetUpStarTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/PetUpStar.txt"))
+	{
+		LOG_ERROR("open FILE_PET_UP_STAR_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgPetUpStar stu;
+		stu.nPetId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nStar = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nNeedStar = readFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vCostItems, strItems);
+		++nIndex;
+		std::string addonAttr = readFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(stu.vAttrs, addonAttr, i, "./ServerConfig/Tables/PetUpStar.txt");
+		std::string skillStr = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemString(stu.vSkill, skillStr);
+		std::string skillLevelStr = readFile.Search_Posistion(i, nIndex++)->pString;
+		parseIntVectorString(stu.vSkillLevel, skillLevelStr);
+		++nIndex;
+		stu.GongGaoId = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		nIndex += 4; // skip 3 + 1
+		stu.nCostGold = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_cfgPetTable.AddPetUpStar(stu);
+	}
+}
+
+void CfgData::InitMysteryGiftTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/MysteriousGift.txt"))
+	{
+		LOG_ERROR("open FILE_MYSTERY_GIFT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgMysteryGift stu;
+		stu.nIndex = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCondition = readFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vItem, strItems);
+		nIndex += 4; // skip 3 + 1
+		stu.nBroadId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_cfgMysteryGiftTable.Add(stu);
+	}
+}
+
+void CfgData::InitSuperMemberTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/SuperMember.txt"))
+	{
+		LOG_ERROR("open FILE_SUPER_MEMBER_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSuperMember stu;
+		stu.nIndex = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_cfgSuperMember[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitSouGouSkinTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/SogouSkin.txt"))
+	{
+		LOG_ERROR("open FILE_SOUGOU_SKIN_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSouGouSkin stu;
+		stu.nIndex = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = readFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_cfgSouGouSkin[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitWeiXinTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/WeiXin.txt"))
+	{
+		LOG_ERROR("open FILE_WEI_XIN_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgWeiXingGift stu;
+		memset(&stu, 0, sizeof(stu));
+		int32_t nIndex = 0;
+		std::string strPF = readFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		stu.nIconId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		nIndex += 3; // skip 3 columns
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		m_cfgWeiXinTable.Add(stu);
+	}
+}
+
+void CfgData::InitAdultGiftTable()
+{
+	CDBCFile readFile;
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/ShenFenYanZheng.txt"))
+	{
+		LOG_ERROR("open FILE_ADULT_GIFT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgAdultGift stu;
+		memset(&stu, 0, sizeof(stu));
+		int32_t nIndex = 1; // skip column 0
+		std::string strItems = readFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		std::string strPF = readFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		stu.nIconId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		++nIndex;
+		m_cfgAdultGiftTable.Add(stu);
+	}
+}
+
+void CfgData::InitBlacketMarketTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/BlackMarket.txt"))
+	{
+		LOG_ERROR("open FILE_BLACKET_MARKET_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgBlacketMarket stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vItem, strItems);
+		stu.nPrice = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_BlacketMarketTable[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitSpeed360Reward()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/Speed360Reward.txt"))
+	{
+		LOG_ERROR("open FILE_SPEED_360_REWARD failed,please check!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		std::string strStart = TabFile.Search_Posistion(i, 1)->pString;
+		m_Speed360Reward.StartTime = DayTime::StringToIntTime(strStart);
+		std::string strEnd = TabFile.Search_Posistion(i, 2)->pString;
+		m_Speed360Reward.EndTime = DayTime::StringToIntTime(strEnd);
+		std::string strItems = TabFile.Search_Posistion(i, 4)->pString;
+		CItemHelper::parseItemVectorString(m_Speed360Reward.Rewards, strItems);
+	}
+}
+
+void CfgData::InitShunWangTable()
+{
+	// File 1: ShunWangHuiYuan.txt
+	CDBCFile SwVip;
+	if (!SwVip.OpenFromTXT("./ServerConfig/Tables/ShunWangHuiYuan.txt"))
+	{
+		LOG_ERROR("open FILE_SW_VIP_REWARD failed,please check!!\n");
+		return;
+	}
+
+	int32_t count = SwVip.GetRecordsNum();
+	int32_t cols = SwVip.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgSwVipReward stu;
+			memset(&stu, 0, sizeof(stu));
+			stu.nIndex = SwVip.Search_Posistion(i, nIndex++)->iValue;
+			stu.nType = SwVip.Search_Posistion(i, nIndex++)->iValue;
+			++nIndex; // skip
+			std::string strItems = SwVip.Search_Posistion(i, nIndex++)->pString;
+			CItemHelper::parseItemVectorString(stu.vReward, strItems);
+			stu.nCondition = SwVip.Search_Posistion(i, ++nIndex)->iValue;
+			m_CfgVplan.AddSwVipReward(stu);
+		}
+	}
+
+	// File 2: ShunWangWangBa.txt
+	CDBCFile SwBarVip;
+	if (!SwBarVip.OpenFromTXT("./ServerConfig/Tables/ShunWangWangBa.txt"))
+	{
+		LOG_ERROR("open FILE_SW_BAR_VIP_REWARD failed,please check!!\n");
+		return;
+	}
+
+	count = SwBarVip.GetRecordsNum();
+	cols = SwBarVip.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgSwVipReward stu;
+			memset(&stu, 0, sizeof(stu));
+			stu.nIndex = SwBarVip.Search_Posistion(i, nIndex++)->iValue;
+			stu.nType = SwBarVip.Search_Posistion(i, nIndex++)->iValue;
+			++nIndex;
+			std::string strItems = SwBarVip.Search_Posistion(i, nIndex++)->pString;
+			CItemHelper::parseItemVectorString(stu.vReward, strItems);
+			stu.nCondition = SwBarVip.Search_Posistion(i, ++nIndex)->iValue;
+			m_CfgVplan.AddSwVipBarReward(stu);
+		}
+	}
+
+	// File 3: ShunWangVIPBuff.txt
+	CDBCFile SwVipBuff;
+	if (!SwVipBuff.OpenFromTXT("./ServerConfig/Tables/ShunWangVIPBuff.txt"))
+	{
+		LOG_ERROR("open FILE_SW_VIP_BUFF failed,please check!!\n");
+		return;
+	}
+
+	count = SwVipBuff.GetRecordsNum();
+	cols = SwVipBuff.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgSwVipBuff stu;
+			stu.nIndex = SwVipBuff.Search_Posistion(i, nIndex++)->iValue;
+			stu.nType = SwVipBuff.Search_Posistion(i, nIndex++)->iValue;
+			std::string strAttr = SwVipBuff.Search_Posistion(i, nIndex++)->pString;
+			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShunWangVIPBuff.txt");
+			stu.nLevel = SwVipBuff.Search_Posistion(i, nIndex++)->iValue;
+			m_CfgVplan.AddSwVipBuff(stu);
+		}
+	}
+}
+
+void CfgData::InitScoreShopTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/ScoreShop.txt"))
+	{
+		LOG_ERROR("open FILE_SCORE_SHOP_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgScoreShop stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vItem, strItems);
+		stu.nScore = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLimitCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_ScoreShopTable[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitSpeciaEquipCfgMap()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/SpecialEquip.txt"))
+	{
+		LOG_ERROR("open FILE_SPECIAL_EQUIP_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSpecialEquip stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nPos = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/SpecialEquip.txt");
+		stu.nSuitId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SpeciaEquipCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitSpeciaSkillDistanceTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/SkillSpecialDamage.txt"))
+	{
+		LOG_ERROR("open FILE_SPECIA_SKILL_DISTANCE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSpeciaSkillDistance stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nSkillId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nDistance = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nDamage = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SpeciaSkillDistanceMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitLevelRefiningTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/LvRefining.txt"))
+	{
+		LOG_ERROR("open FILE_LEVEL_REFINING_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgLevelRefining stu;
+		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/LvRefining.txt");
+		stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostItem = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_LevelRefiningMap[stu.nLevel] = stu;
+	}
+}
+
+void CfgData::InitCachetCfg()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/Cachet.txt"))
+	{
+		LOG_ERROR("open FILE_CACHET_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgCachet stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nPos = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/Cachet.txt");
+		stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostItem = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_CachetCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitSystemOpenReward()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/System.txt"))
+	{
+		LOG_ERROR("open FILE_SYSTEM_OPEN_REWARD failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSystemOpenReward stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		m_SystemOpenRewardMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitSpecialMap()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/SpecialMap.txt"))
+	{
+		LOG_ERROR("open FILE_SPECIAL_MAP_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSpecialMap stu;
+		stu.nMapId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nEnterCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostValue = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SpecialMapTable[stu.nMapId] = stu;
+	}
+}
+
+void CfgData::InitTestServerReward()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/TestActivity.txt"))
+	{
+		LOG_ERROR("open FILE_TEST_SERVER_REWARD_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgTestServerReward stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_TestServerRewardMap[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitShenWeiTaskTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/ShenWeiTask.txt"))
+	{
+		LOG_ERROR("open FILE_SHEN_WEI_TASK_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgShenWeiTask stu;
+		stu.nTaskId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		m_ShenWeiTaskTable[stu.nTaskId] = stu;
+	}
+}
+
+void CfgData::InitMobilePhoneGiftTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/ShouJi.txt"))
+	{
+		LOG_ERROR("open FILE_MOBILE_PHONE_GIFT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CfgMobilePhoneGift stu;
+		memset(&stu, 0, sizeof(stu));
+		int32_t nIndex = 0;
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		stu.nIconId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		nIndex += 3; // skip 3 columns
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		m_MobilePhoneGiftTable.Add(stu);
+	}
+}
+
+void CfgData::InitSuperTeHuiTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/SuperDiscount.txt"))
+	{
+		LOG_ERROR("open FILE_SUPER_TE_HUI_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSuperTeHui stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vItem, strItems);
+		stu.nPrice = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SuperTeHuiTable[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitShouHuRefining()
+{
+	// File 1: StarSpaceLevel.txt
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/StarSpaceLevel.txt"))
+	{
+		LOG_ERROR("open FILE_SHOU_HU_REFINING_LEVEL failed,please check!!!\n");
+		return;
+	}
+
+	int32_t count = TabFile.GetRecordsNum();
+	int32_t cols = TabFile.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgShouHuRefiningLevel stu;
+			stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
+			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/StarSpaceLevel.txt");
+			stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			m_ShouHuRefiningLevelMap[stu.nLevel] = stu;
+		}
+	}
+
+	// File 2: StarSpaceSuit.txt
+	CDBCFile TabFile2;
+	if (!TabFile2.OpenFromTXT("./ServerConfig/Tables/StarSpaceSuit.txt"))
+	{
+		LOG_ERROR("open FILE_SHOU_HU_REFINING_SUIT failed,please check!!!\n");
+		return;
+	}
+
+	count = TabFile2.GetRecordsNum();
+	cols = TabFile2.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgShouHuRefiningSuit stu;
+			stu.nSuitId = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			stu.nCount = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			std::string strAttr = TabFile2.Search_Posistion(i, nIndex++)->pString;
+			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/StarSpaceSuit.txt");
+			m_ShouHuRefiningSuitMap[stu.nSuitId] = stu;
+		}
+	}
+}
+
+void CfgData::InitShiZhuangTable()
+{
+	// File 1: ShiZhuang.txt
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/ShiZhuang.txt"))
+	{
+		LOG_ERROR("open FILE_SHI_ZHUANG_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t count = TabFile.GetRecordsNum();
+	int32_t cols = TabFile.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgShiZhuang stu;
+			stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
+			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuang.txt");
+			stu.nSuitId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			m_ShiZhuangTable[stu.nId] = stu;
+		}
+	}
+
+	// File 2: ShiZhuangSuit.txt
+	CDBCFile TabFile2;
+	if (!TabFile2.OpenFromTXT("./ServerConfig/Tables/ShiZhuangSuit.txt"))
+	{
+		LOG_ERROR("open FILE_SHI_ZHUANG_SUIT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	count = TabFile2.GetRecordsNum();
+	cols = TabFile2.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgShiZhuangSuit stu;
+			stu.nSuitId = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			stu.nCount = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			std::string strAttr = TabFile2.Search_Posistion(i, nIndex++)->pString;
+			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuangSuit.txt");
+			m_ShiZhuangSuitTable[stu.nSuitId] = stu;
+		}
+	}
+}
+
+void CfgData::InitMonthlyChouJiangTable()
+{
+	// File 1: TurntableReward.txt
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/TurntableReward.txt"))
+	{
+		LOG_ERROR("open FILE_MONTHLY_CHOU_JIANG_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t count = TabFile.GetRecordsNum();
+	int32_t cols = TabFile.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgMonthlyChouJiang stu;
+			stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+			CItemHelper::parseItemVectorString(stu.vReward, strItems);
+			stu.nRate = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			m_MonthlyChouJiangTable[stu.nIndex] = stu;
+		}
+	}
+
+	// File 2: TurntableRechargePoint.txt
+	CDBCFile TabFile2;
+	if (!TabFile2.OpenFromTXT("./ServerConfig/Tables/TurntableRechargePoint.txt"))
+	{
+		LOG_ERROR("open FILE_MONTHLY_CHOU_JIANG_RECHARGE failed,please check!!!\n");
+		return;
+	}
+
+	count = TabFile2.GetRecordsNum();
+	cols = TabFile2.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgMonthlyChouJiangRecharge stu;
+			stu.nIndex = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			stu.nPoint = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			m_MonthlyChouJiangRechargeMap[stu.nIndex] = stu;
+		}
+	}
+}
+
+void CfgData::InitOutLinkFestivalTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/OutLinkFestival.txt"))
+	{
+		LOG_ERROR("open FILE_OUT_LINK_FESTIVAL_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgOutLinkFestival stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_OutLinkFestivalTable[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitSouGouDaTing()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/SouGouDaTing.txt"))
+	{
+		LOG_ERROR("open FILE_SOUGOU_DATING_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSouGouDaTing stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SouGouDaTingTable[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitPlatformDaTingMap()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/DaTing.txt"))
+	{
+		LOG_ERROR("open FILE_PLATFORM_DATING_MAP failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgPlatformDaTing stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		stu.nIconId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		m_PlatformDaTingMap[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitPlatformVipMap()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/OutLinkVip.txt"))
+	{
+		LOG_ERROR("open FILE_PLATFORM_VIP_MAP failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgPlatformVip stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		stu.nVipLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_PlatformVipMap[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitPlatformReward()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/Reward.txt"))
+	{
+		LOG_ERROR("open FILE_PLATFORM_REWARD failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgPlatformReward stu;
+		stu.nIndex = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strPF = TabFile.Search_Posistion(i, nIndex++)->pString;
+		stu.strPlatform = strPF;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_PlatformRewardMap[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitShangRenCfgMap()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/MagicBusiness.txt"))
+	{
+		LOG_ERROR("open FILE_SHANG_REN_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgShangRen stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vItem, strItems);
+		stu.nPrice = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_ShangRenCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitSelectItemCfgMap()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/GiftChoose.txt"))
+	{
+		LOG_ERROR("open FILE_SELECT_ITEM_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgSelectItem stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vItem, strItems);
+		stu.nGongGaoId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_SelectItemCfgMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitGuardPrivilegeTable()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/GuardPrivilegeReward.txt"))
+	{
+		LOG_ERROR("open FILE_GUARD_PRIVILEGE_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgGuardPrivilege stu;
+		stu.nIndex = (int8_t)TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nType = (int8_t)TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nDaily = (int8_t)TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+		CItemHelper::parseItemVectorString(stu.vReward, strItems);
+		stu.nParam = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		m_GuardPrivilegeMap[stu.nIndex] = stu;
+	}
+}
+
+void CfgData::InitShiZhuLevelUp()
+{
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/ShiZhuangUpGrade.txt"))
+	{
+		LOG_ERROR("open FILE_SHI_ZHU_LEVEL_UP_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t iBaseTableCount = TabFile.GetRecordsNum();
+	int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0) return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		int32_t nIndex = 0;
+		CfgShiZhuLevelUp stu;
+		stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
+		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
+		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuangUpGrade.txt");
+		m_ShiZhuLevelUpMap[stu.nId] = stu;
+	}
+}
+
+void CfgData::InitNationalDayTask()
+{
+	// File 1: PassportTask.txt
+	CDBCFile TabFile;
+	if (!TabFile.OpenFromTXT("./ServerConfig/Tables/PassportTask.txt"))
+	{
+		LOG_ERROR("open FILE_NATIONAL_DAY_TASK_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	int32_t count = TabFile.GetRecordsNum();
+	int32_t cols = TabFile.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgNationalDayTask stu;
+			stu.nTaskId = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			stu.nCondition = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			std::string strItems = TabFile.Search_Posistion(i, nIndex++)->pString;
+			CItemHelper::parseItemVectorString(stu.vReward, strItems);
+			stu.nPoint = TabFile.Search_Posistion(i, nIndex++)->iValue;
+			m_NationalDayTaskTable[stu.nTaskId] = stu;
+		}
+	}
+
+	// File 2: Passport.txt
+	CDBCFile TabFile2;
+	if (!TabFile2.OpenFromTXT("./ServerConfig/Tables/Passport.txt"))
+	{
+		LOG_ERROR("open FILE_NATIONAL_DAY_PASSPORT_TABLE failed,please check!!!\n");
+		return;
+	}
+
+	count = TabFile2.GetRecordsNum();
+	cols = TabFile2.GetFieldsNum();
+	if (cols > 0)
+	{
+		for (int32_t i = 0; i < count; ++i)
+		{
+			int32_t nIndex = 0;
+			CfgNationalDayPassport stu;
+			stu.nLevel = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			stu.nPoint = TabFile2.Search_Posistion(i, nIndex++)->iValue;
+			std::string strItems = TabFile2.Search_Posistion(i, nIndex++)->pString;
+			CItemHelper::parseItemVectorString(stu.vReward, strItems);
+			std::string strVipItems = TabFile2.Search_Posistion(i, nIndex++)->pString;
+			CItemHelper::parseItemVectorString(stu.vVipReward, strVipItems);
+			m_NationalDayPassportTable[stu.nLevel] = stu;
+		}
+	}
 }

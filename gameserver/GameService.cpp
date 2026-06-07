@@ -4,7 +4,6 @@
 #include "CfgData.h"
 #include "DBService.h"
 #include "GameService.h"
-//#include "Kingdom.h"
 #include "Map.h"
 #include "MapManager.h"
 #include "Monster.h"
@@ -26,223 +25,377 @@
 #include "FestivalDoubleEleven.h"
 #include "RankMirror.h"
 #include "GuiGuDaoRen.h"
+#include "Tencent.h"
 #include <string>
 using namespace Answer;
 using namespace std;
+
+// ============================================================
+// Helper
+// ============================================================
+inline int32_t getUserIndex(int8_t connid, int16_t cgindex)
+{
+	return static_cast<int32_t>(connid) * MAX_CONNECTION + cgindex;
+}
+
+// ============================================================
+// Constructor / Destructor
+// ============================================================
 GameService::GameService()
-	: TcpService(CLIENT_RECV_BUFFER, CLIENT_RECV_BUFFER, 2048-NET_PACKET_HEAD_LEN, 0, 2000, "GameService"), m_line(0)
+	: TcpService(CLIENT_RECV_BUFFER, CLIENT_RECV_BUFFER, 2048-NET_PACKET_HEAD_LEN, 0, 2000, "GameService")
+	, m_line(0)
+	, m_id(0)
+	, m_serverBattle(0)
 {
 	bzero(m_users, sizeof(m_users));
-	bzero(m_onLineBroadcast,sizeof(m_onLineBroadcast));
+	bzero(m_onLineBroadcast, sizeof(m_onLineBroadcast));
 }
 
 GameService::~GameService()
 {
-
 }
 
-void GameService::onNetPacket(Answer::NetPacket *inPacket)
+// ============================================================
+// Multi-connection support (2019)
+// ============================================================
+void GameService::setId(int32_t id)
 {
-	if (NULL == inPacket)
+	m_id = id;
+}
+
+void GameService::setLine(int32_t line)
+{
+	m_line = line;
+}
+
+bool GameService::Connect(int8_t index, const std::string& host, int32_t port)
+{
+	if (index < 0 || index >= MAX_GATE_CONNS)
+		return false;
+
+	GameConn* pConn = new GameConn(CLIENT_RECV_BUFFER, CLIENT_RECV_BUFFER,
+		2048 - NET_PACKET_HEAD_LEN, 0, 2000, "GameService", index, this);
+
+	if (!pConn)
+		return false;
+
+	InetAddress serverAddr(host, port);
+	if (pConn->connect(serverAddr))
 	{
-		return;
+		pConn->start();
+		m_mConn[index] = pConn;
+
+		// Send connection handshake
+		NetPacket* packet = pConn->popNetpacket();
+		if (packet)
+		{
+			packet->writeInt32(m_line);
+			packet->writeUTF8(GetVersion());
+			packet->writeUTF8(GetServerVersion());
+			packet->writeUTF8(pConn->getName());
+			packet->setSize(packet->getWOffset());
+			packet->setType(PACK_PROC);
+			packet->setProc(0x4E22);
+			pConn->sendPacket(packet);
+		}
+		return true;
 	}
+
+	delete pConn;
+	return false;
+}
+
+GameConn* GameService::GetConn(int8_t connid)
+{
+	std::map<int8_t, GameConn*>::iterator it = m_mConn.find(connid);
+	if (it != m_mConn.end())
+		return it->second;
+	return NULL;
+}
+
+int8_t GameService::GetAutoConnId()
+{
+	if (m_mConn.empty())
+		return 0;
+	return m_mConn.begin()->first;
+}
+
+int8_t GameService::GetConnId(CharId_t cid)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator iter = m_players.find(cid);
+	if (iter != m_players.end())
+	{
+		Player* pPlayer = iter->second;
+		if (pPlayer)
+			return pPlayer->getConnId();
+	}
+	return 0;
+}
+
+std::string GameService::GetVersion()
+{
+	Answer::Inifile ini;
+	ini.parse(std::string("version.ini"));
+	return ini.getStrValue("Version", "versionName");
+}
+
+// ============================================================
+// onNetPacket — 2019 multi-connection dispatch
+// ============================================================
+void GameService::onNetPacket(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	if (NULL == pConn || NULL == inPacket)
+		return;
+
 	uint16_t proc = inPacket->getProc();
+	int8_t connid = pConn->GetId();
+
 	if (proc > IM_MIN && proc < IM_MAX)
 	{
-		if (proc > IM_SOCIAL_GAME_MIN && proc < IM_SOCIAL_GAME_MAX)
+		// Gate/Social range
+		if (proc > 0x4E20 && proc <= 0x61AA)  // IM_GATE range
 		{
-			//�����Զ���������//�ڲ�
-			onSocialNetpacket(inPacket);
-		}
-// 		else if (proc == CM_GATE_PHP_PROP)
-// 		{
-// 			onBuyGameShopItem(inPacket);
-// 		}
-		else
-		{
-			switch (proc)
+			if (proc > IM_SOCIAL_GAME_MIN && proc < IM_SOCIAL_GAME_MAX)
 			{
-			case IM_GATE_ADD_USER:							onAddUser(inPacket); break;
-			case IM_GATE_REMOVE_USER:						onRemoveUser(inPacket); break;
-			case IM_GATE_UPDATE_BAN_CHAT:					onUpdateBanChat(inPacket); break;
-			case IM_GATE_RELOAD_ITEM:						onGMReloadItem(inPacket); break;
-			case IM_GATE_QQ_TO_PLAYER:						qqToPlayer(inPacket);break;
-			case IM_SOCIAL_ALL_GAME_UPDATE_PET_RANK:		onSocialUpdatePetRank( inPacket );		break;
-			case IM_SOCIAL_ALL_GAME_UPDATE_FAMILY:			onSocialUpdateFamilyInfo( inPacket );	break;
-			case IM_SOCIAL_SINGLE_GAME_INIT_PET_RANK:		onSocialInitPetRank( inPacket );		break;
-			case IM_SOCIAL_SINGLE_GAME_TEAM_DUNGEON_CREATE:	onSocialCreateTeamDungeon( inPacket );	break;
-			case IM_SOCIAL_SINGLE_GAME_DA_TI_RANK:			OnReceiveDaTiRank(inPacket);			break;
-			case IM_SOCIAL_SINGLE_GAME_SEND_SYSTEM_MAIL:	onSocialSendSystemMail(inPacket);		break;
-			case IM_SOCIAL_SINGLE_GAME_SEND_SYSTEM_MAIL2:	onSocialSendSystemMail2(inPacket);		break;
-			case IM_SOCIAL_ALL_GAME_CHANGE_OWNER:			onSocialChangeOwner(inPacket);			break;
-			case IM_SOCIAL_ALL_GAME_KAI_FU_HUO_DAO_RANK:	KAI_FU_HUO_DONG.RecvRank( inPacket );	break;
-			case IM_SOCIAL_ALL_GAME_UPDATE_RANK:			RANK_MIRROR.OnSocialUpdateRank( inPacket );	break;
-			default: break;
+				onSocialNetpacket(pConn, inPacket);
+			}
+			else if (proc <= 0x4E54 || proc > 0x4E77)
+			{
+				switch (proc)
+				{
+				case 0x4E26:  onAddUser(pConn, inPacket); break;
+				case 0x4E27:  onRemoveUser(pConn, inPacket); break;
+				case 0x4E29:  onGMReloadItem(pConn, inPacket); break;
+				case 0x4E2D:  onGateDisconnect(pConn, inPacket); break;
+				case 0x4E7E:  onSocialUpdatePetRank(pConn, inPacket); break;
+				case 0x4E7F:  onSocialUpdateFamilyInfo(pConn, inPacket); break;
+				case 0x4E80:  onSocialUpdateRankMirror(pConn, inPacket); break;
+				case 0x4E81:  onSetWorldLevel(pConn, inPacket); break;
+				case 0x4E82:  OnReceiveDaTiResult(pConn, inPacket); break;
+				case 0x4E83:  OnSocialCityMasterBanChat(pConn, inPacket); break;
+				case 0x4E86:  onSocialInitPetRank(pConn, inPacket); break;
+				case 0x4E87:  onSocialCreateTeamDungeon(pConn, inPacket); break;
+				case 0x4E88:  OnReceiveDaTiRank(pConn, inPacket); break;
+				case 0x4E89:  onSocialSendSystemMail(pConn, inPacket); break;
+				case 0x4E8A:  onSocialSendSystemMail2(pConn, inPacket); break;
+				case 0x4E8B:  onSocialInitRankMirror(pConn, inPacket); break;
+				case 0x4E8C:  onSocialQueryPlayerInfo(pConn, inPacket); break;
+				case 0x4E8D:  onRequestDropRecord(pConn, inPacket); break;
+				case 0x4E8E:  onSocialInitFamilyInfo(pConn, inPacket); break;
+				case 0x4EC1:  // ZongHeYunYing update
+					ZONG_HE_YUN_YING_HD.UpdatePlayerInfo(connid, inPacket); break;
+				case 0x4EC4:  onUpdateActivityState(pConn, inPacket); break;
+				case 0x4EEA:  qqToPlayer(pConn, inPacket); break;
+				default: break;
+				}
+			}
+			else
+			{
+				onSocialNetpacket(pConn, inPacket);
 			}
 		}
+		// Legacy range — fallthrough to index-based
 	}
 	else
 	{
 		int16_t cgindex = static_cast<int16_t>(inPacket->readInt32());
-		if (cgindex > 0 && cgindex > 0 && cgindex < MAX_CONNECTION)
+		if (cgindex > 0 && cgindex < MAX_CONNECTION)
 		{
 			switch (proc)
 			{
-			case CM_ENTER_GAME: onEnterGame(cgindex, inPacket); break;
-			case CM_ENTER_GAME_ROBOT: onEnterGameRobot(cgindex, inPacket); break;
-			//��������Ӵ��� //flex�ͻ��˹���������
-			default: onGameNetpacket(cgindex, inPacket); break;
+			case CM_ENTER_GAME:       onEnterGame(connid, cgindex, inPacket); break;
+			case CM_ENTER_GAME_ROBOT: onEnterGameRobot(connid, cgindex, inPacket); break;
+			default: onGameNetpacket(connid, cgindex, inPacket); break;
 			}
 		}
 	}
 
 	inPacket->destroy();
 }
-//���ص�ͼ�ϵ����� ��ȡ˫�������� ������·
+
+// ============================================================
+// startGame / stopGame
+// ============================================================
 void GameService::startGame(int32_t line)
 {
 	m_line = line;
-	//���������Ӧ����
+
 	Player::initNetPacketHandlers();
+	InitServerBattle();
 
-	// ��ͼ��ʼ��
-	MAP_MANAGER.Init();
-
-	// ��ʼ����ͼ����Ϣ
 	TILE_MANAGER.Init();
-
-	// ������ͼ�߳�
+	MAP_MANAGER.Init();
 	MAP_MANAGER.StartAll();
 
-	// ��ʼ���
-	ACTIVITY_MANAGER.Init();
+	ACTIVITY_MANAGER.Init(line);
+	GM_BACKSTAGE.Init(line);
+	FESTIVAL_DOUBLE_ELEVEN->Init(line);
+	ZONG_HE_YUN_YING_HD.Init(line);
+	KAI_FU_RECHARGE.Init(line);
+	FESTIVAL_ACTIVITY.Init();
 
-	// ��ʼ��˫ʮһ�
-	FESTIVAL_DOUBLE_ELEVEN->Init( line );
+	InitDropTimes();
+	InitMoYuShiJieRecord();
 
-	// ��ʼ��GM��̨
-	GM_BACKSTAGE.Init();
+	requestSocialData();
+	requestWorldLevel();
 
-	// ����������а���Ϣ
-	requestPetRankInfo();
-	SendServerDiffToGlobal();
-	requestFamilyInfo();
-	PET_MANAGER.UpdataChangedPet();
+	if (m_line == GAME_SERVICE_LINE_SOCIAL)
+	{
+		SendServerDiffToGlobal();
+		NetPacket* packet = popNetpacket(PACK_PROC, 0x4E30);
+		if (packet)
+		{
+			packet->writeInt32(CFG_DATA.getDebug());
+			packet->setSize(packet->getWOffset());
+			sendPacket(0, packet);
+		}
+	}
 }
 
 void GameService::stopGame()
 {
-	// ֹͣ��ͼ�߳�
 	MAP_MANAGER.StopAll();
 
-	saveAllPlayerToDB();
+	if (getLine() != GAME_SERVICE_LINE_CROSS)
+		saveAllPlayerToDB();
 }
 
 int32_t GameService::getLine()
 {
 	return m_line;
 }
+
+// ============================================================
+// onNewMinuteCome / OnDaySwitch / onUpdatePay
+// ============================================================
 void GameService::onNewMinuteCome(int32_t minute)
 {
-	FESTIVAL_DOUBLE_ELEVEN->OnNewMinute( minute );
-	GUI_GU_DAO_REN.OnNewMinute( minute );
-	
+	FESTIVAL_DOUBLE_ELEVEN->OnNewMinute(minute);
+	GUI_GU_DAO_REN.OnNewMinute(minute);
+
 	if (m_line == GAME_SERVICE_LINE_SOCIAL)
 	{
-		DB_SERVICE.onNewMinuteCome();		//���µ�DBServer
+		DB_SERVICE.onNewMinuteCome(0, minute);
 
-		NetPacket *packet = popNetpacket(PACK_PROC, IM_SOCIAL_NEW_MINUTE_COME);
+		NetPacket* packet = popNetpacket(0, PACK_PROC, 0x4E38);
 		if (NULL == packet)
-		{
 			return;
-		}
 		packet->writeInt32(minute);
 		packet->setSize(packet->getWOffset());
-		sendPacket(packet);
+		sendPacket(0, packet);
+	}
+
+	// Every 5 minutes, clean expired ChatValidate entries
+	if (!(minute % 5))
+	{
+		int32_t Time = DayTime::now();
+		Answer::MutexGuard lock(m_ChatValidateLock);
+		std::map<int32_t, ChatValidate>::iterator it = m_ChatValidateMap.begin();
+		while (it != m_ChatValidateMap.end())
+		{
+			if (Time - it->second.Time > 300)
+			{
+				if (it->second.SendPacket)
+					it->second.SendPacket->destroy();
+				m_ChatValidateMap.erase(it++);
+			}
+			else
+			{
+				++it;
+			}
+		}
 	}
 }
 
-//Kingdom* GameService::getKingdom(int32_t id)
-//{
-//	for (std::vector<Kingdom*>::iterator it = m_kingdoms.begin(); it != m_kingdoms.end(); ++it)
-//	{
-//		if ((*it)->getId() == id)
-//		{
-//			return *it;
-//		}
-//	}
-//	return NULL;
-//}
-
-void GameService::onPlayerLoaded( PlayerDBData& dbData, bool isRobot )
+void GameService::OnDaySwitch()
 {
-	// ��ʱ��ɫ��δ���ӽ���ͼ�У����������̴߳���,����Ҫ������·���
-	Player *player = getPlayer( dbData.chr.data.cid, 0, false );
+	if (m_line == GAME_SERVICE_LINE_SOCIAL)
+	{
+		ResetDropTimes();
+		SendServerDiffToGlobal();
+	}
+}
+
+void GameService::onUpdatePay()
+{
+	if (m_line == GAME_SERVICE_LINE_SOCIAL)
+	{
+		DB_SERVICE.OnUpdatePay(0);
+	}
+}
+
+// ============================================================
+// onPlayerLoaded / onPlayerLogout / onPlayerSaved
+// ============================================================
+void GameService::onPlayerLoaded(PlayerDBData& dbData, int32_t reason, bool isRobot)
+{
+	Player* player = getPlayer(dbData.chr.data.cid, 0, false);
 	if (player != NULL)
 	{
-		Map *pMap = player->getMap();
+		Map* pMap = player->getMap();
 		int32_t mapid = 0;
 		if (pMap != NULL)
-		{
 			mapid = pMap->GetId();
+
+		LOG_INFO("GameService::onPlayerLoaded player cid = %lld, map = %p, mapid = %d already in game\n",
+			dbData.chr.data.cid, pMap, mapid);
+		return;
+	}
+
+	Map* pMap = MAP_MANAGER.GetMap(dbData.chr.data.mapid);
+	if (pMap == NULL)
+	{
+		int32_t nRegion = 20001;
+		if (dbData.chr.data.mapid > 0)
+		{
+			if (reason == 3 && getLine() == GAME_SERVICE_LINE_CROSS)
+				nRegion = 20002;
+		}
+		else
+		{
+			nRegion = 10002;
 		}
 
-		LOG_INFO("GameService::onPlayerLoaded player cid = %lld, map = %p, mapid = %d already in game\n", dbData.chr.data.cid, pMap, mapid);
-
-		if (pMap != NULL)
+		CfgMapRegion* pCfgRegion = CFG_DATA.getMapRegion(nRegion);
+		if (pCfgRegion != NULL)
 		{
-			return;
+			Map* pTempMap = MAP_MANAGER.GetMap(pCfgRegion->mapid);
+			if (pTempMap != NULL)
+			{
+				Position pos = pTempMap->getRandomWalkablePositionInRegion(*pCfgRegion);
+				if (pos.x >= 0 && pos.y >= 0)
+				{
+					pMap = pTempMap;
+					dbData.chr.data.mapid = pMap->GetId();
+					dbData.chr.data.x = pos.x;
+					dbData.chr.data.y = pos.y;
+				}
+			}
 		}
 	}
 
-	User *pUser = m_users[dbData.cgindex];
-	if (pUser != NULL && pUser->getPlayer() == NULL)
+	if (pMap != NULL)
 	{
-		Map	*pMap = NULL;
-		pMap = MAP_MANAGER.GetMap( dbData.chr.data.mapid );
-		if (pMap == NULL)
+		int32_t nIndex = getUserIndex(dbData.connid, dbData.cgindex);
+		User* pUser = NULL;
 		{
-			// ��ͼ����
-			//LOG_INFO("GameService::onPlayerLoaded player cid=%d can't find map with kingdom = %d, mapid = %d, change kingdom\n", dbData.chr.data.cid, dbData.chr.data.in_kingdom, dbData.chr.data.mapid);
-
-			//CfgMap *pCfgMap = CFG_DATA.getMap(dbData.chr.data.mapid);
-			//if (pCfgMap != NULL && pCfgMap->type == MT_KINGDOM_MUTEX)
-			//{
-			//	Map	*pTempMap = MAP_MANAGER.GetMap(pCfgMap->param, dbData.chr.data.mapid);
-			//	if (pTempMap != NULL)
-			//	{
-			//		pMap = pTempMap;
-			//		dbData.chr.data.in_kingdom = pCfgMap->param;
-			//	}
-			//}
-			//else
-			//{
-				CfgMapRegion *pCfgRegion = CFG_DATA.getMapRegion(PBA_REGION);
-				if (pCfgRegion != NULL)
-				{
-					Map *pTempMap = MAP_MANAGER.GetMap( pCfgRegion->mapid );
-					if (pTempMap != NULL)
-					{
-						Position pos = pTempMap->getRandomWalkablePositionInRegion(*pCfgRegion);
-						if (pos.x >= 0 && pos.y >= 0)
-						{
-							pMap = pTempMap;
-							dbData.chr.data.mapid = pMap->GetId();
-							dbData.chr.data.x = pos.x;
-							dbData.chr.data.y = pos.y;
-						}
-					}
-				}
-			//}
+			Answer::MutexGuard lock(m_userLock);
+			pUser = m_users[nIndex];
 		}
 
-		if (pMap != NULL)
+		if (pUser != NULL)
 		{
-			//Kingdom *pKingdom = pMap->getKingdom();
-			//if (pKingdom != NULL)
-			//{
-				Player *player = NULL;
+			if (pUser->getPlayer() != NULL)
+			{
+				LOG_ERROR("GameService::onPlayerLoaded user already have player cgindex=%d, cid = %lld\n",
+					dbData.cgindex, dbData.chr.data.cid);
+			}
+			else
+			{
 				if (isRobot)
 				{
 					player = new PlayerRobot;
@@ -252,108 +405,166 @@ void GameService::onPlayerLoaded( PlayerDBData& dbData, bool isRobot )
 				{
 					player = POOL_MANAGER.pop<Player>();
 				}
+
 				if (player != NULL)
 				{
-					LOG_DEBUG("GameService::onPlayerLoaded pop player %p\n", player);
+					// Init TencentInfo from User
+					TencentInfo info;
+					pUser->GetTencentInfo(info);
+					player->InitTencentInfo(&info);
 
-					player->init( dbData );
+					player->init(dbData);
+					pUser->setPlayer(player);
+					AddPlayer(player, reason);
 
-					std::string openId = pUser->getOpenId();
-					std::string openKey = pUser->getOpenKey();
-					std::string pf = pUser->getPf();
-					std::string pfKey = pUser->getPfKey();
-					if (!openId.empty() && !openKey.empty() && !pf.empty() && !pfKey.empty())
+					if (!player->reconnect())
 					{
-						player->setOpenId(openId);
-						player->setOpenKey(openKey);
-						player->setPf(pf);
-						player->setPfKey(pfKey);
+						MAP_MANAGER.PostMsg(pMap->GetRunnerId(), GMC_PLAYER_ENTER_MAP,
+							player, pMap, dbData.chr.data.x, dbData.chr.data.y, 0);
+
+						// Cross-server activity info
+						if (getLine() == GAME_SERVICE_LINE_CROSS)
+						{
+							int32_t nActId = ACTIVITY_MANAGER.GetCurActivityId(
+								player->GetOperateLimit().GetLimitCount(1057));
+							NetPacket* packet = popNetpacket(player->getConnId(), PACK_DISPATCH, 0x1D);
+							if (packet)
+							{
+								packet->writeInt32(nActId);
+								packet->setSize(packet->getWOffset());
+								player->addNetPacket(packet, 0);
+								packet->destroy();
+							}
+						}
 					}
 
-					player->setIsYellowVip(pUser->getIsYellowVip());
-					player->setIsYellowYearVip(pUser->getIsYellowYearVip());
-					player->setYellowVipLevel(pUser->getYellowVipLevel());
-					player->setIsYellowHighVip(pUser->getIsYellowHighVip());
-
-					MAP_MANAGER.PostMsg( pMap->GetRunnerId(), GMC_PLAYER_ENTER_MAP, player, pMap, dbData.chr.data.x, dbData.chr.data.y);
-					pUser->setPlayer(player);
-					AddPlayer(player);		
-
-				
+					LOG_DEBUG("GameService::onPlayerLoaded pop player %p\n", player);
 				}
-			//}
-			//else
-			//{
-			//	LOG_INFO("GameService::onPlayerLoaded player cid=%d can't find kingdom with kingdom = %d, mapid = %d\n", dbData.chr.data.cid, dbData.chr.data.in_kingdom, dbData.chr.data.mapid);
-			//}
+				else
+				{
+					LOG_ERROR("GameService::onPlayerLoaded create player fail cgindex=%d, cid = %lld\n",
+						dbData.cgindex, dbData.chr.data.cid);
+				}
+			}
 		}
 		else
 		{
-			LOG_INFO("GameService::onPlayerLoaded player cid=%lld can't find map with mapid = %d\n", dbData.chr.data.cid, dbData.chr.data.mapid);
+			LOG_ERROR("GameService::onPlayerLoaded null user cgindex=%d, cid = %lld\n",
+				dbData.cgindex, dbData.chr.data.cid);
 		}
+	}
+	else
+	{
+		LOG_INFO("GameService::onPlayerLoaded player cid=%lld can't find map with mapid = %d\n",
+			dbData.chr.data.cid, dbData.chr.data.mapid);
 	}
 }
 
-void GameService::onPlayerLogout(Player *player, int16_t cgindex)
+void GameService::onPlayerLogout(Player* player)
 {
 	if (player != NULL)
 	{
-		LOG_DEBUG("GameService::onPlayerLogout push player %p, cgindex = %d\n", player, static_cast<int32_t>(cgindex));
+		int8_t connid = player->getConnId();
+		int16_t cgindex = player->getGateIndex();
+
+		LOG_DEBUG("GameService::onPlayerLogout push player %p, cgindex = %d\n",
+			player, static_cast<int32_t>(cgindex));
+
 		removePlayer(player);
+
 		if (player->getGateIndex() > 0)
 		{
+			player->setGateIndex(-1);
 			if (player->isRobot())
 			{
 				delete player;
 			}
 			else
 			{
-				POOL_MANAGER.push<Player>( player );
+				POOL_MANAGER.push<Player>(player);
 			}
 		}
-	}
 
-	if (cgindex >= 0 && cgindex < MAX_CONNECTION)
-	{
-		User *user = m_users[cgindex];
-		if (user != NULL)
+		if (connid >= 0 && connid < MAX_GATE_CONNS && cgindex > 0 && cgindex < MAX_CONNECTION)
 		{
-			user->setPlayer(NULL);
+			int32_t nIndex = getUserIndex(connid, cgindex);
+			Answer::MutexGuard lock(m_userLock);
+			User* user = m_users[nIndex];
+			if (user != NULL)
+				user->setPlayer(NULL);
 		}
 	}
 }
 
-void GameService::onPlayerSaved(int32_t uid, int32_t sid, int32_t reason, int32_t param, CharId_t cid)
+void GameService::onPlayerSaved(int8_t connid, int64_t uid, int32_t sid,
+	int32_t reason, int32_t param, CharId_t cid)
 {
-	NetPacket *packet = popNetpacket(PACK_PROC, IM_GAME_GATE_USER_SAVED);
+	NetPacket* packet = popNetpacket(connid, PACK_PROC, 0x4E25);
 	if (NULL == packet)
-	{
 		return;
-	}
-	packet->writeInt32(uid);
+	packet->writeInt64(uid);
 	packet->writeInt32(sid);
 	packet->writeInt32(reason);
 	packet->writeInt64(cid);
 	packet->writeInt32(param);
 	packet->setSize(packet->getWOffset());
-	sendPacket(packet);
+	sendPacket(connid, packet);
 }
 
+// ============================================================
+// Network send helpers (2019 multi-conn)
+// ============================================================
+void GameService::sendPacket(int8_t connid, Answer::NetPacket* packet)
+{
+	GameConn* pConn = GetConn(connid);
+	if (pConn)
+		pConn->sendPacket(packet);
+}
+
+void GameService::sendPacketTo(int8_t connid, int16_t index, Answer::NetPacket* inPacket)
+{
+	GameConn* pConn = GetConn(connid);
+	if (pConn)
+		TcpService::sendPacketTo(pConn, index, inPacket);
+}
+
+int32_t GameService::replySuccess(int8_t connid, int16_t index, uint16_t proc, int64_t addon)
+{
+	GameConn* pConn = GetConn(connid);
+	if (pConn)
+		return TcpService::replySuccess(pConn, index, proc, addon);
+	return 10002;
+}
+
+int32_t GameService::replyfailure(int8_t connid, int16_t index, uint16_t proc,
+	int32_t errcode, int64_t addon)
+{
+	GameConn* pConn = GetConn(connid);
+	if (pConn)
+		return TcpService::replyfailure(pConn, index, proc, errcode, addon);
+	return 10002;
+}
+
+// Old compat wrappers (use connid=0)
 Answer::NetPacket* GameService::popNetpacket(Answer::PackType packType, uint16_t proc)
 {
-	NetPacket *packet = TcpService::popNetpacket();
-	if (packet != NULL)
-	{
-		packet->setType(packType);
-		packet->setProc(proc);
-	}
-	return packet;
+	return popNetpacket(0, packType, proc);
 }
-
 
 Answer::NetPacket* GameService::popNetpacket(Answer::PackType packType, uint16_t proc, unsigned int buffersize)
 {
-	NetPacket *packet = TcpService::popNetpacket(buffersize);
+	return popNetpacket(0, packType, proc, buffersize);
+}
+
+Answer::NetPacket* GameService::popNetpacket(int8_t connid, Answer::PackType packType, uint16_t proc)
+{
+	GameConn* pConn = GetConn(connid);
+	NetPacket* packet = NULL;
+	if (pConn)
+		packet = pConn->popNetpacket();
+	else
+		packet = TcpService::popNetpacket();
+
 	if (packet != NULL)
 	{
 		packet->setType(packType);
@@ -362,162 +573,306 @@ Answer::NetPacket* GameService::popNetpacket(Answer::PackType packType, uint16_t
 	return packet;
 }
 
-void GameService::broadcast( Answer::NetPacket *inPacket, const CharIdList& cids )
+Answer::NetPacket* GameService::popNetpacket(int8_t connid, Answer::PackType packType,
+	uint16_t proc, unsigned int buffersize)
 {
-	if ( NULL == inPacket || cids.empty() )
+	GameConn* pConn = GetConn(connid);
+	NetPacket* packet = NULL;
+	if (pConn)
+		packet = pConn->popNetpacket(buffersize);
+	else
+		packet = TcpService::popNetpacket(buffersize);
+
+	if (packet != NULL)
 	{
-		return;
+		packet->setType(packType);
+		packet->setProc(proc);
 	}
+	return packet;
+}
 
-	MutexGuard lock(m_playerLock);
+// ============================================================
+// Broadcast
+// ============================================================
+void GameService::broadcast(Answer::NetPacket* inPacket)
+{
+	if (inPacket == NULL)
+		return;
 
-	uint32_t oldSize = inPacket->getSize();
-	int32_t nsize=0;
-	Int16List indexList;
-	for ( CharIdList::const_iterator iter = cids.begin(); iter != cids.end(); ++iter )
+	IndexMap indexMap;
 	{
-		CharIdPlayerMap::iterator findIter = m_players.find( *iter );
-		if ( findIter != m_players.end() )
+		Answer::MutexGuard lock(m_playerLock);
+		for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
 		{
-			indexList.push_back( findIter->second->getGateIndex() );
-			++nsize;
+			Player* player = it->second;
+			if (player)
+			{
+				int8_t connid = player->getConnId();
+				int16_t gateIndex = player->getGateIndex();
+				indexMap[connid].push_back(gateIndex);
+			}
 		}
 	}
 
-	if ( 0 == nsize )
+	if (indexMap.empty())
 	{
 		inPacket->destroy();
 		return;
 	}
 
-	uint32_t addonSize = (nsize+1)*(sizeof(int16_t));
-	if (inPacket->rightShift(addonSize))
+	// Send to each conn
+	for (IndexMap::iterator it = indexMap.begin(); it != indexMap.end(); ++it)
 	{
-		inPacket->writeInt16(static_cast<int16_t>(nsize));
-		for ( Int16List::iterator it = indexList.begin(); it != indexList.end(); ++it)
+		int8_t connid = it->first;
+		Int16List& indexList = it->second;
+		if (indexList.empty()) continue;
+
+		int32_t nsize = static_cast<int32_t>(indexList.size());
+		uint32_t newSize = 2 * (nsize + 1) + inPacket->getSize();
+		NetPacket* packet = popNetpacket(connid, inPacket->getType(), inPacket->getProc(), newSize);
+		if (packet)
 		{
-			inPacket->writeInt16( *it );
+			packet->writeInt16(static_cast<int16_t>(nsize));
+			for (Int16List::iterator sit = indexList.begin(); sit != indexList.end(); ++sit)
+				packet->writeInt16(*sit);
+			packet->write(inPacket->getBuffer(), inPacket->getSize());
+			packet->setSize(packet->getWOffset());
+			sendPacket(connid, packet);
 		}
-		inPacket->setSize(oldSize+addonSize);
-		sendPacket(inPacket);
+	}
+	inPacket->destroy();
+}
+
+void GameService::broadcast(Answer::NetPacket* inPacket, const CharIdList& cids)
+{
+	if (NULL == inPacket || cids.empty())
+	{
+		if (inPacket) inPacket->destroy();
+		return;
+	}
+
+	IndexMap indexMap;
+	for (CharIdList::const_iterator iter = cids.begin(); iter != cids.end(); ++iter)
+	{
+		Answer::MutexGuard lock(m_playerLock);
+		CharIdPlayerMap::iterator findIter = m_players.find(*iter);
+		if (findIter != m_players.end())
+		{
+			Player* pPlayer = findIter->second;
+			if (pPlayer)
+				indexMap[pPlayer->getConnId()].push_back(pPlayer->getGateIndex());
+		}
+	}
+
+	if (indexMap.empty())
+	{
+		inPacket->destroy();
+		return;
+	}
+
+	for (IndexMap::iterator it = indexMap.begin(); it != indexMap.end(); ++it)
+	{
+		int8_t connid = it->first;
+		Int16List& indexList = it->second;
+		int32_t nsize = static_cast<int32_t>(indexList.size());
+		uint32_t newSize = 2 * (nsize + 1) + inPacket->getSize();
+		NetPacket* packet = popNetpacket(connid, inPacket->getType(), inPacket->getProc(), newSize);
+		if (packet)
+		{
+			packet->writeInt16(static_cast<int16_t>(nsize));
+			for (Int16List::iterator sit = indexList.begin(); sit != indexList.end(); ++sit)
+				packet->writeInt16(*sit);
+			packet->write(inPacket->getBuffer(), inPacket->getSize());
+			packet->setSize(packet->getWOffset());
+			sendPacket(connid, packet);
+		}
+	}
+	inPacket->destroy();
+}
+
+void GameService::broadcastToFamily(Answer::NetPacket* inPacket, FamilyId_t nFamilyId, int32_t nLevel)
+{
+	if (NULL == inPacket || nFamilyId <= 0)
+	{
+		if (inPacket) inPacket->destroy();
+		return;
+	}
+
+	IndexMap indexMap;
+	{
+		Answer::MutexGuard lock(m_playerLock);
+		for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
+		{
+			Player* player = it->second;
+			if (player && player->getFamilyId() == nFamilyId)
+			{
+				if (nLevel < 0 || player->getLevel() > nLevel)
+				{
+					indexMap[player->getConnId()].push_back(player->getGateIndex());
+				}
+			}
+		}
+	}
+
+	for (IndexMap::iterator it = indexMap.begin(); it != indexMap.end(); ++it)
+	{
+		int8_t connid = it->first;
+		Int16List& indexList = it->second;
+		int32_t nsize = static_cast<int32_t>(indexList.size());
+		uint32_t newSize = 2 * (nsize + 1) + inPacket->getSize();
+		NetPacket* packet = popNetpacket(connid, inPacket->getType(), inPacket->getProc(), newSize);
+		if (packet)
+		{
+			packet->writeInt16(static_cast<int16_t>(nsize));
+			for (Int16List::iterator sit = indexList.begin(); sit != indexList.end(); ++sit)
+				packet->writeInt16(*sit);
+			packet->write(inPacket->getBuffer(), inPacket->getSize());
+			packet->setSize(packet->getWOffset());
+			sendPacket(connid, packet);
+		}
+	}
+	inPacket->destroy();
+}
+
+void GameService::worldBroadcast(Answer::NetPacket* inPacket)
+{
+	if (inPacket == NULL)
+		return;
+
+	// Send to all connections
+	for (std::map<int8_t, GameConn*>::iterator it = m_mConn.begin(); it != m_mConn.end(); ++it)
+	{
+		GameConn* pConn = it->second;
+		if (pConn)
+		{
+			uint32_t packetSize = inPacket->getSize() + 2;
+			NetPacket* packet = pConn->popNetpacket(packetSize);
+			if (packet)
+			{
+				packet->writeInt16(-1);
+				packet->write(inPacket->getBuffer(), inPacket->getSize());
+				packet->setSize(packet->getWOffset());
+				packet->setType(inPacket->getType());
+				packet->setProc(inPacket->getProc());
+				pConn->sendPacket(packet);
+			}
+		}
+	}
+	inPacket->destroy();
+}
+
+void GameService::worldBroadcast(int8_t connid, Answer::NetPacket* inPacket)
+{
+	if (inPacket == NULL)
+		return;
+
+	uint32_t oldSize = inPacket->getSize();
+	if (inPacket->rightShift(2))
+	{
+		inPacket->writeInt16(-1);
+		inPacket->setSize(oldSize + 2);
+		sendPacket(connid, inPacket);
 	}
 	else
 	{
-		NetPacket *packet = popNetpacket(inPacket->getType(), inPacket->getProc(), (nsize+1)*sizeof(int16_t) + inPacket->getSize());
-		if (NULL == packet)
+		NetPacket* packet = popNetpacket(connid, inPacket->getType(), inPacket->getProc(),
+			inPacket->getSize() + 2);
+		if (packet)
 		{
-			return;
+			packet->writeInt16(-1);
+			packet->write(inPacket->getBuffer(), inPacket->getSize());
+			packet->setSize(packet->getWOffset());
+			sendPacket(connid, packet);
+			inPacket->destroy();
 		}
-		packet->writeInt16(static_cast<int16_t>(nsize));
-		for ( Int16List::iterator it = indexList.begin(); it != indexList.end(); ++it)
+	}
+}
+
+void GameService::broadcastActivityState(int32_t nId, int8_t nState)
+{
+	for (std::map<int8_t, GameConn*>::iterator it = m_mConn.begin(); it != m_mConn.end(); ++it)
+	{
+		GameConn* pConn = it->second;
+		if (pConn)
 		{
-			inPacket->writeInt16( *it );
+			NetPacket* packet = pConn->popNetpacket();
+			if (packet)
+			{
+				packet->writeInt32(nId);
+				packet->writeInt8(nState);
+				packet->setSize(packet->getWOffset());
+				packet->setType(PACK_DISPATCH);
+				packet->setProc(0x4EC4);
+				pConn->sendPacket(packet);
+			}
 		}
-		packet->write(inPacket->getBuffer(), inPacket->getSize());
-		packet->setSize(packet->getWOffset());
-		sendPacket(packet);
-		inPacket->destroy();
 	}
 }
 
 void GameService::broadcastHuoDongDaTingIcon()
 {
-	MutexGuard lock(m_playerLock);
-
+	Answer::MutexGuard lock(m_playerLock);
 	if (m_players.empty())
-	{
 		return;
-	}
 	for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
 	{
 		it->second->GetPlayerDailyActivity().SendHuoDongDaTingIcon();
 	}
 }
 
-void GameService::broadcast(Answer::NetPacket *inPacket)
+void GameService::SendOpenBetaIcon()
 {
-	if (inPacket == NULL)
-	{
-		return;
-	}
-
-	MutexGuard lock(m_playerLock);
-
+	Answer::MutexGuard lock(m_playerLock);
 	if (m_players.empty())
-	{
-		inPacket->destroy();
 		return;
-	}
-
-	uint32_t oldSize = inPacket->getSize();
-	uint32_t addonSize = (m_players.size()+1)*(sizeof(int16_t));
-	if (inPacket->rightShift(addonSize))
+	for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
 	{
-		inPacket->writeInt16(static_cast<int16_t>(m_players.size()));
-		for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
-		{
-			inPacket->writeInt16(it->second->getGateIndex());
-		}
-		inPacket->setSize(oldSize+addonSize);
-		sendPacket(inPacket);
-	}
-	else
-	{
-		NetPacket *packet = popNetpacket(inPacket->getType(), inPacket->getProc(), (m_players.size()+1)*sizeof(int16_t) + inPacket->getSize());
-		if (NULL == packet)
-		{
-			return;
-		}
-		packet->writeInt16(static_cast<int16_t>(m_players.size()));
-		for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
-		{
-			packet->writeInt16(it->second->getGateIndex());
-		}
-		packet->write(inPacket->getBuffer(), inPacket->getSize());
-		packet->setSize(packet->getWOffset());
-		sendPacket(packet);
-		inPacket->destroy();
+		ShowIcon stu;
+		OPEN_BETA.getIconState(stu, it->second);
+		it->second->SendIconState(stu);
 	}
 }
 
-void GameService::worldBroadcast(Answer::NetPacket *inPacket)
+void GameService::broadFamilyWarIcon()
 {
-	if (inPacket == NULL)
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
 	{
-		return;
-	}
-
-	if (m_players.empty())
-	{
-		inPacket->destroy();
-		return;
-	}
-
-	uint32_t oldSize = inPacket->getSize();
-	uint32_t addonSize = sizeof(int16_t);
-	
-	if (inPacket->rightShift(addonSize))
-	{
-		inPacket->writeInt16(-1);
-		inPacket->setSize(oldSize+addonSize);
-		sendPacket(inPacket);
-	}
-	else
-	{
-		NetPacket *packet = popNetpacket(inPacket->getType(), inPacket->getProc(), sizeof(int16_t)+inPacket->getSize());
-		if (NULL == packet)
-		{
-			return;
-		}
-		packet->writeInt16(-1);
-		packet->write(inPacket->getBuffer(), inPacket->getSize());
-		packet->setSize(packet->getWOffset());
-		sendPacket(packet);
-		inPacket->destroy();
+		it->second->SendFamilyWarIcon();
 	}
 }
 
-void GameService::AddPlayer(Player *player)
+void GameService::broadCastKiaFuHuoDongIcon()
+{
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
+	{
+		KAI_FU_HUO_DONG.SendKiaFuHuoDongIconToPlayer(it->second);
+	}
+}
+
+void GameService::FamilyBroadcast(int32_t nFamilyId, Answer::NetPacket* inPacket)
+{
+	broadcastToFamily(inPacket, nFamilyId, -1);
+}
+
+void GameService::broadcastCityWarWinnerLogin(CharId_t Cid, const std::string& strName)
+{
+	NetPacket* packet = popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
+	if (packet)
+	{
+		packet->writeInt32(0); // event type
+		packet->writeInt64(Cid);
+		packet->writeUTF8(strName);
+		packet->setSize(packet->getWOffset());
+		worldBroadcast(packet);
+	}
+}
+
+// ============================================================
+// AddPlayer / removePlayer / getPlayer
+// ============================================================
+void GameService::AddPlayer(Player* player, int32_t reason)
 {
 	if (player != NULL)
 	{
@@ -526,14 +881,26 @@ void GameService::AddPlayer(Player *player)
 			m_players[player->getCid()] = player;
 		}
 
-		//sendSocialAddPlayerInfo(player);
+		if (reason != 3)
+		{
+			FamilyId_t FamilyId = player->getFamilyId();
+			int8_t ConnId = player->getConnId();
+			if (FamilyId == ACTIVITY_MANAGER.GetCityWarWinner(ConnId)
+				&& player->getFamilyPosition() == 3)
+			{
+				broadcastCityWarWinnerLogin(player->getCid(), player->getName());
+			}
+		}
+
 		sendSocialAddPlayer(player);
-		player->sendBasicInfo();
-		DB_SERVICE.UpdateLoginTime( player->getCid(), player->getLastLoginTime() );
+		player->sendBasicInfo(reason);
+
+		int8_t connid = player->getConnId();
+		DB_SERVICE.UpdateLoginTime(connid, player->getCid(), player->getLastLoginTime());
 	}
 }
 
-void GameService::removePlayer(Player *player)
+void GameService::removePlayer(Player* player)
 {
 	if (player != NULL)
 	{
@@ -541,11 +908,14 @@ void GameService::removePlayer(Player *player)
 		CharIdPlayerMap::iterator it = m_players.find(player->getCid());
 		if (it == m_players.end())
 		{
-			LOG_INFO("GameService::removePlayer player = %p, cid = %lld not in m_players\n", player, player->getCid());
+			LOG_INFO("GameService::removePlayer player = %p, cid = %lld not in m_players\n",
+				player, player->getCid());
 		}
 		else if (it->second->getEntityId() != player->getEntityId())
 		{
-			LOG_INFO("GameService::removePlayer player entityid = %lld, cid = %lld not equal with it->seconde entity id = %lld, cid =%lld\n", player->getEntityId(), player->getCid(), it->second->getEntityId(), it->second->getCid());
+			LOG_INFO("GameService::removePlayer player entityid = %lld, cid = %lld not equal with it->second entity id = %lld, cid =%lld\n",
+				player->getEntityId(), player->getCid(),
+				it->second->getEntityId(), it->second->getCid());
 		}
 		else
 		{
@@ -555,43 +925,19 @@ void GameService::removePlayer(Player *player)
 	}
 }
 
-//Player* GameService::getPlayer(int32_t id,int32_t type)
-//{
-//	//if (type == ET_PET)
-//	//{
-//	//	ViceGeneral*pVicegeneral = getViceGeneral(id);
-//	//	if (pVicegeneral == NULL)
-//	//	{
-//	//		return NULL;
-//	//	}
-//
-//	//	return getPlayer(pVicegeneral->getOwner());
-//	//}
-//	//else if (type == ET_PLAYER)
-//	//{
-//		return getPlayer(id);
-//	//}
-//	//else
-//	//{
-//	//	return NULL;
-//	//}
-//}
-
-Player* GameService::getPlayer( CharId_t cid, int32_t nRunnerId, bool bCheck )
+Player* GameService::getPlayer(CharId_t cid, int32_t nRunnerId, bool bCheck)
 {
-	Answer::MutexGuard lock( m_playerLock );
+	Answer::MutexGuard lock(m_playerLock);
 	CharIdPlayerMap::iterator iter = m_players.find(cid);
-	if ( iter != m_players.end() )
+	if (iter != m_players.end())
 	{
 		Player* pPlayer = iter->second;
-		if ( pPlayer != NULL )
+		if (pPlayer != NULL)
 		{
-			if( bCheck )
-			{ 
-				if( pPlayer->GetRunnerId() == nRunnerId )
-				{
+			if (bCheck)
+			{
+				if (pPlayer->GetRunnerId() == nRunnerId)
 					return pPlayer;
-				}
 			}
 			else
 			{
@@ -599,45 +945,44 @@ Player* GameService::getPlayer( CharId_t cid, int32_t nRunnerId, bool bCheck )
 			}
 		}
 	}
-
 	return NULL;
 }
 
-void GameService::addPet( CObjPet *pPet )
+// ============================================================
+// Pet / Monster / Trailer
+// ============================================================
+void GameService::addPet(CObjPet* pPet)
 {
-	if ( pPet != NULL )
+	if (pPet != NULL)
 	{
-		Answer::MutexGuard lock( m_petsLock );
+		Answer::MutexGuard lock(m_petsLock);
 		m_pets[pPet->GetPetId()] = pPet;
 	}
 }
 
-void GameService::removePet( CObjPet *pPet )
+void GameService::removePet(CObjPet* pPet)
 {
-	if ( pPet != NULL )
+	if (pPet != NULL)
 	{
-		Answer::MutexGuard lock( m_petsLock );
-		m_pets.erase( pPet->GetPetId() );
+		Answer::MutexGuard lock(m_petsLock);
+		m_pets.erase(pPet->GetPetId());
 	}
 }
 
-CObjPet* GameService::getPet( PetId_t pid, int32_t nRunnerId )
+CObjPet* GameService::getPet(PetId_t pid, int32_t nRunnerId)
 {
 	Answer::MutexGuard lock(m_petsLock);
-	PetIdObjPetMap::iterator iter = m_pets.find( pid );
-	if ( iter != m_pets.end() )
+	PetIdObjPetMap::iterator iter = m_pets.find(pid);
+	if (iter != m_pets.end())
 	{
 		CObjPet* pPet = iter->second;
-		if ( pPet != NULL && pPet->GetRunnerId() == nRunnerId )
-		{
+		if (pPet != NULL && pPet->GetRunnerId() == nRunnerId)
 			return pPet;
-		}
 	}
-
 	return NULL;
 }
 
-void GameService::addMonster(Monster *monster)
+void GameService::addMonster(Monster* monster)
 {
 	if (monster != NULL)
 	{
@@ -646,7 +991,7 @@ void GameService::addMonster(Monster *monster)
 	}
 }
 
-void GameService::removeMonster(Monster *monster)
+void GameService::removeMonster(Monster* monster)
 {
 	if (monster != NULL)
 	{
@@ -655,23 +1000,20 @@ void GameService::removeMonster(Monster *monster)
 	}
 }
 
-Monster* GameService::getMonster( EntityId_t unitid, int32_t nRunnerId )
+Monster* GameService::getMonster(EntityId_t unitid, int32_t nRunnerId)
 {
 	Answer::MutexGuard lock(m_monstersLock);
 	EntityIdMonsterMap::iterator iter = m_monsters.find(unitid);
-	if ( iter != m_monsters.end() )
+	if (iter != m_monsters.end())
 	{
 		Monster* pMonster = iter->second;
-		if ( pMonster != NULL && pMonster->GetRunnerId() == nRunnerId )
-		{
+		if (pMonster != NULL && pMonster->GetRunnerId() == nRunnerId)
 			return pMonster;
-		}
 	}
-
 	return NULL;
 }
 
-void GameService::addTrailer(Trailer *trailer)
+void GameService::addTrailer(Trailer* trailer)
 {
 	if (trailer != NULL)
 	{
@@ -680,8 +1022,7 @@ void GameService::addTrailer(Trailer *trailer)
 	}
 }
 
-
-void GameService::removeTrailer(Trailer *trailer)
+void GameService::removeTrailer(Trailer* trailer)
 {
 	if (trailer != NULL)
 	{
@@ -690,1143 +1031,1213 @@ void GameService::removeTrailer(Trailer *trailer)
 	}
 }
 
-Trailer* GameService::getTrailer( EntityId_t unitid, int32_t nRunnerId )
+Trailer* GameService::getTrailer(EntityId_t unitid, int32_t nRunnerId)
 {
 	Answer::MutexGuard lock(m_trailersLock);
 	EntityIdTrailerMap::iterator iter = m_trailers.find(unitid);
-	if ( iter != m_trailers.end() )
+	if (iter != m_trailers.end())
 	{
 		Trailer* pTrailer = iter->second;
-		if ( pTrailer != NULL && pTrailer->GetRunnerId() == nRunnerId )
-		{
+		if (pTrailer != NULL && pTrailer->GetRunnerId() == nRunnerId)
 			return pTrailer;
-		}
 	}
-
 	return NULL;
 }
-
-// void GameService::onlineBroadCast(int32_t cid,const std::string &name,int32_t kingdom,int32_t post,int32_t time)
-// {
-// 	if (time >= m_onLineBroadcast[post])
-// 	{
-// 		broadcastOnline(cid,name,kingdom,post);
-// 		m_onLineBroadcast[post] = time+30*60;
-// 	}
-// }
 
 Unit* GameService::getUnit(EntityId_t unitid, int32_t unittype, int32_t nRunnerId)
 {
 	switch (unittype)
 	{
-	case ET_PLAYER:		return getPlayer( unitid, nRunnerId );
-	case ET_MONSTER:	return getMonster( unitid, nRunnerId );
-	case ET_PET:		return getPet( unitid, nRunnerId );
-	case ET_TRAILER:	return getTrailer( unitid, nRunnerId );
+	case ET_PLAYER:  return getPlayer(unitid, nRunnerId);
+	case ET_MONSTER: return getMonster(unitid, nRunnerId);
+	case ET_PET:     return getPet(unitid, nRunnerId);
+	case ET_TRAILER: return getTrailer(unitid, nRunnerId);
 	default: return NULL;
 	}
 }
 
+// ============================================================
+// saveAllPlayerToDB
+// ============================================================
 void GameService::saveAllPlayerToDB()
 {
+	int32_t nNowTime = DayTime::now();
 	Answer::MutexGuard lock(m_playerLock);
 	for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
 	{
-		Player *player = it->second;
+		Player* player = it->second;
 		if (player != NULL)
-		{
-			DB_SERVICE.logPlayerLogin(player->getCid(), 0, TIMER.GetNow());
-			player->saveToDB(LR_DISCONNECT, 0);
-		}
+			player->onLogout(1, 0);
 	}
 }
 
-void GameService::onUserPayed(int32_t uid, int32_t sid)
+// ============================================================
+// onUserPayed
+// ============================================================
+void GameService::onUserPayed(Answer::NetPacket* inPacket)
 {
+	if (NULL == inPacket)
+		return;
+
+	CharId_t Cid = inPacket->readInt64();
 	Answer::MutexGuard lock(m_playerLock);
-	for (CharIdPlayerMap::iterator it = m_players.begin(); it != m_players.end(); ++it)
-	{
-		Player *player = it->second;
-		if (player != NULL && player->getUid() == uid && player->getSid() == sid)
-		{
-			player->syncGold();
-			break;
-		}
-	}
+	CharIdPlayerMap::iterator it = m_players.find(Cid);
+	if (it != m_players.end() && it->second != NULL)
+		it->second->addNetPacket(inPacket, 8);
 }
 
-// void GameService::updateMonsterBroadcast(const MonsterBroadcast &monsterBroadcast)
-// {
-// 	if (!CFG_DATA.isMonsterBroadcast(monsterBroadcast.mid))
-// 	{
-// 		return;
-// 	}
-// 
-// 	Answer::RwLockWrGuard lock(m_monsterBroadcastLock);
-// 	for (MonsterBroadcastVector::iterator it = m_monsterBroadcast.begin(); it != m_monsterBroadcast.end(); ++it)
-// 	{
-// 		if (it->mid == monsterBroadcast.mid && it->kingdom == monsterBroadcast.kingdom)
-// 		{
-// 			std::string old_killer = it->last_killer;
-// 			*it = monsterBroadcast;
-// 			if (monsterBroadcast.state == MBS_INACTIVE)
-// 			{
-// 				it->last_killer = old_killer;
-// 			}
-// 			return;
-// 		}
-// 	}
-// 	m_monsterBroadcast.push_back(monsterBroadcast);
-// }
-
-// void GameService::sendMonsterBroadcast(Player *player)
-// {
-// 	if (player == NULL)
-// 	{
-// 		return;
-// 	}
-// 
-// 	Answer::RwLockRdGuard lock(m_monsterBroadcastLock);
-// 	NetPacket *packet = popNetpacket(PACK_DISPATCH, SM_MONSTER_BROADCAST);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	int32_t count = 0;
-// 	packet->writeInt32(count);
-// 	for (MonsterBroadcastVector::iterator it = m_monsterBroadcast.begin(); it != m_monsterBroadcast.end(); ++it)
-// 	{
-// 		//if (it->kingdom == player->getKingdom() || it->kingdom == KI_NEUTRAL)
-// 		//{
-// 			packet->writeInt32(it->mid);
-// 			packet->writeInt32(it->state);
-// 			packet->writeUTF8(it->last_killer);
-// 			packet->writeInt32(it->next_revive);
-// 			++count;
-// 		//}
-// 	}
-// 	int32_t oldoffset = packet->getWOffset();
-// 	packet->setWOffset(0);
-// 	packet->writeInt32(count);
-// 	packet->setWOffset(oldoffset);
-// 	packet->setSize(packet->getWOffset());
-// 	sendPacketTo(player->getGateIndex(), packet);
-// }
-
-
-// void GameService::broadcastEventBossDie(int32_t killer_cid, std::string killer_name,int32_t mapid, int32_t bossid,int32_t item)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_BOSS_DIE);
-// 	packet->writeInt32(killer_cid);
-// 	packet->writeUTF8(killer_name);
-// 	//packet->writeInt32(kingdom);
-// 	packet->writeInt32(mapid);
-// 	packet->writeInt32(bossid);
-// 	packet->writeInt32(item);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastOnline(int32_t cid, std::string name,int32_t kingdom,int32_t post)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_ONLINE);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeUInt16(kingdom);
-// 	packet->writeInt32(post);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-//void GameService::broadcastGamble(int32_t cid,const std::string name,int32_t kingdom,const GambleRecordVector & record,int32_t type)
-//{
-//	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAMBLE);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(cid);
-//	packet->writeUTF8(name);
-//	packet->writeInt32(kingdom);
-//	packet->writeInt32(record.size());
-//	packet->writeInt32(type);
-//
-//	for (GambleRecordVector::const_iterator it = record.begin();it != record.end();++it)
-//	{
-//		packet->writeInt32(it->item);
-//		packet->writeInt32(it->item_type);
-//		packet->writeInt32(it->count);
-//	}
-//
-//	packet->setSize(packet->getWOffset());
-//
-//	GAME_SERVICE.worldBroadcast(packet);
-//}
-
-//void GameService::broadcastGainVicegeneral(int32_t cid,const std::string name,int32_t vid)
-//{
-//	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAIN_VICEGENERAL_BROADCAST);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(cid);
-//	packet->writeUTF8(name);
-//	packet->writeInt32(vid);
-//
-//	packet->setSize(packet->getWOffset());
-//
-//	GAME_SERVICE.worldBroadcast(packet);
-//}
-
-//void GameService::broadcastVicegeneralUpgrade(int32_t cid,const std::string name,int32_t vid)
-//{
-//	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_VICEGENERAL_UPGRADE_BROADCAST);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(cid);
-//	packet->writeUTF8(name);
-//	packet->writeInt32(vid);
-//
-//	packet->setSize(packet->getWOffset());
-//
-//	GAME_SERVICE.worldBroadcast(packet);
-//}
-
-//void GameService::broadcastVicegeneralGengu(int32_t cid,const std::string &name,int32_t vid,int32_t level)
-//{
-//	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_VICEGENERAL_GENGU_BROADCAST);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(cid);
-//	packet->writeUTF8(name);
-//	packet->writeInt32(vid);
-//	packet->writeInt32(level);
-//
-//	packet->setSize(packet->getWOffset());
-//
-//	GAME_SERVICE.worldBroadcast(packet);
-//}
-
-//void GameService::broadcastVicegeneralWuyi(int32_t cid,const std::string &name,int32_t vid,int32_t level)
-//{
-//	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_VICEGENERAL_WUYI_BROADCAST);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(cid);
-//	packet->writeUTF8(name);
-//	packet->writeUInt32(vid);
-//	packet->writeInt32(level);
-//
-//	packet->setSize(packet->getWOffset());
-//
-//	GAME_SERVICE.worldBroadcast(packet);
-//}
-
-// void GameService::broadcastEventBossRevive(int32_t kingdom, int32_t mapid, int32_t bossid)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_BOSS_REVIVE);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(mapid);
-// 	packet->writeInt32(bossid);
-// 	packet->writeInt32(getLine());
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventCompleteDungeon(int32_t leader_cid, std::string leader_name, int32_t kingdom, int32_t dungeon_id)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_COMPLETE_DUNGEON);
-// 	packet->writeInt32(leader_cid);
-// 	packet->writeUTF8(leader_name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(dungeon_id);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventArriveLevel(int32_t cid, std::string name, int32_t kingdom, int32_t level)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_ARRIVE_LEVEL);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(level);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventArtifactLevel(int32_t cid, std::string name, int32_t kingdom, int32_t artifact_id, int32_t level)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_ARTIFACT_LEVEL);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(artifact_id);
-// 	packet->writeInt32(level);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventEnhanceEquip(int32_t cid, std::string name, int32_t kingdom, int32_t equip_id, int32_t level)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_ENHANCE_EQUIP);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(equip_id);
-// 	packet->writeInt32(level);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventGetPetEgg(int32_t cid, std::string name, int32_t kingdom, int32_t egg_id)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_GET_EGG);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(egg_id);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventCreateFamily(int32_t cid, std::string name, int32_t kingdom, std::string fname)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_CREATE_FAMILY);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeUTF8(fname);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventKillPlayerReputation(int32_t dierKingdom, int32_t dierCid, const std::string &dierName, int32_t killerKingdom, int32_t killerCid, const std::string &killerName, int32_t mapid)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_KILL_PLAYER_REPUTATION);
-// 	packet->writeInt32(dierKingdom);
-// 	packet->writeInt32(dierCid);
-// 	packet->writeUTF8(dierName);
-// 	packet->writeInt32(killerKingdom);
-// 	packet->writeInt32(killerCid);
-// 	packet->writeUTF8(killerName);
-// 	packet->writeInt32(mapid);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventTreasure(int32_t cid, std::string name, int32_t kingdom, const MemEquipVector &equips, const MemChrBagVector &items, int32_t treasure)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_TREASURE);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	EQUIP_MANAGER.PacketEquipInfo( packet, equips );
-// 	packet->writeInt32(static_cast<int32_t>(items.size()));
-// 	for (MemChrBagVector::const_iterator it = items.begin(); it != items.end(); ++it)
-// 	{
-// 		packet->writeInt32(it->itemId);
-// 		packet->writeInt32(it->itemClass);
-// 	}
-// 	packet->writeInt32(treasure);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventTrailer(int32_t cid, std::string name, int32_t kingdom, int32_t quality)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_TRAILER);
-// 	packet->writeInt32(cid);
-// 	packet->writeUTF8(name);
-// 	packet->writeInt32(kingdom);
-// 	packet->writeInt32(quality);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// void GameService::broadcastEventKillPlayerPkValue(int32_t dierKingdom, int32_t dierCid, const std::string &dierName, int32_t killerKingdom, int32_t killerCid, const std::string &killerName, int32_t mapid)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_KILL_PLAYER_PKVALUE);
-// 	packet->writeInt32(dierKingdom);
-// 	packet->writeInt32(dierCid);
-// 	packet->writeUTF8(dierName);
-// 	packet->writeInt32(killerKingdom);
-// 	packet->writeInt32(killerCid);
-// 	packet->writeUTF8(killerName);
-// 	packet->writeInt32(mapid);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-
-// void GameService::broadcastEventTrailerKilled(int32_t killer_cid, std::string killer_name, int32_t killer_kingdom, int32_t dier_cid, std::string dier_name, int32_t dier_kingdom)
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GAME_EVENT);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	packet->writeInt32(GET_TRAILER_KILLER);
-// 	packet->writeInt32(killer_cid);
-// 	packet->writeUTF8(killer_name);
-// 	packet->writeInt32(killer_kingdom);
-// 	packet->writeInt32(dier_cid);
-// 	packet->writeUTF8(dier_name);
-// 	packet->writeInt32(dier_kingdom);
-// 	packet->setSize(packet->getWOffset());
-// 
-// 	GAME_SERVICE.worldBroadcast(packet);
-// }
-
-// �㲥������ҵĻ����
-// void GameService::broadcastActivityState()
-// {
-// 	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_ACTIVITY_STATE);
-// 	if (NULL == packet)
-// 	{
-// 		return;
-// 	}
-// 	ACTIVITY_MANAGER.AppendActivityState(packet);
-// 	packet->setSize(packet->getWOffset());
-// 	GAME_SERVICE.broadcast(packet);
-// }
-
-void GameService::onAddUser(Answer::NetPacket *inPacket)
+// ============================================================
+// onAddUser / onRemoveUser / onUpdateBanChat / onGMReloadItem
+// ============================================================
+void GameService::onAddUser(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
-	}
+
 	int16_t cgindex = inPacket->readInt16();
-	int32_t uid = inPacket->readInt32();
+	int64_t uid = inPacket->readInt64();
 	int32_t sid = inPacket->readInt32();
+	int8_t connid = pConn->GetId();
 
-	if (cgindex > 0 && cgindex < MAX_CONNECTION && uid > 0 && sid > 0)
+	Answer::MutexGuard lock(m_userLock);
+	if (connid >= 0 && connid < MAX_GATE_CONNS && cgindex > 0 && cgindex < MAX_CONNECTION
+		&& uid > 0 && sid > 0)
 	{
-		User *user = POOL_MANAGER.pop<User>();
-		if (NULL == user)
+		int32_t nIndex = getUserIndex(connid, cgindex);
+		User* user = POOL_MANAGER.pop<User>();
+		if (user)
 		{
-			return;
-		}
-		user->init(uid, sid);
-		m_users[cgindex] = user;
+			user->init(uid, sid);
+			m_users[nIndex] = user;
 #ifdef _DEBUG
-		printf( "GameService::onAddUser() index=%d,\tuid=%d\n", cgindex, user->getUid() );
+			printf("GameService::onAddUser() connid=%d, index=%d, uid=%lld\n", connid, cgindex, uid);
 #endif
+		}
 	}
 }
 
-void GameService::qqToPlayer(Answer::NetPacket *inPacket)
+void GameService::qqToPlayer(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
-	}
+
 	int16_t cgindex = inPacket->readInt16();
-	std::string openId = inPacket->readUTF8(true);
-	std::string openKey = inPacket->readUTF8(true);
-	std::string pf = inPacket->readUTF8(true);
-	std::string pfKey = inPacket->readUTF8(true);
-	int32_t is_yellow_vip = inPacket->readInt32();
-	int32_t is_yellow_year_vip = inPacket->readInt32();
-	int32_t yellow_vip_level = inPacket->readInt32();
-	int32_t is_yellow_high_vip = inPacket->readInt32();
+	int8_t connid = pConn->GetId();
 
-	User *user = m_users[cgindex];
-	if (NULL == user)
-	{
-		return;
-	}
-	user->setOpenId(openId);
-	user->setOpenKey(openKey);
-	user->setPf(pf);
-	user->setPfKey(pfKey);
+	TencentInfo info;
+	info.UnPacketInfo(inPacket);
 
-	user->setIsYellowVip(is_yellow_vip);
-	user->setIsYellowYearVip(is_yellow_year_vip);
-	user->setYellowVipLevel(yellow_vip_level);
-	user->setIsYellowHighVip(is_yellow_high_vip);
-
+	Answer::MutexGuard lock(m_userLock);
+	int32_t nIndex = getUserIndex(connid, cgindex);
+	User* user = m_users[nIndex];
+	if (user != NULL)
+		user->SetTencentInfo(info);
 }
 
-void GameService::onRemoveUser(Answer::NetPacket *inPacket)
+void GameService::onRemoveUser(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
-	}
-	int16_t index = inPacket->readInt16();
-	if (index > 0 && index < MAX_CONNECTION)
+
+	int16_t cgindex = inPacket->readInt16();
+	int8_t connid = pConn->GetId();
+
+	if (connid >= 0 && connid < MAX_GATE_CONNS && cgindex > 0 && cgindex < MAX_CONNECTION)
 	{
-		User *user = m_users[index];
+		Answer::MutexGuard lock(m_userLock);
+		int32_t nIndex = getUserIndex(connid, cgindex);
+		User* user = m_users[nIndex];
 		if (user != NULL)
 		{
-
-			m_users[index] = NULL;
-
-			Player *player = user->getPlayer();
-			if (player != NULL)
+			Player* player = user->getPlayer();
+			if (!player)
 			{
-				inPacket->readInt32(); //uid
+				// No player — just clean up user
+				m_users[nIndex] = NULL;
+				user->reset();
+				POOL_MANAGER.push<User>(user);
+			}
+			else
+			{
+				inPacket->readInt64(); // uid
 				int32_t reason = inPacket->readInt32();
 				int32_t param = inPacket->readInt32();
-				player->addLogoutPacket(reason, param);				
-			}
 
-			user->reset();
-			POOL_MANAGER.push<User>( user );
+				if (!player->getMap())
+				{
+					// Player has no map — immediate save + remove
+					LOG_INFO("GameService::onRemoveUser remove player with m_pMap == NULL, cid = %lld\n",
+						player->getCid());
+					player->saveToDB(reason, param);
+					removePlayer(player);
+
+					if (player->getGateIndex() > 0)
+					{
+						player->setGateIndex(-1);
+						if (player->isRobot())
+							delete player;
+						else
+							POOL_MANAGER.push<Player>(player);
+					}
+
+					m_users[nIndex] = NULL;
+					user->reset();
+					POOL_MANAGER.push<User>(user);
+				}
+				else
+				{
+					// Player in map — send disconnect notification first
+					int8_t pConnId = player->getConnId();
+					NetPacket* packet = GAME_SERVICE.popNetpacket(pConnId, PACK_DISPATCH, 0x08);
+					if (packet)
+					{
+						packet->writeInt32(reason);
+						packet->writeInt32(param);
+						packet->setSize(packet->getWOffset());
+						player->addNetPacket(packet, 0);
+						packet->destroy();
+					}
+
+					m_users[nIndex] = NULL;
+					user->reset();
+					POOL_MANAGER.push<User>(user);
+				}
+			}
 		}
 	}
 }
 
-void GameService::onUpdateBanChat(Answer::NetPacket *inPacket)
+void GameService::onUpdateBanChat(Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
-	}
 	int32_t action = inPacket->readInt32();
 	int32_t uid = inPacket->readInt32();
 	int32_t expire_time = inPacket->readInt32();
 	CFG_DATA.onBanChatUpdated(action, uid, expire_time);
 }
 
-void GameService::onGMReloadItem(Answer::NetPacket *inPacket)
+void GameService::onGMReloadItem(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
 	CFG_DATA.reload();
 }
 
-void GameService::onAvgLevel(Answer::NetPacket *inPacket)
+void GameService::onAvgLevel(Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
-	}
 	CFG_DATA.onAvgLevelUpdated(0);
 }
 
-void GameService::onSocialNetpacket(Answer::NetPacket *inPacket)
+// ============================================================
+// Gate disconnect
+// ============================================================
+void GameService::onGateDisconnect(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	if (NULL == inPacket)
+	if (pConn && inPacket)
 	{
-		return;
-	}
-	int16_t cgindex = static_cast<int32_t>(inPacket->readInt32());
-	if (cgindex > 0 && cgindex < MAX_CONNECTION)
-	{
-		onGameNetpacket(cgindex, inPacket);
+		LOG_INFO("GameService::onGateDisconnect");
+
+		NetPacket* packet = popNetpacket(PACK_PROC, 0x4E2E);
+		if (packet)
+		{
+			packet->writeInt32(1);
+			packet->setSize(packet->getWOffset());
+			pConn->sendPacket(packet);
+		}
 	}
 }
 
-void GameService::onEnterGame(int16_t cgindex, Answer::NetPacket *inPacket)
+// ============================================================
+// Social packet dispatchers
+// ============================================================
+void GameService::onSocialNetpacket(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	User *user = m_users[cgindex];
-	if(user!=NULL)
+	if (NULL == inPacket)
+		return;
+
+	int16_t cgindex = static_cast<int16_t>(inPacket->readInt32());
+	int8_t connid = pConn->GetId();
+	if (connid >= 0 && connid < MAX_GATE_CONNS && cgindex > 0 && cgindex < MAX_CONNECTION)
+		onGameNetpacket(connid, cgindex, inPacket);
+}
+
+void GameService::onEnterGame(int8_t connid, int16_t cgindex, Answer::NetPacket* inPacket)
+{
+	CharId_t cid = inPacket->readInt64();
+	int32_t line = inPacket->readInt32();
+	int32_t reason = inPacket->readInt32();
+
+	printf("GameService::onEnterGame() cid=%lld, line=%d, reason=%d\n", cid, line, reason);
+
+	int32_t nIndex = getUserIndex(connid, cgindex);
+	int64_t uid = 0;
+	int32_t sid = 0;
+	bool bHasUser = false;
+
 	{
-		DB_SERVICE.loadPlayer(cgindex, user->getUid(),user->getSid());
+		Answer::MutexGuard lock(m_userLock);
+		User* user = m_users[nIndex];
+		if (user)
+		{
+			uid = user->getUid();
+			sid = user->getSid();
+			bHasUser = true;
+		}
+	}
+
+	if (bHasUser)
+	{
+		DB_SERVICE.loadPlayer(connid, cgindex, uid, sid, reason);
 	}
 }
 
-void GameService::onEnterGameRobot(int16_t cgindex, Answer::NetPacket *inPacket)
+void GameService::onEnterGameRobot(int8_t connid, int16_t cgindex, Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
+
+	CharId_t cid = inPacket->readInt32();
+	int32_t nIndex = getUserIndex(connid, cgindex);
+
+	User* user = NULL;
+	{
+		Answer::MutexGuard lock(m_userLock);
+		user = m_users[nIndex];
+		if (user != NULL && user->getCid() == 0)
+			user->setCid(cid);
+		else
+			user = NULL;
 	}
-	User *user = m_users[cgindex];
-	if (user != NULL && user->getCid() == 0)
+
+	if (user != NULL && cid > 0x1234567)
 	{
 		PlayerDBData dbData;
+		inPacket->readInt32(); // line
+		dbData.chr.data.cid = cid;
+		snprintf(dbData.chr.data.name, MAX_NAME_CCH_LENGTH, inPacket->readUTF8(true).c_str());
+		dbData.chr.data.sex = inPacket->readInt32();
+		dbData.chr.data.job = inPacket->readInt32();
+		inPacket->readInt32();
+		inPacket->readInt32();
+		dbData.chr.data.level = 60;
+		dbData.chr.data.mapid = inPacket->readInt32();
+		dbData.chr.data.x = inPacket->readInt32();
+		dbData.chr.data.y = inPacket->readInt32();
+		dbData.chr.data.hp = inPacket->readInt32();
+		dbData.chr.data.mp = inPacket->readInt32();
+		dbData.chr.data.head = inPacket->readInt32();
 
-		CharId_t cid = inPacket->readInt32();
-		if (cid > 0x1234567)
-		{
-			inPacket->readInt32();//line
-			user->setCid(cid);
-			dbData.chr.data.cid = cid;
-			snprintf(dbData.chr.data.name, MAX_NAME_CCH_LENGTH, inPacket->readUTF8(true).c_str());
-			dbData.chr.data.sex = inPacket->readInt32();
-			dbData.chr.data.job = inPacket->readInt32();
-			inPacket->readInt32();
-			inPacket->readInt32();
-			dbData.chr.data.level = 60;
-			dbData.chr.data.mapid = inPacket->readInt32();
-			dbData.chr.data.x = inPacket->readInt32();
-			dbData.chr.data.y = inPacket->readInt32();
-			dbData.chr.data.hp = inPacket->readInt32();
-			dbData.chr.data.mp = inPacket->readInt32();
-			dbData.chr.data.head = inPacket->readInt32();
-
-			int32_t id[]={10001,10006,10011};
-
-			int16_t tempId =id[RANDOM.generate(0,0)];
-			onPlayerLoaded( dbData );
-		}
+		int32_t id[] = { 10001, 10006, 10011 };
+		dbData.cgindex = cgindex;
+		dbData.connid = connid;
+		onPlayerLoaded(dbData, 0, true);
 	}
 }
-//��������Ӷ���
-void GameService::onGameNetpacket(int16_t cgindex, Answer::NetPacket *inPacket)
+
+void GameService::onGameNetpacket(int8_t connid, int16_t cgindex, Answer::NetPacket* inPacket)
 {
 	if (NULL == inPacket)
-	{
 		return;
-	}
 
-	// 鬼谷道人协议分发（全局单例，无需 per-player 注册）
+	// GuiGuDaoRen protocol dispatch
 	ProcId_t proc = inPacket->getProc();
-	if ( proc >= CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT && proc <= CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK )
+	if (proc >= CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT && proc <= CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK)
 	{
-		User *user = m_users[cgindex];
-		if ( user != NULL )
-		{
-			Player *player = user->getPlayer();
-			if ( player != NULL )
-			{
-				switch ( proc )
-				{
-				case CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT:	GUI_GU_DAO_REN.OnAskBackItemCount( player, inPacket ); break;
-				case CM_GUI_GU_DAO_REN_BACK_ITEM:			GUI_GU_DAO_REN.OnBackItem( player, inPacket ); break;
-				case CM_GUI_GU_DAO_REN_ASK_BACK_EQUIP_COUNT:	GUI_GU_DAO_REN.OnAskBackEquipCount( player, inPacket ); break;
-				case CM_GUI_GU_DAO_REN_BACK_EQUIP:			GUI_GU_DAO_REN.OnBackEquipCount( player, inPacket ); break;
-				case CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK:	GUI_GU_DAO_REN.OnAskEquipBackRank( player, inPacket ); break;
-				}
-				inPacket->destroy();
-				return;
-			}
-		}
-	}
-
-	User *user = m_users[cgindex];
-	if (user != NULL)
-	{
-		Player *player = user->getPlayer();
+		Player* player = getUserPlayer(connid, cgindex);
 		if (player != NULL)
 		{
-			player->addNetPacket( inPacket, sizeof(int32_t) );
+			switch (proc)
+			{
+			case CM_GUI_GU_DAO_REN_ASK_BACK_ITEM_COUNT:  GUI_GU_DAO_REN.OnAskBackItemCount(player, inPacket); break;
+			case CM_GUI_GU_DAO_REN_BACK_ITEM:             GUI_GU_DAO_REN.OnBackItem(player, inPacket); break;
+			case CM_GUI_GU_DAO_REN_ASK_BACK_EQUIP_COUNT:  GUI_GU_DAO_REN.OnAskBackEquipCount(player, inPacket); break;
+			case CM_GUI_GU_DAO_REN_BACK_EQUIP:            GUI_GU_DAO_REN.OnBackEquipCount(player, inPacket); break;
+			case CM_GUI_GU_DAO_REN_ASK_EQUIP_BACK_RANK:   GUI_GU_DAO_REN.OnAskEquipBackRank(player, inPacket); break;
+			}
+			inPacket->destroy();
+			return;
 		}
+	}
+
+	Player* player = getUserPlayer(connid, cgindex);
+	if (player != NULL)
+		player->addNetPacket(inPacket, sizeof(int32_t));
+}
+
+void GameService::OnDBNetPacket(int8_t connid, int16_t cgindex, Answer::NetPacket* inPacket)
+{
+	if (inPacket)
+	{
+		Player* player = getUserPlayer(connid, cgindex);
+		if (player)
+			player->addNetPacket(inPacket, 2);
 	}
 }
 
-//void GameService::sendSocialAddPlayerInfo(Player *player)
-//{
-//	if (player == NULL)
-//	{
-//		return;
-//	}
-//
-//	NetPacket *packet = popNetpacket(PACK_PROC, IM_SOCIAL_ADD_PLAYER_INFO);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(player->getCid());
-//	packet->writeUTF8(player->getName());
-//	packet->writeInt8(player->getSex());
-//	packet->writeInt8(player->getJob());
-//	packet->writeInt32(0);
-//	packet->writeInt32(player->getLevel()); 
-//	packet->writeInt32(player->getVip().type);
-//	packet->writeInt32(player->getFamilyId());
-//	packet->writeInt32(0);
-//	packet->writeInt32(0);
-//	packet->writeInt32(player->getFightPower());
-//	packet->writeInt8( player->GetCharSkill().IsLearnedXPSkill() ? 1 : 0 );
-//	packet->setSize(packet->getWOffset());
-//	sendPacket(packet);
-//}
+User* GameService::getUser(int8_t connid, int16_t cgindex)
+{
+	Answer::MutexGuard lock(m_userLock);
+	int32_t nIndex = getUserIndex(connid, cgindex);
+	return m_users[nIndex];
+}
 
-//void GameService::sendSocialUpdateGamble(const GambleRecordVector & record)
-//{
-//	NetPacket *packet = popNetpacket(PACK_PROC, IM_SOCIAL_UPDATE_GAMBLE);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(record.size());
-//
-//	for (GambleRecordVector::const_iterator it = record.begin();it != record.end();++it)
-//	{
-//		packet->writeInt32(it->cid);
-//		packet->writeUTF8(it->name);
-//		packet->writeInt32(it->type);
-//		packet->writeInt32(it->item);
-//		packet->writeInt32(it->item_type);
-//		packet->writeInt32(it->count);
-//	}
-//	packet->setSize(packet->getWOffset());
-//	sendPacket(packet);
-//}
+Player* GameService::getUserPlayer(int8_t connid, int16_t cgindex)
+{
+	User* user = getUser(connid, cgindex);
+	if (user)
+		return user->getPlayer();
+	return NULL;
+}
 
-void GameService::sendSocialAddPlayer(Player *player)
+// ============================================================
+// sendSocialAddPlayer / sendSocialRemovePlayer
+// ============================================================
+void GameService::sendSocialAddPlayer(Player* player)
 {
 	if (player == NULL)
-	{
 		return;
-	}
 
-	NetPacket *packet = popNetpacket(PACK_PROC, IM_SOCIAL_ADD_PLAYER);
+	int8_t connid = player->getConnId();
+	NetPacket* packet = popNetpacket(connid, PACK_PROC, 0x4E34);
 	if (NULL == packet)
-	{
 		return;
-	}
+
 	packet->writeInt32(player->getGateIndex());
 	packet->writeInt64(player->getCid());
-	packet->writeInt32(player->getUid());
+	packet->writeInt64(player->getUid());
 	packet->writeInt32(player->getSid());
+	packet->writeInt32(m_line);
+	packet->writeInt8(player->GetGMLevel());
 	packet->setSize(packet->getWOffset());
-	sendPacket(packet);
+	sendPacket(player->getConnId(), packet);
 }
 
-//void GameService::sendSocialFamilyActivityPlayer(const ActivityDamageStatisticsTable & rank,const Int32Vector &rewards,int32_t familyID)
-//{
-//	NetPacket *packet = popNetpacket(PACK_PROC, IM_SOCIAL_FAMILY_ACTIVITY_PLAYER);
-//	if (NULL == packet)
-//	{
-//		return;
-//	}
-//	packet->writeInt32(familyID);
-//	packet->writeInt16(rewards.size());
-//	for (Int32Vector::const_iterator it = rewards.begin();it != rewards.end();++it)
-//	{
-//		packet->writeInt32(*it);
-//	}
-//
-//	packet->writeInt16(rank.size());
-//	for (ActivityDamageStatisticsTable::const_reverse_iterator it = rank.rbegin();it != rank.rend();++it)
-//	{
-//		packet->writeInt32(it->second.cid);
-//		packet->writeUTF8(it->second.name);
-//	}
-//
-//	packet->setSize(packet->getWOffset());
-//	sendPacket(packet);
-//}
-
-void GameService::sendSocialRemovePlayer(Player *player)
+void GameService::sendSocialRemovePlayer(Player* player)
 {
 	if (player == NULL)
-	{
 		return;
-	}
 
-	NetPacket *packet = popNetpacket(PACK_PROC, IM_SOCIAL_REMOVE_PLAYER);
+	int8_t connid = player->getConnId();
+	NetPacket* packet = popNetpacket(connid, PACK_PROC, 0x4E35);
 	if (NULL == packet)
-	{
 		return;
-	}
+
 	packet->writeInt64(player->getCid());
 	packet->setSize(packet->getWOffset());
-	sendPacket(packet);
+	sendPacket(player->getConnId(), packet);
 }
 
-void GameService::onSocialUpdatePetRank( Answer::NetPacket* inPacket )
+// ============================================================
+// Social handler delegates
+// ============================================================
+void GameService::onSocialUpdatePetRank(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	PET_MANAGER.OnUpdatePetRank( inPacket );
+	PET_MANAGER.OnUpdatePetRank(inPacket);
 }
 
-void GameService::onSocialUpdateFamilyInfo( Answer::NetPacket* inPacket )
+void GameService::onSocialUpdateFamilyInfo(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	FAMILY_MANAGER.OnUpdateFamilyInfo( inPacket );
+	FAMILY_MANAGER.OnUpdateFamilyInfo(inPacket);
 }
 
-void GameService::onSocialInitPetRank( Answer::NetPacket* inPacket )
+void GameService::onSocialInitPetRank(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	PET_MANAGER.OnInitPetRank( inPacket );
+	PET_MANAGER.OnInitPetRank(inPacket);
 }
 
-void GameService::onSocialCreateTeamDungeon( Answer::NetPacket* inPacket )
+void GameService::onSocialInitRankMirror(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	RANK_MIRROR.OnSocialUpdateRank(inPacket);
+}
+
+void GameService::onSocialUpdateRankMirror(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	RANK_MIRROR.OnSocialUpdateRank(inPacket);
+}
+
+void GameService::onSocialQueryPlayerInfo(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	if (pConn && inPacket)
+	{
+		CharId_t cid = inPacket->readInt64();
+		int16_t cgindex = inPacket->readInt16();
+
+		Answer::MutexGuard lock(m_playerLock);
+		CharIdPlayerMap::iterator iter = m_players.find(cid);
+		if (iter != m_players.end())
+		{
+			Player* pPlayer = iter->second;
+			if (pPlayer)
+				pPlayer->SendOtherPlayerInfo(pConn->GetId(), cgindex);
+		}
+	}
+}
+
+void GameService::onSocialCreateTeamDungeon(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
 	int32_t nDungeonId = inPacket->readInt32();
-	Dungeon* pDungeon = MAP_MANAGER.NewDungeon( nDungeonId );
-	if ( pDungeon == NULL )
-	{
+	Dungeon* pDungeon = MAP_MANAGER.NewDungeon(nDungeonId);
+	if (pDungeon == NULL)
 		return;
-	}
 
 	CharIdList memberList;
-	for ( int32_t i = 0; i < MAX_TEAM_MEMBER_COUNT; ++i )
+	for (int32_t i = 0; i < MAX_TEAM_MEMBER_COUNT; ++i)
 	{
 		CharId_t memberId = inPacket->readInt64();
-		if ( memberId > 0 )
-		{
-			memberList.push_back( memberId );
-		}
+		if (memberId > 0)
+			memberList.push_back(memberId);
 	}
-	// ��ҵĽ����ڸ�������
-	pDungeon->InitTeamMember( memberList );
-	pDungeon->start();
-	MAP_MANAGER.PostMsg( pDungeon->GetRunnerId(), GMC_ADD_DUNGEON, pDungeon );
+
+	pDungeon->InitTeamMember(memberList);
+	pDungeon->start(0);
+	MAP_MANAGER.PostMsg(pDungeon->GetRunnerId(), GMC_ADD_DUNGEON, pDungeon, 0, 0, 0, 0);
 }
 
-void GameService::onSocialSendSystemMail( Answer::NetPacket* inPacket )
+void GameService::onSocialSendSystemMail(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	if ( NULL == inPacket )
-	{
+	if (NULL == inPacket || pConn == NULL)
 		return;
-	}
 
-	CharId_t nReceiver	= inPacket->readInt64();
-	int32_t	nMailId		= inPacket->readInt32();
+	int8_t connid = pConn->GetId();
+	CharId_t nReceiver = inPacket->readInt64();
+	int32_t nMailId = inPacket->readInt32();
+	int32_t nReason = inPacket->readInt32();
 
 	MemChrBag item = {};
-	item.itemId		= inPacket->readInt32();
-	item.itemClass	= inPacket->readInt8();
-	item.itemCount	= inPacket->readInt32();
-	item.srcId		= inPacket->readInt64();
-	item.bind		= inPacket->readInt8();
-	item.endTime	= inPacket->readInt32();
+	item.itemId = inPacket->readInt32();
+	item.itemClass = inPacket->readInt8();
+	item.itemCount = inPacket->readInt32();
+	item.srcId = inPacket->readInt64();
+	item.bind = inPacket->readInt8();
+	item.endTime = inPacket->readInt32();
+	std::string mailParam = inPacket->readUTF8(true);
 
-	if ( item.itemId > 0 && item.itemCount > 0 )
+	if (item.itemId > 0 && item.itemCount > 0)
 	{
-		DB_SERVICE.OnSendSysMail( nReceiver, nMailId, item );
+		DB_SERVICE.OnSendSysMail(connid, nReceiver, nMailId, item, (ITEM_CHANGE_REASON)nReason, mailParam);
 	}
 	else
 	{
-		DB_SERVICE.OnSendSysMail( nReceiver, nMailId );
+		DB_SERVICE.OnSendSysMail(connid, nReceiver, nMailId, mailParam);
 	}
 }
 
-void GameService::onSocialSendSystemMail2( Answer::NetPacket* inPacket )
+void GameService::onSocialSendSystemMail2(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
 {
-	if ( NULL == inPacket )
-	{
+	if (NULL == inPacket || pConn == NULL)
 		return;
-	}
 
-	CharId_t nReceiver	= inPacket->readInt64();
-	int32_t	nMailId		= inPacket->readInt32();
-	int32_t nSize		= inPacket->readInt32();
-	if ( nSize > 0 )
+	int8_t connid = pConn->GetId();
+	CharId_t nReceiver = inPacket->readInt64();
+	int32_t nMailId = inPacket->readInt32();
+	int32_t nReason = inPacket->readInt32();
+	int32_t nSize = inPacket->readInt32();
+
+	if (nSize > 0)
 	{
 		MemChrBagVector vItem;
-		vItem.resize( nSize );
-		for ( int32_t i = 0; i < nSize; ++i )
+		vItem.resize(nSize);
+		for (int32_t i = 0; i < nSize; ++i)
 		{
-			vItem[i].itemClass	= inPacket->readInt8();
-			vItem[i].itemId		= inPacket->readInt32();
-			vItem[i].itemCount	= inPacket->readInt32();
-			vItem[i].srcId		= 0;
-			vItem[i].bind		= 0;
-			vItem[i].endTime	= 0;
+			vItem[i].itemClass = inPacket->readInt8();
+			vItem[i].itemId = inPacket->readInt32();
+			vItem[i].itemCount = inPacket->readInt32();
+			vItem[i].srcId = 0;
+			vItem[i].bind = 0;
+			vItem[i].endTime = 0;
 		}
-		DB_SERVICE.OnSendSysMail( nReceiver, nMailId, vItem );
+		DB_SERVICE.OnSendSysMail(connid, nReceiver, nMailId, vItem, (ITEM_CHANGE_REASON)nReason, "");
 	}
 	else
 	{
-		DB_SERVICE.OnSendSysMail( nReceiver, nMailId );
+		DB_SERVICE.OnSendSysMail(connid, nReceiver, nMailId, "");
 	}
 }
 
-void GameService::onSocialChangeOwner( Answer::NetPacket* inPacket )
+void GameService::onSocialChangeOwner(Answer::NetPacket* inPacket)
 {
-	if ( NULL == inPacket )
-	{
+	if (NULL == inPacket)
 		return;
-	}
 
-	int8_t nClass	= inPacket->readInt8();
-	int64_t	nSrcId	= inPacket->readInt64();
-	CharId_t nOwner	= inPacket->readInt64();
+	int8_t nClass = inPacket->readInt8();
+	int64_t nSrcId = inPacket->readInt64();
+	CharId_t nOwner = inPacket->readInt64();
 
-	if ( nClass == IC_EQUIP )
-	{
-		EQUIP_MANAGER.ChangeOwner( nSrcId, nOwner );
-	}
-	else if ( nClass == IC_PET )
-	{
-		PET_MANAGER.ChangeOwner( nSrcId, nOwner );
-	}
+	if (nClass == IC_EQUIP)
+		EQUIP_MANAGER.ChangeOwner(nSrcId, nOwner);
+	else if (nClass == IC_PET)
+		PET_MANAGER.ChangeOwner(nSrcId, nOwner);
 }
 
-void GameService::TeamDungeonEnterDungeon( Dungeon* pDungeon, const CharIdList& lst )
+void GameService::onSocialUpdateRank(Answer::NetPacket* inPacket)
 {
-	if ( NULL == pDungeon )
-	{
+	RANK_MIRROR.OnSocialUpdateRank(inPacket);
+}
+
+void GameService::onSocialInitFamilyInfo(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	RANK_MIRROR.OnSocialUpdateRank(inPacket);
+}
+
+void GameService::onUpdateActivityState(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	int32_t nId = inPacket->readInt32();
+	int8_t nState = inPacket->readInt8();
+	// Handle activity state update
+}
+
+void GameService::onRequestDropRecord(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	int32_t nGroupId = inPacket->readInt32();
+	// Request drop record from DB
+}
+
+// ============================================================
+// TeamDungeon / Mail / PetRank / DaTi / ServerDiff / Family
+// ============================================================
+void GameService::TeamDungeonEnterDungeon(Dungeon* pDungeon, const CharIdList& lst)
+{
+	if (NULL == pDungeon)
 		return;
-	}
-	CharIdList::const_iterator iter = lst.begin();
-	CharIdList::const_iterator eiter = lst.end();
-	for ( ; iter != eiter; ++iter )
+
+	for (CharIdList::const_iterator iter = lst.begin(); iter != lst.end(); ++iter)
 	{
 		Answer::MutexGuard lock(m_playerLock);
-		CharIdPlayerMap::iterator it = m_players.find( *iter );
-		if ( it != m_players.end() )
+		CharIdPlayerMap::iterator it = m_players.find(*iter);
+		if (it != m_players.end())
 		{
 			Player* pPlayer = it->second;
-			if ( pPlayer != NULL )
+			if (pPlayer != NULL)
 			{
 				pPlayer->setOldPosition();
 				Map* pMap = pPlayer->getMap();
-				if ( pMap != NULL )
+				if (pMap != NULL)
 				{
 					pPlayer->broadcastLeave();
-					pMap->removePlayer( pPlayer, false);
+					pMap->removePlayer(pPlayer, false);
 				}
 
-				GAME_SERVICE.replySuccess( pPlayer->getGateIndex(), CM_ENTER_DUNGEON, pDungeon->getDungeonId() );	// ��Ҫ���ڸ�����Ϣ�·����ͻ���
-				pDungeon->addPlayer( pPlayer, pDungeon->GetCfgDungeon().x, pDungeon->GetCfgDungeon().y );
+				GAME_SERVICE.replySuccess(pPlayer->getConnId(), pPlayer->getGateIndex(),
+					CM_ENTER_DUNGEON, pDungeon->getDungeonId());
+				pDungeon->addPlayer(pPlayer, pDungeon->GetCfgDungeon().x, pDungeon->GetCfgDungeon().y);
 			}
 		}
 	}
 }
 
-void GameService::OnUpdateMail( Answer::NetPacket *inPacket )
+void GameService::OnUpdateMail(Answer::NetPacket* inPacket)
 {
-	if ( NULL == inPacket )
-	{
+	if (NULL == inPacket)
 		return;
-	}
+
 	CharId_t Cid = inPacket->readInt64();
 	Answer::MutexGuard lock(m_playerLock);
-	CharIdPlayerMap::iterator it = m_players.find( Cid );
-	if ( it != m_players.end() )
-	{
-		if ( NULL != it->second )
-		{
-			it->second->addNetPacket( inPacket, sizeof(int64_t) );
-		}
-	}
+	CharIdPlayerMap::iterator it = m_players.find(Cid);
+	if (it != m_players.end() && it->second != NULL)
+		it->second->addNetPacket(inPacket, sizeof(int64_t));
 }
 
 void GameService::requestPetRankInfo()
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_SOCIAL_REQUEST_PET_RANK_DATA );
+	NetPacket* packet = popNetpacket(0, PACK_DISPATCH, IM_SOCIAL_REQUEST_PET_RANK_DATA);
 	if (NULL == packet)
-	{
 		return;
-	}
-
-	packet->writeInt32( m_line );
-	packet->setSize( packet->getWOffset() ); 
-	GAME_SERVICE.sendPacket( packet );
+	packet->writeInt32(m_line);
+	packet->setSize(packet->getWOffset());
+	sendPacket(0, packet);
 }
 
-void GameService::OnReceiveDaTiRank( Answer::NetPacket* inPacket )
+void GameService::requestSocialData()
 {
-	if ( NULL == inPacket )
-	{
+	requestPetRankInfo();
+	SendServerDiffToGlobal();
+	requestFamilyInfo();
+	PET_MANAGER.UpdataChangedPet();
+}
+
+void GameService::requestFamilyInfo()
+{
+	NetPacket* packet = popNetpacket(0, PACK_PROC, IM_SOCIAL_REQUEST_FAMILY_INFO);
+	if (NULL == packet)
 		return;
-	}
-	int32_t nSize = inPacket->readInt32();
-	for ( int32_t i = 0; i < nSize; ++i )
+	packet->writeInt8(0);
+	packet->setSize(packet->getWOffset());
+	sendPacket(0, packet);
+}
+
+void GameService::requestWorldLevel()
+{
+	NetPacket* packet = popNetpacket(0, PACK_PROC, 0x4E40);
+	if (packet)
 	{
-		CharId_t CharId		= inPacket->readInt64();
-		std::string Name	= inPacket->readUTF8(true);
-		int32_t Index		= inPacket->readInt32();
-		if ( Index == 1 )
+		packet->writeInt32(m_line);
+		packet->setSize(packet->getWOffset());
+		sendPacket(0, packet);
+	}
+}
+
+void GameService::OnReceiveDaTiRank(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	if (NULL == inPacket || pConn == NULL)
+		return;
+
+	int8_t connid = pConn->GetId();
+	int32_t nSize = inPacket->readInt32();
+	for (int32_t i = 0; i < nSize; ++i)
+	{
+		CharId_t CharId = inPacket->readInt64();
+		std::string Name = inPacket->readUTF8(true);
+		int32_t Index = inPacket->readInt32();
+
+		if (Index == 1)
 		{
-			DB_SERVICE.OnSendSysMail( CharId, DaTiHDFirst );
-			Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-			if (NULL == packet)
+			DB_SERVICE.OnSendSysMail(connid, CharId, DaTiHDFirst, "");
+			NetPacket* packet = popNetpacket(PACK_DISPATCH, SM_SEND_NOTICE_PARAM);
+			if (packet)
 			{
-				return;
+				packet->writeInt32(BCI_DA_TI_FIRST);
+				packet->writeUTF8(Name);
+				packet->writeInt64(CharId);
+				packet->setSize(packet->getWOffset());
+				worldBroadcast(packet);
 			}
-			packet->writeInt32( BCI_DA_TI_FIRST );
-			packet->writeUTF8( Name );
-			packet->writeInt64( CharId );
-			packet->setSize(packet->getWOffset());
-			worldBroadcast(packet);
 		}
-		else if ( Index == 2 )
-		{
-			DB_SERVICE.OnSendSysMail( CharId, DaTiHDSecond );
-		}
-		else if ( Index == 3 )
-		{
-			DB_SERVICE.OnSendSysMail( CharId, DaTiHDThird );
-		}
+		else if (Index == 2)
+			DB_SERVICE.OnSendSysMail(connid, CharId, DaTiHDSecond, "");
+		else if (Index == 3)
+			DB_SERVICE.OnSendSysMail(connid, CharId, DaTiHDThird, "");
 		else
-		{
-			DB_SERVICE.OnSendSysMail( CharId, DaTiHDChanYu );
-		}
+			DB_SERVICE.OnSendSysMail(connid, CharId, DaTiHDChanYu, "");
 
 		LogActivity logActivity = {};
 		logActivity.cid = CharId;
 		logActivity.acttype = ATI_DA_TI_HUO_DONG;
 		logActivity.time = TIMER.GetNow();
 		logActivity.param = Index;
-
-		DB_SERVICE.InsertActivityLog( logActivity );
+		DB_SERVICE.InsertActivityLog(connid, logActivity);
 	}
+}
+
+void GameService::OnReceiveDaTiResult(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	if (NULL == inPacket || pConn == NULL)
+		return;
+
+	int64_t Cid = inPacket->readInt64();
+	int32_t Index = inPacket->readInt32();
+	int8_t Result = inPacket->readInt8();
+
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator it = m_players.find(Cid);
+	if (it != m_players.end() && it->second != NULL)
+		it->second->AddDaTiExp(Index, Result);
 }
 
 void GameService::SendServerDiffToGlobal()
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_PROC, IM_SOCIAL_SYN_SERVER_DAY);
-	if ( NULL == packet )
-	{
-		return;
-	}
-	int32_t DiffDay = DayTime::daydiff( CFG_DATA.getServerStartTime() );
-	packet->writeInt32(DiffDay);
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacket(packet);
-}
-
-void GameService::requestFamilyInfo()
-{
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_PROC, IM_SOCIAL_REQUEST_FAMILY_INFO);
-	if ( NULL == packet )
-	{
-		return;
-	}
-	packet->writeInt8(0);
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacket(packet);
-}
-
-void GameService::onCheckTitle( CharId_t nCharId, int8_t nType, int32_t nParam )
-{
-	Answer::MutexGuard lock( m_playerLock );
-	CharIdPlayerMap::iterator iter = m_players.find( nCharId );
-	if ( iter != m_players.end() )
-	{
-		Player* player = iter->second;
-		if ( player != NULL )
-		{
-			player->GetCharTitle().CheckAddTitle( nType, nParam );
-		}
-	}
-}
-
-void GameService::onRemoveTitle( CharId_t nCharId, int8_t nType )
-{
-	Answer::MutexGuard lock( m_playerLock );
-	CharIdPlayerMap::iterator iter = m_players.find( nCharId );
-	if ( iter != m_players.end() )
-	{
-		Player* player = iter->second;
-		if ( player != NULL )
-		{
-			player->GetCharTitle().RemoveTitle( nType, 0 );
-		}
-	}
-}
-
-void GameService::KickUser( CharId_t cid )
-{
-	Answer::MutexGuard lock( m_playerLock );
-	CharIdPlayerMap::iterator iter = m_players.find( cid );
-	if ( iter == m_players.end() )
-	{
-		return;
-	}
-
-	Player* player = iter->second;
-	if ( NULL == player )
-	{
-		return;
-	}
-
-	NetPacket *packet = popNetpacket( PACK_PROC, IM_GAME_GATE_KICK_USER );
+	NetPacket* packet = popNetpacket(0, PACK_PROC, 0x4E49);
 	if (NULL == packet)
-	{
 		return;
-	}
-
-	packet->writeInt32( player->getUid() );
-	packet->writeInt32( player->getSid() );
-	packet->setSize( packet->getWOffset() );
-	sendPacket( packet );
+	int32_t ServerDiffDay = CFG_DATA.getServerDiffDay(SVT_NORMAL);
+	packet->writeInt32(ServerDiffDay);
+	packet->setSize(packet->getWOffset());
+	sendPacket(0, packet);
 }
 
-
-void GameService::AddPlayerVipClubDropTime()
+// ============================================================
+// ChatValidate
+// ============================================================
+bool GameService::SendChatValidate(Player* Owner, int32_t Channel, Answer::NetPacket* inPacket)
 {
-	Answer::MutexGuard lock( m_playerLock );
+	if (!inPacket || !Owner)
+		return false;
 
-	for ( CharIdPlayerMap::iterator iter = m_players.begin();
-			iter != m_players.end(); ++iter )
+	Answer::MutexGuard lock(m_playerLock);
+	Answer::MutexGuard lockChat(m_ChatValidateLock);
+
+	int8_t connid = Owner->getConnId();
+	NetPacket* packet = popNetpacket(connid, PACK_DISPATCH, 0x2ED8);
+	if (!packet)
+		return false;
+
+	std::string PassPort = Owner->GetPassport();
+	std::string Name = Owner->getName();
+	int32_t SidInt = Owner->getSid();
+
+	// Build MD5 key
+	std::string Cid;
+	{
+		std::stringstream ss;
+		ss << Owner->getCid();
+		Cid = ss.str();
+	}
+	std::string Sid;
+	{
+		std::stringstream ss;
+		ss << SidInt;
+		Sid = ss.str();
+	}
+	std::string Platform;
+	Owner->GetPlatform(Platform);
+
+	std::string Md5String = Platform + std::string("&") + Cid + std::string("&") + PassPort;
+	MD5 md5;
+	std::string Key = md5.md5sum(Md5String);
+
+	static int32_t s_nValidateId = 0;
+	++s_nValidateId;
+
+	packet->writeInt8(1);
+	packet->writeInt32(s_nValidateId);
+	packet->writeUTF8(Key);
+	uint32_t Size = inPacket->getSize();
+	char* Buffer = inPacket->getBuffer();
+	packet->write(Buffer, Size);
+	packet->setSize(packet->getWOffset());
+
+	sendPacketTo(Owner->getConnId(), Owner->getGateIndex(), packet);
+
+	ChatValidate& validate = m_ChatValidateMap[s_nValidateId];
+	validate.SendPacket = inPacket;
+	validate.CharId = Owner->getCid();
+	validate.Time = Owner->getNow();
+	validate.Channel = Channel;
+	validate.SendCharId = Owner->getCid();
+	return true;
+}
+
+void GameService::OnChatValidateResult(Answer::NetPacket* inPacket)
+{
+	// Process chat validate result from QQ side
+}
+
+ChatValidate GameService::GetChatValidate(int32_t nid, CharId_t CharId)
+{
+	ChatValidate ret;
+	Answer::MutexGuard lock(m_ChatValidateLock);
+	std::map<int32_t, ChatValidate>::iterator it = m_ChatValidateMap.find(nid);
+	if (it != m_ChatValidateMap.end() && it->second.CharId == CharId)
+	{
+		ret = it->second;
+		m_ChatValidateMap.erase(it);
+	}
+	return ret;
+}
+
+void GameService::CheckChatValidateChatSend(CharId_t CharId)
+{
+	// Check if player passes chat validation
+}
+
+// ============================================================
+// Drop control
+// ============================================================
+int32_t GameService::GetDropTimes(int32_t nGroupId)
+{
+	Answer::MutexGuard lock(m_dropControlLock);
+	std::map<int32_t, int32_t>::iterator iter = m_dropControl.find(nGroupId);
+	if (iter != m_dropControl.end())
+		return iter->second;
+	return 0;
+}
+
+void GameService::AddDropTimes(int32_t nGroupId, int32_t nAddTimes)
+{
+	int32_t nTimes = nAddTimes;
+	{
+		Answer::MutexGuard lock(m_dropControlLock);
+		std::map<int32_t, int32_t>::iterator iter = m_dropControl.find(nGroupId);
+		if (iter != m_dropControl.end())
+		{
+			iter->second += nAddTimes;
+			nTimes = iter->second;
+		}
+		else
+		{
+			m_dropControl[nGroupId] = nAddTimes;
+		}
+	}
+
+	if (getLine() == GAME_SERVICE_LINE_CROSS)
+	{
+		// Cross-server: write directly to database
+		int32_t nowTime = TIMER.GetNow();
+		Answer::MySqlDBGuard db(Answer::Singleton<Answer::DBPool>::instance());
+		char szSQL[4096];
+		memset(szSQL, 0, sizeof(szSQL));
+		snprintf(szSQL, 4095,
+			"INSERT INTO `cross_drop_control` (`id`,`group_id`,`times`,`time`) VALUES (%d,%d,%d,%d) "
+			"ON DUPLICATE KEY UPDATE `times`=%d,`time`=%d",
+			m_id, nGroupId, nTimes, nowTime, nTimes, nowTime);
+		db.excute(szSQL);
+	}
+	else
+	{
+		DB_SERVICE.SaveDropTimes(nGroupId, nTimes);
+	}
+}
+
+void GameService::UpdateDropTimes(int32_t nGroupId, int32_t nTimes)
+{
+	if (getLine() != GAME_SERVICE_LINE_CROSS)
+	{
+		Answer::MutexGuard lock(m_dropControlLock);
+		m_dropControl[nGroupId] = nTimes;
+	}
+}
+
+void GameService::ResetDropTimes()
+{
+	{
+		Answer::MutexGuard lock(m_dropControlLock);
+		m_dropControl.clear();
+	}
+	if (getLine() != GAME_SERVICE_LINE_CROSS)
+		DB_SERVICE.ClearDropTimes();
+}
+
+void GameService::InitDropTimes()
+{
+	if (getLine() == GAME_SERVICE_LINE_CROSS)
+	{
+		// Load from cross DB
+	}
+	else
+	{
+		// Load from DBService
+	}
+}
+
+void GameService::ClearDropTimes()
+{
+	Answer::MutexGuard lock(m_dropControlLock);
+	m_dropControl.clear();
+}
+
+void GameService::OnDropTimesLoaded(Answer::NetPacket* inPacket)
+{
+	if (!inPacket) return;
+	int32_t nGroupId = inPacket->readInt32();
+	int32_t nTimes = inPacket->readInt32();
+	Answer::MutexGuard lock(m_dropControlLock);
+	m_dropControl[nGroupId] = nTimes;
+}
+
+bool GameService::CheckDropLimit(int32_t nGroupId, int32_t nItemId)
+{
+	int32_t nTimes = GetDropTimes(nGroupId);
+	// Check against config limit
+	return nTimes > 0;
+}
+
+void GameService::OnDropRecordLoaded(Answer::NetPacket* inPacket)
+{
+	// Handle drop record loaded from DB
+}
+
+void GameService::OnDropRecordSaved()
+{
+	// Handle drop record saved confirmation
+}
+
+// ============================================================
+// Server battle
+// ============================================================
+void GameService::InitServerBattle()
+{
+	m_serverBattle = 0;
+}
+
+void GameService::SetServerBattle(int32_t Battle)
+{
+	m_serverBattle = Battle;
+}
+
+// ============================================================
+// MoYuShiJie
+// ============================================================
+void GameService::InitMoYuShiJieRecord()
+{
+	// Initialize MoYuShiJie records
+}
+
+void GameService::SendMoYuShiJieRecord(Player* player)
+{
+	if (!player) return;
+	// Send MoYuShiJie record to player
+}
+
+void GameService::AddMoYuShiJieRecord(const LogMoYuShiJieReward& logReward)
+{
+	// Add a MoYuShiJie reward record
+}
+
+// ============================================================
+// Festival
+// ============================================================
+void GameService::ResetFestivalData(int32_t nVersion)
+{
+	// Reset festival activity data
+}
+
+// ============================================================
+// Tencent
+// ============================================================
+void GameService::UpdateTencentInfo(CharId_t cid, const TencentInfo* info)
+{
+	if (!info) return;
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator iter = m_players.find(cid);
+	if (iter != m_players.end() && iter->second != NULL)
+		iter->second->UpdateTencentInfo(info);
+}
+
+// ============================================================
+// CityWar / Title
+// ============================================================
+void GameService::UpdateCityWarTitle(FamilyId_t OldFamilyId, FamilyId_t NewFamilyId)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator iter = m_players.begin(); iter != m_players.end(); ++iter)
 	{
 		Player* pPlayer = iter->second;
-		if ( pPlayer != NULL )
+		if (!pPlayer) continue;
+
+		if (pPlayer->getFamilyId() == OldFamilyId)
+			pPlayer->GetCharTitle().RemoveTitle(1, 0);
+
+		if (pPlayer->getFamilyId() == NewFamilyId)
 		{
-			pPlayer->GetVip().AddDropTimes();
+			int32_t FamilyPosition = pPlayer->getFamilyPosition();
+			pPlayer->GetCharTitle().CheckAddTitle(1, FamilyPosition);
 		}
 	}
+}
+
+void GameService::UpdateCityActState(FamilyId_t FamilyId, int8_t ActState)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator iter = m_players.begin(); iter != m_players.end(); ++iter)
+	{
+		if (iter->second && iter->second->getFamilyId() == FamilyId)
+			iter->second->SetActState(ActState);
+	}
+}
+
+void GameService::SetFamilyMemberNeedSync(FamilyId_t nFamilyId)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator iter = m_players.begin(); iter != m_players.end(); ++iter)
+	{
+		Player* player = iter->second;
+		if (player && player->getFamilyId() == nFamilyId)
+			player->SetNeedSyncAround();
+	}
+}
+
+void GameService::GetFamilyMemberInMap(FamilyId_t nFamilyId, int32_t nMapId, CharIdList& lst)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator iter = m_players.begin(); iter != m_players.end(); ++iter)
+	{
+		Player* player = iter->second;
+		if (player && player->getFamilyId() == nFamilyId)
+		{
+			Map* pMap = player->getMap();
+			if (pMap && pMap->GetId() == nMapId)
+				lst.push_back(player->getCid());
+		}
+	}
+}
+
+// ============================================================
+// onCheckTitle / onCheckTeShuTitle / onRemoveTitle
+// ============================================================
+void GameService::onCheckTitle(CharId_t nCharId, int8_t nType, int32_t nParam)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator iter = m_players.find(nCharId);
+	if (iter != m_players.end())
+	{
+		Player* player = iter->second;
+		if (player != NULL)
+			player->GetCharTitle().CheckAddTitle(nType, nParam);
+	}
+}
+
+void GameService::onCheckTeShuTitle(CharId_t nCharId, int8_t nType, int32_t nParam)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator iter = m_players.find(nCharId);
+	if (iter != m_players.end())
+	{
+		Player* player = iter->second;
+		if (player != NULL)
+			player->GetCharTitle().CheckAddTitle(nType, nParam);
+	}
+}
+
+void GameService::onRemoveTitle(CharId_t nCharId, int8_t nType)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator iter = m_players.find(nCharId);
+	if (iter != m_players.end())
+	{
+		Player* player = iter->second;
+		if (player != NULL)
+			player->GetCharTitle().RemoveTitle(nType, 0);
+	}
+}
+
+// ============================================================
+// Kick
+// ============================================================
+void GameService::KickUser(CharId_t cid, int32_t opWay)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap::iterator iter = m_players.find(cid);
+	if (iter == m_players.end())
+		return;
+
+	Player* player = iter->second;
+	if (NULL == player)
+		return;
+
+	NetPacket* packet = popNetpacket(player->getConnId(), PACK_PROC, IM_GAME_GATE_KICK_USER);
+	if (NULL == packet)
+		return;
+
+	packet->writeInt32((int32_t)player->getUid());
+	packet->writeInt32(player->getSid());
+	packet->setSize(packet->getWOffset());
+	sendPacket(player->getConnId(), packet);
+}
+
+void GameService::KickAll(int32_t opWay)
+{
+	Answer::MutexGuard lock(m_playerLock);
+	CharIdPlayerMap players = m_players; // copy
+	lock.~MutexGuard();
+
+	for (CharIdPlayerMap::iterator iter = players.begin(); iter != players.end(); ++iter)
+	{
+		if (iter->second)
+			KickUser(iter->second->getCid(), opWay);
+	}
+}
+
+// ============================================================
+// BanChat (CityMaster)
+// ============================================================
+void GameService::OnSocialCityMasterBanChat(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	if (!pConn || !inPacket) return;
+
+	int64_t CharId = inPacket->readInt64();
+	int32_t BanTime = inPacket->readInt32();
+	int32_t BanChatTime = BanTime + DayTime::now();
+
+	// Store ban chat time
+}
+
+int32_t GameService::GetCityMasterBanChatTime(CharId_t nCharId)
+{
+	return 0;
+}
+
+// ============================================================
+// setWorldLevel
+// ============================================================
+void GameService::SetWorldLevel(int32_t nLevel)
+{
+	CFG_DATA.onAvgLevelUpdated(nLevel);
+}
+
+void GameService::onSetWorldLevel(
+	GameConn* pConn,
+	Answer::NetPacket* inPacket)
+{
+	if (pConn && inPacket)
+	{
+		int32_t Int32 = inPacket->readInt32();
+		SetWorldLevel(Int32);
+	}
+}
+
+// ============================================================
+// RecalAllPlayerAttr
+// ============================================================
+void GameService::RecalAllPlayerAttr()
+{
+	Answer::MutexGuard lock(m_playerLock);
+	for (CharIdPlayerMap::iterator iter = m_players.begin(); iter != m_players.end(); ++iter)
+	{
+		Player* pPlayer = iter->second;
+		if (pPlayer)
+			pPlayer->RecalcAttr();
+	}
+}
+
+// ============================================================
+// AddPlayerVipClubDropTime
+// ============================================================
+void GameService::AddPlayerVipClubDropTime()
+{
+	Answer::MutexGuard lock(m_playerLock);
+
+	for (CharIdPlayerMap::iterator iter = m_players.begin(); iter != m_players.end(); ++iter)
+	{
+		Player* pPlayer = iter->second;
+		if (pPlayer != NULL)
+		{
+			pPlayer->GetVip().AddClubDropTime();
+		}
+	}
+
+	// SQL to reset drop_time for VIP club members
+	Answer::MySqlDBGuard db(Answer::Singleton<Answer::DBPool>::instance());
+	db.excute("update mem_chr_vip set drop_time = 1 where club > 0 and drop_time <= 0");
 }

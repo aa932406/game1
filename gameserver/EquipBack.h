@@ -34,7 +34,7 @@ public:
 	CEquipBack();
 	virtual ~CEquipBack();
 
-	void Init();
+	void Init(int32_t line = 0);
 
 	// 金币回购
 	int32_t OnGoldBack( Player* pPlayer, Answer::NetPacket* packet );

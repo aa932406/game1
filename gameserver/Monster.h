@@ -62,6 +62,7 @@ public:
 	int32_t getRef() const { return 0; }
 	void setDelFlg() {}
 	void SetReviveTime(int32_t){}
+	void OnLevelUp(const CfgMonster& cfgMonster);
 
 	int32_t getMid() const;
 	int32_t getQuality() const;

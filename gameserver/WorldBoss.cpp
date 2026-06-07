@@ -3,6 +3,8 @@
 #include "MapManager.h"
 #include "Monster.h"
 #include "ActivityManager.h"
+#include "DBService.h"
+#include "Timer.h"
 using namespace Answer;
 
 
@@ -14,11 +16,16 @@ CWorldBoss::CWorldBoss()
 
 CWorldBoss::~CWorldBoss()
 {
-
 }
 
-void CWorldBoss::Init()
+void CWorldBoss::Init(int32_t line)
 {
+	// 跨服模式下跳过初始化
+	if (line == 9)
+		return;
+
+	int32_t nNowTime = TIMER.GetNow();
+
 	const BossInfoMap& BossMap = CFG_DATA.GetBossInfoMap();
 	for ( BossInfoMap::const_iterator it = BossMap.begin(); it != BossMap.end(); ++it )
 	{
@@ -50,11 +57,89 @@ void CWorldBoss::Init()
 			int32_t ReviveTime = GetBossRevieTime( stu.nBossId );
 			if ( ReviveTime <= 0 )
 			{
-				ReviveTime = pMonster->revive_time / 1000;
+				ReviveTime = CFG_DATA.GetMonsterReviveTime( pMonster->revive_time, pMonster->boss_sign ) / 1000;
 			}
-			stu.nReviveTime = Answer::DayTime::now() + ReviveTime;
+			stu.nReviveTime = nNowTime + ReviveTime;
 		}
 		m_mBossMap[it->first] = stu;
+	}
+
+	InitDBInfo();
+	InitDropRecord();
+}
+
+void CWorldBoss::InitDBInfo()
+{
+	MySqlDBGuard db(DBPOOL);
+	MySqlQuery result = db.query( "SELECT * FROM `mem_world_boss_info`" );
+	while ( !result.eof() )
+	{
+		int32_t nBossId = result.getIntValue( "id", 0 );
+		BoosMap::iterator iter = m_mBossMap.find( nBossId );
+		if ( iter != m_mBossMap.end() )
+		{
+			iter->second.nLevel = result.getIntValue( "level", 0 );
+			iter->second.nExp = result.getIntValue( "exp", 0 );
+			iter->second.vKiller[0].nCharId = result.getInt64Value( "killer1", 0 );
+			iter->second.vKiller[0].strName = result.getStringValue( "killer_name1", "" );
+			iter->second.vKiller[0].nTime = result.getIntValue( "kill_time1", 0 );
+			iter->second.vKiller[1].nCharId = result.getInt64Value( "killer2", 0 );
+			iter->second.vKiller[1].strName = result.getStringValue( "killer_name2", "" );
+			iter->second.vKiller[1].nTime = result.getIntValue( "kill_time2", 0 );
+			iter->second.vKiller[2].nCharId = result.getInt64Value( "killer3", 0 );
+			iter->second.vKiller[2].strName = result.getStringValue( "killer_name3", "" );
+			iter->second.vKiller[2].nTime = result.getIntValue( "kill_time3", 0 );
+			iter->second.vKiller[3].nCharId = result.getInt64Value( "killer4", 0 );
+			iter->second.vKiller[3].strName = result.getStringValue( "killer_name4", "" );
+			iter->second.vKiller[3].nTime = result.getIntValue( "kill_time4", 0 );
+			iter->second.vKiller[4].nCharId = result.getInt64Value( "killer5", 0 );
+			iter->second.vKiller[4].strName = result.getStringValue( "killer_name5", "" );
+			iter->second.vKiller[4].nTime = result.getIntValue( "kill_time5", 0 );
+		}
+		result.nextRow();
+	}
+}
+
+void CWorldBoss::InitDropRecord()
+{
+	MySqlDBGuard db(DBPOOL);
+
+	// 加载特殊掉落记录（最多5条）
+	int32_t nSize = 0;
+	MySqlQuery result = db.query(
+		"SELECT * FROM `mem_drop_record` WHERE `special`=1 ORDER BY `time` DESC LIMIT 5" );
+	while ( !result.eof() && nSize < 5 )
+	{
+		DropRecord record;
+		record.strName	= result.getStringValue( "name", "" );
+		record.nCharId	= result.getInt64Value( "cid", 0 );
+		record.nMapId	= result.getIntValue( "mapid", 0 );
+		record.nMid		= result.getIntValue( "mid", 0 );
+		record.nRecord	= result.getIntValue( "record", 0 );
+		record.nTime	= result.getIntValue( "time", 0 );
+		record.nSpecial = result.getIntValue( "special", 0 );
+		m_dropRecordsSpecial.push_back( record );
+		++nSize;
+		result.nextRow();
+	}
+
+	// 加载普通掉落记录（最多30条）
+	nSize = 0;
+	result = db.query(
+		"SELECT * FROM `mem_drop_record` WHERE `special`=0 ORDER BY `time` DESC LIMIT 30" );
+	while ( !result.eof() && nSize < 30 )
+	{
+		DropRecord record;
+		record.strName	= result.getStringValue( "name", "" );
+		record.nCharId	= result.getInt64Value( "cid", 0 );
+		record.nMapId	= result.getIntValue( "mapid", 0 );
+		record.nMid		= result.getIntValue( "mid", 0 );
+		record.nRecord	= result.getIntValue( "record", 0 );
+		record.nTime	= result.getIntValue( "time", 0 );
+		record.nSpecial = result.getIntValue( "special", 0 );
+		m_dropRecords.push_back( record );
+		++nSize;
+		result.nextRow();
 	}
 }
 
@@ -106,7 +191,7 @@ void CWorldBoss::PacketBossInfo( Answer::NetPacket *packet, int8_t BossType )
 		return;
 	}
 	int32_t nSize = 0;
-	int32_t NowTime = Answer::DayTime::now();
+	int32_t NowTime = TIMER.GetNow();
 	int32_t OldOffset = packet->getWOffset();
 	packet->writeInt32( nSize );
 	packet->writeInt8( BossType );
@@ -115,7 +200,7 @@ void CWorldBoss::PacketBossInfo( Answer::NetPacket *packet, int8_t BossType )
 		if ( it->second.nBossType == BossType )
 		{
 			BossInfo* pBossInfo = CFG_DATA.GetBossInfo( it->first );
-			if ( NULL == pBossInfo || pBossInfo->m_IsShow <= 0 )
+			if ( NULL == pBossInfo )
 			{
 				continue;
 			}
@@ -286,23 +371,11 @@ void CWorldBoss::SendWorldBossIcon( Player *pPlayer )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
-	if ( NULL == packet )
-	{
-		return;
-	}
 	ShowIcon stu = {};
 	stu.nId			= JI_ZHAN_BOSS;
 	stu.nState		= AS_RUNNING;
 	stu.nLeftTime	= -1;
-	packet->writeInt32( stu.nId );
-	packet->writeInt8( stu.nState );
-	packet->writeInt32( stu.nLeftTime );
-	packet->writeInt8( stu.IconLeft );
-	packet->writeInt32( stu.IconRight );
-	packet->writeInt8( stu.Effects );
-	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	pPlayer->SendIconState( &stu );
 }
 
 void CWorldBoss::AddMonst( Monster* pMonster )
@@ -463,7 +536,7 @@ void CWorldBoss::GongGao( int32_t GongGaoId, Player* pPlayer )
 }
 
 // ============================================================
-// 反编译新增方法
+// 2019新增方法
 // ============================================================
 
 int32_t CWorldBoss::GetBossLevel( int32_t nBossId )
@@ -477,7 +550,63 @@ int32_t CWorldBoss::GetBossLevel( int32_t nBossId )
 	return 0;
 }
 
-void CWorldBoss::OnBossSummon( int32_t nBossId, Monster* pMonster )
+void CWorldBoss::adjustBossAttr( CfgMonster* cfgMonster, int32_t nLevel )
+{
+	if ( NULL == cfgMonster )
+	{
+		return;
+	}
+	CfgMonsterAdjust* pCfgAdjust = CFG_DATA.GetMonsterAdjust( cfgMonster->mid, nLevel, 0 );
+	if ( pCfgAdjust )
+	{
+		cfgMonster->level = pCfgAdjust->level;
+		// vAttr 映射到 CfgMonster 字段（按标准顺序：hp, phy_atk_min, phy_atk_max, mag_atk_min, mag_atk_max, phy_def, mag_def, ...）
+		if ( pCfgAdjust->vAttr[0] ) cfgMonster->hp				= pCfgAdjust->vAttr[0];
+		if ( pCfgAdjust->vAttr[1] ) cfgMonster->phy_atk_min	= pCfgAdjust->vAttr[1];
+		if ( pCfgAdjust->vAttr[2] ) cfgMonster->phy_atk_max	= pCfgAdjust->vAttr[2];
+		if ( pCfgAdjust->vAttr[3] ) cfgMonster->mag_atk_min	= pCfgAdjust->vAttr[3];
+		if ( pCfgAdjust->vAttr[4] ) cfgMonster->mag_atk_max	= pCfgAdjust->vAttr[4];
+		if ( pCfgAdjust->vAttr[5] ) cfgMonster->phy_def		= pCfgAdjust->vAttr[5];
+		if ( pCfgAdjust->vAttr[6] ) cfgMonster->mag_def		= pCfgAdjust->vAttr[6];
+	}
+}
+
+void CWorldBoss::OnAddBoss( Map* pMap, const CfgMonster* cfgMonster, const CfgMapMonster* cfgMapMonster )
+{
+	if ( NULL == pMap )
+	{
+		return;
+	}
+
+	int32_t nBossId = cfgMapMonster->id;
+	int32_t nLevel = GetBossLevel( nBossId );
+	if ( nLevel <= 0 || GAME_SERVICE.getLine() == 1 )
+	{
+		CfgMonster tCfgMonster = *cfgMonster;
+		int8_t nState = 0;
+		Monster* pMonster = POOL_MANAGER.pop<Monster>();
+		if ( pMonster )
+		{
+			if ( nLevel > 0 )
+			{
+				adjustBossAttr( &tCfgMonster, nLevel );
+			}
+			if ( tCfgMonster.boss_sign != BOSS_TYPE_SPIDER_QUEEN )
+			{
+				pMonster->init( tCfgMonster, *cfgMapMonster );
+			}
+			pMap->addMonster( pMonster, cfgMapMonster->x, cfgMapMonster->y );
+			Answer::MutexGuard lock( m_Lock );
+			BoosMap::iterator iter = m_mBossMap.find( nBossId );
+			if ( iter != m_mBossMap.end() )
+			{
+				iter->second.nState = nState;
+			}
+		}
+	}
+}
+
+void CWorldBoss::OnBossSummon( int32_t nBossId, Map* pMap, Monster* pMonster )
 {
 	if ( NULL == pMonster )
 	{
@@ -501,18 +630,21 @@ void CWorldBoss::OnBossSummon( int32_t nBossId, Monster* pMonster )
 	if ( bFind )
 	{
 		broadcastBossRevive( info.nMid, info.nBossId, info.nMapId );
+		saveBossInfo( info );
 	}
 }
 
-void CWorldBoss::OnBossKilled( int32_t nBossId, int32_t nNowTime, Monster* pMonster, Player* pKiller )
+void CWorldBoss::OnBossKilled( int32_t nBossId, int32_t nNowTime, Map* pMap, Monster* pMonster, Player* pKiller )
 {
-	if ( NULL == pMonster )
+	if ( NULL == pMap || NULL == pMonster )
 	{
 		return;
 	}
 
 	WorldBossInfo info;
+	KillerInfo killer;
 	bool bFind = false;
+	bool bLevelUp = false;
 
 	{
 		Answer::MutexGuard lock( m_Lock );
@@ -522,11 +654,26 @@ void CWorldBoss::OnBossKilled( int32_t nBossId, int32_t nNowTime, Monster* pMons
 			if ( pKiller )
 			{
 				iter->second.nState = 1;
-				KillerInfo killer;
 				killer.nCharId = pKiller->getCid();
 				killer.strName = pKiller->getName();
 				killer.nTime = nNowTime;
 				iter->second.AddKiller( killer );
+
+				// 检查是否升级
+				int32_t nLevel = iter->second.nLevel;
+				int32_t nMid = iter->second.nMid;
+				CfgMonsterAdjust* pCfgAdjust = CFG_DATA.GetMonsterAdjust( nMid, nLevel, 0 );
+				CfgMonsterAdjust* pNext = CFG_DATA.GetMonsterAdjust( nMid, nLevel + 1, 0 );
+				if ( pCfgAdjust && pNext )
+				{
+					++iter->second.nExp;
+					if ( iter->second.nExp >= pCfgAdjust->exp )
+					{
+						bLevelUp = true;
+						++iter->second.nLevel;
+						iter->second.nExp -= pCfgAdjust->exp;
+					}
+				}
 			}
 			else
 			{
@@ -540,7 +687,7 @@ void CWorldBoss::OnBossKilled( int32_t nBossId, int32_t nNowTime, Monster* pMons
 				CfgMonster* pMonsterCfg = CFG_DATA.getMonster( iter->second.nMid );
 				if ( pMonsterCfg )
 				{
-					nReviveTime = pMonsterCfg->revive_time / 1000;
+					nReviveTime = CFG_DATA.GetMonsterReviveTime( pMonsterCfg->revive_time, pMonsterCfg->boss_sign ) / 1000;
 				}
 			}
 			iter->second.nReviveTime = nNowTime + nReviveTime;
@@ -551,19 +698,37 @@ void CWorldBoss::OnBossKilled( int32_t nBossId, int32_t nNowTime, Monster* pMons
 
 	if ( bFind )
 	{
-		// 广播BOSS击杀
-		if ( info.nBossType == BOSS_TYPE_WORLD_BOSS && pKiller )
+		if ( bLevelUp )
+		{
+			CfgMonster* pCfgMonster = CFG_DATA.getMonster( info.nMid );
+			if ( pCfgMonster )
+			{
+				CfgMonster tCfgMonster = *pCfgMonster;
+				adjustBossAttr( &tCfgMonster, info.nLevel );
+				pMonster->OnLevelUp( tCfgMonster );
+			}
+		}
+
+		pMonster->SetReviveTime( info.nReviveTime );
+
+		if ( info.nBossType == BOSS_TYPE_SPIDER_QUEEN && pKiller )
 		{
 			broadcastBossKilled( info.nMid, pKiller->getName(), pKiller->getCid() );
 		}
-		if ( info.nBossType == 1 )
+		if ( info.nBossType == BOSS_TYPE_WORLD_BOSS )
 		{
-			// BOSS_TYPE 1 也需要广播
 			if ( pKiller )
 			{
 				broadcastBossKilled( info.nMid, pKiller->getName(), pKiller->getCid() );
 			}
 		}
+		else if ( info.nBossType == 12 ) // BOSS_TYPE_RUINS
+		{
+			int32_t nNow = TIMER.GetNow();
+			UpdateRuinsBossInfo( pMap, info, nNow );
+		}
+
+		saveBossInfo( info );
 	}
 }
 
@@ -599,8 +764,7 @@ void CWorldBoss::broadcastBossRevive( int32_t nMid, int32_t nBossId, int32_t nMa
 
 int32_t CWorldBoss::GetBossRevie( int32_t nBossId )
 {
-	int32_t nReviveTime = 0;
-	int32_t nNowTime = Answer::DayTime::now();
+	int32_t NowTime = TIMER.GetNow();
 
 	Answer::MutexGuard lock( m_Lock );
 	BoosMap::iterator it = m_mBossMap.find( nBossId );
@@ -610,13 +774,171 @@ int32_t CWorldBoss::GetBossRevie( int32_t nBossId )
 		{
 			return 0;	// BOSS 存活中
 		}
-		nReviveTime = it->second.nReviveTime - nNowTime;
+		int32_t nReviveTime = it->second.nReviveTime - NowTime;
 		if ( nReviveTime < 0 )
 		{
 			nReviveTime = 0;
 		}
+		return nReviveTime;
 	}
-	return nReviveTime;
+	return 0;
+}
+
+void CWorldBoss::UpdateWorldBossInfo( const WorldBossInfo& info )
+{
+	Answer::MutexGuard lock( m_Lock );
+	BoosMap::iterator iter = m_mBossMap.find( info.nBossId );
+	if ( iter != m_mBossMap.end() )
+	{
+		iter->second = info;
+	}
+}
+
+void CWorldBoss::saveBossInfo( const WorldBossInfo& info )
+{
+	DB_SERVICE.SaveWorldBossInfo( info );
+}
+
+void CWorldBoss::AddDropRecord( const std::string& name, CharId_t cid, MapId_t mapid, int32_t mid, int32_t record, int32_t time )
+{
+	const CfgDropRecord* pCfgRecord = CFG_DATA.GetDropRecord( record );
+	if ( NULL == pCfgRecord )
+	{
+		return;
+	}
+
+	DropRecord dropRecord( name, cid, mapid, mid, record, time, pCfgRecord->nSpecial );
+	if ( pCfgRecord->nSpecial )
+	{
+		Answer::MutexGuard lock( m_RecordLock );
+		m_dropRecordsSpecial.push_front( dropRecord );
+		if ( m_dropRecordsSpecial.size() > 5 )
+		{
+			m_dropRecordsSpecial.pop_back();
+		}
+	}
+	else
+	{
+		Answer::MutexGuard lock( m_RecordLock );
+		m_dropRecords.push_front( dropRecord );
+		if ( m_dropRecords.size() + m_dropRecordsSpecial.size() > 30 )
+		{
+			m_dropRecords.pop_back();
+		}
+	}
+
+	DB_SERVICE.SaveDropRecord( dropRecord );
+}
+
+void CWorldBoss::SendDropRecord( int8_t connid, int16_t nGateIndex )
+{
+	NetPacket *packet = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, SM_SEND_DROP_RECORD );
+	if ( NULL == packet )
+	{
+		return;
+	}
+
+	Answer::MutexGuard lock( m_RecordLock );
+	int16_t nTotal = static_cast<int16_t>( m_dropRecords.size() + m_dropRecordsSpecial.size() );
+	packet->writeInt16( nTotal );
+
+	// 先写特殊记录
+	for ( std::list<DropRecord>::const_iterator iter = m_dropRecordsSpecial.begin();
+		  iter != m_dropRecordsSpecial.end(); ++iter )
+	{
+		packet->writeInt32( iter->nRecord );
+		packet->writeUTF8( iter->strName );
+		packet->writeInt64( iter->nCharId );
+		packet->writeInt32( iter->nMapId );
+		packet->writeInt32( iter->nMid );
+		packet->writeInt32( iter->nTime );
+	}
+
+	// 再写普通记录
+	for ( std::list<DropRecord>::const_iterator iter = m_dropRecords.begin();
+		  iter != m_dropRecords.end(); ++iter )
+	{
+		packet->writeInt32( iter->nRecord );
+		packet->writeUTF8( iter->strName );
+		packet->writeInt64( iter->nCharId );
+		packet->writeInt32( iter->nMapId );
+		packet->writeInt32( iter->nMid );
+		packet->writeInt32( iter->nTime );
+	}
+
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacketTo( connid, nGateIndex, packet );
+}
+
+void CWorldBoss::SendRuinsBossInfo( Player* player, int32_t nBossType, int32_t nMapId )
+{
+	if ( NULL == player )
+	{
+		return;
+	}
+
+	int8_t connid = (int8_t)player->getConnId();
+	NetPacket *packet = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, SM_SEND_RUINS_BOSS_INFO );
+	if ( NULL == packet )
+	{
+		return;
+	}
+
+	int8_t nSize = 0;
+	int32_t NowTime = TIMER.GetNow();
+	int32_t OldOffset = packet->getWOffset();
+	packet->writeInt8( 0 );	// 占位，后面回填nSize
+	for ( BoosMap::iterator it = m_mBossMap.begin(); it != m_mBossMap.end(); ++it )
+	{
+		if ( it->second.nBossType == nBossType && it->second.nMapId == nMapId )
+		{
+			packet->writeInt32( it->second.nBossId );
+			packet->writeInt32( it->second.nMid );
+			packet->writeInt32( it->second.nMapId );
+			if ( it->second.nState )
+			{
+				packet->writeInt32( it->second.nReviveTime - NowTime );
+			}
+			else
+			{
+				packet->writeInt32( 0 );
+			}
+			++nSize;
+		}
+	}
+	int32_t NewOffset = packet->getWOffset();
+	packet->setWOffset( OldOffset );
+	packet->writeInt8( nSize );
+	packet->setWOffset( NewOffset );
+	packet->setSize( NewOffset );
+	GAME_SERVICE.sendPacketTo( connid, player->getGateIndex(), packet );
+}
+
+void CWorldBoss::UpdateRuinsBossInfo( Map* pMap, const WorldBossInfo& info, int32_t nNowTime )
+{
+	if ( NULL == pMap )
+	{
+		return;
+	}
+
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_RUINS_BOSS_CHANGE );
+	if ( NULL == packet )
+	{
+		return;
+	}
+	packet->writeInt32( info.nBossId );
+	packet->writeInt32( info.nMid );
+	packet->writeInt32( info.nMapId );
+	if ( info.nState )
+	{
+		packet->writeInt32( info.nReviveTime - nNowTime );
+	}
+	else
+	{
+		packet->writeInt32( 0 );
+	}
+	packet->setSize( packet->getWOffset() );
+	pMap->broadcast( packet );
 }
 
 // ============================================================

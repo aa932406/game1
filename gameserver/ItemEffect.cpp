@@ -480,7 +480,7 @@ bool CAutoPetGift::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 MoneyGain::MoneyGain()
-	: m_id(0), m_base(0), m_param(0), m_lower(0), m_upper(0)
+	: m_CurrecyType(0), m_CurrecyCount(0), m_id(0)
 {
 
 }
@@ -492,33 +492,29 @@ MoneyGain::~MoneyGain()
 
 int32_t MoneyGain::effect(Player &launcher, Unit &target,int32_t count)
 {
-	int32_t addon = static_cast<int32_t>((m_base + launcher.getLevel()*m_param + RANDOM.generate(m_lower, m_upper)) * launcher.benefitRatio());
+	int64_t addon = m_CurrecyCount;
 	if (count > 0)
-	{
 		addon *= count;
-	}
 
-	launcher.AddCurrency( CURRENCY_MONEY, addon, MCR_MONEY_GAIN_ITEM, m_id );
+	if (!launcher.AddCurrency((CURRENCY_TYPE)m_CurrecyType, addon, CURRENCY_CHANGE_REASON::MCR_MONEY_GAIN_ITEM, m_id))
+		return 2;
 
-	return ERR_OK;
+	return 0;
 }
 
 bool MoneyGain::parseEffect(int32_t id, const std::string &strEffect)
 {
-	m_id = id;
-
 	StringVector params = StringUtility::split(strEffect, ":");
-	if (params.size() == 4)
+	if (params.size() == 2)
 	{
-		m_base = atoi(params[0].c_str());
-		m_param = atoi(params[1].c_str());
-		m_lower = atoi(params[2].c_str());
-		m_upper = atoi(params[3].c_str());
-
-		return m_id > 0 && m_base >= 0 && m_param >= 0 && m_lower >= 0 && m_upper >= 0 && m_upper >= m_lower;
+		m_CurrecyType = atoi(params[0].c_str());
+		m_CurrecyCount = atoi(params[1].c_str());
+		m_id = id;
+		return m_CurrecyCount > 0;
 	}
 
 	return false;
+}
 }
 
 
@@ -1186,3 +1182,1189 @@ int32_t ItemEffectManager::effect(int32_t itemid, Player &launcher, Unit &target
 //	return it->second->effect(pVicegeneral, target);
 //}
 
+
+AddStarVipTime::AddStarVipTime()
+	: Value(0)
+{
+
+}
+
+AddStarVipTime::~AddStarVipTime()
+{
+
+}
+
+int32_t AddStarVipTime::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CVip* pVip = launcher.GetPlayerVip();
+	if (!pVip->HaveVipPrivilege())
+		return 10002;
+	pVip->AddVipTime(2, Value);
+	pVip->SendVipInfo();
+	return 0;
+}
+
+bool AddStarVipTime::parseEffect(int32_t id, const std::string &strEffect)
+{
+	Value = atoi(strEffect.c_str());
+	return Value > 0;
+}
+
+BackCityPaper::BackCityPaper()
+	: m_MapId(0), m_X(0), m_Y(0)
+{
+
+}
+
+BackCityPaper::~BackCityPaper()
+{
+
+}
+
+int32_t BackCityPaper::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// TODO: implement BackCityPaper::effect - teleport player
+	return 0;
+}
+
+bool BackCityPaper::parseEffect(int32_t id, const std::string &strEffect)
+{
+	StringVector params;
+	Answer::StringUtility::split(params, strEffect, ":");
+	if (params.size() >= 3)
+	{
+		m_MapId = atoi(params[0].c_str());
+		m_X = atoi(params[1].c_str());
+		m_Y = atoi(params[2].c_str());
+		return true;
+	}
+	return false;
+}
+
+BlessWater1::BlessWater1()
+{
+
+}
+
+BlessWater1::~BlessWater1()
+{
+
+}
+
+int32_t BlessWater1::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// BlessWater1: bless weapon (+1 bless level)
+	CExtEquip* pEquip = launcher.GetEquip();
+	const MemChrBag& slot = pEquip->GetEquipSlot(0);
+	if (slot.itemId <= 0)
+		return 10002;
+	int32_t nBless = pEquip->GetWeaponBless();
+	CfgData* pCfg = CFG_DATA;
+	const CfgEquipBlessTable* pTable = pCfg->GetEquipBlessTable();
+	if (!pTable->GetInfo(nBless + 1))
+		return 10002;
+	const CfgEquipBless* pCfgBless = pTable->GetInfo(nBless);
+	if (!pCfgBless)
+		return 10002;
+	int8_t nEffect = pCfgBless->RandomEffect();
+	if (nEffect == 1)
+	{
+		++nBless;
+		pEquip->SetWeaponBless(nBless);
+		pCfgBless = pTable->GetInfo(nBless);
+		if (pCfgBless && pCfgBless->nBroad > 0)
+		{
+			// broadcast bless upgrade
+		}
+		return 0;
+	}
+	return 10002;
+}
+
+bool BlessWater1::parseEffect(int32_t id, const std::string &strEffect)
+{
+	return true;
+}
+
+BlessWater2::BlessWater2()
+{
+
+}
+
+BlessWater2::~BlessWater2()
+{
+
+}
+
+int32_t BlessWater2::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// BlessWater2: bless armor
+	CExtEquip* pEquip = launcher.GetEquip();
+	const MemChrBag& slot = pEquip->GetEquipSlot(1);
+	if (slot.itemId <= 0)
+		return 10002;
+	int32_t nBless = pEquip->GetArmorBless();
+	CfgData* pCfg = CFG_DATA;
+	const CfgEquipBlessTable* pTable = pCfg->GetEquipBlessTable();
+	if (!pTable->GetInfo(nBless + 1))
+		return 10002;
+	const CfgEquipBless* pCfgBless = pTable->GetInfo(nBless);
+	if (!pCfgBless)
+		return 10002;
+	int8_t nEffect = pCfgBless->RandomEffect();
+	if (nEffect == 1)
+	{
+		++nBless;
+		pEquip->SetArmorBless(nBless);
+		return 0;
+	}
+	return 10002;
+}
+
+bool BlessWater2::parseEffect(int32_t id, const std::string &strEffect)
+{
+	return true;
+}
+
+ChongZhiGift::ChongZhiGift()
+	: nId(0), Value(0)
+{
+
+}
+
+ChongZhiGift::~ChongZhiGift()
+{
+
+}
+
+int32_t ChongZhiGift::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (count != 1)
+		return 2;
+
+	CfgData* pCfg = CFG_DATA;
+	CfgItemGiftVector* pGift = pCfg->getItemGift(nId);
+	if (!pGift)
+		return 2;
+
+	MemChrBagVector items;
+	for (auto it = pGift->begin(); it != pGift->end(); ++it)
+	{
+		MemChrBag item;
+		memset(&item, 0, sizeof(item));
+		item.itemId = it->item;
+		item.itemClass = it->type;
+		item.itemCount = it->count;
+		item.bind = it->bind;
+		if (it->time > 0)
+		{
+			const CfgLimitTimeTable* pLimitTime = pCfg->GetLimitTimeTable();
+			item.endTime = pLimitTime->GetLimitTime(it->time);
+		}
+		if (it->job != 0 && it->job != launcher.getJob())
+			continue;
+		items.push_back(item);
+	}
+
+	if (items.empty())
+		return 10002;
+
+	CExtCharBag* pBag = launcher.GetBag();
+	if (pBag->GetFreeSlotCount() < (int32_t)items.size())
+	{
+		launcher.TiShiInfo(2048, 0);
+		return 10016;
+	}
+
+	if (launcher.GetTodayPayGold() < Value)
+	{
+		launcher.TiShiInfo(24, 0);
+		return 10016;
+	}
+
+	pBag = launcher.GetBag();
+	if (!pBag->AddItem(items, ICR_LIBAO))
+		return 10016;
+
+	return 0;
+}
+
+bool ChongZhiGift::parseEffect(int32_t id, const std::string &strEffect)
+{
+	nId = id;
+	Value = atoi(strEffect.c_str());
+	return Value > 0;
+}
+
+EquipBox::EquipBox()
+	: m_nItemId(0)
+{
+
+}
+
+EquipBox::~EquipBox()
+{
+
+}
+
+int32_t EquipBox::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (count <= 0)
+		return 10002;
+
+	CExtCharBag* pBag = launcher.GetBag();
+	if (pBag->GetFreeSlotCount() <= 0)
+		return 10002;
+
+	CfgData* pCfg = CFG_DATA;
+	const CfgEquipBoxTable* pEquipBoxTable = pCfg->GetEquipBoxTable();
+	const CfgEquipBox* pCfgEquipBox = pEquipBoxTable->RandEquip(m_nItemId);
+	if (!pCfgEquipBox)
+		return 10002;
+
+	int32_t nEquipId = pCfgEquipBox->vEquipId[launcher.getJob()];
+	if (nEquipId <= 0)
+		return 10002;
+
+	int32_t nStar = 0;
+	int32_t nRand = RANDOM.generate(1, 10000);
+	for (auto it = pCfgEquipBox->lstStar.begin(); it != pCfgEquipBox->lstStar.end(); ++it)
+	{
+		if (it->nParam2 >= nRand)
+		{
+			nStar = it->nParam1;
+			break;
+		}
+		nRand -= it->nParam2;
+	}
+
+	MemEquip equip;
+	EQUIP_MGR->CreateMemEquip(equip, launcher.getConnId(), 221, nEquipId,
+		launcher.getSid(), launcher.getCid(), launcher.getName(), 0, 0, nStar, 0, 0);
+
+	if (equip.id > 0)
+	{
+		MemChrBag addItem;
+		memset(&addItem, 0, sizeof(addItem));
+		addItem.itemClass = 2;
+		addItem.itemCount = 1;
+		addItem.endTime = 0;
+		addItem.srcId = 0;
+		addItem.itemId = nEquipId;
+		addItem.bind = pCfgEquipBox->nBind;
+		addItem.srcId = equip.id;
+
+		CExtCharBag* pBag2 = launcher.GetBag();
+		if (!pBag2->AddItem(addItem, ICR_OPEN_EQUIP_BOX))
+			return 10002;
+
+		EQUIP_MGR->SendPlayerEquipInfo(&launcher, &equip);
+		return 0;
+	}
+
+	return 10002;
+}
+
+bool EquipBox::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_nItemId = id;
+	CfgData* pCfg = CFG_DATA;
+	const CfgEquipBoxTable* pEquipBoxTable = pCfg->GetEquipBoxTable();
+	return pEquipBoxTable->RandEquip(m_nItemId) != nullptr;
+}
+
+FamilyMemberCard::FamilyMemberCard()
+	: m_Days(0)
+{
+
+}
+
+FamilyMemberCard::~FamilyMemberCard()
+{
+
+}
+
+int32_t FamilyMemberCard::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CExtCharFamily* pFamily = launcher.GetCharFamily();
+	if (pFamily)
+		return pFamily->AddFamilyMemberCard(m_Days);
+	return 10002;
+}
+
+bool FamilyMemberCard::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Days = atoi(strEffect.c_str());
+	return m_Days > 0;
+}
+
+GoblinItem::GoblinItem()
+	: m_GoblinId(0)
+{
+
+}
+
+GoblinItem::~GoblinItem()
+{
+
+}
+
+int32_t GoblinItem::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CGoblin* pGoblin = launcher.GetGoblin();
+	if (pGoblin)
+		return pGoblin->OnUseGoblinItem(m_GoblinId);
+	return 10002;
+}
+
+bool GoblinItem::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_GoblinId = atoi(strEffect.c_str());
+	return m_GoblinId > 0;
+}
+
+GoldEgg::GoldEgg()
+	: m_pCfgItem(nullptr)
+{
+
+}
+
+GoldEgg::~GoldEgg()
+{
+
+}
+
+int32_t GoldEgg::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (!m_pCfgItem || count != 1)
+		return 10002;
+
+	int32_t bagslot = launcher.getFirstFreeSlot();
+	if (bagslot < 0)
+	{
+		return GAME_SERVICE->replyfailure(launcher.getConnId(), launcher.getGateIndex(), 0x59, 10054, 0);
+	}
+
+	int32_t v8 = m_pCfgItem->nGroupId + 6000;
+	CExtOperateLimit* pLimit = launcher.GetOperateLimit();
+	if (pLimit->GetLimitCount(v8) >= m_pCfgItem->nOpenTimes)
+	{
+		if (!launcher.DecCurrency(CURRENCY_GOLD, m_pCfgItem->nCostGold, CURRENCY_CHANGE_REASON::MCR_GOLD_EGG))
+		{
+			return GAME_SERVICE->replyfailure(launcher.getConnId(), launcher.getGateIndex(), 0x59, 10003, 0);
+		}
+	}
+	else
+	{
+		pLimit->AddLimitCount(2019, v8, 1);
+	}
+
+	int32_t nNowTime = CTimer::GetNowTime();
+	int32_t nStartDate = m_pCfgItem->nStartDate;
+	int32_t nEndDate = m_pCfgItem->nEndDate;
+	if (nStartDate > 0 && nNowTime < nStartDate)
+		return 10002;
+	if (nEndDate > 0 && nNowTime > nEndDate)
+		return 10002;
+
+	CfgGoldEggItemList tlst;
+	int32_t nSumProbability = 0;
+	bool bNormal = false;
+	for (auto it = m_pCfgItem->lstItem.begin(); it != m_pCfgItem->lstItem.end(); ++it)
+	{
+		if (it->nJob != 0 && it->nJob != launcher.getJob())
+			continue;
+		if (it->nMinLevel > 0 && launcher.getLevel() < it->nMinLevel)
+			continue;
+		if (it->nMaxLevel > 0 && launcher.getLevel() > it->nMaxLevel)
+			continue;
+		nSumProbability += it->nProbability;
+		tlst.push_back(*it);
+	}
+
+	if (tlst.empty() || nSumProbability <= 0)
+		return 10002;
+
+	int32_t nRand = RANDOM.generate(1, nSumProbability);
+	MemChrBag item;
+	memset(&item, 0, sizeof(item));
+	int32_t nBroadcast = 0;
+	for (auto it = tlst.begin(); it != tlst.end(); ++it)
+	{
+		if (it->nProbability >= nRand)
+		{
+			item.itemId = it->nItemId;
+			item.itemClass = it->nItemClass;
+			item.itemCount = it->nItemCount;
+			item.bind = it->nBind;
+			if (it->nLimitTime > 0)
+			{
+				const CfgLimitTimeTable* pLimitTime = CFG_DATA->GetLimitTimeTable();
+				item.endTime = pLimitTime->GetLimitTime(it->nLimitTime);
+			}
+			nBroadcast = it->nBroadcast;
+			break;
+		}
+		nRand -= it->nProbability;
+	}
+
+	if (nBroadcast > 0)
+	{
+		NetPacket* packet = GAME_SERVICE->popNetpacket(launcher.getConnId(), PACK_DISPATCH, 0x2CD6);
+		if (packet)
+		{
+			packet->writeInt32(nBroadcast);
+			packet->writeUTF8(launcher.getName());
+			packet->writeInt64(launcher.getCid());
+			packet->writeInt8(item.itemClass);
+			packet->writeInt32(item.itemId);
+			packet->setSize(packet->getWOffset());
+			GAME_SERVICE->worldBroadcast(launcher.getConnId(), packet);
+		}
+	}
+
+	CExtCharBag* pBag = launcher.GetBag();
+	pBag->AddItem(item, ICR_GOLD_EGG_OPEN);
+	return 0;
+}
+
+bool GoldEgg::parseEffect(int32_t id, const std::string &strEffect)
+{
+	CfgData* pCfg = CFG_DATA;
+	const CfgGoldEggTable* pGoldEggTable = pCfg->GetGoldEggTable();
+	m_pCfgItem = pGoldEggTable->GetGoldEgg(id);
+	return m_pCfgItem != nullptr;
+}
+
+GongMingZhi::GongMingZhi()
+	: m_Count(0)
+{
+
+}
+
+GongMingZhi::~GongMingZhi()
+{
+
+}
+
+int32_t GongMingZhi::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CGongMing* pGongMing = launcher.GetGongMing();
+	if (pGongMing)
+		return pGongMing->AddGongMingZhi(m_Count);
+	return 10002;
+}
+
+bool GongMingZhi::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Count = atoi(strEffect.c_str());
+	return m_Count > 0;
+}
+
+ItemAddBuff::ItemAddBuff()
+	: m_itemid(0)
+{
+
+}
+
+ItemAddBuff::~ItemAddBuff()
+{
+
+}
+
+int32_t ItemAddBuff::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (m_cfgBuff)
+		launcher.AddBuff(*m_cfgBuff, 0);
+	return 0;
+}
+
+bool ItemAddBuff::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_itemid = id;
+	m_cfgBuff = CFG_DATA->GetCfgBuff(atoi(strEffect.c_str()));
+	return m_cfgBuff != NULL;
+}
+
+ItemCombiPoint::ItemCombiPoint()
+	: m_Points(0)
+{
+
+}
+
+ItemCombiPoint::~ItemCombiPoint()
+{
+
+}
+
+int32_t ItemCombiPoint::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CMagicBox* pBox = launcher.GetMagicBox();
+	if (pBox)
+		return pBox->AddCombiPoints(m_Points);
+	return 10002;
+}
+
+bool ItemCombiPoint::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Points = atoi(strEffect.c_str());
+	return m_Points > 0;
+}
+
+ItemCombiScroll::ItemCombiScroll()
+	: m_ScrollId(0)
+{
+
+}
+
+ItemCombiScroll::~ItemCombiScroll()
+{
+
+}
+
+int32_t ItemCombiScroll::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CMagicBox* pBox = launcher.GetMagicBox();
+	if (pBox)
+		return pBox->UseCombiScroll(m_ScrollId);
+	return 10002;
+}
+
+bool ItemCombiScroll::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_ScrollId = atoi(strEffect.c_str());
+	return m_ScrollId > 0;
+}
+
+OreItem::OreItem()
+	: m_nId(0), m_Exp(0)
+{
+
+}
+
+OreItem::~OreItem()
+{
+
+}
+
+int32_t OreItem::effect(Player &launcher, Unit &target,int32_t count)
+{
+	int32_t val = count * m_Exp;
+	CExtCharFamily* pFamily = launcher.GetCharFamily();
+	if (!pFamily->AddMedRes(val))
+		return 2;
+	return 0;
+}
+
+bool OreItem::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_nId = id;
+	m_Exp = atoi(strEffect.c_str());
+	return m_Exp > 0;
+}
+
+PetAtkSpd::PetAtkSpd()
+	: Value(0)
+{
+
+}
+
+PetAtkSpd::~PetAtkSpd()
+{
+
+}
+
+int32_t PetAtkSpd::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (launcher.getRecord(1154) > 0)
+		return 2;
+	launcher.updateRecord(1154, Value);
+	launcher.RecalcAttr();
+	return 0;
+}
+
+bool PetAtkSpd::parseEffect(int32_t id, const std::string &strEffect)
+{
+	Value = atoi(strEffect.c_str());
+	return Value > 0;
+}
+
+PetShiHua::PetShiHua()
+	: Value(0)
+{
+
+}
+
+PetShiHua::~PetShiHua()
+{
+
+}
+
+int32_t PetShiHua::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (launcher.getRecord(1153) > 0)
+		return 2;
+	launcher.updateRecord(1153, Value);
+	launcher.RecalcAttr();
+	launcher.SetNeedSyncAround();
+	launcher.SetNeedSync();
+	return 0;
+}
+
+bool PetShiHua::parseEffect(int32_t id, const std::string &strEffect)
+{
+	Value = atoi(strEffect.c_str());
+	return Value > 0;
+}
+
+RandomBuff::RandomBuff()
+	: m_nSumRate(0)
+{
+
+}
+
+RandomBuff::~RandomBuff()
+{
+
+}
+
+int32_t RandomBuff::effect(Player &launcher, Unit &target,int32_t count)
+{
+	Map* pMap = launcher.getMap();
+	if (pMap)
+	{
+		CActivityMap* pActMap = dynamic_cast<CActivityMap*>(pMap);
+		if (pActMap)
+		{
+			CActivity* pAct = pActMap->GetActivity();
+			CPeerlessWar* pPW = pAct ? dynamic_cast<CPeerlessWar*>(pAct) : NULL;
+			if (pPW && pPW->IsRuning())
+			{
+				int32_t nRand = Answer::Singleton<Answer::Random>::instance()->generate(0, m_nSumRate);
+				for (auto it = m_buffs.begin(); it != m_buffs.end(); ++it)
+				{
+					if (it->nRate >= nRand && it->m_cfgBuff)
+					{
+						launcher.AddBuff(*it->m_cfgBuff, 0);
+						break;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+bool RandomBuff::parseEffect(int32_t id, const std::string &strEffect)
+{
+	// parse "rate1:buffid1,rate2:buffid2"
+	m_nSumRate = 0;
+	StringVector entries;
+	Answer::StringUtility::split(entries, strEffect, ",");
+	for (auto& e : entries)
+	{
+		StringVector kv;
+		Answer::StringUtility::split(kv, e, ":");
+		if (kv.size() >= 2)
+		{
+			randBuff rb;
+			rb.nRate = atoi(kv[0].c_str());
+			rb.m_cfgBuff = CFG_DATA->GetCfgBuff(atoi(kv[1].c_str()));
+			m_nSumRate += rb.nRate;
+			m_buffs.push_back(rb);
+		}
+	}
+	return m_nSumRate > 0;
+}
+
+RandomPosPaper::RandomPosPaper()
+	: m_MapId(0)
+{
+
+}
+
+RandomPosPaper::~RandomPosPaper()
+{
+
+}
+
+int32_t RandomPosPaper::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// TODO: implement RandomPosPaper - random teleport
+	return 0;
+}
+
+bool RandomPosPaper::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_MapId = atoi(strEffect.c_str());
+	return m_MapId > 0;
+}
+
+RechargeCard::RechargeCard()
+	: m_addon(0)
+{
+
+}
+
+RechargeCard::~RechargeCard()
+{
+
+}
+
+int32_t RechargeCard::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (count <= 0)
+		return 10002;
+	if (!launcher.UseRechargeCard(count * m_addon, 1))
+		return 10002;
+	return 0;
+}
+
+bool RechargeCard::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_addon = atoi(strEffect.c_str());
+	return m_addon > 0;
+}
+
+RechargeValueCard::RechargeValueCard()
+	: m_Value(0)
+{
+
+}
+
+RechargeValueCard::~RechargeValueCard()
+{
+
+}
+
+int32_t RechargeValueCard::effect(Player &launcher, Unit &target,int32_t count)
+{
+	Currency* pCur = launcher.GetCurrency();
+	if (pCur)
+	{
+		pCur->AddCash(m_Value);
+		return 0;
+	}
+	return 10002;
+}
+
+bool RechargeValueCard::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Value = atoi(strEffect.c_str());
+	return m_Value > 0;
+}
+
+ShouChongItem::ShouChongItem()
+	: m_Index(0)
+{
+
+}
+
+ShouChongItem::~ShouChongItem()
+{
+
+}
+
+int32_t ShouChongItem::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// TODO: implement ShouChongItem - first charge item
+	return 0;
+}
+
+bool ShouChongItem::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Index = atoi(strEffect.c_str());
+	return m_Index > 0;
+}
+
+SkillBook::SkillBook()
+	: m_itemid(0), m_SkillId(0)
+{
+
+}
+
+SkillBook::~SkillBook()
+{
+
+}
+
+int32_t SkillBook::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CExtCharSkill* pSkill = launcher.GetCharSkill();
+	if (pSkill)
+		return pSkill->LearnSkill(m_SkillId);
+	return 10002;
+}
+
+bool SkillBook::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_itemid = id;
+	StringVector strParam = StringUtility::split(strEffect, "|");
+	if (strParam.size() == 1)
+	{
+		m_SkillId = atoi(strParam[0].c_str());
+		return m_SkillId > 0;
+	}
+	return false;
+}
+
+SkillPointBook::SkillPointBook()
+	: m_itemid(0), m_SkillId(0), m_SkillPoints(0)
+{
+
+}
+
+SkillPointBook::~SkillPointBook()
+{
+
+}
+
+int32_t SkillPointBook::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (count <= 0)
+		return 2;
+
+	int32_t nPoints = m_SkillPoints * count;
+	CExtCharSkill* pSkill = launcher.GetCharSkill();
+	if (pSkill->AddSkillBookPoint(m_SkillId, nPoints))
+		return 0;
+	return 10002;
+}
+
+bool SkillPointBook::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_itemid = id;
+	StringVector strParam = StringUtility::split(strEffect, "|");
+	if (strParam.size() == 2)
+	{
+		m_SkillId = atoi(strParam[0].c_str());
+		m_SkillPoints = atoi(strParam[1].c_str());
+		return m_SkillId > 0 && m_SkillPoints > 0;
+	}
+	return false;
+}
+
+SummonBoss::SummonBoss()
+	: m_BossId(0)
+{
+
+}
+
+SummonBoss::~SummonBoss()
+{
+
+}
+
+int32_t SummonBoss::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// TODO: implement SummonBoss - summon world boss
+	return 0;
+}
+
+bool SummonBoss::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_BossId = atoi(strEffect.c_str());
+	return m_BossId > 0;
+}
+
+SuperCurse::SuperCurse()
+	: m_itemid(0)
+{
+
+}
+
+SuperCurse::~SuperCurse()
+{
+
+}
+
+int32_t SuperCurse::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (m_cfgBuff)
+		target.AddBuff(*m_cfgBuff, 0);
+	return 0;
+}
+
+bool SuperCurse::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_itemid = id;
+	m_cfgBuff = CFG_DATA->GetCfgBuff(atoi(strEffect.c_str()));
+	return m_cfgBuff != NULL;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// YanHua
+//////////////////////////////////////////////////////////////////////////
+YanHua::YanHua()
+	: nId(0), YanHuaValue(0), YanHuaType(0)
+{
+}
+
+YanHua::~YanHua()
+{
+}
+
+int32_t YanHua::effect(Player &launcher, Unit &target, int32_t count)
+{
+	// TODO: Full YanHua effect implementation - requires GameService, CfgData, COpenBeta integration
+	// Core logic: get gift random config, roll for items, add to bag, broadcast yanHua
+	return 0;
+}
+
+bool YanHua::parseEffect(int32_t id, const std::string &strEffect)
+{
+	StringVector params;
+	std::string delims(":");
+	Answer::StringUtility::split(params, strEffect, delims, false);
+	nId = id;
+	if (params.size() == 2)
+	{
+		YanHuaValue = atoi(params[0].c_str());
+		YanHuaType = atoi(params[1].c_str());
+		return true;
+	}
+	return false;
+}
+
+TitleCard::TitleCard()
+	: m_TitleId(0)
+{
+
+}
+
+TitleCard::~TitleCard()
+{
+
+}
+
+int32_t TitleCard::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CExtCharTitle* pTitle = launcher.GetCharTitle();
+	if (pTitle)
+		return pTitle->AddTitle(m_TitleId);
+	return 10002;
+}
+
+bool TitleCard::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_TitleId = atoi(strEffect.c_str());
+	return m_TitleId > 0;
+}
+
+UseCurrGift::UseCurrGift()
+	: m_Type(0), m_Count(0)
+{
+
+}
+
+UseCurrGift::~UseCurrGift()
+{
+
+}
+
+int32_t UseCurrGift::effect(Player &launcher, Unit &target,int32_t count)
+{
+	Currency* pCur = launcher.GetCurrency();
+	if (pCur)
+	{
+		pCur->AddCurrency(m_Type, m_Count);
+		return 0;
+	}
+	return 10002;
+}
+
+bool UseCurrGift::parseEffect(int32_t id, const std::string &strEffect)
+{
+	StringVector params;
+	Answer::StringUtility::split(params, strEffect, ":");
+	if (params.size() >= 2)
+	{
+		m_Type = atoi(params[0].c_str());
+		m_Count = atoi(params[1].c_str());
+		return m_Count > 0;
+	}
+	return false;
+}
+
+UseItemGift::UseItemGift()
+{
+
+}
+
+UseItemGift::~UseItemGift()
+{
+
+}
+
+int32_t UseItemGift::effect(Player &launcher, Unit &target,int32_t count)
+{
+	std::vector<MemChrBag> items;
+	for (auto& gift : m_gifts)
+	{
+		MemChrBag item;
+		item.itemId = gift.itemId;
+		item.count = gift.count;
+		item.bind = gift.bind;
+		items.push_back(item);
+	}
+	if (!items.empty())
+	{
+		Bag* pBag = launcher.GetBag();
+		if (pBag && pBag->AddItemsAndMingGe(items, ICR_ITEM_USE))
+			return 0;
+		return 10016;
+	}
+	return 10002;
+}
+
+bool UseItemGift::parseEffect(int32_t id, const std::string &strEffect)
+{
+	// parse gift items from config string
+	return CfgData::ParseItemGiftVector(m_gifts, strEffect);
+}
+
+VipDrop::VipDrop()
+	: m_DropId(0)
+{
+
+}
+
+VipDrop::~VipDrop()
+{
+
+}
+
+int32_t VipDrop::effect(Player &launcher, Unit &target,int32_t count)
+{
+	// TODO: implement VipDrop - vip drop reward
+	return 0;
+}
+
+bool VipDrop::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_DropId = atoi(strEffect.c_str());
+	return m_DropId > 0;
+}
+
+WingLevelUp::WingLevelUp()
+	: UseWingLevel(0), UpLevel(0), ItemId(0), ItemCount(0)
+{
+
+}
+
+WingLevelUp::~WingLevelUp()
+{
+
+}
+
+int32_t WingLevelUp::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CExtCharWing* pWing = launcher.GetCharWing();
+	if (pWing && pWing->LevelUp(UseWingLevel, UpLevel, ItemId, ItemCount))
+		return 0;
+	return 2;
+}
+
+bool WingLevelUp::parseEffect(int32_t id, const std::string &strEffect)
+{
+	StringVector params = StringUtility::split(strEffect, ":");
+	if (params.size() == 4)
+	{
+		UseWingLevel = atoi(params[0].c_str());
+		UpLevel = atoi(params[1].c_str());
+		ItemId = atoi(params[2].c_str());
+		ItemCount = atoi(params[3].c_str());
+		return true;
+	}
+	return false;
+}
+
+XinMoExp::XinMoExp()
+	: m_Exp(0)
+{
+
+}
+
+XinMoExp::~XinMoExp()
+{
+
+}
+
+int32_t XinMoExp::effect(Player &launcher, Unit &target,int32_t count)
+{
+	CXinMo* pXinMo = launcher.GetXinMo();
+	if (pXinMo)
+	{
+		pXinMo->AddExp(m_Exp);
+		return 0;
+	}
+	return 10002;
+}
+
+bool XinMoExp::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_Exp = atoi(strEffect.c_str());
+	return m_Exp > 0;
+}
+
+LingZhu::LingZhu()
+	: m_nId(0), m_Chip(0)
+{
+
+}
+
+LingZhu::~LingZhu()
+{
+
+}
+
+int32_t LingZhu::effect(Player &launcher, Unit &target,int32_t count)
+{
+	if (count <= 0)
+		return 10002;
+
+	int32_t exp = count * m_Chip;
+	CKunExt* pKunExt = launcher.GetCKunExt();
+	pKunExt->AddExp(exp);
+	return 0;
+}
+
+bool LingZhu::parseEffect(int32_t id, const std::string &strEffect)
+{
+	m_nId = id;
+	m_Chip = atoi(strEffect.c_str());
+	return m_Chip > 0;
+}
+
+EquipJinHua::EquipJinHua()
+	: MaxRate(0)
+{
+
+}
+
+EquipJinHua::~EquipJinHua()
+{
+
+}
+
+int32_t EquipJinHua::effect(Player &launcher, Unit &target,int32_t count)
+{
+	return 0;
+}
+
+bool EquipJinHua::parseEffect(int32_t id, const std::string &strEffect)
+{
+	return true;
+}
+
+int32_t EquipJinHua::GetParamRate()
+{
+	int32_t nRand = RANDOM.generate(1, MaxRate);
+	for (auto it = Rate.begin(); it != Rate.end(); ++it)
+	{
+		if (it->nParam2 >= nRand)
+			return it->nParam1;
+		nRand -= it->nParam2;
+	}
+	return 0;
+}

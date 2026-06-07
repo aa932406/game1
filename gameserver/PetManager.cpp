@@ -21,8 +21,12 @@ CPetManager::~CPetManager()
 {
 }
 
-void CPetManager::Init()
+void CPetManager::Init(int32_t line)
 {
+	// 璺ㄦ湇妯″紡涓嬭烦杩囧垵濮嬪寲
+	if (line == 9)
+		return;
+
 	m_NeedUpdatePet.clear();
 	MySqlDBGuard db(DBPOOL);
 	MySqlQuery result = db.query( "SELECT * FROM `mem_pet` WHERE delflag=0" );
@@ -48,17 +52,6 @@ void CPetManager::Init()
 		pet.nGrowTimes	= result.getIntValue("growtimes");
 		pet.nPoints		= result.getIntValue("Points");
 
-// 		pet.vAttr[PET_ATTR_START_HP]				= result.getIntValue("start_hp");
-// 		pet.vAttr[PET_ATTR_START_PHY_ATK_MIN]		= result.getIntValue("start_phy_atk_min");
-// 		pet.vAttr[PET_ATTR_START_PHY_ATK_MAX]		= result.getIntValue("start_phy_atk_max");
-// 		pet.vAttr[PET_ATTR_START_PHY_DEF]			= result.getIntValue("start_phy_def");
-// 		pet.vAttr[PET_ATTR_START_MAG_ATK_MIN]		= result.getIntValue("start_mag_atk_min");
-// 		pet.vAttr[PET_ATTR_START_MAG_ATK_MAX]		= result.getIntValue("start_mag_atk_max");
-// 		pet.vAttr[PET_ATTR_START_MAG_DEF]			= result.getIntValue("start_mag_def");
-// 		pet.vAttr[PET_ATTR_START_DODGE]				= result.getIntValue("start_dodge");
-// 		pet.vAttr[PET_ATTR_START_HITRATE]			= result.getIntValue("start_hitrate");
-// 		pet.vAttr[PET_ATTR_START_CRITRATE]			= result.getIntValue("start_critrate");
-// 		pet.vAttr[PET_ATTR_START_TENACITY]			= result.getIntValue("start_tenacity");
 		pet.vAttr[PET_ATTR_GROW_HP]					= result.getIntValue("grow_hp");
 		pet.vAttr[PET_ATTR_GROW_PHY_ATK_MIN]		= result.getIntValue("grow_phy_atk_min");
 		pet.vAttr[PET_ATTR_GROW_PHY_ATK_MAX]		= result.getIntValue("grow_phy_atk_max");
@@ -225,7 +218,7 @@ void CPetManager::AddPet( CPet* pPet )
 	}
 	MemPetDBData pet;
 	pPet->OnSaveToDB( pet );
-	DB_SERVICE.insertMemPet( pet );
+	DB_SERVICE.insertMemPet( 0, pet );
 
 	if ( IsInsidePet( pPet->GetBaseId() ) ||  ( pPet->GetLevel() >= PET_RANK_OPEN_LEVEL  && !pPet->IsXOType() ) )
 	{
@@ -250,7 +243,7 @@ void CPetManager::DelPet( CPet* pPet )
 		sendSocialDeletePet( nPetId );
 	}
 	POOL_MANAGER.push<CPet>( pPet );
-	DB_SERVICE.deleteMemPet( nPetId );
+	DB_SERVICE.deleteMemPet( 0, nPetId );
 }
 
 void CPetManager::UpdatePet( CPet* pPet )
@@ -262,7 +255,7 @@ void CPetManager::UpdatePet( CPet* pPet )
 
 	MemPetDBData pet;
 	pPet->OnSaveToDB( pet );
-	DB_SERVICE.updateMemPet( pet );
+	DB_SERVICE.updateMemPet( 0, pet );
 	if ( IsInsidePet( pPet->GetBaseId() ) || ( pPet->GetLevel() >= PET_RANK_OPEN_LEVEL  && !pPet->IsXOType() ) )
 	{
 		sendSocialUpdatePet( pPet );
@@ -308,22 +301,76 @@ void CPetManager::ChangeOwner( PetId_t nPetId, CharId_t nOwner )
 
 PetId_t CPetManager::getPetId( int32_t nServerId ) const
 {
-	char szSql[MAX_SQL_LENGTH] = {};
-	snprintf( szSql, sizeof( szSql ) - 1, "call NewPetId(%d,@OutPetId)", nServerId );
-
-	MySqlDBGuard db(DBPOOL);
-	MySqlQuery result = db.query( szSql );
-	if ( !result.eof() )
+	// 璺ㄦ湇妯″紡缁熶竴浣跨敤 serverId=0
+	int32_t useServerId = nServerId;
+	if ( GAME_SERVICE.getLine() == 9 )
 	{
-		int32_t nNewPetId = result.getIntValue( 0 );
-		if ( nNewPetId > 0 )
-		{
-			return ( static_cast<CharId_t>( nServerId ) << 32 ) + nNewPetId;
-		}
+		useServerId = 0;
 	}
 
-	LOG_ERROR( "CPetManager::getPetId() FAIL! time=%d\n", TIMER.GetNow() );
-	return 0;
+	RwLockWrGuard lock( m_IdLock );
+	std::map<int, PetNewId>::iterator iter = m_mNewId.find( useServerId );
+	if ( iter != m_mNewId.end() )
+	{
+		// 缂撳瓨涓殑ID宸茬敤瀹岋紝浠嶥B閲嶆柊鑾峰彇鑼冨洿
+		if ( iter->second.nNextId >= iter->second.nMaxId )
+		{
+			CPetManager* self = const_cast<CPetManager*>(this);
+			self->getPetIdFromDB( useServerId, iter->second.nNextId, iter->second.nMaxId );
+		}
+		int64_t ret = iter->second.nNextId;
+		iter->second.nNextId = ret + 1;
+		return ret;
+	}
+	else
+	{
+		// 棣栨璇锋眰璇ユ湇鍙风殑ID锛屼粠DB鑾峰彇
+		PetNewId newId;
+		newId.nNextId = 0;
+		newId.nMaxId = 0;
+		CPetManager* self = const_cast<CPetManager*>(this);
+		self->getPetIdFromDB( useServerId, newId.nNextId, newId.nMaxId );
+		m_mNewId[useServerId] = newId;
+		int64_t ret = newId.nNextId;
+		m_mNewId[useServerId].nNextId = ret + 1;
+		return ret;
+	}
+}
+
+void CPetManager::getPetIdFromDB( int32_t nServerId, int64_t &nNextId, int64_t &nMaxId )
+{
+	char szSql[MAX_SQL_LENGTH] = {};
+
+	MySqlDBGuard db(DBPOOL);
+	if ( GAME_SERVICE.getLine() == 9 )
+	{
+		// 璺ㄦ湇妯″紡
+		MySqlQuery result = db.query( "call NewPetId(@OutPetId)" );
+		if ( !result.eof() )
+		{
+			nNextId = result.getInt64Value( "OutPetId", 0 );
+			nMaxId = nNextId + 20;
+		}
+		else
+		{
+			LOG_ERROR( "CPetManager::getPetId() FAIL! time=%d\n", TIMER.GetNow() );
+		}
+	}
+	else
+	{
+		snprintf( szSql, sizeof( szSql ) - 1, "call NewPetId(%d,@OutPetId)", nServerId );
+		MySqlQuery result = db.query( szSql );
+		if ( !result.eof() )
+		{
+			int32_t nNewPetId = result.getIntValue( 0 );
+			nNextId = ( static_cast<int64_t>( nServerId ) << 32 ) + nNewPetId;
+			nMaxId = nNextId + 20;
+		}
+		else
+		{
+			LOG_ERROR( "CPetManager::getPetId() FAIL! time=%d\n", TIMER.GetNow() );
+		}
+	}
 }
 
 void CPetManager::ResetRecords()
@@ -341,6 +388,17 @@ void CPetManager::ResetRecords()
 	}
 }
 
+int32_t CPetManager::GetPetRankIndex( PetId_t nPetId )
+{
+	RwLockWrGuard lock( m_rwLock );
+	std::map<PetId_t, int16_t>::iterator findIter = m_mPetRank.find( nPetId );
+	if ( findIter != m_mPetRank.end() )
+	{
+		return findIter->second;
+	}
+	return 0;
+}
+
 void CPetManager::OnUpdatePetRank( Answer::NetPacket* inPacket )
 {
 	if ( NULL == inPacket )
@@ -349,36 +407,16 @@ void CPetManager::OnUpdatePetRank( Answer::NetPacket* inPacket )
 	}
 
 	int32_t nCount = inPacket->readInt32();
-	RwLockWrGuard lock( m_rwLock );
 	for ( int32_t i = 0; i < nCount; ++i )
 	{
 		PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
-		PetMap::iterator findIter = m_mPet.find( nPetId );
-		if ( findIter == m_mPet.end() )
+		int16_t nIndex = inPacket->readInt16();
+		int32_t nOldIndex = GetPetRankIndex( nPetId );
+		(void)nOldIndex; // 鍙敤浜庡悗缁帓鍚嶅彉鍖栭�氱煡
 		{
-			continue;
+			RwLockWrGuard lock( m_rwLock );
+			m_mPetRank[nPetId] = nIndex;
 		}
-
-		CPet* pPet = findIter->second;
-		if ( NULL == pPet )
-		{
-			continue;
-		}
-		pPet->SetRankIndex( PRT_POINTS,				inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_HP,			inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_PHY_ATK_MIN,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_PHY_ATK_MAX,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_PHY_DEF,		inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_MAG_ATK_MIN,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_MAG_ATK_MAX,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_MAG_DEF,		inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_HP,			inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_PHY_ATK_MIN,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_PHY_ATK_MAX,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_PHY_DEF,		inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_MAG_ATK_MIN,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_MAG_ATK_MAX,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_MAG_DEF,		inPacket->readInt16() );
 	}
 }
 
@@ -390,36 +428,14 @@ void CPetManager::OnInitPetRank( Answer::NetPacket* inPacket )
 	}
 
 	int32_t nCount = inPacket->readInt32();
-	RwLockWrGuard lock( m_rwLock );
 	for ( int32_t i = 0; i < nCount; ++i )
 	{
 		PetId_t nPetId = static_cast<PetId_t>( inPacket->readInt64() );
-		PetMap::iterator findIter = m_mPet.find( nPetId );
-		if ( findIter == m_mPet.end() )
+		int16_t nIndex = inPacket->readInt16();
 		{
-			continue;
+			RwLockWrGuard lock( m_rwLock );
+			m_mPetRank[nPetId] = nIndex;
 		}
-
-		CPet* pPet = findIter->second;
-		if ( NULL == pPet )
-		{
-			continue;
-		}
-		pPet->SetRankIndex( PRT_POINTS,				inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_HP,			inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_PHY_ATK_MIN,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_PHY_ATK_MAX,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_PHY_DEF,		inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_MAG_ATK_MIN,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_MAG_ATK_MAX,	inPacket->readInt16() );
-// 		pPet->SetRankIndex( PRT_START_MAG_DEF,		inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_HP,			inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_PHY_ATK_MIN,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_PHY_ATK_MAX,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_PHY_DEF,		inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_MAG_ATK_MIN,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_MAG_ATK_MAX,	inPacket->readInt16() );
-		pPet->SetRankIndex( PRT_GROW_MAG_DEF,		inPacket->readInt16() );
 	}
 }
 
@@ -438,7 +454,7 @@ void CPetManager::sendSocialUpdatePet( CPet* pPet )
 	SocialPetData petData = {};
 	pPet->GetPetData( petData );
 
-	// 同步到社会服务器
+	// 鍚屾鍒扮ぞ浼氭湇鍔″櫒
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_SOCIAL_UPDATE_PET_DATA );
 	if (NULL == packet)
 	{
@@ -463,7 +479,7 @@ void CPetManager::sendSocialUpdatePet( CPet* pPet )
 
 void CPetManager::sendSocialDeletePet( PetId_t nPetId )
 {
-	// 同步到社会服务器
+	// 鍚屾鍒扮ぞ浼氭湇鍔″櫒
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_SOCIAL_DELETE_PET_DATA );
 	if (NULL == packet)
 	{
