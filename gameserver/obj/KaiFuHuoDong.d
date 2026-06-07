@@ -21,11 +21,11 @@ obj/KaiFuHuoDong.o: KaiFuHuoDong.cpp stdafx.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h KaiFuHuoDong.h CfgData.h \
  ../share/DataStruct.h actStructs.h CDaTingReward.h ExtSystemInterface.h \
- ../share/DataStruct.h CMingGeTable.h TreasureMap.h ExtSystemBase.h \
- CKunExt.h KunData.h CXinMo.h Player.h Bag.h Task.h TaskCycle.h \
- Achievement.h BossKilledReward.h Unit.h Buff.h Entity.h \
- ../share/Attribute.h Dungeon.h Map.h Tile.h DropItem.h ObjPet.h Pet.h \
- MapEvent.h MonsterBuff.h ExtSystemMgr.h OperateLimit.h Equip.h \
+ ../share/DataStruct.h XinMoTable.h KunLingTable.h CMingGeTable.h \
+ TreasureMap.h ExtSystemBase.h CKunExt.h KunData.h CXinMo.h Player.h \
+ Bag.h Task.h TaskCycle.h Achievement.h BossKilledReward.h Unit.h Buff.h \
+ Entity.h ../share/Attribute.h Dungeon.h Map.h Tile.h DropItem.h ObjPet.h \
+ Pet.h MapEvent.h MonsterBuff.h ExtSystemMgr.h OperateLimit.h Equip.h \
  FightChecker.h Currency.h CharTeam.h KillMonsterTongJi.h ChrDepot.h \
  CharPet.h PetEgg.h CharSkill.h Skill.h SkillBuff.h CharFamily.h \
  CharTeamDungeon.h CharInsidePet.h CharWorship.h CharCarrier.h \

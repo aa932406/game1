@@ -21,8 +21,8 @@ obj/PlantDungeon.o: PlantDungeon.cpp stdafx.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h Dungeon.h Map.h CfgData.h \
  ../share/DataStruct.h actStructs.h CDaTingReward.h ExtSystemInterface.h \
- ../share/DataStruct.h CMingGeTable.h TreasureMap.h ExtSystemBase.h \
- CKunExt.h KunData.h CXinMo.h Tile.h DropItem.h Entity.h ObjPet.h Unit.h \
- Buff.h ../share/Attribute.h Pet.h MapEvent.h MonsterBuff.h \
- PlantDungeon.h Plant.h
+ ../share/DataStruct.h XinMoTable.h KunLingTable.h CMingGeTable.h \
+ TreasureMap.h ExtSystemBase.h CKunExt.h KunData.h CXinMo.h Tile.h \
+ DropItem.h Entity.h ObjPet.h Unit.h Buff.h ../share/Attribute.h Pet.h \
+ MapEvent.h MonsterBuff.h PlantDungeon.h Plant.h
 	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I.. -I../share -I../libanswer/include -I../mysql/include -DLIBANSWER_LINUX PlantDungeon.cpp -o obj/PlantDungeon.o

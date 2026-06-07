@@ -21,11 +21,11 @@ obj/OperateLimit.o: OperateLimit.cpp stdafx.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h OperateLimit.h ExtSystemBase.h \
  ExtSystemInterface.h ../share/DataStruct.h Player.h Bag.h CfgData.h \
- ../share/DataStruct.h actStructs.h CDaTingReward.h CMingGeTable.h \
- TreasureMap.h CKunExt.h KunData.h CXinMo.h Task.h TaskCycle.h \
- Achievement.h BossKilledReward.h Unit.h Buff.h Entity.h \
- ../share/Attribute.h Dungeon.h Map.h Tile.h DropItem.h ObjPet.h Pet.h \
- MapEvent.h MonsterBuff.h ExtSystemMgr.h Equip.h FightChecker.h \
+ ../share/DataStruct.h actStructs.h CDaTingReward.h XinMoTable.h \
+ KunLingTable.h CMingGeTable.h TreasureMap.h CKunExt.h KunData.h CXinMo.h \
+ Task.h TaskCycle.h Achievement.h BossKilledReward.h Unit.h Buff.h \
+ Entity.h ../share/Attribute.h Dungeon.h Map.h Tile.h DropItem.h ObjPet.h \
+ Pet.h MapEvent.h MonsterBuff.h ExtSystemMgr.h Equip.h FightChecker.h \
  Currency.h CharTeam.h KillMonsterTongJi.h ChrDepot.h CharPet.h PetEgg.h \
  CharSkill.h Skill.h SkillBuff.h CharFamily.h CharTeamDungeon.h \
  CharInsidePet.h CharWorship.h CharCarrier.h CharAuction.h CharSoul.h \

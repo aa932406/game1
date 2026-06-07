@@ -13656,6 +13656,7 @@ void CfgData::InitGoblinTable()
 }
 
 //#####################################
+#if 0 // replaced by hand-written version at end of file
 GoblinCfg *CfgData::GetGoblinCfg(int32_t nType, int32_t nLevel)
 {
   std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,GoblinCfg> > it; // [rsp+10h] [rbp-30h] BYREF
@@ -13671,6 +13672,7 @@ GoblinCfg *CfgData::GetGoblinCfg(int32_t nType, int32_t nLevel)
   else
     return 0;
 }
+#endif
 
 //#####################################
 // local variable allocation has failed, the output may be wrong!
@@ -16728,6 +16730,7 @@ const VipEquipPosLevelUp *CfgData::GetVipEquipPosLevelUp(int32_t nSlot,
     return 0;
 }
 
+#if 0 // replaced by hand-written version at end of file
 //#####################################
 const VipEQuipPosSuit *CfgData::GetVipEQuipPosSuit(int32_t nLevel)
 {
@@ -16755,6 +16758,7 @@ const VipEQuipPosSuit *CfgData::GetVipEQuipPosSuit(int32_t nLevel)
   }
   return 0;
 }
+#endif // replaced by hand-written version
 
 //#####################################
 const CVipClubLuckyDrop *CfgData::GetCVipClubLuckyDrop(int32_t nCondition)
@@ -16950,6 +16954,7 @@ void CfgData::InitRefreshMonsterCfgListMap()
 
 //#####################################
 // local variable allocation has failed, the output may be wrong!
+#if 0 // replaced by hand-written version at end of file
 RefreshMonsterCfgList CfgData::GetRefreshMonsterCfgList(int32_t nActId)
 {
   int32_t v2; // edx
@@ -16981,6 +16986,7 @@ RefreshMonsterCfgList CfgData::GetRefreshMonsterCfgList(int32_t nActId)
   result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
+#endif // replaced by hand-written version
 
 //#####################################
 void CfgData::fetchItem(bool bSend)
@@ -20546,6 +20552,7 @@ void CfgData::InitWuHunShopTable()
 
 //#####################################
 // local variable allocation has failed, the output may be wrong!
+#if 0 // replaced by hand-written version at end of file
 CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
 {
   int32_t v2; // edx
@@ -20577,7 +20584,9 @@ CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
   result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
+#endif // replaced by hand-written version
 
+#if 0 // replaced by hand-written version at end of file
 //#####################################
 CfgWuHunShop *CfgData::GetWuHunShopItem(int32_t nIndex)
 {
@@ -20595,6 +20604,7 @@ CfgWuHunShop *CfgData::GetWuHunShopItem(int32_t nIndex)
   else
     return 0;
 }
+#endif // replaced by hand-written version
 
 //#####################################
 void CfgData::InitYellowLevelRewardTable()
@@ -22909,6 +22919,7 @@ void CfgData::InitUltimateChallengeCfg()
   }
 }
 
+#if 0 // replaced by hand-written version at end of file
 //#####################################
 UltimateChallengeCfg *CfgData::GetUltimateChallengeCfgMap(int32_t MapId)
 {
@@ -22926,6 +22937,7 @@ UltimateChallengeCfg *CfgData::GetUltimateChallengeCfgMap(int32_t MapId)
   else
     return 0;
 }
+#endif // replaced by hand-written version
 
 //#####################################
 void CfgData::InitVplanTable()
@@ -23828,6 +23840,7 @@ void CfgData::InitWuHunShopTable()
 
 //#####################################
 // local variable allocation has failed, the output may be wrong!
+#if 0 // replaced by hand-written version at end of file
 CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
 {
   int32_t v2; // edx
@@ -23859,7 +23872,9 @@ CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
   result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
+#endif // replaced by hand-written version
 
+#if 0 // replaced by hand-written version at end of file
 //#####################################
 CfgWuHunShop *CfgData::GetWuHunShopItem(int32_t nIndex)
 {
@@ -23877,6 +23892,7 @@ CfgWuHunShop *CfgData::GetWuHunShopItem(int32_t nIndex)
   else
     return 0;
 }
+#endif // replaced by hand-written version
 
 //#####################################
 void CfgData::InitXianYaoTaskTable()
@@ -24945,3 +24961,73 @@ void CfgData::InitYellowRewardTable()
 //#####################################
 
 #endif // end #if 0 — all good Init functions are before line 8061
+
+// ===== New API convenience methods (hand-written) =====
+
+const CfgEquipStrengthen* CfgData::GetEquipStrengthen(int32_t nPos, int32_t nLevel) const
+{
+    return m_cfgEquipStrengthen.Get(nPos, nLevel);
+}
+
+const CfgEquipUpPos* CfgData::GetEquipUpPos(int32_t nPos, int32_t nLevel) const
+{
+    return m_cfgEquipUpPos.Get(nPos, nLevel);
+}
+
+const GoblinCfg* CfgData::GetGoblinCfg(int32_t nType, int32_t nLevel) const
+{
+    std::map<std::pair<int32_t, int32_t>, GoblinCfg>::const_iterator it =
+        m_GoblinCfgMap.find(std::make_pair(nType, nLevel));
+    if (it != m_GoblinCfgMap.end())
+        return &it->second;
+    return NULL;
+}
+
+const VipEQuipPosSuit* CfgData::GetVipEQuipPosSuit(int32_t nSuitId) const
+{
+    VipEQuipPosSuitMap::const_iterator it = m_VipEQuipPosSuitList.find(nSuitId);
+    if (it != m_VipEQuipPosSuitList.end())
+        return &it->second;
+    return NULL;
+}
+
+const CfgWuHunShop* CfgData::GetWuHunShopItem(int32_t nIndex) const
+{
+    std::map<int32_t, CfgWuHunShop>::const_iterator it = m_CfgWuHunShopItemMap.find(nIndex);
+    if (it != m_CfgWuHunShopItemMap.end())
+        return &it->second;
+    return NULL;
+}
+
+CfgWuHunShopList CfgData::GetWuHunShopItemList() const
+{
+    CfgWuHunShopList result;
+    for (std::map<int32_t, CfgWuHunShop>::const_iterator it = m_CfgWuHunShopItemMap.begin();
+         it != m_CfgWuHunShopItemMap.end(); ++it)
+    {
+        result.push_back(it->second);
+    }
+    return result;
+}
+
+CfgJueWeiTable* CfgData::GetJueWeiTable()
+{
+    return &m_cfgJueWeiTable;
+}
+
+const UltimateChallengeCfg* CfgData::GetUltimateChallengeCfg(int32_t nLevel) const
+{
+    UltimateChallengeCfgMap::const_iterator it = m_UltimateChallengeCfgMap.find(nLevel);
+    if (it != m_UltimateChallengeCfgMap.end())
+        return &it->second;
+    return NULL;
+}
+
+const RefreshMonsterCfgList& CfgData::GetRefreshMonsterCfgList() const
+{
+    // Return first available list, or empty static list
+    if (!m_RefreshMonsterCfgListMap.empty())
+        return m_RefreshMonsterCfgListMap.begin()->second;
+    static RefreshMonsterCfgList emptyList;
+    return emptyList;
+}

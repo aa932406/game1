@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CXinMo.h"
+#include "CfgData.h"
 #include "GameService.h"
 #include "ItemHelper.h"
 #include "Player.h"
@@ -106,7 +107,7 @@ int32_t CXinMo::DispatchNetDatas(ProcId_t nProcId, Answer::NetPacket* inPacket)
 void CXinMo::AddCharAttr()
 {
     // 心魔等级属性
-    const XinMoCfg* pCurCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXingMoCfg(m_XinMoLevel);
+    const XinMoCfg* pCurCfg = CFG_DATA.GetXinMoTable()->GetXingMoCfg(m_XinMoLevel);
     if (pCurCfg)
     {
         for (AddAttrList::const_iterator it = pCurCfg->lAttr.begin();
@@ -117,7 +118,7 @@ void CXinMo::AddCharAttr()
     }
 
     // 心魔觉醒等级属性
-    const QiQingCfg* pQiQingCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetQiQingCfg(m_XinMoActiveLevel);
+    const QiQingCfg* pQiQingCfg = CFG_DATA.GetXinMoTable()->GetQiQingCfg(m_XinMoActiveLevel);
     if (pQiQingCfg)
     {
         for (AddAttrList::const_iterator it = pQiQingCfg->lAttr.begin();
@@ -132,7 +133,7 @@ void CXinMo::AddCharAttr()
          it != m_QiQingLevel.end(); ++it)
     {
         const XinMoQiQingLevelUpCfg* pLevelCfg =
-            ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinMoQiQingLevelUpCfg(it->first, it->second);
+            CFG_DATA.GetXinMoTable()->GetXinMoQiQingLevelUpCfg(it->first, it->second);
         if (pLevelCfg)
         {
             for (AddAttrList::const_iterator ait = pLevelCfg->lAttr.begin();
@@ -151,8 +152,8 @@ int32_t CXinMo::OnXinMoLevel(Answer::NetPacket* inPacket)
     if (!m_pPlayer || !inPacket)
         return ERR_INVALID_DATA;
 
-    const XinMoCfg* pCurCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXingMoCfg(m_XinMoLevel);
-    const XinMoCfg* pNextCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXingMoCfg(m_XinMoLevel + 1);
+    const XinMoCfg* pCurCfg = CFG_DATA.GetXinMoTable()->GetXingMoCfg(m_XinMoLevel);
+    const XinMoCfg* pNextCfg = CFG_DATA.GetXinMoTable()->GetXingMoCfg(m_XinMoLevel + 1);
     if (!pCurCfg || !pNextCfg)
         return ERR_INVALID_DATA;
 
@@ -228,7 +229,7 @@ int32_t CXinMo::OnActiveXinMo(Answer::NetPacket* inPacket)
     Int32Vector vSlot;
     m_pPlayer->queryBagInfo(inPacket, vSlot);
 
-    const QiQingCfg* pCurCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetQiQingCfg(m_XinMoActiveLevel + 1);
+    const QiQingCfg* pCurCfg = CFG_DATA.GetXinMoTable()->GetQiQingCfg(m_XinMoActiveLevel + 1);
     if (!pCurCfg)
     {
         vSlot.clear();
@@ -287,7 +288,7 @@ int32_t CXinMo::OnJinHua(Answer::NetPacket* inPacket)
         return ERR_INVALID_DATA;
     }
 
-    const EquipJinHua* pJinHua = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetJinHuaCfg(bagItem.itemId);
+    const EquipJinHua* pJinHua = CFG_DATA.GetXinMoTable()->GetJinHuaCfg(bagItem.itemId);
     if (!pJinHua)
     {
         vSlot.clear();
@@ -368,9 +369,9 @@ int32_t CXinMo::OnQiQingLevelUp(Answer::NetPacket* inPacket)
 
     int32_t nLevel = GetQiQingLevel(nType);
     const XinMoQiQingLevelUpCfg* pCurCfg =
-        ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinMoQiQingLevelUpCfg(nType, nLevel);
+        CFG_DATA.GetXinMoTable()->GetXinMoQiQingLevelUpCfg(nType, nLevel);
     const XinMoQiQingLevelUpCfg* pNextCfg =
-        ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinMoQiQingLevelUpCfg(nType, nLevel + 1);
+        CFG_DATA.GetXinMoTable()->GetXinMoQiQingLevelUpCfg(nType, nLevel + 1);
 
     if (!pCurCfg || !pNextCfg)
     {
@@ -443,7 +444,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
 
         m_pPlayer->updateRecord(37304, 1);
         m_QiQingInfo = 0;
-        int32_t nAppearCount = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetAppearCount(7);
+        int32_t nAppearCount = CFG_DATA.GetXinMoTable()->GetAppearCount(7);
         SetFlag(7);
         SetYaoYiYaoFlag(nAppearCount);
         AddYaoYiYaoTimes();
@@ -469,7 +470,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
         int32_t nAppearCount;
         if (m_pPlayer->getRecord(37304) <= 19)
         {
-            nAppearCount = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetAppearCount(7 - nFlagCount);
+            nAppearCount = CFG_DATA.GetXinMoTable()->GetAppearCount(7 - nFlagCount);
         }
         else
         {
@@ -488,7 +489,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
             return ERR_INVALID_DATA;
 
         int32_t nFlagCount = GetFlagCount();
-        const XinQingReward* pReward = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinQingReward(nFlagCount);
+        const XinQingReward* pReward = CFG_DATA.GetXinMoTable()->GetXinQingReward(nFlagCount);
         if (!pReward)
             return ERR_INVALID_DATA;
 

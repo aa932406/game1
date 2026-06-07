@@ -19,6 +19,8 @@ class Random { public: int generate(int,int) { return 0; } };
 #include "DataStructs.h"
 #include "actStructs.h"
 #include "CDaTingReward.h"
+#include "XinMoTable.h"
+#include "KunLingTable.h"
 
 struct AddAttribute
 {
@@ -5888,6 +5890,38 @@ struct TaskDrop { int32_t nTaskId; int32_t nDropId; int32_t nProbability; };
 typedef std::list<TaskDrop> TaskDropList;
 
 // ===== Missing structs ported from decompiled =====
+struct CfgJueWei
+{
+    CfgJueWei() : nIndex(0), nNeedHonor(0), nAttrRate(0), nGongGaoId(0) {}
+    int8_t  nIndex;
+    int32_t nNeedHonor;
+    AddAttrList lAttr;
+    int32_t nAttrRate;
+    int32_t nGongGaoId;
+};
+
+class CfgJueWeiTable
+{
+public:
+    CfgJueWeiTable() {}
+    ~CfgJueWeiTable() {}
+
+    void AddJueWei(const CfgJueWei& cfg) { m_mData[cfg.nIndex] = cfg; }
+
+    const CfgJueWei* GetJueWei(int8_t nIndex) const
+    {
+        std::map<int8_t, CfgJueWei>::const_iterator it = m_mData.find(nIndex);
+        if (it != m_mData.end()) return &it->second;
+        return NULL;
+    }
+
+private:
+    std::map<int8_t, CfgJueWei> m_mData;
+};
+
+// CfgWuHunShopMap (shop grouped by ShopId)
+typedef std::map<int32_t, std::list<CfgWuHunShop> > CfgWuHunShopMap;
+
 struct CfgGroupIcon
 {
 	int32_t nId;
@@ -5938,8 +5972,6 @@ public:
 
 class CfgData
 {
-	friend class CXinMo;
-	friend class CKunExt;
 public:
 	CfgData();
 	~CfgData();
@@ -6730,21 +6762,23 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const CMingGeTable&		GetMingGeTable() const { return m_MingGeTable; }
 	const TreasureMapTabale&	GetTreasureMapTabale() const { return m_TreasureMapTabale; }
 	const SpecialTreasureMapRandCfgList&	GetSpecialTreasureMapRandCfgList() const { return m_SpecialTreasureMapRandCfgList; }
-	// GetKunLingTable/GetXinMoTable — friend classes cast void* to proper type
-	void*				GetKunLingTable() { return m_KunLingTable; }
-	const void*			GetKunLingTable() const { return m_KunLingTable; }
-	void*				GetXinMoTable() { return m_XinMoTable; }
-	const void*			GetXinMoTable() const { return m_XinMoTable; }
+	XinMoTable*			GetXinMoTable() { return &m_XinMoTable; }
+	const XinMoTable*	GetXinMoTable() const { return &m_XinMoTable; }
+	KunLingTable*		GetKunLingTable() { return &m_KunLingTable; }
+	const KunLingTable*	GetKunLingTable() const { return &m_KunLingTable; }
 	// Equip accessors — return member map references
 	const CfgMoFuSuitMap*	GetMoFuSuit() const { return &m_cfgMoFuSuit; }
-	const CfgEquipStrengthenTable*	GetEquipStrengthen() const { return &m_cfgEquipStrengthen; }
-	const CfgEquipUpPosTable*		GetEquipUpPos() const { return &m_cfgEquipUpPos; }
+	const CfgEquipStrengthen*	GetEquipStrengthen(int32_t nPos, int32_t nLevel) const;
+	const CfgEquipUpPos*		GetEquipUpPos(int32_t nPos, int32_t nLevel) const;
+	const CfgEquipStrengthenTable*	GetEquipStrengthenTable() const { return &m_cfgEquipStrengthen; }
+	const CfgEquipUpPosTable*		GetEquipUpPosTable() const { return &m_cfgEquipUpPos; }
 	const CfgShenYaoEquipTable*	GetShenYaoEquipTable() const { return &m_cfgShenYao; }
 	const CfgGemLevelUpTable*		GetGemLevelUpTable() const { return &m_cfgGemLevelUp; }
 	const CfgMoFuTable*			GetMoFuTable() const { return &m_cfgMoFu; }
 	// Goblin accessors
-	const GoblinCfgMap*		GetGoblinCfg() const { return NULL; /* use GetGoblinCfgMap */ }
-	const VipEQuipPosSuitMap*	GetVipEQuipPosSuit() const { return NULL; }
+	const GoblinCfg*		GetGoblinCfg(int32_t nType, int32_t nLevel) const;
+	const VipEQuipPosSuit*	GetVipEQuipPosSuit(int32_t nSuitId) const;
+	const VipEQuipPosSuitMap*	GetVipEQuipPosSuitMap() const { return &m_VipEQuipPosSuitList; }
 	const PlatformDaTingMap*	GetPlatformDaTingMap() const { return &m_PlatformDaTingMap; }
 	const PlatformDaTing*		GetGetPlatformDaTingCfg(const std::string& platform, int32_t nIndex) const;
 	const PlatformVipMap*		GetPlatformVipMap() const { return &m_PlatformVipMap; }
@@ -6784,13 +6818,32 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const void*		GetTencentTable() const { return NULL; }
 	const void*		GetTouZiTable() const { return NULL; }
 
+	// WuHunShop accessors
+	const CfgWuHunShop*		GetWuHunShopItem(int32_t nIndex) const;
+	CfgWuHunShopList			GetWuHunShopItemList() const;
+
+	// JueWei accessor
+	class CfgJueWeiTable*	GetJueWeiTable();
+
+	// UltimateChallenge accessor
+	const UltimateChallengeCfg*	GetUltimateChallengeCfg(int32_t nLevel) const;
+
+	// RefreshMonster accessor
+	const RefreshMonsterCfgList&	GetRefreshMonsterCfgList() const;
+
+	// Vplan accessor
+	const CfgVplanMap*		GetVplanTable() const { return &m_CfgVplan; }
+
+	// ShiZhuang accessor (already exists above, this resolves the int placeholder)
+	// CfgShiZhuangTable already accessible via GetShiZhuangTable()
+
 private:
 	CMingGeTable				m_MingGeTable;
 	TreasureMapTabale			m_TreasureMapTabale;
 	SpecialTreasureMapRandCfgList		m_SpecialTreasureMapRandCfgList;
-	// KunLingTable/XinMoTable blocked by circular include — stored as void*
-	void*				m_KunLingTable;
-	void*				m_XinMoTable;
+	// KunLingTable/XinMoTable — proper types via XinMoTable.h/KunLingTable.h
+	XinMoTable				m_XinMoTable;
+	KunLingTable			m_KunLingTable;
 	PlatformDaTingMap			m_PlatformDaTingMap;
 	PlatformVipMap				m_PlatformVipMap;
 	PlatformRewardCfgMap		m_PlatformRewardCfgMap;
@@ -6841,83 +6894,83 @@ private:
 	int32_t m_serverType;
 	int32_t m_kaiFuTime;
 	int32_t m_heFuTime;
-	int m_cfgTencentTable;
+	int m_cfgTencentTable;       // placeholder — needs TencentTable type
 	CfgTitleTable m_cfgTitleTable;
-	int m_BossDistribution;
-	int m_cfgActivityTaskTable;
-	int m_CfgBeastShrineTable;
-	int m_CfgBossFirstKilledMap;  // placeholder
-	int m_cfgDropRecordTable;  // placeholder
-	int m_cfgDungeonSummon;  // placeholder
-	int m_cfgEquipBlessTable;
-	int m_cfgEquipBoxTalbe;
-	int m_cfgEquipUpPhaseTable;
-	int m_cfgFamilyDungeonTable;
-	int m_cfgGoblinTableData;
-	int m_cfgGoldEggTable;
-	int m_cfgGroupIcons;  // placeholder
-	int m_cfgJueWeiTable;
-	int m_cfgLevelChatTable;  // placeholder
-	int m_cfgLimitTimeTable;
-	int m_cfgMaintainCompensateTable;
-	int m_cfgMapRoadTable;
-	int m_cfgMonsterRandTable;
-	int m_cfgMYSJRewardTable;
-	int m_cfgShiZhuangTable;
-	int m_cfgSpecialMonsterTable;
-	int m_cfgTalentTable;
-	int m_cfgTouZiTable;
-	int m_cfgTrailerTable;
-	int m_CfgVplan;
-	int m_CfgYYGameAppMap;  // placeholder
-	int m_CfgYYSuperBuffList;  // placeholder
-	int m_Cfg37wanSuperBuffList;  // placeholder
-	int m_CfgYYVipMap;  // placeholder
-	int m_ChargeDungeonCfgMap;  // placeholder
-	int m_ChristmasDuiHuanMap;  // placeholder
-	int m_CMingGeTable;
-	int m_ContributionCfgMap;  // placeholder
-	int m_CVipClubLuckyDropMap;  // placeholder
-	int m_CycleTowerTable;
-	int m_DamnationCfgTable;  // placeholder
-	int m_DiligenceCfgMap;  // placeholder
-	int m_DuiHuanLimit;  // placeholder
-	int m_dungeonNpcs;  // placeholder
-	int m_EnergyCfg;
-	int m_EquipBackTable;  // placeholder
-	int m_EquipBackTaskRate;  // placeholder
-	int m_FunctionOpenMailMap;  // placeholder
-	int m_GetMiniClientMap;  // placeholder
-	int m_GoblinCfgMap;  // placeholder
-	int m_GoblinSuitMap;  // placeholder
-	int m_GroupMonsterMap;  // placeholder
-	int m_GuiGuDaoRenCfgMap;  // placeholder
-	int m_GuWuCfgMap;  // placeholder
-	int m_HoeCfgMap;  // placeholder
-	int m_LuckDropTable;
-	int m_LuDaShiVipMap;  // placeholder
-	int m_mMapPlants;  // placeholder
-	int m_mMonsterAdjust;  // placeholder
-	int m_mMonsterAI;  // placeholder
-	int m_MonstAddAttrMap;  // placeholder
-	int m_mQuestions;  // placeholder
-	int m_mUpTowerDungeon;  // placeholder
-	int m_RefreshMonsterCfgListMap;  // placeholder
-	int m_ShiQuCfgMap;  // placeholder
-	int m_SpecialBossMapCfgMap;  // placeholder
-	int m_TianLingCfgTable;  // placeholder
-	int m_TongTianChiRankReward;  // placeholder
-	int m_UltimateChallengeCfgMap;  // placeholder
-	int m_VipEquipPosLevelUpMap;  // placeholder
-	int m_VipEQuipPosSuitList;  // placeholder
-	int m_WingEquipPolishCfgMap;  // placeholder
-	int m_WingEquipPolishSuitMap;  // placeholder
-	int m_WingEquipRefiningSuitMap;  // placeholder
-	int m_WinRefiningCfgMap;  // placeholder
-	int m_XiangYaoTaskCfgList;  // placeholder
-	int m_XunLeiCfgMap;  // placeholder
-	int m_CfgWuHunShopItemMap;  // placeholder
-	int m_CfgMiniClient;  // placeholder
+	int m_BossDistribution;      // placeholder
+	int m_cfgActivityTaskTable;  // placeholder
+	int m_CfgBeastShrineTable;   // placeholder
+	std::map<int32_t, CfgBossFirstKilled> m_CfgBossFirstKilledMap;
+	int m_cfgDropRecordTable;    // placeholder
+	int m_cfgDungeonSummon;      // placeholder
+	int m_cfgEquipBlessTable;    // placeholder
+	int m_cfgEquipBoxTalbe;      // placeholder
+	int m_cfgEquipUpPhaseTable;  // placeholder
+	int m_cfgFamilyDungeonTable; // placeholder
+	int m_cfgGoblinTableData;    // placeholder
+	int m_cfgGoldEggTable;       // placeholder
+	std::map<int32_t, CfgGroupIcon> m_cfgGroupIcons;
+	CfgJueWeiTable m_cfgJueWeiTable;
+	int m_cfgLevelChatTable;     // placeholder
+	int m_cfgLimitTimeTable;     // placeholder
+	int m_cfgMaintainCompensateTable; // placeholder
+	int m_cfgMapRoadTable;       // placeholder
+	int m_cfgMonsterRandTable;   // placeholder
+	int m_cfgMYSJRewardTable;    // placeholder
+	CfgShiZhuangTable m_cfgShiZhuangTable_member; // note: m_cfgShiZhuang already exists above
+	int m_cfgSpecialMonsterTable; // placeholder
+	CfgTalentActiveMap m_cfgTalentTable;
+	int m_cfgTouZiTable;         // placeholder
+	int m_cfgTrailerTable;       // placeholder
+	CfgVplanMap m_CfgVplan;
+	CfgYYGameAppMap m_CfgYYGameAppMap;
+	CfgYYSuperBuffMap m_CfgYYSuperBuffList;
+	CfgYYSuperBuffMap m_Cfg37wanSuperBuffList; // same type
+	CfgYYVipMap m_CfgYYVipMap;
+	std::map<int32_t, ChargeDungeonCfg> m_ChargeDungeonCfgMap;
+	ChristmasDuiHuanMap m_ChristmasDuiHuanMap;
+	CMingGeTable m_CMingGeTable; // duplicate of m_MingGeTable for decompiled compat
+	ContributionCfgMap m_ContributionCfgMap;
+	CVipClubLuckyDropMap m_CVipClubLuckyDropMap;
+	int m_CycleTowerTable;       // placeholder
+	DamnationCfgMap m_DamnationCfgTable;
+	DiligenceCfgMap m_DiligenceCfgMap;
+	DuiHuanLimitMap m_DuiHuanLimit;
+	int m_dungeonNpcs;           // placeholder
+	int m_EnergyCfg;             // placeholder
+	int m_EquipBackTable;        // placeholder
+	int m_EquipBackTaskRate;     // placeholder
+	FunctionOpenMailMap m_FunctionOpenMailMap;
+	CfgMiniClientMap m_GetMiniClientMap;
+	std::map<std::pair<int32_t, int32_t>, GoblinCfg> m_GoblinCfgMap;
+	std::map<int32_t, std::list<AddAttribute>> m_GoblinSuitMap;
+	GroupMonsterVector m_GroupMonsterMap;
+	int m_GuiGuDaoRenCfgMap;     // placeholder
+	GuWuCfgMap m_GuWuCfgMap;
+	HoeCfgMap m_HoeCfgMap;
+	int m_LuckDropTable;         // placeholder
+	LuDaShiVipMap m_LuDaShiVipMap;
+	int m_mMapPlants;            // placeholder
+	std::map<int32_t, CfgMonsterAdjust> m_mMonsterAdjust;
+	std::map<int32_t, CfgMonsterAI> m_mMonsterAI;
+	std::map<int32_t, CfgMonsterAddAttr> m_MonstAddAttrMap;
+	int m_mQuestions;            // placeholder
+	int m_mUpTowerDungeon;       // placeholder
+	std::map<int32_t, RefreshMonsterCfgList> m_RefreshMonsterCfgListMap;
+	int m_ShiQuCfgMap;           // placeholder
+	SpecialBossMapCfgMap m_SpecialBossMapCfgMap;
+	TianLingCfgMap m_TianLingCfgTable;
+	int m_TongTianChiRankReward; // placeholder
+	UltimateChallengeCfgMap m_UltimateChallengeCfgMap;
+	VipEquipPosLevelUpMap m_VipEquipPosLevelUpMap;
+	VipEQuipPosSuitMap m_VipEQuipPosSuitList;
+	WingEquipPolishMap m_WingEquipPolishCfgMap;
+	int m_WingEquipPolishSuitMap; // placeholder
+	int m_WingEquipRefiningSuitMap; // placeholder
+	WinRefiningCfgMap m_WinRefiningCfgMap;
+	std::list<XiangYaoTaskCfg> m_XiangYaoTaskCfgList;
+	XunLeiCfgMap m_XunLeiCfgMap;
+	std::map<int32_t, CfgWuHunShop> m_CfgWuHunShopItemMap;
+	CfgMiniClientMap m_CfgMiniClient;
 };
 
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

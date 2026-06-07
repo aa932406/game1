@@ -20,6 +20,6 @@ obj/Tile.o: Tile.cpp stdafx.h ../libanswer/include/libanswer.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h CfgData.h ../share/DataStruct.h \
  actStructs.h CDaTingReward.h ExtSystemInterface.h ../share/DataStruct.h \
- CMingGeTable.h TreasureMap.h ExtSystemBase.h CKunExt.h KunData.h \
- CXinMo.h Tile.h
+ XinMoTable.h KunLingTable.h CMingGeTable.h TreasureMap.h ExtSystemBase.h \
+ CKunExt.h KunData.h CXinMo.h Tile.h
 	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I.. -I../share -I../libanswer/include -I../mysql/include -DLIBANSWER_LINUX Tile.cpp -o obj/Tile.o

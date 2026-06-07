@@ -21,22 +21,22 @@ obj/FriendExpReward.o: FriendExpReward.cpp stdafx.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h FriendExpReward.h ExtSystemBase.h \
  ExtSystemInterface.h ../share/DataStruct.h CfgData.h \
- ../share/DataStruct.h actStructs.h CDaTingReward.h CMingGeTable.h \
- TreasureMap.h CKunExt.h KunData.h CXinMo.h Player.h Bag.h Task.h \
- TaskCycle.h Achievement.h BossKilledReward.h Unit.h Buff.h Entity.h \
- ../share/Attribute.h Dungeon.h Map.h Tile.h DropItem.h ObjPet.h Pet.h \
- MapEvent.h MonsterBuff.h ExtSystemMgr.h OperateLimit.h Equip.h \
- FightChecker.h Currency.h CharTeam.h KillMonsterTongJi.h ChrDepot.h \
- CharPet.h PetEgg.h CharSkill.h Skill.h SkillBuff.h CharFamily.h \
- CharTeamDungeon.h CharInsidePet.h CharWorship.h CharCarrier.h \
- CharAuction.h CharSoul.h CharWing.h CharWish.h CharDraw.h CharExchange.h \
- CharMysteryGift.h CharMysteryShop.h CharWuHun.h CharPortal.h CharTitle.h \
- CharHallOfFame.h MagicBox.h FlopDraw.h MoneyRewardTask.h Vplan.h \
- NationalDayHd.h SevenDayTask.h ShenWei.h RongHe.h ShiZhuang.h \
- LevelRefining.h CharLittlerHelper.h CLittleHelper.h CMingGeExt.h \
- CMingGeData.h CMonthlyChouJiang.h CXingMai.h CWan360.h CWuHunShop.h \
- CTestServerReward.h Trade.h PlayerMail.h FaBao.h Fighting.h JueWei.h \
- ShangCheng.h ChouJiang.h QiFu.h DailyActivity.h Vip.h ScoreShop.h \
- FunctionOpen.h ExpBall.h YunYingHD.h TouZi.h HuoYueDu.h GuanWei.h \
- WarVictory.h GameService.h User.h
+ ../share/DataStruct.h actStructs.h CDaTingReward.h XinMoTable.h \
+ KunLingTable.h CMingGeTable.h TreasureMap.h CKunExt.h KunData.h CXinMo.h \
+ Player.h Bag.h Task.h TaskCycle.h Achievement.h BossKilledReward.h \
+ Unit.h Buff.h Entity.h ../share/Attribute.h Dungeon.h Map.h Tile.h \
+ DropItem.h ObjPet.h Pet.h MapEvent.h MonsterBuff.h ExtSystemMgr.h \
+ OperateLimit.h Equip.h FightChecker.h Currency.h CharTeam.h \
+ KillMonsterTongJi.h ChrDepot.h CharPet.h PetEgg.h CharSkill.h Skill.h \
+ SkillBuff.h CharFamily.h CharTeamDungeon.h CharInsidePet.h CharWorship.h \
+ CharCarrier.h CharAuction.h CharSoul.h CharWing.h CharWish.h CharDraw.h \
+ CharExchange.h CharMysteryGift.h CharMysteryShop.h CharWuHun.h \
+ CharPortal.h CharTitle.h CharHallOfFame.h MagicBox.h FlopDraw.h \
+ MoneyRewardTask.h Vplan.h NationalDayHd.h SevenDayTask.h ShenWei.h \
+ RongHe.h ShiZhuang.h LevelRefining.h CharLittlerHelper.h CLittleHelper.h \
+ CMingGeExt.h CMingGeData.h CMonthlyChouJiang.h CXingMai.h CWan360.h \
+ CWuHunShop.h CTestServerReward.h Trade.h PlayerMail.h FaBao.h Fighting.h \
+ JueWei.h ShangCheng.h ChouJiang.h QiFu.h DailyActivity.h Vip.h \
+ ScoreShop.h FunctionOpen.h ExpBall.h YunYingHD.h TouZi.h HuoYueDu.h \
+ GuanWei.h WarVictory.h GameService.h User.h
 	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I.. -I../share -I../libanswer/include -I../mysql/include -DLIBANSWER_LINUX FriendExpReward.cpp -o obj/FriendExpReward.o

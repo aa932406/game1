@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CKunExt.h"
+#include "CfgData.h"
 #include "GameService.h"
 #include "ItemHelper.h"
 #include "ExtSystemMgr.h"
@@ -74,7 +75,7 @@ void CKunExt::OnLoadFromDB(const PlayerDBData& dbData)
     CheckSuit();
 
     // Apply talent skill from current level config
-    const KunLevelUpCfg* pKunLevelUpCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetKunLevelUpCfg(m_nKunLevel);
+    const KunLevelUpCfg* pKunLevelUpCfg = CFG_DATA.GetKunLingTable()->GetKunLevelUpCfg(m_nKunLevel);
     if (pKunLevelUpCfg && pKunLevelUpCfg->nTalentId > 0 && pKunLevelUpCfg->nTalentLevel > 0)
     {
         m_pPlayer->GetCharSkill().AddOtherSkill(pKunLevelUpCfg->nTalentId, pKunLevelUpCfg->nTalentLevel);
@@ -151,7 +152,7 @@ void CKunExt::OnUpdate(int64_t curTick)
             if (m_DanTian[i].nEndTime <= m_pPlayer->getNow())
             {
                 int32_t nMid = m_DanTian[i].nMid;
-                const DanTianCfg* pDanTian = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetDanTianCfg(nMid);
+                const DanTianCfg* pDanTian = CFG_DATA.GetKunLingTable()->GetDanTianCfg(nMid);
                 if (pDanTian)
                 {
                     m_DanTian[i].nEndTime = 0;
@@ -182,7 +183,7 @@ void CKunExt::OnDaySwitch(int32_t nDiffDays)
 void CKunExt::AddCharAttr()
 {
     // Kun level attributes
-    const KunLevelUpCfg* pKunLevelUpCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetKunLevelUpCfg(m_nKunLevel);
+    const KunLevelUpCfg* pKunLevelUpCfg = CFG_DATA.GetKunLingTable()->GetKunLevelUpCfg(m_nKunLevel);
     if (pKunLevelUpCfg)
     {
         for (AddAttrList::const_iterator it = pKunLevelUpCfg->lAttrList.begin();
@@ -197,7 +198,7 @@ void CKunExt::AddCharAttr()
     {
         if (m_LingZhuPos[i] > 0)
         {
-            const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(m_LingZhuPos[i]);
+            const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(m_LingZhuPos[i]);
             if (pLingZhuCfg)
             {
                 for (AddAttrList::const_iterator it = pLingZhuCfg->lAttrList.begin();
@@ -212,7 +213,7 @@ void CKunExt::AddCharAttr()
     // Suit attributes
     for (std::list<int32_t>::iterator it = lSuitList.begin(); it != lSuitList.end(); ++it)
     {
-        const LingZhuSuit* pLingZhuSuit = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuSuit(*it);
+        const LingZhuSuit* pLingZhuSuit = CFG_DATA.GetKunLingTable()->GetLingZhuSuit(*it);
         if (pLingZhuSuit)
         {
             for (AddAttrList::const_iterator ait = pLingZhuSuit->lAttrList.begin();
@@ -407,7 +408,7 @@ bool CKunExt::AddLingZhuBagItem(int32_t LingZhuId, int32_t Count, ITEM_CHANGE_RE
         return false;
     }
 
-    const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(LingZhuId);
+    const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(LingZhuId);
     if (NULL == pLingZhuCfg)
     {
         return false;
@@ -538,7 +539,7 @@ void CKunExt::RemoveLingZhuItem(Int32List& pPos, ITEM_CHANGE_REASON addReason)
 
 bool CKunExt::AddDanTian(int32_t Mid)
 {
-    const DanTianCfg* pDanTian = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetDanTianCfg(Mid);
+    const DanTianCfg* pDanTian = CFG_DATA.GetKunLingTable()->GetDanTianCfg(Mid);
     if (NULL == pDanTian)
     {
         return false;
@@ -573,8 +574,8 @@ int32_t CKunExt::OnKunLingLevelUp(Answer::NetPacket* inPacket)
         return 2;
     }
 
-    const KunLevelUpCfg* pKunLevelUpCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetKunLevelUpCfg(m_nKunLevel);
-    const KunLevelUpCfg* pNextCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetKunLevelUpCfg(m_nKunLevel + 1);
+    const KunLevelUpCfg* pKunLevelUpCfg = CFG_DATA.GetKunLingTable()->GetKunLevelUpCfg(m_nKunLevel);
+    const KunLevelUpCfg* pNextCfg = CFG_DATA.GetKunLingTable()->GetKunLevelUpCfg(m_nKunLevel + 1);
 
     if (NULL == pNextCfg || NULL == pKunLevelUpCfg)
     {
@@ -682,7 +683,7 @@ int32_t CKunExt::OnGetLingZhu(Answer::NetPacket* inPacket)
     }
 
     int32_t nId = m_DanTian[Pos].nId;
-    const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(nId);
+    const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(nId);
     if (NULL == pLingZhuCfg)
     {
         return 2;
@@ -730,7 +731,7 @@ int32_t CKunExt::OnRecoveryLingZhu(Answer::NetPacket* inPacket)
         if (!LingZhuBagIsEmpty(&m_LingZhuBag[i]))
         {
             int32_t nId = m_LingZhuBag[i].nId;
-            const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(nId);
+            const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(nId);
             if (pLingZhuCfg && pLingZhuCfg->nDecExp > 0)
             {
                 // Only recover if slot is empty or no upgrade available
@@ -742,7 +743,7 @@ int32_t CKunExt::OnRecoveryLingZhu(Answer::NetPacket* inPacket)
                 else
                 {
                     int32_t posId = m_LingZhuPos[pLingZhuCfg->nType];
-                    const LingZhuCfg* pPosCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(posId);
+                    const LingZhuCfg* pPosCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(posId);
                     if (pPosCfg && pPosCfg->nNextId <= 0)
                     {
                         NeedAddExp += pLingZhuCfg->nDecExp * m_LingZhuBag[i].nCount;
@@ -789,7 +790,7 @@ int32_t CKunExt::OnFastFining(Answer::NetPacket* inPacket)
     }
 
     int32_t nMid = m_DanTian[Slot].nMid;
-    const DanTianCfg* pDanTian = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetDanTianCfg(nMid);
+    const DanTianCfg* pDanTian = CFG_DATA.GetKunLingTable()->GetDanTianCfg(nMid);
     if (NULL == pDanTian)
     {
         return 2;
@@ -846,7 +847,7 @@ int32_t CKunExt::OnLingZhuLevelUp(Answer::NetPacket* inPacket)
 
     if (nId > 0)
     {
-        const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(nId);
+        const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(nId);
         if (NULL == pLingZhuCfg)
         {
             return 2;
@@ -869,7 +870,7 @@ int32_t CKunExt::OnLingZhuLevelUp(Answer::NetPacket* inPacket)
     }
     else
     {
-        const LingZhuPosCfg* pFirstCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuPosId(Pos);
+        const LingZhuPosCfg* pFirstCfg = CFG_DATA.GetKunLingTable()->GetLingZhuPosId(Pos);
         if (pFirstCfg)
         {
             nId = pFirstCfg->nFirstId;
@@ -918,7 +919,7 @@ int32_t CKunExt::OnLingZhuLevelUp(Answer::NetPacket* inPacket)
     GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 
     // Broadcast level up announcement
-    const LingZhuCfg* pNewLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(nId);
+    const LingZhuCfg* pNewLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(nId);
     if (pNewLingZhuCfg && pNewLingZhuCfg->nLevelUpGongGao > 0)
     {
         NetPacket* packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, 0x2CD6);
@@ -1037,7 +1038,7 @@ void CKunExt::CheckSuit()
             }
 
             int32_t posId = m_LingZhuPos[j];
-            const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(posId);
+            const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(posId);
             if (NULL == pLingZhuCfg || pLingZhuCfg->nSuitId <= 0)
             {
                 SuitId = 0;
@@ -1074,7 +1075,7 @@ void CKunExt::CheckAddSuitSkill()
             return;
         }
 
-        const LingZhuCfg* pLingZhuCfg = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuCfg(m_LingZhuPos[i]);
+        const LingZhuCfg* pLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(m_LingZhuPos[i]);
         if (NULL == pLingZhuCfg || pLingZhuCfg->nLevel <= 0)
         {
             return;
@@ -1092,7 +1093,7 @@ void CKunExt::CheckAddSuitSkill()
 
     if (nSuitLevel > 0)
     {
-        const LingZhuSkill* pLingZhuSkill = ((KunLingTable*)CFG_DATA.GetKunLingTable())->GetLingZhuSkill(nSuitLevel);
+        const LingZhuSkill* pLingZhuSkill = CFG_DATA.GetKunLingTable()->GetLingZhuSkill(nSuitLevel);
         if (pLingZhuSkill && pLingZhuSkill->TalentId > 0 && pLingZhuSkill->TalentLevel > 0)
         {
             m_pPlayer->GetCharSkill().AddOtherSkill(pLingZhuSkill->TalentId, pLingZhuSkill->TalentLevel);

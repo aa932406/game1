@@ -20,9 +20,9 @@ obj/Bag.o: Bag.cpp stdafx.h ../libanswer/include/libanswer.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h Bag.h CfgData.h ../share/DataStruct.h \
  actStructs.h CDaTingReward.h ExtSystemInterface.h ../share/DataStruct.h \
- CMingGeTable.h TreasureMap.h ExtSystemBase.h CKunExt.h KunData.h \
- CXinMo.h DBService.h GameService.h Player.h Task.h TaskCycle.h \
- Achievement.h BossKilledReward.h Unit.h Buff.h Entity.h \
+ XinMoTable.h KunLingTable.h CMingGeTable.h TreasureMap.h ExtSystemBase.h \
+ CKunExt.h KunData.h CXinMo.h DBService.h GameService.h Player.h Task.h \
+ TaskCycle.h Achievement.h BossKilledReward.h Unit.h Buff.h Entity.h \
  ../share/Attribute.h Dungeon.h Map.h Tile.h DropItem.h ObjPet.h Pet.h \
  MapEvent.h MonsterBuff.h ExtSystemMgr.h OperateLimit.h Equip.h \
  FightChecker.h Currency.h CharTeam.h KillMonsterTongJi.h ChrDepot.h \

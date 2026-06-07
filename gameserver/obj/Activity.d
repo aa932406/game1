@@ -20,20 +20,20 @@ obj/Activity.o: Activity.cpp stdafx.h ../libanswer/include/libanswer.h \
  ../share/Shared.h ../share/Attribute.h ../share/PDUDefine.h \
  ../share/Type.h DataStructs.h Activity.h CfgData.h ../share/DataStruct.h \
  actStructs.h CDaTingReward.h ExtSystemInterface.h ../share/DataStruct.h \
- CMingGeTable.h TreasureMap.h ExtSystemBase.h CKunExt.h KunData.h \
- CXinMo.h NpcActivity.h Npc.h Unit.h Buff.h Entity.h ../share/Attribute.h \
- ActivityMap.h Map.h Tile.h DropItem.h ObjPet.h Pet.h Player.h Bag.h \
- Task.h TaskCycle.h Achievement.h BossKilledReward.h Dungeon.h MapEvent.h \
- MonsterBuff.h ExtSystemMgr.h OperateLimit.h Equip.h FightChecker.h \
- Currency.h CharTeam.h KillMonsterTongJi.h ChrDepot.h CharPet.h PetEgg.h \
- CharSkill.h Skill.h SkillBuff.h CharFamily.h CharTeamDungeon.h \
- CharInsidePet.h CharWorship.h CharCarrier.h CharAuction.h CharSoul.h \
- CharWing.h CharWish.h CharDraw.h CharExchange.h CharMysteryGift.h \
- CharMysteryShop.h CharWuHun.h CharPortal.h CharTitle.h CharHallOfFame.h \
- MagicBox.h FlopDraw.h MoneyRewardTask.h Vplan.h NationalDayHd.h \
- SevenDayTask.h ShenWei.h RongHe.h ShiZhuang.h LevelRefining.h \
- CharLittlerHelper.h CLittleHelper.h CMingGeExt.h CMingGeData.h \
- CMonthlyChouJiang.h CXingMai.h CWan360.h CWuHunShop.h \
+ XinMoTable.h KunLingTable.h CMingGeTable.h TreasureMap.h ExtSystemBase.h \
+ CKunExt.h KunData.h CXinMo.h NpcActivity.h Npc.h Unit.h Buff.h Entity.h \
+ ../share/Attribute.h ActivityMap.h Map.h Tile.h DropItem.h ObjPet.h \
+ Pet.h Player.h Bag.h Task.h TaskCycle.h Achievement.h BossKilledReward.h \
+ Dungeon.h MapEvent.h MonsterBuff.h ExtSystemMgr.h OperateLimit.h Equip.h \
+ FightChecker.h Currency.h CharTeam.h KillMonsterTongJi.h ChrDepot.h \
+ CharPet.h PetEgg.h CharSkill.h Skill.h SkillBuff.h CharFamily.h \
+ CharTeamDungeon.h CharInsidePet.h CharWorship.h CharCarrier.h \
+ CharAuction.h CharSoul.h CharWing.h CharWish.h CharDraw.h CharExchange.h \
+ CharMysteryGift.h CharMysteryShop.h CharWuHun.h CharPortal.h CharTitle.h \
+ CharHallOfFame.h MagicBox.h FlopDraw.h MoneyRewardTask.h Vplan.h \
+ NationalDayHd.h SevenDayTask.h ShenWei.h RongHe.h ShiZhuang.h \
+ LevelRefining.h CharLittlerHelper.h CLittleHelper.h CMingGeExt.h \
+ CMingGeData.h CMonthlyChouJiang.h CXingMai.h CWan360.h CWuHunShop.h \
  CTestServerReward.h Trade.h PlayerMail.h FriendExpReward.h FaBao.h \
  Fighting.h JueWei.h ShangCheng.h ChouJiang.h QiFu.h DailyActivity.h \
  Vip.h ScoreShop.h FunctionOpen.h ExpBall.h YunYingHD.h TouZi.h \
