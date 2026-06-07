@@ -1076,6 +1076,14 @@ void Monster::revive()
 	setState(MS_STAND);
 }
 
+void Monster::OnRevive()
+{
+	revive();
+	setAtTile( m_pMap, m_cfgmapmonster.x, m_cfgmapmonster.y );
+	broadcastIntoMap();
+	setState( MS_STAND );
+}
+
 void Monster::generateFightDrop(DropItem (&dropItems)[MAX_DROPITEM_SIZE], Player* pPlay )
 {
 	int32_t index = 0;

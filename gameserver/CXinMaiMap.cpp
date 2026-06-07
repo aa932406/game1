@@ -109,7 +109,8 @@ void CXinMaiMap::sendPlayerScore( Player* player )
 		Count = iter->second;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, 0x2E24 ); // TODO: verify overload
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::Answer::PACK_DISPATCH, 0x2E24 );
+
 	if ( NULL != packet )
 	{
 		packet->writeInt32( m_cfgActivity.id );
@@ -127,7 +128,7 @@ void CXinMaiMap::onTimeEnd()
 
 void CXinMaiMap::broadcastReady()
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::Answer::PACK_DISPATCH, 0x2CD6 );
 	if ( NULL != packet )
 	{
 		packet->writeInt32( 491 );
@@ -138,7 +139,7 @@ void CXinMaiMap::broadcastReady()
 
 void CXinMaiMap::broadcastStart()
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::Answer::PACK_DISPATCH, 0x2CD6 );
 	if ( NULL != packet )
 	{
 		packet->writeInt32( 492 );
@@ -193,8 +194,8 @@ void CXinMaiMap::onPlantGather( Plant* pPlant, Player* player )
 bool CXinMaiMap::alwaysShowIcon()
 {
 	int32_t ServerDiffDay = CFG_DATA.getServerDiffDay( 0 ); // SVT_NORMAL = 0
-	// TODO: implement GetDayBattle function
-	return ServerDiffDay >= 0;
+	return ServerDiffDay >= 0 && ServerDiffDay < 30;
+
 }
 
 void CXinMaiMap::onMonsterDie( MonsterActivity* pMonster, Player* pKiller )

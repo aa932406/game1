@@ -493,6 +493,16 @@ bool Map::CanJump() const
 	return m_cfgmap.jump >= 1;
 }
 
+bool Map::IsXinMoMap() const
+{
+	return false; // XinMo map config not yet ported
+}
+
+bool Map::IsXinMoCun() const
+{
+	return false; // XinMo village config not yet ported
+}
+
 //Kingdom* Map::getKingdom() const
 //{
 //	return m_kingdom;

@@ -274,7 +274,7 @@ void CKiaFuRecharge::OnGetRechargeSumReward(Player* player, int32_t nIndex)
         return;
 
     CExtCharBag* pBag = player->GetBag();
-    if (!pBag->AddItem(&m_vSumGift[nIndex], IDCR_KAI_FU_RECHARGE_SUM))
+    if (!pBag->AddItem(m_vSumGift[nIndex], IDCR_KAI_FU_RECHARGE_SUM))
         return;
 
     player->updateRecord(1042, nNewRecord);
@@ -303,7 +303,7 @@ void CKiaFuRecharge::OnGetXiaoFeiReward(Player* player, int32_t nIndex)
         return;
 
     CExtCharBag* pBag = player->GetBag();
-    if (!pBag->AddItem(&m_vXiaoFeiSumGift[nIndex], IDCR_KAI_FU_XIAO_FEI_SUM))
+    if (!pBag->AddItem(m_vXiaoFeiSumGift[nIndex], IDCR_KAI_FU_XIAO_FEI_SUM))
         return;
 
     player->updateRecord(1076, nNewRecord);
@@ -372,7 +372,7 @@ void CKiaFuRecharge::GetLianRechargeReward(Player* player, int32_t nType, int32_
         return;
 
     CExtCharBag* pBag = player->GetBag();
-    if (!pBag->AddItem(&m_LianRechargeCfgVt[nType].vGiftVector[nIndex], IDCR_KAI_FU_RECHARGE_SUM))
+    if (!pBag->AddItem(m_LianRechargeCfgVt[nType].vGiftVector[nIndex], IDCR_KAI_FU_RECHARGE_SUM))
         return;
 
     player->updateRecord(nRewardRecord, nNewRecord);
@@ -498,7 +498,7 @@ void CKiaFuRecharge::SendIconState(Player* player)
     {
         ShowIcon icon;
         getIconState(icon, player);
-        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_ONE_ICON);
+        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
         if (pPacket)
         {
             pPacket->writeInt32(icon.nId);
@@ -535,7 +535,7 @@ void CKiaFuRecharge::SendChouJiangIconState(Player* player)
     {
         ShowIcon icon;
         getChouJiangIconState(icon, player);
-        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_ONE_ICON);
+        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
         if (pPacket)
         {
             pPacket->writeInt32(icon.nId);
@@ -561,7 +561,7 @@ void CKiaFuRecharge::hideIcon(int32_t nIconId)
     icon.nLeftTime = 0;
     icon.IconRight = 0;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2CC3);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CC3);
     if (packet)
     {
         packet->writeInt32(icon.nId);
@@ -580,7 +580,7 @@ void CKiaFuRecharge::GongGao(int32_t GongGaoId, Player* player)
     if (!player)
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2CD6);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CD6);
     if (packet)
     {
         packet->writeInt32(GongGaoId);

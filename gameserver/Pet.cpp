@@ -864,7 +864,7 @@ void CPet::calPoints()
 		}
 	}
 
-	// TODO���߻�һ��Ҫ�����������ʼ�츳������
+	// Deduct initial talent skill count
 	if ( m_vSkill[1].nId > 0 )
 	{
 		sum -= 50;

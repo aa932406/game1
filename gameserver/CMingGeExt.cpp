@@ -661,7 +661,13 @@ void CMingGeExt::GongGao(int32_t GongGaoId, int32_t MingGeId)
 
 void CMingGeExt::AddMingGeLog(MGLog Stu)
 {
-    // TODO: DB log - insert into ming_ge_log table
+    // DB日志记录 — 写入 ming_ge_log 表
+    Answer::MySqlDBGuard db(DBPOOL);
+    char szSQL[4096] = {0};
+    snprintf( szSQL, sizeof(szSQL),
+        "INSERT INTO `ming_ge_log` (char_id, time, reason, bag_type, ming_ge_id, flag) VALUES (%lld,%d,%d,%d,%d,%d)",
+        Stu.Cid, Stu.Time, (int32_t)Stu.Reason, Stu.BagType, Stu.MingGeId, Stu.Flag );
+    db.excute( szSQL );
 }
 
 float CMingGeExt::GetRate(int32_t Times)

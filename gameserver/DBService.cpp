@@ -8,6 +8,7 @@
 #include "Timer.h"
 #include "ActivityManager.h"
 #include "GMBackstage.h"
+#include "GuiGuDaoRen.h"
 #include <string>
 
 using namespace Answer;
@@ -1320,4 +1321,43 @@ void DBService::onUpdateGMSeal( Answer::NetPacket *inPacket )
 	GM_BACKSTAGE.onUpdateGMSeal( inPacket );
 }
 
+// ==================== GuiGuDaoRen DB persistence ====================
 
+void DBService::SaveGuiGuDaoRenData( int32_t NpcId, int32_t Count )
+{
+	NetPacket* packet = popNetpacket();
+	if ( !packet ) return;
+
+	packet->writeInt32( NpcId );
+	packet->writeInt32( Count );
+	packet->setType( Answer::PackType::PACK_PROC );
+	packet->setProc( 0x4F03 );
+	packet->setSize( packet->getWOffset() );
+	sendPacket( packet );
+}
+
+void DBService::SaveGuiGuBackEquipCount( int32_t Count )
+{
+	NetPacket* packet = popNetpacket();
+	if ( !packet ) return;
+
+	packet->writeInt32( Count );
+	packet->setType( Answer::PackType::PACK_PROC );
+	packet->setProc( 0x4F04 );
+	packet->setSize( packet->getWOffset() );
+	sendPacket( packet );
+}
+
+void DBService::SaveGuiGuBackEquipRank( EquipBackRankCfg* p_stu )
+{
+	if ( !p_stu ) return;
+
+	NetPacket* packet = popNetpacket();
+	if ( !packet ) return;
+
+	p_stu->PackageData( packet );
+	packet->setType( Answer::PackType::PACK_PROC );
+	packet->setProc( 0x4F05 );
+	packet->setSize( packet->getWOffset() );
+	sendPacket( packet );
+}

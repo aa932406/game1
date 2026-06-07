@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CTerritory.h"
 #include "GameService.h"
+#include "MapRunner.h"
 #include "FamilyManager.h"
 #include "PoolManager.h"
 #include "Monster.h"
@@ -180,7 +181,7 @@ void CTerritory::onMonsterDie( Monster* monster, Player* player )
 
 			if ( player != NULL )
 			{
-				Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, 0x4E9B );
+				Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::Answer::PACK_DISPATCH, 0x4E9B );
 				if ( packet != NULL )
 				{
 					packet->writeInt32( player->getGateIndex() );

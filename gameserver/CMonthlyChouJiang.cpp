@@ -165,7 +165,7 @@ int32_t CMonthlyChouJiang::OnMonthlyChouJiang(Answer::NetPacket* inPacket)
 
     if (Item.nGongGaoId > 0)
     {
-        Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2CD6);
+        Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CD6);
         if (packet)
         {
             packet->writeInt32(Item.nGongGaoId);
@@ -194,7 +194,7 @@ void CMonthlyChouJiang::SendMonthlyChouJiangInfo()
     if (!m_pPlayer)
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2CDB);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CDB);
     if (!packet)
         return;
 
@@ -221,7 +221,7 @@ void CMonthlyChouJiang::SendMonthlyChouJiangResult(int32_t nId)
     if (!m_pPlayer)
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2CDC);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CDC);
     if (!packet)
         return;
 
@@ -266,7 +266,7 @@ void CMonthlyChouJiang::SendIcon()
 
     ShowIcon icon;
     GetIcon(icon);
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_ONE_ICON);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
     if (packet)
     {
         packet->writeInt32(icon.nId);

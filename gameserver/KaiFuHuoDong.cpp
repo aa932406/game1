@@ -1456,7 +1456,7 @@ void CKaiFuHuoDong::OnNewMinute( int32_t nMinute )
 
 void CKaiFuHuoDong::updateStartTime()
 {
-	// Placeholder - no-op in decompiled
+	// No-op: decompiled original was also empty; start time is set during Init
 }
 
 void CKaiFuHuoDong::GetIconState( Player* player, IconStateList& IconList )

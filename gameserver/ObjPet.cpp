@@ -719,7 +719,7 @@ void CObjPet::onLevelUp()
 	recalAttr();
 	FillHP();
 	m_bAlive = true;
-	// TODO����������
+	// mark for sync
 	setNeedSync();
 	setNeedSyncSelf();
 }

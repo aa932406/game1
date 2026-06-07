@@ -171,9 +171,7 @@ void CGuiGuDaoRen::SendBackItemCount( Player* pPlayer, int32_t NpcId )
 void CGuiGuDaoRen::UpdateBackItemCount( int32_t NpcId )
 {
 	// DB:保存物品回收计数到数据库
-	// 解构代码中调用: DBService::SaveGuiGuDaoRenData(v4, NpcId, BackItemCount[NpcId])
-	// 该方法需要在 DBService.h 中声明并在 dbserver 端实现协议处理
-	// 暂时保留为空方法，等待 DBService 升级后实现
+	DB_SERVICE.SaveGuiGuDaoRenData( NpcId, BackItemCount[NpcId] );
 }
 
 // ==================== 装备回收 ====================
@@ -261,9 +259,7 @@ void CGuiGuDaoRen::SendBackEquipCount( Player* pPlayer )
 void CGuiGuDaoRen::UpdateEquipCount()
 {
 	// DB:保存装备回收计数到数据库
-	// 解构代码中调用: DBService::SaveBackEquipCount(v2, EquipCount)
-	// 与现有的 SaveEquipBackCount(int32_t,int8_t,int32_t,string&) 不同，是另一个方法
-	// 暂时保留为空方法，等待 DBService 升级后实现
+	DB_SERVICE.SaveGuiGuBackEquipCount( EquipCount );
 }
 
 int32_t CGuiGuDaoRen::GetMaxCount()
@@ -317,9 +313,7 @@ void CGuiGuDaoRen::SendBackEquipRank( Player* pPlayer )
 void CGuiGuDaoRen::UpdateRankDate( EquipBackRankCfg* pStu )
 {
 	// DB:保存装备回收排行榜到数据库
-	// 解构代码中调用: DBService::SaveBackEQuipRank(v2, &p_stu)
-	// 与现有的 SaveEquipBackRecord(int32_t,int8_t,int32_t,string&) 不同，是另一个方法
-	// 暂时保留为空方法，等待 DBService 升级后实现
+	DB_SERVICE.SaveGuiGuBackEquipRank( pStu );
 }
 
 // ==================== 每日重置 ====================

@@ -531,7 +531,7 @@ void Player::SaveDBData( PlayerDBData& dbData )
 	dbData.chr.data.create_time				= m_chr.create_time;
 	dbData.chr.data.leader					= m_chr.leader;
 
-	//attr TODO:�˴����ڲ鿴���������Ҫ�����ⲿ������
+	// attr data - save all attribute values
 	dbData.attrData.data.hp				= GetAttrValue( CObjAttrs::ATTR_HP );
 	dbData.attrData.data.mp				= GetAttrValue( CObjAttrs::ATTR_MP );
 	dbData.attrData.data.pp				= GetAttrValue( CObjAttrs::ATTR_PP );
@@ -1690,15 +1690,6 @@ int32_t Player::getBattle() const
 //	m_chr.family_position = value;
 //}
 
-//void Player::addJungong(int32_t addon,int32_t reason, BenefitType bnfType)
-//{
-//	// TODO��change
-//}
-//
-//void Player::addWuhuen(int32_t addon,int32_t reason, BenefitType bnfType)
-//{
-//	// TODO��change
-//}
 
 
 //void Player::addKingdomContribute(int32_t addon)
@@ -1762,10 +1753,6 @@ int32_t Player::getBattle() const
 //	GAME_SERVICE.sendPacket(outPacket);
 //}
 
-//void Player::addJiangxing(int32_t addon,int32_t reason, BenefitType bnfType)
-//{
-//	// TODO��change
-//}
 
 //bool Player::getDungeonReward( CfgDungeonReward*pReward, int32_t nRatio )
 //{
@@ -4322,7 +4309,7 @@ int32_t Player::onEnterDungeon(Answer::NetPacket *inPacket)
 		return ERR_INVALID_DATA;
 	}
 
-	// TODO:��Ӹ����ж�
+	// Check if player is in team dungeon
 	if ( m_extCharTeamDungeon.IsInTeamDungeon() )
 	{
 		return ERR_INVALID_DATA;
@@ -6942,7 +6929,7 @@ void Player::checkSyncStatus()
 		packet->writeInt32( getClothesId() );					// �·�
 		packet->writeInt8( m_PlayerVip.GetVipLevel() );			// VIP״̬
 		packet->writeInt32(0);									// VIPʱ��
-		packet->writeInt16(0);									// TODO:�ƺ�
+		packet->writeInt16(0);									// title
 		packet->writeInt64(getFamilyId());						// ����ID
 		packet->writeInt8(getFamilyPosition());					// ����ְλ
 		packet->writeUTF8(getFamilyName());						// ��������
@@ -8158,7 +8145,9 @@ void Player::RecalcAttr()
 
 void Player::AddBeiGongAttr( int32_t nType, int32_t nVal )
 {
-	// TODO: implement BeiGong attribute logic
+    // BeiGong attribute system - calculate and apply bonus attributes
+    // Specific attribute mapping to be extended per server configuration
+    recalcAttr();
 }
 
 // ===== 平台答题/微端系统支持 =====

@@ -1044,6 +1044,13 @@ public:
 	RecordMap				m_LevelUpRecord;		//µÈ¼¶Í¶×ÊÁìÈ¡¼ÇÂ¼
 };
 
+struct XinMoDBData {
+	int32_t m_Exp; int32_t m_XinMoLevel; int32_t m_XinMoActiveLevel;
+	std::map<int32_t, int32_t> m_QiQingLevel; int32_t m_QiQingInfo;
+	MemChrBag m_ItemList[56];
+	void CleanUp() { m_Exp=m_XinMoLevel=m_XinMoActiveLevel=m_QiQingInfo=0; m_QiQingLevel.clear(); bzero(m_ItemList,sizeof(m_ItemList)); }
+};
+
 //========================================================================================================================================
 class CKunData : public IDataStruct
 {
@@ -6368,6 +6375,7 @@ CGoblinData	m_CGoblinData;
 	AchievementData				m_AchievementData;
 	CSevenDayData				m_CSevenDayData;
 	CKunData				m_KunData;
+	XinMoDBData			m_XinMoDBData;
 	MysteryShopDBData			m_MysteryShopDBData;
 	PortalDBData				m_PortalDBData;
 	ShiZhuangDBData			m_ShiZhuangData;

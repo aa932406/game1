@@ -55,7 +55,11 @@ int32_t CExtCharExchange::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket 
 		return ERR_INVALID_DATA;
 	}
 
-	// isFunctionOpen check - currently simplified
+	// Check function open via record
+	if ( !m_pPlayer || m_pPlayer->getRecord( 1169 ) <= 0 )
+	{
+		return ERR_SYETEM_ERR;
+	}
 	if ( nProcId == CM_EXCHANGE_INFO )
 	{
 		return onAskExchangeInfo( inPacket );

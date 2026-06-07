@@ -2339,7 +2339,7 @@ void CExtCharPet::SendPetInfoList()
 	{
 		return;
 	}
-	//TODO:���·�PetList;���·�ObjPetList;
+	// Refresh pet list and object pet list
 	PetList pList;
 	PET_MANAGER.GetPlayerPetList( m_pPlayer->getCid(), pList );
 	sendPetInfo( pList );
@@ -3626,9 +3626,15 @@ int32_t CExtCharPet::onUpStar( Answer::NetPacket* inPacket )
 	// Broadcast if needed
 	if ( pCfgUpStar->GongGaoId > 0 )
 	{
-		std::string strMsg;
-		// TODO: implement world broadcast for pet up-star (API removed)
-		// broadcastWorld removed: GAME_SERVICE.broadcastWorld( strMsg );
+		// 世界广播宠物升星公告
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CC2 );
+		if ( NULL != packet )
+		{
+			packet->writeInt32( pCfgUpStar->GongGaoId );
+			packet->writeUTF8( m_pPlayer->getName() );
+			packet->setSize( packet->getWOffset() );
+			GAME_SERVICE.worldBroadcast( packet );
+		}
 	}
 	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;

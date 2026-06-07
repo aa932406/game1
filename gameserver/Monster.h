@@ -55,6 +55,13 @@ public:
 	void leaveMap();
 	void SetDieType( int8_t Type );
 	void SetLifeTime( int32_t nReviveTime );
+	void OnRevive();
+	int32_t getPosX() const { return GetPosX(); }
+	int32_t getPosY() const { return GetPosY(); }
+	int32_t addRef() { return 0; }
+	int32_t getRef() const { return 0; }
+	void setDelFlg() {}
+	void SetReviveTime(int32_t){}
 
 	int32_t getMid() const;
 	int32_t getQuality() const;

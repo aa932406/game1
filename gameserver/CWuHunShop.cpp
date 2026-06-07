@@ -222,7 +222,7 @@ void CWuHunShop::sendShopInfo( int32_t ShopId )
         return;
     }
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2E9F );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::Answer::PACK_DISPATCH, 0x2E9F );
     if ( NULL == packet )
     {
         return;
@@ -246,7 +246,7 @@ void CWuHunShop::sendShopRefreshTimes()
         return;
     }
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2EA0 );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::Answer::PACK_DISPATCH, 0x2EA0 );
     if ( NULL == packet )
     {
         return;

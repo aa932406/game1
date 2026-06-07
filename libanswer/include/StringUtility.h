@@ -7,6 +7,10 @@
 typedef std::vector<std::string> StringVector;
 typedef std::vector<int32_t> Int32Vector;
 
+#ifndef ANSWER_EXPORT_SYMBOL
+#define ANSWER_EXPORT_SYMBOL
+#endif
+
 namespace Answer
 {
 	#if defined(LIBANSWER_WINDOWS)

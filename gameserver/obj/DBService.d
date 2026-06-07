@@ -39,5 +39,5 @@ obj/DBService.o: DBService.cpp stdafx.h ../libanswer/include/libanswer.h \
  DailyActivity.h Vip.h ScoreShop.h FunctionOpen.h ExpBall.h YunYingHD.h \
  TouZi.h HuoYueDu.h GuanWei.h WarVictory.h User.h EquipManager.h \
  PetManager.h EquipRansom.h Timer.h ActivityManager.h Activity.h \
- NpcActivity.h Npc.h GMBackstage.h
+ NpcActivity.h Npc.h GMBackstage.h GuiGuDaoRen.h
 	x86_64-linux-gnu-g++ -c -g -O2 -Wall -I.. -I../share -I../libanswer/include -I../mysql/include -DLIBANSWER_LINUX DBService.cpp -o obj/DBService.o

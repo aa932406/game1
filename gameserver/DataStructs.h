@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+enum ServerValueType { SVT_NORMAL = 0 };
+
 //enum SkillResultType
 //{
 //	SRT_NONE = 0,
@@ -304,6 +306,20 @@ enum CurrencyChangeReason
 	GCR_XIN_MO_LEVEL_UP		= 2090,		// 心魔升级
 	GCR_CHANGE_XIN_QING		= 2091,		// 改变心情消耗
 	GCR_DOUBLE_BACK_EQUIP		= 2092,		// 装备回购双倍
+	GCR_BACK_EQUIP			= 2093,
+	GCR_EQUIP_UP_POS_AUTO_BUY	= 2094,
+	GCR_MOFU_DUIHUAN		= 2095,
+	GCR_MO_FU_ZHU_NENG		= 2096,
+	GCR_RELIEVE_BIND		= 2097,
+	GCR_SHENYAO_UP			= 2098,
+	GCR_SHOU_HU_REFINING		= 2099,
+	GCR_VIP_EQUIP_POS		= 2100,
+	GCR_WING_POLISH			= 2101,
+	GCR_WING_REFINING		= 2102,
+	MCR_EQUIP_GEM_LEVEL_UP		= 2103,
+	IDCR_EQUIP_GEM_LEVEL_UP		= 2104,
+	IDCR_EQUIP_STRENGTHEN		= 2105,
+	IDCR_EQUIP_UP_POS		= 2106,
 
 	//==================================================================================
 //Ԫ��VCR_STRART						= 3000,
@@ -1613,6 +1629,9 @@ enum HD_ID
 	QI_FU_ICON			= 30,		// ����
 	TOTAL_CHONG_ZHI		= 31,		// �����ۼƳ�ֵ
 	WAR_VICTORY_ICON	= 32,		// ��սʤ��ͼ��
+	LEVEL_REFINING_ICON	= 33,		// 等级精炼图标
+	BOSS_KILLED_REWARD_ICON = 34,	// BOSS击杀奖励图标
+	TEST_SERVER_REWARD_ICON	= 35,	// 测试服奖励图标
 };
 
 enum SysSetting

@@ -54,6 +54,8 @@ public:
 	virtual bool CanUsePet() const;
 	virtual bool IsFullXP() const;
 	virtual bool CanJump() const;
+	bool IsXinMoMap() const;
+	bool IsXinMoCun() const;
 
 public:
 	int32_t GetId() const;

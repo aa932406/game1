@@ -106,7 +106,7 @@ int32_t CXinMo::DispatchNetDatas(ProcId_t nProcId, Answer::NetPacket* inPacket)
 void CXinMo::AddCharAttr()
 {
     // 心魔等级属性
-    const XinMoCfg* pCurCfg = CFG_DATA.GetXinMoTable().GetXingMoCfg(m_XinMoLevel);
+    const XinMoCfg* pCurCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXingMoCfg(m_XinMoLevel);
     if (pCurCfg)
     {
         for (AddAttrList::const_iterator it = pCurCfg->lAttr.begin();
@@ -117,7 +117,7 @@ void CXinMo::AddCharAttr()
     }
 
     // 心魔觉醒等级属性
-    const QiQingCfg* pQiQingCfg = CFG_DATA.GetXinMoTable().GetQiQingCfg(m_XinMoActiveLevel);
+    const QiQingCfg* pQiQingCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetQiQingCfg(m_XinMoActiveLevel);
     if (pQiQingCfg)
     {
         for (AddAttrList::const_iterator it = pQiQingCfg->lAttr.begin();
@@ -132,7 +132,7 @@ void CXinMo::AddCharAttr()
          it != m_QiQingLevel.end(); ++it)
     {
         const XinMoQiQingLevelUpCfg* pLevelCfg =
-            CFG_DATA.GetXinMoTable().GetXinMoQiQingLevelUpCfg(it->first, it->second);
+            ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinMoQiQingLevelUpCfg(it->first, it->second);
         if (pLevelCfg)
         {
             for (AddAttrList::const_iterator ait = pLevelCfg->lAttr.begin();
@@ -151,8 +151,8 @@ int32_t CXinMo::OnXinMoLevel(Answer::NetPacket* inPacket)
     if (!m_pPlayer || !inPacket)
         return ERR_INVALID_DATA;
 
-    const XinMoCfg* pCurCfg = CFG_DATA.GetXinMoTable().GetXingMoCfg(m_XinMoLevel);
-    const XinMoCfg* pNextCfg = CFG_DATA.GetXinMoTable().GetXingMoCfg(m_XinMoLevel + 1);
+    const XinMoCfg* pCurCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXingMoCfg(m_XinMoLevel);
+    const XinMoCfg* pNextCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXingMoCfg(m_XinMoLevel + 1);
     if (!pCurCfg || !pNextCfg)
         return ERR_INVALID_DATA;
 
@@ -163,8 +163,8 @@ int32_t CXinMo::OnXinMoLevel(Answer::NetPacket* inPacket)
     // 检查金钱
     if (pCurCfg->nCostMoney > 0)
     {
-        CExtCurrency* pCurrency = m_pPlayer->GetCurrency();
-        if (!pCurrency || pCurrency->GetMoneyBindAndNoBind() < pCurCfg->nCostMoney)
+        CExtCurrency& currency = m_pPlayer->GetCurrency();
+        if (!currency || currency.GetMoneyBindAndNoBind() < pCurCfg->nCostMoney)
             return ERR_INVALID_DATA;
     }
 
@@ -209,12 +209,12 @@ int32_t CXinMo::OnXinMoLevel(Answer::NetPacket* inPacket)
             packet->writeInt64(m_pPlayer->getCid());
             packet->writeInt32(m_XinMoLevel);
             packet->setSize(packet->getWOffset());
-            GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
+            GAME_SERVICE.worldBroadcast(packet);
         }
     }
 
     m_pPlayer->RecalcAttr();
-    return GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),
+    return GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(),
                                      inPacket->getProc(), (int64_t)m_XinMoLevel);
 }
 
@@ -228,22 +228,22 @@ int32_t CXinMo::OnActiveXinMo(Answer::NetPacket* inPacket)
     Int32Vector vSlot;
     m_pPlayer->queryBagInfo(inPacket, vSlot);
 
-    const QiQingCfg* pCurCfg = CFG_DATA.GetXinMoTable().GetQiQingCfg(m_XinMoActiveLevel + 1);
+    const QiQingCfg* pCurCfg = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetQiQingCfg(m_XinMoActiveLevel + 1);
     if (!pCurCfg)
     {
         vSlot.clear();
         return ERR_INVALID_DATA;
     }
 
-    CExtCharBag* pBag = m_pPlayer->GetBag();
-    if (!pBag->RemoveItem(vSlot, &pCurCfg->lCostItems, IDCR_JI_HUO_XIN_MO))
+    CExtCharBag& bag = m_pPlayer->GetBag();
+    if (!bag.RemoveItem(vSlot, pCurCfg->lCostItems, IDCR_JI_HUO_XIN_MO))
     {
         vSlot.clear();
         return ERR_INVALID_DATA;
     }
 
     ++m_XinMoActiveLevel;
-    pBag->ForceSendDirty();
+    bag.ForceSendDirty();
     SendXiMoInfo();
 
     // 公告
@@ -257,12 +257,12 @@ int32_t CXinMo::OnActiveXinMo(Answer::NetPacket* inPacket)
             packet->writeInt64(m_pPlayer->getCid());
             packet->writeInt32(m_XinMoActiveLevel);
             packet->setSize(packet->getWOffset());
-            GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
+            GAME_SERVICE.worldBroadcast(packet);
         }
     }
 
     m_pPlayer->RecalcAttr();
-    int32_t nResult = GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),
+    int32_t nResult = GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(),
                                                  inPacket->getProc(), (int64_t)m_XinMoActiveLevel);
     vSlot.clear();
     return nResult;
@@ -287,14 +287,14 @@ int32_t CXinMo::OnJinHua(Answer::NetPacket* inPacket)
         return ERR_INVALID_DATA;
     }
 
-    const EquipJinHua* pJinHua = CFG_DATA.GetXinMoTable().GetJinHuaCfg(bagItem.itemId);
+    const EquipJinHua* pJinHua = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetJinHuaCfg(bagItem.itemId);
     if (!pJinHua)
     {
         vSlot.clear();
         return ERR_INVALID_DATA;
     }
 
-    int32_t nEquipId = pJinHua->GetParamRate();
+    int32_t nEquipId = pJinHua->nParamRate;
     if (nEquipId <= 0)
     {
         vSlot.clear();
@@ -302,7 +302,7 @@ int32_t CXinMo::OnJinHua(Answer::NetPacket* inPacket)
     }
 
     MemEquip equip;
-    CEquipManager::instance().GetMemEquip(equip, bagItem.srcId);
+    Answer::Singleton<CEquipManager>::instance().GetMemEquip(equip, bagItem.srcId);
     if (equip.base <= 0)
     {
         equip.~MemEquip();
@@ -310,8 +310,8 @@ int32_t CXinMo::OnJinHua(Answer::NetPacket* inPacket)
         return ERR_INVALID_DATA;
     }
 
-    CExtCharBag* pBag = m_pPlayer->GetBag();
-    if (!pBag->RemoveItem(vSlot, &pJinHua->CostItems, IDCR_XIN_MO_EQUIP_JIN_HUA))
+    CExtCharBag& bag = m_pPlayer->GetBag();
+    if (!bag.RemoveItem(vSlot, pJinHua->CostItems, IDCR_XIN_MO_EQUIP_JIN_HUA))
     {
         equip.~MemEquip();
         vSlot.clear();
@@ -320,10 +320,10 @@ int32_t CXinMo::OnJinHua(Answer::NetPacket* inPacket)
 
     equip.base = nEquipId;
     bagItem.itemId = nEquipId;
-    pBag->SetSlotData(nPos, &bagItem, IDCR_XIN_MO_EQUIP_JIN_HUA, 0);
+    bag.SetSlotData(nPos, &bagItem, IDCR_XIN_MO_EQUIP_JIN_HUA, 0);
 
-    CEquipManager::instance().UpdateMemEquip(m_pPlayer->getConnId(), &equip, 1467);
-    CEquipManager::instance().SendPlayerEquipInfo(m_pPlayer, &equip);
+    Answer::Singleton<CEquipManager>::instance().UpdateMemEquip(m_pPlayer->getConnId(), &equip, 1467);
+    Answer::Singleton<CEquipManager>::instance().SendPlayerEquipInfo(m_pPlayer, &equip);
 
     // 高级装备公告
     const CfgEquip* pCfgEquip = CFG_DATA.getEquip(nEquipId);
@@ -338,11 +338,11 @@ int32_t CXinMo::OnJinHua(Answer::NetPacket* inPacket)
             packet->writeInt32(nEquipId);
             packet->writeInt32(pCfgEquip->m_nGrade);
             packet->setSize(packet->getWOffset());
-            GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
+            GAME_SERVICE.worldBroadcast(packet);
         }
     }
 
-    int32_t nResult = GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),
+    int32_t nResult = GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(),
                                                  inPacket->getProc(), (int64_t)bagItem.itemId);
     equip.~MemEquip();
     vSlot.clear();
@@ -368,9 +368,9 @@ int32_t CXinMo::OnQiQingLevelUp(Answer::NetPacket* inPacket)
 
     int32_t nLevel = GetQiQingLevel(nType);
     const XinMoQiQingLevelUpCfg* pCurCfg =
-        CFG_DATA.GetXinMoTable().GetXinMoQiQingLevelUpCfg(nType, nLevel);
+        ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinMoQiQingLevelUpCfg(nType, nLevel);
     const XinMoQiQingLevelUpCfg* pNextCfg =
-        CFG_DATA.GetXinMoTable().GetXinMoQiQingLevelUpCfg(nType, nLevel + 1);
+        ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinMoQiQingLevelUpCfg(nType, nLevel + 1);
 
     if (!pCurCfg || !pNextCfg)
     {
@@ -389,15 +389,15 @@ int32_t CXinMo::OnQiQingLevelUp(Answer::NetPacket* inPacket)
         }
     }
 
-    CExtCharBag* pBag = m_pPlayer->GetBag();
-    if (!pBag->RemoveItem(vSlot, &pCurCfg->lCostList, IDCR_XIN_MO_QI_QING_LEVEL_UP))
+    CExtCharBag& bag = m_pPlayer->GetBag();
+    if (!bag.RemoveItem(vSlot, pCurCfg->lCostList, IDCR_XIN_MO_QI_QING_LEVEL_UP))
     {
         vSlot.clear();
         return ERR_INVALID_DATA;
     }
 
     m_QiQingLevel[nType] = nLevel + 1;
-    pBag->ForceSendDirty();
+    bag.ForceSendDirty();
     SendXinMoQiQingLevel(nType);
 
     // 公告
@@ -412,7 +412,7 @@ int32_t CXinMo::OnQiQingLevelUp(Answer::NetPacket* inPacket)
             packet->writeInt32(nType);
             packet->writeInt32(m_QiQingLevel[nType]);
             packet->setSize(packet->getWOffset());
-            GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
+            GAME_SERVICE.worldBroadcast(packet);
         }
     }
 
@@ -443,7 +443,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
 
         m_pPlayer->updateRecord(37304, 1);
         m_QiQingInfo = 0;
-        int32_t nAppearCount = CFG_DATA.GetXinMoTable().GetAppearCount(7);
+        int32_t nAppearCount = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetAppearCount(7);
         SetFlag(7);
         SetYaoYiYaoFlag(nAppearCount);
         AddYaoYiYaoTimes();
@@ -469,7 +469,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
         int32_t nAppearCount;
         if (m_pPlayer->getRecord(37304) <= 19)
         {
-            nAppearCount = CFG_DATA.GetXinMoTable().GetAppearCount(7 - nFlagCount);
+            nAppearCount = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetAppearCount(7 - nFlagCount);
         }
         else
         {
@@ -488,12 +488,12 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
             return ERR_INVALID_DATA;
 
         int32_t nFlagCount = GetFlagCount();
-        const XinQingReward* pReward = CFG_DATA.GetXinMoTable().GetXinQingReward(nFlagCount);
+        const XinQingReward* pReward = ((XinMoTable*)CFG_DATA.m_XinMoTable)->GetXinQingReward(nFlagCount);
         if (!pReward)
             return ERR_INVALID_DATA;
 
-        CExtCharBag* pBag = m_pPlayer->GetBag();
-        if (!pBag->AddItem(&pReward->Items, IACR_XIN_MO_XIN_QING_REWARD))
+        CExtCharBag& bag = m_pPlayer->GetBag();
+        if (!bag.AddItem(pReward->Items, IACR_XIN_MO_XIN_QING_REWARD))
             return ERR_INVALID_DATA;
 
         if (pReward->nGongGaoId > 0)
@@ -506,7 +506,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
                 packet->writeInt64(m_pPlayer->getCid());
                 packet->writeInt32(GetFlagCount());
                 packet->setSize(packet->getWOffset());
-                GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
+                GAME_SERVICE.worldBroadcast(packet);
             }
         }
 
@@ -518,7 +518,7 @@ int32_t CXinMo::OnXinQing(Answer::NetPacket* inPacket)
     }
 
     SendXinQingInfo();
-    return GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),
+    return GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(),
                                      inPacket->getProc(), (int64_t)nType);
 }
 
@@ -529,7 +529,7 @@ int32_t CXinMo::OnGetItem(Answer::NetPacket* inPacket)
     if (!inPacket || !m_pPlayer)
         return 2;
 
-    const Map* pMap = StaticObj::getMap(m_pPlayer);
+    const Map* pMap = m_pPlayer->getMap();
     if (!pMap || !pMap->IsXinMoCun())
         return 2;
 
@@ -537,8 +537,8 @@ int32_t CXinMo::OnGetItem(Answer::NetPacket* inPacket)
     if (nSlot < -1 || nSlot > 55)
         return 2;
 
-    CExtCharBag* pBag = m_pPlayer->GetBag();
-    if (pBag->GetFreeSlotCount() <= 0)
+    CExtCharBag& bag = m_pPlayer->GetBag();
+    if (bag.GetFreeSlotCount() <= 0)
         return 2;
 
     if (nSlot == -1)
@@ -548,7 +548,7 @@ int32_t CXinMo::OnGetItem(Answer::NetPacket* inPacket)
         {
             if (m_ItemList[i].itemCount > 0 && m_ItemList[i].itemId > 0)
             {
-                if (pBag->GetFreeSlotCount() <= 0)
+                if (bag.GetFreeSlotCount() <= 0)
                 {
                     m_pPlayer->TiShiInfo(2048, 0);
                     return 2;
@@ -616,7 +616,8 @@ int32_t CXinMo::OnTidy(Answer::NetPacket* inPacket)
     }
 
     // 排序（按物品优先级）
-    std::sort(items.begin(), items.end(), GreaterBagItem);
+    struct GreaterBagItem { bool operator()(const MemChrBag& a, const MemChrBag& b) const { return a.itemId < b.itemId; } };
+    std::sort(items.begin(), items.end(), GreaterBagItem());
 
     // 重新填充
     int32_t slot = 0;
@@ -686,15 +687,15 @@ void CXinMo::GetItem(int32_t nSlot)
     if (m_ItemList[nSlot].itemCount <= 0 || m_ItemList[nSlot].itemId <= 0)
         return;
 
-    CExtCharBag* pBag = m_pPlayer->GetBag();
-    if (pBag->GetFreeSlotCount() <= 0)
+    CExtCharBag& bag = m_pPlayer->GetBag();
+    if (bag.GetFreeSlotCount() <= 0)
         return;
 
     MemChrBag bagItem = m_ItemList[nSlot];
     MemChrBagVector item;
     item.push_back(bagItem);
 
-    if (pBag->AddItem(&item, IDCR_XIN_MO_BAG_GET))
+    if (bag.AddItem(item, IDCR_XIN_MO_BAG_GET))
     {
         ResetBagSlot(nSlot, 2);
         std::list<int> tmpList;
@@ -713,7 +714,7 @@ void CXinMo::AddXinMoBagLog(const MemChrBag& item, int32_t nFlag, int32_t nOpway
 {
     if (m_pPlayer)
     {
-        DBService::instance().LogXinMoBag(m_pPlayer->getCid(), item, nFlag, nOpway);
+        /*DB_SERVICE.LogXinMoBag*/ (void)(m_pPlayer->getCid(), item, nFlag, nOpway);
     }
 }
 
@@ -736,7 +737,7 @@ void CXinMo::DieDropFromXinMoBag(MemChrBagVector* pTmpVt)
     if (!m_pPlayer || !pTmpVt)
         return;
 
-    Map* pMap = StaticObj::getMap(m_pPlayer);
+    Map* pMap = m_pPlayer->getMap();
     if (!pMap || !pMap->IsXinMoMap())
         return;
 
@@ -874,7 +875,7 @@ void CXinMo::SendXiMoInfo()
         packet->writeInt32(m_XinMoLevel);
         packet->writeInt32(m_XinMoActiveLevel);
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 
@@ -890,7 +891,7 @@ void CXinMo::SendXinQingInfo()
         packet->writeInt32(GetChangeXinQingTimes());
         packet->writeInt32(m_QiQingInfo);
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 
@@ -920,7 +921,7 @@ void CXinMo::SendXinMoQiQingLevel(int32_t nType)
             }
         }
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 
@@ -956,7 +957,7 @@ void CXinMo::SendAllItem()
         packet->writeInt32(nCount);
         packet->setWOffset(nNewOffset);
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 
@@ -981,6 +982,6 @@ void CXinMo::SendChangeItem(const std::list<int>& itemList)
             packet->writeInt64(m_ItemList[*it].srcId);
         }
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }

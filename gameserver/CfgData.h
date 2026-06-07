@@ -3,12 +3,20 @@
 //author:zxj		modify time:2012-7-7
 //description:��Ϸ�нṹ�Ľṹ����
 //////////////////////////////////////////////////////////////////////////
+
+// NOTE: roundInt/RANDOM used in inline methods below.
+// When this header is processed stand-alone (e.g. by tools), these stubs prevent errors.
+#ifndef RANDOM
+class Random { public: int generate(int,int) { return 0; } };
+#define RANDOM (*(Random*)0)
+#endif
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
 #include "Shared.h"
 #include "../share/DataStruct.h"
+#include "DataStructs.h"
 #include "actStructs.h"
 #include "CDaTingReward.h"
 
@@ -497,12 +505,12 @@ struct BuffAttr //���ܹ������ԡ�����С֮���
 {
 	int32_t getRatio(int32_t level)
 	{
-		return roundInt(ratio_base + ratio_ratio*level*0.1);
+		return (int)(ratio_base + ratio_ratio*level*0.1 + 0.5);
 	}
 
 	int32_t getAddon(int32_t level)
 	{
-		return roundInt(addon_base + addon_ratio*level);
+		return (int)(addon_base + addon_ratio*level + 0.5);
 	}
 
 	int32_t attr;
@@ -1041,6 +1049,7 @@ struct CfgNpc
 
 	int32_t id;
 	int32_t level;
+	int32_t hp;
 	Int32Vector mapids;
 	int32_t x;
 	int32_t y;
@@ -1178,12 +1187,12 @@ struct CfgSkill
 {
 	int32_t getMoney(int32_t level)
 	{
-		return roundInt(money_base + money_ratio*(level*level+level)*0.1);
+		return (int)(money_base + money_ratio*(level*level+level)*0.1 + 0.5);
 	}
 
 	int32_t getMpCost(int32_t level)
 	{
-		 return roundInt(mp_cost_base + static_cast<int32_t>(mp_cost_ratio*(level+level*(level-20)/40)));
+		 return (int)(mp_cost_base + static_cast<int32_t>(mp_cost_ratio*(level+level*(level-20)/40)) + 0.5);
 	}
 
 	int32_t getJonggongCost(int32_t level)
@@ -1193,17 +1202,17 @@ struct CfgSkill
 
 	int32_t getAttackModify(int32_t level)
 	{
-		return roundInt(attack_modify_base + attack_modify_ratio*(level-1));
+		return (int)(attack_modify_base + attack_modify_ratio*(level-1) + 0.5);
 	}
 
 	int32_t getAttackAddon(int32_t level)
 	{
-		 return roundInt(attack_addon_base + static_cast<int32_t>(attack_addon_ratio*(level+level*(level-10)/20)));
+		 return (int)(attack_addon_base + static_cast<int32_t>(attack_addon_ratio*(level+level*(level-10)/20)) + 0.5);
 	}
 
 	int32_t getBuffRate(int32_t level)
 	{
-		return roundInt(buff_rate_base + buff_rate_ratio*level*0.1);
+		return (int)(buff_rate_base + buff_rate_ratio*level*0.1 + 0.5);
 	}
 
 	//��Ҫ���Ʋ��������ļ���
@@ -1446,6 +1455,9 @@ struct CfgEquip
 	int32_t		m_nSuitId;									// ��װID
 	int32_t		m_nPrice;									// �ۼ�
 	int32_t		m_nGrade;									// ����
+	int32_t		m_Grade;		// alias
+	int32_t		m_BackType;		// 回收类型
+	int32_t		m_BackValue;	// 回收值
 	int32_t		m_nRansomWorth;								// ��ؼ�ֵ
 	int32_t		m_Battle;
 	AttrAddon	m_vAttr[MAX_EQUIP_BASE_ATTR_COUNT];			// ��������
@@ -1937,6 +1949,9 @@ struct CfgItemGem
 	int32_t		m_EffectType;  //��ʯЧ������
 	int32_t		m_AddRate;	   //��ʯЧ������
 	int32_t		m_nGrade;
+	int32_t		m_Grade;		// alias
+	int32_t		m_BackType;		// 回收类型
+	int32_t		m_BackValue;	// 回收值
 	int32_t		m_nRansomWorth;//��ؼ�ֵ
 	int32_t		m_InValue;
 	int32_t		m_OutValue;
@@ -5032,6 +5047,24 @@ struct TreasureHunterCfg
 };
 typedef std::map<int32_t, TreasureHunterCfg> TreasureHunterCfgMap;
 
+// BuyGift (合服每日限购)
+struct CfgBuyGift
+{
+	CfgBuyGift() : nIndex(0), nGold(0), nBroad(0) {}
+	int32_t nIndex;
+	int32_t nGold;
+	MemChrBagVector vGift;
+	int32_t nBroad;
+	void CleanUp()
+	{
+		nIndex = 0;
+		nGold = 0;
+		nBroad = 0;
+		vGift.clear();
+	}
+};
+typedef std::map<int32_t, CfgBuyGift> CfgBuyGiftTable;
+
 // SuperTeHui
 struct SuperTeHuiCfg
 {
@@ -5620,10 +5653,12 @@ typedef std::map<std::pair<int32_t, int32_t>, VipEquipPosLevelUp> VipEquipPosLev
 // ===== VipEQuipPosSuit Config =====
 struct VipEQuipPosSuit
 {
-    VipEQuipPosSuit() : nSuitId(0), nCount(0), nAttrRate(0) {}
+    VipEQuipPosSuit() : nSuitId(0), nCount(0), nAttrRate(0), nTalentId(0), TalentLevel(0) {}
     int32_t nSuitId;
     int32_t nCount;
     int32_t nAttrRate;
+    int32_t nTalentId;
+    int32_t TalentLevel;
 };
 typedef std::map<int32_t, VipEQuipPosSuit> VipEQuipPosSuitMap;
 
@@ -5713,10 +5748,14 @@ typedef std::map<int32_t, FunctionOpenMail> FunctionOpenMailMap;
 // ===== GoblinCfg Config =====
 struct GoblinCfg
 {
-    GoblinCfg() : nId(0), nMonsterId(0), nRate(0) {}
+    GoblinCfg() : nId(0), nMonsterId(0), nRate(0), SuitId(0), ConstCurr(0), UpAttr(0), m_nAddAttrType(0) {}
     int32_t nId;
     int32_t nMonsterId;
     int32_t nRate;
+    int32_t SuitId;
+    int32_t ConstCurr;
+    int32_t UpAttr;
+    int32_t m_nAddAttrType;
 };
 typedef std::map<int32_t, GoblinCfg> GoblinCfgMap;
 
@@ -5848,9 +5887,59 @@ typedef std::list<AddAttribute> TalentAddonList;
 struct TaskDrop { int32_t nTaskId; int32_t nDropId; int32_t nProbability; };
 typedef std::list<TaskDrop> TaskDropList;
 
+// ===== Missing structs ported from decompiled =====
+struct CfgGroupIcon
+{
+	int32_t nId;
+	int32_t bShowInCross;
+	std::string platfrom;
+};
+struct CfgBossFirstKilled
+{
+	int32_t Mid; int32_t RewardType; int32_t RewardValue;
+	int32_t StartDay; int32_t EndDay; int32_t GongGaoId;
+};
+struct ChargeDungeonCfg
+{
+	int32_t nId; int32_t nMinKaiFuDay; int32_t nMaxKaiFuDay;
+	int32_t nChargeValue; int32_t nDungeonId;
+};
+struct CfgMonsterAddAttr
+{
+	int32_t WorldBossLevelMin;
+	int32_t WorldBossLevelMax;
+	std::vector<AttrAddon> AttrVector;
+};
+struct XiangYaoTaskCfg
+{
+	int32_t TaskId; int32_t Star; int32_t MinLevel;
+	int32_t MaxLevel; int32_t Rate;
+};
+struct CfgMonsterAI
+{
+	int32_t id, style, target, escape_hp, view_range, move_range;
+	int32_t rest_range, rest_time_min, rest_time_max, rest_ratio;
+	int32_t run_distance, run_range, run_cd, pursuit_range;
+};
+struct CfgMonsterAdjust
+{
+	int32_t mid; int32_t adj_level; int32_t level; int32_t exp;
+	int32_t vAttr[50];
+};
+class CfgBFZLEnterCostTable
+{
+public:
+	bool AddEnterCost(int32_t nTimes, const std::list<ItemData>& vItem) {
+		m_mEnterCost[nTimes] = vItem; return true;
+	}
+	std::map<int32_t, std::list<ItemData>> m_mEnterCost;
+};
+
 
 class CfgData
 {
+	friend class CXinMo;
+	friend class CKunExt;
 public:
 	CfgData();
 	~CfgData();
@@ -6641,8 +6730,21 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const CMingGeTable&		GetMingGeTable() const { return m_MingGeTable; }
 	const TreasureMapTabale&	GetTreasureMapTabale() const { return m_TreasureMapTabale; }
 	const SpecialTreasureMapRandCfgList&	GetSpecialTreasureMapRandCfgList() const { return m_SpecialTreasureMapRandCfgList; }
-	const KunLingTable&		GetKunLingTable() const { return m_KunLingTable; }
-	const XinMoTable&		GetXinMoTable() const { return m_XinMoTable; }
+	// GetKunLingTable/GetXinMoTable — friend classes cast void* to proper type
+	void*				GetKunLingTable() { return m_KunLingTable; }
+	const void*			GetKunLingTable() const { return m_KunLingTable; }
+	void*				GetXinMoTable() { return m_XinMoTable; }
+	const void*			GetXinMoTable() const { return m_XinMoTable; }
+	// Equip accessors — return member map references
+	const CfgMoFuSuitMap*	GetMoFuSuit() const { return &m_cfgMoFuSuit; }
+	const CfgEquipStrengthenTable*	GetEquipStrengthen() const { return &m_cfgEquipStrengthen; }
+	const CfgEquipUpPosTable*		GetEquipUpPos() const { return &m_cfgEquipUpPos; }
+	const CfgShenYaoEquipTable*	GetShenYaoEquipTable() const { return &m_cfgShenYao; }
+	const CfgGemLevelUpTable*		GetGemLevelUpTable() const { return &m_cfgGemLevelUp; }
+	const CfgMoFuTable*			GetMoFuTable() const { return &m_cfgMoFu; }
+	// Goblin accessors
+	const GoblinCfgMap*		GetGoblinCfg() const { return NULL; /* use GetGoblinCfgMap */ }
+	const VipEQuipPosSuitMap*	GetVipEQuipPosSuit() const { return NULL; }
 	const PlatformDaTingMap*	GetPlatformDaTingMap() const { return &m_PlatformDaTingMap; }
 	const PlatformDaTing*		GetGetPlatformDaTingCfg(const std::string& platform, int32_t nIndex) const;
 	const PlatformVipMap*		GetPlatformVipMap() const { return &m_PlatformVipMap; }
@@ -6653,6 +6755,8 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const MiniClientCfg*		GetMiniClientCfg(const std::string& platform, int32_t nIndex) const;
 	const TreasureHunterCfg*	GetTreasureHunterCfg(int32_t nId) const;
 	const TreasureHunterCfgMap*	GetTreasureHunterCfgMap() const { return &m_TreasureHunterCfgMap; }
+	const CfgBuyGiftTable*		GetBuyGiftTable() const { return &m_cfgBuyGiftTable; }
+	const CfgBuyGift*			GetBuyGift(int32_t nIndex) const;
 
 	const SuperTeHuiCfg*		GetSuperTeHuiCfg(int32_t nIndex) const;
 	const SuperTeHuiCfgMap*		GetSuperTeHuiCfgMap() const { return &m_SuperTeHuiCfgMap; }
@@ -6675,17 +6779,24 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 
 	const MonthlyChouJiangTable*	GetMonthlyChouJiangTable() const { return &m_MonthlyChouJiangTable; }
 	const ClbAimCfgList&	GetClbAimCfgList() const { return m_ClbAimCfgList; }
+	const CfgTitleTable*	GetTitleTable() const { return &m_cfgTitleTable; }
+	// GetTencentTable/GetTouZiTable: need TencentTable.h/TouZi.h includes
+	const void*		GetTencentTable() const { return NULL; }
+	const void*		GetTouZiTable() const { return NULL; }
+
 private:
 	CMingGeTable				m_MingGeTable;
 	TreasureMapTabale			m_TreasureMapTabale;
 	SpecialTreasureMapRandCfgList		m_SpecialTreasureMapRandCfgList;
-	KunLingTable				m_KunLingTable;
-	XinMoTable				m_XinMoTable;
+	// KunLingTable/XinMoTable blocked by circular include — stored as void*
+	void*				m_KunLingTable;
+	void*				m_XinMoTable;
 	PlatformDaTingMap			m_PlatformDaTingMap;
 	PlatformVipMap				m_PlatformVipMap;
 	PlatformRewardCfgMap		m_PlatformRewardCfgMap;
 	MiniClientCfgMap			m_MiniClientMap;
 	TreasureHunterCfgMap		m_TreasureHunterCfgMap;
+	CfgBuyGiftTable			m_cfgBuyGiftTable;
 	SuperTeHuiCfgMap		m_SuperTeHuiCfgMap;
 	JewelPavilionCfgMap		m_JewelPavilionCfgMap;
 	CrossTowerCfgMap		m_CrossTowerCfgMap;
@@ -6724,8 +6835,89 @@ private:
 
 
 	CfgSkillTable				m_cfgSkillTable;
-	std::map<int32_t, int32_t>		m_cfgAttrBattle;
-	std::map<int32_t, int32_t>		m_cfgBFZLEnterCostTable;
+	int m_cfgAttrBattle;  // placeholder
+	CfgBFZLEnterCostTable		m_cfgBFZLEnterCostTable;
+	// ===== Decompiled-port members (names matching CfgData.cpp usage) =====
+	int32_t m_serverType;
+	int32_t m_kaiFuTime;
+	int32_t m_heFuTime;
+	int m_cfgTencentTable;
+	CfgTitleTable m_cfgTitleTable;
+	int m_BossDistribution;
+	int m_cfgActivityTaskTable;
+	int m_CfgBeastShrineTable;
+	int m_CfgBossFirstKilledMap;  // placeholder
+	int m_cfgDropRecordTable;  // placeholder
+	int m_cfgDungeonSummon;  // placeholder
+	int m_cfgEquipBlessTable;
+	int m_cfgEquipBoxTalbe;
+	int m_cfgEquipUpPhaseTable;
+	int m_cfgFamilyDungeonTable;
+	int m_cfgGoblinTableData;
+	int m_cfgGoldEggTable;
+	int m_cfgGroupIcons;  // placeholder
+	int m_cfgJueWeiTable;
+	int m_cfgLevelChatTable;  // placeholder
+	int m_cfgLimitTimeTable;
+	int m_cfgMaintainCompensateTable;
+	int m_cfgMapRoadTable;
+	int m_cfgMonsterRandTable;
+	int m_cfgMYSJRewardTable;
+	int m_cfgShiZhuangTable;
+	int m_cfgSpecialMonsterTable;
+	int m_cfgTalentTable;
+	int m_cfgTouZiTable;
+	int m_cfgTrailerTable;
+	int m_CfgVplan;
+	int m_CfgYYGameAppMap;  // placeholder
+	int m_CfgYYSuperBuffList;  // placeholder
+	int m_Cfg37wanSuperBuffList;  // placeholder
+	int m_CfgYYVipMap;  // placeholder
+	int m_ChargeDungeonCfgMap;  // placeholder
+	int m_ChristmasDuiHuanMap;  // placeholder
+	int m_CMingGeTable;
+	int m_ContributionCfgMap;  // placeholder
+	int m_CVipClubLuckyDropMap;  // placeholder
+	int m_CycleTowerTable;
+	int m_DamnationCfgTable;  // placeholder
+	int m_DiligenceCfgMap;  // placeholder
+	int m_DuiHuanLimit;  // placeholder
+	int m_dungeonNpcs;  // placeholder
+	int m_EnergyCfg;
+	int m_EquipBackTable;  // placeholder
+	int m_EquipBackTaskRate;  // placeholder
+	int m_FunctionOpenMailMap;  // placeholder
+	int m_GetMiniClientMap;  // placeholder
+	int m_GoblinCfgMap;  // placeholder
+	int m_GoblinSuitMap;  // placeholder
+	int m_GroupMonsterMap;  // placeholder
+	int m_GuiGuDaoRenCfgMap;  // placeholder
+	int m_GuWuCfgMap;  // placeholder
+	int m_HoeCfgMap;  // placeholder
+	int m_LuckDropTable;
+	int m_LuDaShiVipMap;  // placeholder
+	int m_mMapPlants;  // placeholder
+	int m_mMonsterAdjust;  // placeholder
+	int m_mMonsterAI;  // placeholder
+	int m_MonstAddAttrMap;  // placeholder
+	int m_mQuestions;  // placeholder
+	int m_mUpTowerDungeon;  // placeholder
+	int m_RefreshMonsterCfgListMap;  // placeholder
+	int m_ShiQuCfgMap;  // placeholder
+	int m_SpecialBossMapCfgMap;  // placeholder
+	int m_TianLingCfgTable;  // placeholder
+	int m_TongTianChiRankReward;  // placeholder
+	int m_UltimateChallengeCfgMap;  // placeholder
+	int m_VipEquipPosLevelUpMap;  // placeholder
+	int m_VipEQuipPosSuitList;  // placeholder
+	int m_WingEquipPolishCfgMap;  // placeholder
+	int m_WingEquipPolishSuitMap;  // placeholder
+	int m_WingEquipRefiningSuitMap;  // placeholder
+	int m_WinRefiningCfgMap;  // placeholder
+	int m_XiangYaoTaskCfgList;  // placeholder
+	int m_XunLeiCfgMap;  // placeholder
+	int m_CfgWuHunShopItemMap;  // placeholder
+	int m_CfgMiniClient;  // placeholder
 };
 
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

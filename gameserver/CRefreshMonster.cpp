@@ -116,9 +116,7 @@ void CRefreshMonster::FlushMonsters( int32_t NowTime )
 	{
 		if ( m_StateTime + it->nStartTime < NowTime )
 		{
-			// Note: LastFreshTime is tracked in config data. For simplicity, check if enough time has passed.
-			// Since we don't modify the const config list, we just check timing.
-			// The actual implementation would track LastFreshTime per config per activity instance.
+			// LastFreshTime tracked via mutable config field; check refresh interval
 			bool bCanRefresh = true;
 			if ( it->LastFreshTime > 0 )
 			{
@@ -163,16 +161,27 @@ void CRefreshMonster::FlushMonsters( int32_t NowTime )
 void CRefreshMonster::stopActivity()
 {
 	m_nState = AS_NOT_START;
+	broadcastEnd();
 	reset();
-	// broadcastEnd would be called here if it existed
+}
+
+void CRefreshMonster::broadcastEnd()
+{
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::Answer::PACK_DISPATCH, 0x2CD6 );
+	if ( NULL != packet )
+	{
+		packet->writeInt32( m_cfgActivity.EndGongGao > 0 ? m_cfgActivity.EndGongGao : 0 );
+		packet->setSize( packet->getWOffset() );
+		GAME_SERVICE.worldBroadcast( packet );
+	}
 }
 
 void CRefreshMonster::broadcastStart()
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::Answer::PACK_DISPATCH, 0x2CD6 );
 	if ( NULL != packet )
 	{
-		packet->writeInt32( m_cfgActivity.state ); // TODO: should use StartGongGao from config
+		packet->writeInt32( m_cfgActivity.StartGongGao > 0 ? m_cfgActivity.StartGongGao : m_cfgActivity.state );
 		packet->setSize( packet->getWOffset() );
 		GAME_SERVICE.worldBroadcast( packet );
 	}
@@ -182,7 +191,7 @@ void CRefreshMonster::FreshObjGongGao( int32_t GongGaoId )
 {
 	if ( GongGaoId > 0 )
 	{
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::Answer::PACK_DISPATCH, 0x2CD6 );
 		if ( NULL != packet )
 		{
 			packet->writeInt32( GongGaoId );

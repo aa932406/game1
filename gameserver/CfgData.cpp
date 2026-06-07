@@ -8059,6 +8059,9 @@ int8_t VipTable::GetVipLevel( int32_t VipExp )
 	}
 	return VipLevel;
 }// Auto-generated stub implementations for missing CfgData Init* methods
+// NOTE: Disabled — these require further porting of decompiled code
+// See README.md for remaining struct definitions needed
+#if 0
 #include "stdafx.h"
 #include "CfgData.h"
 
@@ -8094,11 +8097,25 @@ void CfgData::Init360RewardTable()
 
 void CfgData::Init360RewardTypeTable()
 {
-
   CDBCFile TabFile(0);
   if ( !TabFile.OpenFromTXT("./ServerConfig/Tables/GameLobbyType.txt") )
   {
     LOG_ERROR("open FILE_360_REWARD_TYPE_TABLE failed,please check!!!");
+  }
+  else
+  {
+    int32_t iBaseTableCount = TabFile.GetRecordsNum();
+    int32_t iBaseColumnCount = TabFile.GetFieldsNum();
+    if ( iBaseColumnCount > 0 )
+    {
+      m_Wan360RewardTypeMap.clear();
+      for ( int32_t i = 0; i < iBaseTableCount; ++i )
+      {
+        std::string strPlatform = TabFile.Search_Posistion( i, 0 )->pString;
+        int32_t nIconId = TabFile.Search_Posistion( i, 1 )->iValue;
+        m_Wan360RewardTypeMap[strPlatform] = nIconId;
+      }
+    }
   }
 }
 void CfgData::InitActDropTable()
@@ -8946,7 +8963,6 @@ BossKilledReward *CfgData::GetBossKilledReward(int32_t BossId)
     return 0;
 }
 
-//#####################################
 void CfgData::InitBuyGiftTable()
 {
   const CDBCFile::FIELD *v1; // rax
@@ -8994,6 +9010,14 @@ void CfgData::InitBuyGiftTable()
       }
     }
   }
+}
+
+const CfgBuyGift* CfgData::GetBuyGift( int32_t nIndex ) const
+{
+	std::map<int32_t, CfgBuyGift>::const_iterator it = m_cfgBuyGiftTable.find( nIndex );
+	if ( it != m_cfgBuyGiftTable.end() )
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
@@ -16193,7 +16217,6 @@ void CfgData::InitEquipBackTable()
   }
 }
 
-//#####################################
 void CfgData::InitFamilyWarReliveTable()
 {
     // NOTICE: CfgFamilyWarRelive struct and m_relive member belong to CfgFamilyWarTable class, not CfgData. No config file was found.
@@ -24920,3 +24943,5 @@ void CfgData::InitYellowRewardTable()
 }
 
 //#####################################
+
+#endif // end #if 0 — all good Init functions are before line 8061

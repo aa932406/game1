@@ -7,6 +7,17 @@
 
 #include "ExtSystemBase.h"
 
+// Protocol constants — defined here since not yet in PDUDefine.h
+#ifndef CM_WISH_WISH
+#define CM_WISH_WISH			964
+#define CM_WISH_INFO			965
+#define CM_WISH_REWARD			966
+#endif
+#ifndef SM_WISH_INFO
+#define SM_WISH_INFO			967
+#define SM_WISH_ICON			968
+#endif
+
 class CExtCharWish : public CExtSystemBase
 {
 public:

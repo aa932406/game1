@@ -243,7 +243,7 @@ void CBossKilledReward::SendBossKilledInfo()
 void CBossKilledReward::GetBossKilledIcon( ShowIcon& icon )
 {
 	memset( &icon, 0, sizeof( icon ) );
-	icon.nId = 0; // TODO: use proper icon ID
+	icon.nId = BOSS_KILLED_REWARD_ICON;
 	icon.nState = AS_RUNNING;
 }
 

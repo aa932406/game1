@@ -78,7 +78,7 @@ int32_t CXingMai::OnXingMaiLevelUp( Answer::NetPacket *inPacket )
 
 	if ( NextCfg->GongGaoId > 0 )
 	{
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD6 );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::Answer::PACK_DISPATCH, 0x2CD6 );
 		if ( packet != NULL )
 		{
 			packet->writeInt32( NextCfg->GongGaoId );

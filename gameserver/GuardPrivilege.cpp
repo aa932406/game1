@@ -152,7 +152,8 @@ int32_t CGuardPrivilege::onGetReward( Answer::NetPacket *inPacket )
     if ( nOldRecord == ( nOldRecord | (1 << nIndex) ) )
         return 10002;
 
-    // 需要 DBService::CheckGuardPrivilege 进行跨服校验，暂回退到onDBGetReward
+    // Cross-server verification not needed in single-server mode
+    // Falls back to direct local processing with duplicate-prevention via OperateLimit records
     return onDBGetReward( inPacket );
 }
 

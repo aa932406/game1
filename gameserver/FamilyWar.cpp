@@ -314,7 +314,7 @@ void CFamilyWar::removePlayer( Player* player, bool islogout )
 		removeBuff( player );
 		if ( m_pTitle != NULL )
 		{
-			// Note: Monster::OnRevive not available in current codebase
+			m_pTitle->OnRevive();
 		}
 	}
 

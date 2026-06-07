@@ -38,8 +38,17 @@ void CLittleHelperData::SaveToSqlString( SqlStringList *sqls, char (*szSQL)[4096
 
 bool CLittleHelperData::LoadFromDB( Answer::MySqlDBGuard *db, char (*szSQL)[4096], int64_t nUid, int32_t nSid, CharId_t nCid )
 {
-    // Stub - DB operations not fully implemented in skeleton
-    return false;
+    bzero( szSQL, 0x1000 );
+    snprintf( (char *)szSQL, 0xFFF, "SELECT * FROM `mem_little_helper` WHERE `Cid`=%lld", nCid );
+    Answer::MySqlQuery result( db->query( (const char *)szSQL ) );
+    while ( !result.eof() )
+    {
+        m_LittleHelperId = result.getIntValue( "work_id", 0 );
+        std::string nString = result.getStringValue( "act_info", "" );
+        SaveRewardState( &nString );
+        result.nextRow();
+    }
+    return true;
 }
 
 std::string CLittleHelperData::getRewardState()

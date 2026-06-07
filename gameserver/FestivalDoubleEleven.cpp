@@ -1391,8 +1391,9 @@ void CFestivalDoubleEleven::OnRecharge(Player* player, int32_t nValue)
 
 void CFestivalDoubleEleven::RefreshMysteryShopItem()
 {
-    // Refresh mystery shop items
-    // TODO: implement item refresh logic
+    // 刷新神秘商店物品
+    // 遍历所有玩家，刷新其神秘商店数据
+    broadcastRefreshMysteryShop();
 }
 
 
@@ -2345,15 +2346,52 @@ void CFestivalDoubleEleven::GouWuChe(Player* player)
 {
     if (NULL == player) return;
     if (!IsInTime(FAT_GOU_WU_CHE)) return;
-    // Shopping cart - complex logic, simplified stub
+    if (m_nGouWuCheSize <= 0) return;
+
     CExtOperateLimit& limit = player->GetOperateLimit();
     int32_t nOldRecord = limit.GetLimitCount(2112);
     if (nOldRecord > 0) return; // already used
-    // Check if player has enough items/currency
+
+    // Calculate total price for all items and collect them
+    int32_t PriceSum = 0;
+    MemChrBagVector items;
+    for (int32_t i = 0; i < m_nGouWuCheSize; ++i)
+    {
+        if (i >= (int32_t)m_vGouWuCheGiftPrice.size()) break;
+        PriceSum += m_vGouWuCheGiftPrice[i];
+        for (size_t j = 0; j < m_vGouWuCheItem[i].size(); ++j)
+            items.push_back(m_vGouWuCheItem[i][j]);
+    }
+
+    if (PriceSum <= 0 || items.empty()) return;
+
+    // Apply discount based on number of items purchased
+    int32_t Rate = 0; // 0 = no discount
+    switch (m_nGouWuCheSize)
+    {
+        case 1: Rate = 9; break;  // 90%
+        case 2: Rate = 8; break;  // 80%
+        case 3: Rate = 7; break;  // 70%
+        case 4: Rate = 6; break;  // 60%
+        case 5: Rate = 5; break;  // 50%
+        default: Rate = 0; break;
+    }
+
+    if (Rate <= 0) return;
+
     int64_t nGold = player->GetCurrency(CURRENCY_GOLD);
-    if (nGold <= 0) return;
-    // Apply to all items
-    limit.UpdateLimitCount(2112, 1);
+    int32_t nFinalPrice = Rate * PriceSum / 10;
+    if (nGold < nFinalPrice) return;
+
+    CExtCharBag& bag = player->GetBag();
+    if (bag.GetFreeSlotCount() < (int32_t)items.size()) return;
+
+    // Deduct currency and give items
+    if (!player->DecCurrency(CURRENCY_GOLD, nFinalPrice, GCR_DOUBLE_ELEVEN_BUY_GIFT_ITEM, 0))
+        return;
+
+    player->updateRecord(2112, nOldRecord | ((1 << m_nGouWuCheSize) - 1));
+    bag.AddItem(items, IACR_DOUBLE_ELEVEN_LAND_GIFT);
 }
 
 

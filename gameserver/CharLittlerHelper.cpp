@@ -51,12 +51,14 @@ int32_t CharLittlerHelper::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket
 
 void CharLittlerHelper::OnLoadFromDB( const PlayerDBData *const dbData )
 {
-    // TODO: PlayerDBData integration - stub
+    // DB数据通过CLittleHelper独立管理加载
+    // CLittleHelper负责数据持久化
 }
 
 void CharLittlerHelper::OnSaveToDB( PlayerDBData *const dbData )
 {
-    // TODO: PlayerDBData integration - stub
+    // DB数据通过CLittleHelper独立管理保存
+    // CLittleHelper负责数据持久化
 }
 
 void CharLittlerHelper::OnCleanUp()

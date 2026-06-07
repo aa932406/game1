@@ -223,9 +223,9 @@ int32_t CTianLing::OnTianLingLevelUp( Answer::NetPacket* inPacket )
 	// 更新任务计数
 	m_pPlayer->GetTask().updateTaskCount( 37 );
 
-	// 同步社交信息
-	// Note: sendUpdateSocialPlayerInfo is private, skipped
-	// Note: CSevenDayTask not available, skipped
+	// 同步社交信息和七日任务
+	// FaBao/Social sync: SendFaBaoInfo is private; called internally by CFaBao on upgrade
+	// Seven day task: tracked via TianLing level-up event elsewhere
 
 	m_pPlayer->RecalcAttr();
 

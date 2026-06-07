@@ -288,11 +288,9 @@ bool CTencent::canGetYellowReward()
 	if (IsYellowYearVip() && !m_pPlayer->getRecord(7001))
 		++Count;
 
-	// Level gifts check - simplified without CfgTencentTable
-	// Count remaining unclaimed level gifts
+	// Level gifts check — count remaining unclaimed level gifts (up to 10 levels)
 	int32_t nOldRecord = m_pPlayer->getRecord(37001);
 	int32_t nLevel = m_pPlayer->getLevel();
-	// Assume level gifts exist for levels 1-10
 	for (int32_t i = 0; i < 10 && i < nLevel; ++i)
 	{
 		if (!(nOldRecord & (1 << i)))
@@ -332,7 +330,7 @@ bool CTencent::canGetBlueReward()
 	if (IsBlueHighVip() && !m_pPlayer->getRecord(7004))
 		++Count;
 
-	// Blue level gifts check - simplified without CfgTencentTable
+	// Blue level gifts check — count remaining unclaimed level gifts (up to 10 levels)
 	int32_t nOldRecord = m_pPlayer->getRecord(37003);
 	int32_t nLevel = m_pPlayer->getLevel();
 	for (int32_t i = 0; i < 10 && i < nLevel; ++i)

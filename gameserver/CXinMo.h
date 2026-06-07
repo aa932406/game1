@@ -5,6 +5,8 @@
 #include "../share/DataStruct.h"
 #include "CfgData.h"
 
+class Player;
+
 // ===== 心魔配置结构 =====
 
 // 心魔等级配置（XinMoLevel.txt）
@@ -160,8 +162,9 @@ private:
 class CXinMo : public IExtSystem
 {
 public:
-    CXinMo() { OnCleanUp(); }
+    CXinMo() : m_pPlayer(NULL) { OnCleanUp(); }
     virtual ~CXinMo() {}
+    void SetPlayer(Player* p) { m_pPlayer = p; }
 
     // IExtSystem 接口
     virtual const char*     GetName() const { return "CXinMo"; }
@@ -225,6 +228,7 @@ private:
     std::map<int,int>   m_QiQingLevel;
     int32_t             m_QiQingInfo;       // bitmask flags 0-6
     MemChrBag           m_ItemList[56];     // 心魔背包
+    Player*             m_pPlayer;
 };
 
 #endif // __C_XIN_MO_H__

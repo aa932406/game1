@@ -88,7 +88,7 @@ void CExtCharShiZhuang::OnUpdate(int64_t curTick)
                 // 发送邮件续费通知
                 std::stringstream ss;
                 ss << it->first << "," << (int32_t)i;
-                // TODO: DB_SERVICE.OnSendSysMail(0, m_pPlayer->getCid(), 6396, ss.str(), 0);
+                DB_SERVICE.OnSendSysMail(0, m_pPlayer->getCid(), 6396, ss.str(), 0);
 
                 std::map<int32_t, int32_t>::iterator toErase = it;
                 ++it;

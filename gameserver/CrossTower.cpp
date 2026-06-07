@@ -159,7 +159,7 @@ void CCrossTower::SendPlayerActivityInfo( Player* player )
 {
     if ( NULL == player ) return;
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
     if ( NULL == packet ) return;
 
     packet->writeInt32( m_cfgActivity.id );
@@ -180,7 +180,7 @@ void CCrossTower::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
         nPersonalScore = iter->second.nScore;
     }
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
     if ( NULL == packet ) return;
 
     packet->writeInt32( m_cfgActivity.id );
@@ -315,7 +315,7 @@ void CCrossTower::onTimeEnd()
     m_nState = AS_END;
     delayKickAll( 30 );
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
     if ( packet != NULL )
     {
         packet->writeInt32( m_cfgActivity.id );
@@ -441,7 +441,7 @@ Answer::NetPacket* CCrossTower::packetActivityMapInfo( CActivityMap* pMap )
 {
     if ( NULL == pMap ) return NULL;
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
     if ( NULL == packet ) return NULL;
 
     packet->writeInt32( m_cfgActivity.id );
@@ -475,7 +475,7 @@ Answer::NetPacket* CCrossTower::packetActivityMapInfo( CActivityMap* pMap )
 
 Answer::NetPacket* CCrossTower::packetActivityScore()
 {
-    NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
     if ( NULL == packet ) return NULL;
 
     packet->writeInt32( m_cfgActivity.id );

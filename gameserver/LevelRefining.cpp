@@ -187,7 +187,7 @@ void CLevelRefining::GetIconStu( ShowIcon* stu )
 		return;
 	}
 
-	stu->nId		= 0; // TODO: Use proper icon ID
+	stu->nId		= LEVEL_REFINING_ICON;
 	stu->nState		= AS_RUNNING;
 	stu->nLeftTime	= -1;
 	stu->IconLeft	= 0;

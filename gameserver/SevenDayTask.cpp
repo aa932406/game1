@@ -313,7 +313,7 @@ void CSevenDayTask::GetIcon( IconStateList& IconList )
     {
         ShowIcon stu;
         memset( &stu, 0, sizeof( stu ) );
-        // stu.nId = ?; // Icon ID for seven day task
+        stu.nId = 106; // Seven day task icon
         stu.nState = 2;  // Show
         stu.nLeftTime = 0;
         IconList.push_back( stu );
@@ -329,7 +329,7 @@ void CSevenDayTask::SendIcon()
 
     ShowIcon stu;
     memset( &stu, 0, sizeof( stu ) );
-    // stu.nId = ?;
+    stu.nId = 106; // Seven day task icon
     stu.nState = 2;
     stu.nLeftTime = 0;
 

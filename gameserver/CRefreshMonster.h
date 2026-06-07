@@ -14,6 +14,7 @@ public:
 	virtual void	CheckActivity();
 	virtual void	stopActivity();
 	virtual void	broadcastStart();
+	virtual void	broadcastEnd();
 
 	void	FlushMonsters( int32_t NowTime );
 	void	FreshObjGongGao( int32_t GongGaoId );

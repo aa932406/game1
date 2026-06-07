@@ -7,6 +7,8 @@
 #include "actStructs.h"
 #include "DataStruct.h"
 
+struct EquipBackRankCfg;
+
 class DBService
 	: public Answer::TcpService
 {
@@ -110,6 +112,11 @@ public:
 	/* equip back */
 	void SaveEquipBackCount( int32_t nId, int8_t nType, int32_t nCount, std::string& name );
 	void SaveEquipBackRecord( int32_t nId, int8_t nType, int32_t nTime, std::string& name );
+
+	/* gui gu dao ren */
+	void SaveGuiGuDaoRenData( int32_t NpcId, int32_t Count );
+	void SaveGuiGuBackEquipCount( int32_t Count );
+	void SaveGuiGuBackEquipRank( EquipBackRankCfg* p_stu );
 
 private:
 	void onDBPlayerLoaded(Answer::NetPacket *inPacket);

@@ -393,13 +393,25 @@ void CUniteServer::appendDiscountGiftInfo( NetPacket* packet, Player* player )
 	if ( !packet || !player )
 		return;
 
-	// Simplified: CfgData::GetBuyGiftTable not available, send empty list
 	int32_t nOldRecord = player->GetOperateLimit().GetLimitCount( 2090 );
 	int16_t nCount = 0;
 	uint32_t oldOffset = packet->getWOffset();
 	packet->writeInt16( 0 );
 
-	// No BuyGiftTable available, skip
+	const CfgBuyGiftTable* gifts = CFG_DATA.GetBuyGiftTable();
+	if ( gifts )
+	{
+		for ( CfgBuyGiftTable::const_iterator it = gifts->begin(); it != gifts->end(); ++it )
+		{
+			int32_t nIndex = it->first;
+			int32_t nNewRecord = nOldRecord | ( 1 << nIndex );
+			if ( nOldRecord == nNewRecord )
+			{
+				++nCount;
+				packet->writeInt16( nIndex - 1 );
+			}
+		}
+	}
 
 	uint32_t newOffset = packet->getWOffset();
 	packet->setWOffset( oldOffset );
@@ -570,18 +582,39 @@ int32_t CUniteServer::GetLianRechargeReward( Player* player, int32_t nIndex )
 
 int32_t CUniteServer::BuyDiscountGift( Player* player, int16_t nIndex )
 {
-	// Simpler version since CfgData::GetBuyGiftTable is not available
 	if ( !player || !IsInTime( US_DAILY_LIMIT_SHOP ) )
 		return 10002;
 
+	int16_t nIndexb = nIndex + 1;
+	const CfgBuyGift* cfgGift = CFG_DATA.GetBuyGift( nIndexb );
+	if ( !cfgGift )
+		return 10002;
+
 	int32_t nOldRecord = player->GetOperateLimit().GetLimitCount( 2090 );
-	int32_t nNewRecord = nOldRecord | ( 1 << ( nIndex + 1 ) );
+	int32_t nNewRecord = nOldRecord | ( 1 << nIndexb );
 	if ( nOldRecord == nNewRecord )
 		return 10002;
 
-	// Without GetBuyGiftTable, we can't look up the gift config
-	// This would need the CfgBuyGift infrastructure to work fully
-	return 10002;
+	if ( player->GetCurrency( CURRENCY_GOLD ) < cfgGift->nGold )
+		return 10002;
+
+	if ( !player->GetBag().AddItem( (MemChrBagVector&)cfgGift->vGift, IACR_UNITE_SERVER_DISTINCT_GIFT ) )
+		return 10002;
+
+	if ( !player->DecCurrency( CURRENCY_GOLD, cfgGift->nGold, GCR_UNITE_SERVER_BUY_DISTINCT_GIFT, nIndexb ) )
+	{
+		// rollback? for now just return error
+		return 10002;
+	}
+
+	player->GetOperateLimit().UpdateLimitCount( 2090, nNewRecord );
+
+	if ( cfgGift->nBroad > 0 )
+	{
+		std::string name = player->getName();
+		sendBroadcast( cfgGift->nBroad, player->getCid(), &name );
+	}
+	return 0;
 }
 
 int32_t CUniteServer::GetHuoYueDuGift( Player* player, int32_t nIndex )
@@ -766,10 +799,19 @@ int32_t CUniteServer::OnGetChouJiangReward( Player* player )
 		{
 			if ( nChouJiangTimes >= ( i + 1 ) * 10 ) // Each tier requires 10 draws
 			{
-				// Simplified: reward item hardcoded or from config
-				// In full implementation, would use CfgData::GetTreasureHunterCfg
+				const TreasureHunterCfg* CurCfg = CFG_DATA.GetTreasureHunterCfg( i + 1 );
+				if ( CurCfg && CurCfg->nType == 2 )
+				{
+					if ( !player->GetBag().AddItem( (MemChrBagVector&)CurCfg->Items, IACR_HE_FU_CHOU_JIANG_TIMES ) )
+						return 10002;
+				}
+
 				int32_t nNewRecord = nRewardRecord | ( 1 << i );
 				player->updateRecord( 1404, nNewRecord );
+
+				if ( CurCfg && CurCfg->GongGaoId > 0 )
+					GongGao( player, CurCfg->GongGaoId, 0 );
+
 				SendIconState( player );
 				return 0;
 			}

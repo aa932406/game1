@@ -122,8 +122,10 @@ void CTestServerReward::GetTestServerIcon( IconStateList& IconList )
 	}
 
 	ShowIcon stu;
-	// Fill icon state structure
-	// TODO: get proper icon ID from config
+	memset(&stu, 0, sizeof(stu));
+	stu.nId = TEST_SERVER_REWARD_ICON;
+	stu.nState = AS_RUNNING;
+	stu.nLeftTime = -1;
 	IconList.push_back( stu );
 }
 
@@ -140,8 +142,10 @@ void CTestServerReward::SendTestServerIcon()
 	}
 
 	ShowIcon stu;
-	// Fill icon state structure
-	// TODO: send proper icon state
+	memset(&stu, 0, sizeof(stu));
+	stu.nId = TEST_SERVER_REWARD_ICON;
+	stu.nState = AS_RUNNING;
+	stu.nLeftTime = -1;
 	m_pPlayer->SendIconState( &stu );
 }
 

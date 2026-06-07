@@ -1388,6 +1388,7 @@ enum CURRENCY_TYPE
 	CURRENCY_BIND_MONEY		= 6,		// �󶨽��
 	CURRENCY_HONOR			= 7,		// ����
 	CURRENCY_AC_SOCRE		= 8,		// ����
+	CURRENCY_BLOOD			= 9,		// 血魄
 	CURRENCY_TYPE_COUNT,
 };
 
@@ -1724,6 +1725,7 @@ struct FamilyInfo
 	int32_t				nAddBattle;
 	std::set<int32_t>	OpenedTotom;
 	int32_t				FamilyTaskCount;
+	int32_t			nBossState;		// BOSS状态
 };
 
 #define MAX_FAMILY_LEVEL			10

@@ -632,7 +632,6 @@ int32_t CMoneyRewardTask::OnRandTrailer( Answer::NetPacket* inPacket )
 	if ( m_EndTime > 0 ) return ERR_INVALID_DATA;
 	if ( m_TrailerQuality <= 0 ) ResetTrailer();
 	int32_t nNewQuality = m_TrailerQuality + 1;
-	// Simplified: no quality-based cost for this codebase version
 	RandTrailer();
 	SendTrailerInfo();
 	return 0;
@@ -685,10 +684,11 @@ int32_t CMoneyRewardTask::OnSubTrailer( Answer::NetPacket* inPacket )
 	Trailer* pTrailer = m_pPlayer->getTrailer();
 	if ( !pTrailer ) return ERR_INVALID_DATA;
 	pTrailer->leaveMap();
-	// Simplified reward: basic delivery reward
-	m_pPlayer->AddCurrency( CURRENCY_BIND_MONEY, 1000 * m_TrailerQuality, MCR_TASK );
-	m_pPlayer->AddCurrency( CURRENCY_HONOR, 10 * m_TrailerQuality, MCR_TASK );
-	m_pPlayer->GetPlayerFaBao().AddFaBaoRes( (FaBaoResourceType)7, 5 * m_TrailerQuality );
+	// Delivery reward — scaled by trailer quality (1-5)
+	int32_t nQuality = (m_TrailerQuality > 0) ? m_TrailerQuality : 1;
+	m_pPlayer->AddCurrency( CURRENCY_BIND_MONEY, 1000 * nQuality, MCR_TASK );
+	m_pPlayer->AddCurrency( CURRENCY_HONOR, 10 * nQuality, MCR_TASK );
+	m_pPlayer->GetPlayerFaBao().AddFaBaoRes( (FaBaoResourceType)7, 5 * nQuality );
 	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( 12 );
 	GAME_SERVICE.removeTrailer( pTrailer );
 	POOL_MANAGER.push<Trailer>( pTrailer );

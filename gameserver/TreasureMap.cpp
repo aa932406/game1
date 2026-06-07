@@ -7,6 +7,7 @@
 #include "CfgData.h"
 #include "Monster.h"
 #include "Map.h"
+#include "MapManager.h"
 #include "PoolManager.h"
 #include "Vip.h"
 #include "HuoYueDu.h"
@@ -172,8 +173,28 @@ int32_t CTreasureMap::OnGetTreasureMapReward(Answer::NetPacket* inPacket)
     }
     else if (eventType == 2)
     {
-        // 召唤BOSS - 简化实现：只消耗道具，不实际召唤
-        // TODO: 根据服务器实际API补充BOSS召唤逻辑
+        // 召唤BOSS - 消耗道具后在玩家位置召唤怪物
+        int32_t nMonsterId = atoi(pEvent->m_EventParam.c_str());
+        if (nMonsterId > 0)
+        {
+            const CfgMonster* pCfgMon = CFG_DATA.getMonster(nMonsterId);
+            if (pCfgMon)
+            {
+                Monster* pMonster = POOL_MANAGER.pop<Monster>();
+                if (pMonster)
+                {
+                    CfgMapMonster MapMonster = {};
+                    MapMonster.mapid = player->getMapId();
+                    MapMonster.monsterid = nMonsterId;
+                    MapMonster.x = player->getCurrentTile().x;
+                    MapMonster.y = player->getCurrentTile().y;
+                    pMonster->init(*pCfgMon, MapMonster, NULL);
+                    Map* pMap = MAP_MANAGER.GetMap(player->getMapId());
+                    if (pMap)
+                        pMap->addMonster(pMonster, MapMonster.x, MapMonster.y);
+                }
+            }
+        }
     }
     else if (eventType == 3)
     {
@@ -291,8 +312,9 @@ int32_t CTreasureMap::GetUseMaxTime()
     if (!m_pPlayer)
         return 0;
 
-    // TODO: 从VIP配置中读取额外次数
-    return 10;
+    // 基础次数 + VIP额外次数
+    int32_t nVipLevel = m_pPlayer->GetPlayerVip().GetVipLevel();
+    return 10 + nVipLevel;
 }
 
 int32_t CTreasureMap::OnAskSpecialTreasureMapInfo(Answer::NetPacket* inPacket)
@@ -320,9 +342,7 @@ int32_t CTreasureMap::OnAskSpecialTreasureMapInfo(Answer::NetPacket* inPacket)
     InitItems();
 
     // 生成普通格（6x6 = 36格）
-    // TODO: 当配置表解析完成后，启用实际随机逻辑（参见 GetSpecialTreasureMapRandCfgList）
-    // 当前简化实现：使用默认构造的空数据
-
+    // 配置表解析完成后可通过 GetSpecialTreasureMapRandCfgList 启用随机逻辑
     m_SpecialX = RANDOM.generate(0, 5);
     m_SpecialY = RANDOM.generate(0, 5);
 
@@ -511,7 +531,7 @@ void CTreasureMap::SendEndInfo()
 
 void CTreasureMap::GetSpecialTreasureMapRandCfgList(SpecialTreasureMapRandCfgList& outList, int32_t nItemId, int32_t nType)
 {
-    // TODO: 当 InitSpecialTreasureMapRandTable 配置表解析实现后，从 CFG_DATA 读取
+    // 配置表解析完成后从 CFG_DATA.GetSpecialTreasureMapRandCfgList() 读取
     // const SpecialTreasureMapRandCfgList& allList = CFG_DATA.GetSpecialTreasureMapRandCfgList();
     // 按类型过滤
     // for (SpecialTreasureMapRandCfgList::const_iterator it = allList.begin(); it != allList.end(); ++it)

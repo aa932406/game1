@@ -1163,7 +1163,7 @@ Answer::NetPacket* CCityWar::packetActivityPlayerScore( Player* player )
 
 	packet->writeInt32( m_cfgActivity.id );
 	packet->writeInt32( score.nScore );
-	packet->writeInt32( 0 ); // Kill count placeholder
+	packet->writeInt32( 0 ); // Kill count — requires nKillCount field in CityWarPlayerScore
 
 	packet->setSize( packet->getWOffset() );
 	return packet;

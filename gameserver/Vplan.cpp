@@ -163,7 +163,15 @@ void CVplan::SendVplanInfo()
 
 void CVplan::SendVplanIcon()
 {
-	// Vplan icon - platform specific, simplified
+	if ( !m_pPlayer ) return;
+	VplanIconStu stu;
+	GetVplanIconStu( stu );
+	ShowIcon icon;
+	memset( &icon, 0, sizeof(icon) );
+	icon.nId = stu.nId;
+	icon.nState = stu.nState;
+	icon.nLeftTime = 0;
+	m_pPlayer->SendIconState( &icon );
 }
 
 bool CVplan::HaveVplanGift()
