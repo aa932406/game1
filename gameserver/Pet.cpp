@@ -1130,7 +1130,7 @@ void CPet::SendPetInfo( Player* player )
 	packet->writeInt8( 1 );
 	AppendBaseInfo( packet );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 // bool CPet::startAttrIllusion( CPet* pPet, int8_t nUseItem )

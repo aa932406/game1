@@ -105,7 +105,7 @@ int32_t CGongMing::OnGongMinLevelUp( Answer::NetPacket *inPacket )
 
     m_pPlayer->RecalcAttr();
     SendGongMinInfo();
-    GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+    GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
     return ERR_OK;
 }
 
@@ -127,6 +127,6 @@ void CGongMing::SendGongMinInfo()
         packet->writeInt32( CurCfg->nStar );
         packet->writeInt32( HaveCurr );
         packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+        GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
     }
 }

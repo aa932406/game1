@@ -23,10 +23,11 @@ void CExtCharAuction::OnCleanUp()
 
 void CExtCharAuction::GetInterestsProtocol( ProcIdList& procList )
 {
-	procList.push_back( CM_OPEN_STALL );					// ³öÌ¯
-	procList.push_back( CM_CLOSE_STALL );					// ÊÕÌ¯
-	procList.push_back( IM_SOCIAL_GAME_AUCTION_SELL );		// ÅÄÂô
-	procList.push_back( IM_SOCIAL_GAME_AUCTION_BUY );		// ¹ºÂò
+	procList.push_back( CM_OPEN_STALL );					// ï¿½ï¿½Ì¯
+	procList.push_back( CM_CLOSE_STALL );					// ï¿½ï¿½Ì¯
+	procList.push_back( IM_SOCIAL_GAME_AUCTION_SELL );		// ï¿½ï¿½ï¿½ï¿½
+	procList.push_back( IM_SOCIAL_GAME_AUCTION_BUY );
+	procList.push_back( 20075 );		// ï¿½ï¿½ï¿½ï¿½
 }
 
 int32_t CExtCharAuction::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -42,6 +43,7 @@ int32_t CExtCharAuction::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket
 	case CM_CLOSE_STALL:						return onCloseStall( inPacket );
 	case IM_SOCIAL_GAME_AUCTION_SELL:			return onAuctionSell( inPacket );
 	case IM_SOCIAL_GAME_AUCTION_BUY:			return onAuctionBuy( inPacket );
+	case 20075:								return onAddEquip( inPacket );
 	default:
 		break;
 	}
@@ -164,13 +166,13 @@ int32_t CExtCharAuction::onOpenStall( Answer::NetPacket* inPacket )
 		return ERR_SYETEM_ERR;
 	}
 
-	// ÅÐ¶¨ÊÇ·ñÊÇÌ¯Î»
+	// ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ì¯Î»
 	if ( pNpc->GetFuncExtra() != NFE_STALL )
 	{
 		return ERR_SYETEM_ERR;
 	}
 
-	// ÅÐ¶¨ÊÇ·ñÒÑ¾­±»ÈËÇÀÕ¼
+	// ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼
 	if ( pNpc->getOwner() > 0 )
 	{
 		return ERR_SYETEM_ERR;
@@ -179,7 +181,7 @@ int32_t CExtCharAuction::onOpenStall( Answer::NetPacket* inPacket )
 	m_nStall = pNpc->getEntityId();
 	m_pPlayer->setNeedSyncSelf();
 
-	//transferToNear( pNpc );			// Ç¿ÖÆ´«ËÍµ½¸½½ü
+	//transferToNear( pNpc );			// Ç¿ï¿½Æ´ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½
 	Position stallPos = pNpc->GetStallPos();
 	if ( stallPos.x > 0 && stallPos.y > 0 )
 	{
@@ -189,7 +191,7 @@ int32_t CExtCharAuction::onOpenStall( Answer::NetPacket* inPacket )
 	pNpc->SetOwner( m_pPlayer->getCid() );
 	pNpc->leaveMap();
 	pMap->broadcastNpcIntoMap( pNpc );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nNpcId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nNpcId );
 
 	sendSocialStall( true );
 	return ERR_OK;
@@ -208,7 +210,7 @@ int32_t CExtCharAuction::onCloseStall( Answer::NetPacket* inPacket )
 	}
 
 	m_pPlayer->setNeedSyncSelf();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -218,7 +220,7 @@ void CExtCharAuction::sendSocialSell( const MemChrBag& item, int32_t nPrice )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_AUCTION_SELL );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_AUCTION_SELL );
 	if (NULL == packet)
 	{
 		return;
@@ -240,8 +242,8 @@ void CExtCharAuction::sendSocialSell( const MemChrBag& item, int32_t nPrice )
 	{
 		packet->writeInt32( 0 );
 	}
-	packet->setSize( packet->getWOffset() ); 
-	GAME_SERVICE.sendPacket( packet );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( m_pPlayer->getConnId(), packet );
 }
 
 void CExtCharAuction::sendSocialBuy( int32_t nId )
@@ -250,7 +252,7 @@ void CExtCharAuction::sendSocialBuy( int32_t nId )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_AUCTION_BUY );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_AUCTION_BUY );
 	if (NULL == packet)
 	{
 		return;
@@ -260,8 +262,8 @@ void CExtCharAuction::sendSocialBuy( int32_t nId )
 
 	packet->writeInt32( nId );
 
-	packet->setSize( packet->getWOffset() ); 
-	GAME_SERVICE.sendPacket( packet );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( m_pPlayer->getConnId(), packet );
 }
 
 void CExtCharAuction::sendSocialStall( bool bStall )
@@ -270,7 +272,7 @@ void CExtCharAuction::sendSocialStall( bool bStall )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_STALL );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_STALL );
 	if (NULL == packet)
 	{
 		return;
@@ -280,8 +282,8 @@ void CExtCharAuction::sendSocialStall( bool bStall )
 
 	packet->writeInt8( bStall ? 1 : 0 );
 
-	packet->setSize( packet->getWOffset() ); 
-	GAME_SERVICE.sendPacket( packet );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( m_pPlayer->getConnId(), packet );
 }
 
 bool CExtCharAuction::IsInStall() const
@@ -324,4 +326,20 @@ bool CExtCharAuction::closeStall()
 	pMap->broadcastNpcIntoMap( pNpc );
 	sendSocialStall( false );
 	return true;
+}
+
+int32_t CExtCharAuction::onAddEquip( Answer::NetPacket* inPacket )
+{
+	if ( NULL == m_pPlayer || NULL == inPacket )
+	{
+		return ERR_SYETEM_ERR;
+	}
+
+	int32_t nReason = inPacket->readInt32();
+	MemEquip equip;
+	equip.UnPackageData( inPacket );
+	equip.owner = m_pPlayer->getCid();
+	EQUIP_MANAGER.UpdateMemEquip( m_pPlayer->getConnId(), equip, nReason );
+	EQUIP_MANAGER.SendPlayerEquipInfo( m_pPlayer, equip );
+	return ERR_OK;
 }

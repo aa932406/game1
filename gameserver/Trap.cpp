@@ -272,7 +272,7 @@ void Trap::effect()
 									player->setOldPosition();
 									player->broadcastLeave();
 									player->getMap()->removePlayer(player, false);
-									GAME_SERVICE.replySuccess( player->getGateIndex(), CM_ENTER_DUNGEON, pCfgDungeon->id );
+									GAME_SERVICE.replySuccess( player->getConnId(), player->getGateIndex(), CM_ENTER_DUNGEON, pCfgDungeon->id );
 									pNewDungeon->addPlayer(player, pCfgDungeon->x, pCfgDungeon->y);	
 									MAP_MANAGER.PostMsg( pNewDungeon->GetRunnerId(), GMC_ADD_DUNGEON, pNewDungeon );
 

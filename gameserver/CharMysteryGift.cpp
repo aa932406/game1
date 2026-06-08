@@ -113,7 +113,7 @@ int32_t CExtCharMysteryGift::onGetGift( Answer::NetPacket *inPacket )
 	setState( 1 );
 	broadcastGetGift( pCfg->nBroadId );
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
 
 	return 0;
 }

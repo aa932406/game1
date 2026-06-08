@@ -87,7 +87,7 @@ void CMingGeExt::SendMingGeInfo()
 {
     if (!m_pPlayer)
         return;
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_MING_GE_INFO);
+    Answer::NetPacket* packet =     popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_MING_GE_INFO);
     if (!packet)
         return;
     packet->writeInt32(m_MingGeExp);
@@ -100,14 +100,14 @@ void CMingGeExt::SendMingGeInfo()
             packet->writeInt32(1);
     }
     packet->setSize(packet->getWOffset());
-    GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+    sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CMingGeExt::SendMingGeBagInfo(int32_t nType)
 {
     if (!m_pPlayer || nType <= 0 || nType > 3)
         return;
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_MING_GE_BAG_INFO);
+    Answer::NetPacket* packet = popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_MING_GE_BAG_INFO);
     if (!packet)
         return;
     if (nType == 1)
@@ -117,14 +117,14 @@ void CMingGeExt::SendMingGeBagInfo(int32_t nType)
     else
         PackMingGeEquipBagInfo(packet);
     packet->setSize(packet->getWOffset());
-    GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+    sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CMingGeExt::SendMingGeBagInfo(int32_t nType, int32_t nSlot)
 {
     if (!m_pPlayer)
         return;
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_MING_GE_SLOT_INFO);
+    Answer::NetPacket* packet = popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_MING_GE_SLOT_INFO);
     if (!packet)
         return;
     packet->writeInt32(nType);
@@ -133,7 +133,7 @@ void CMingGeExt::SendMingGeBagInfo(int32_t nType, int32_t nSlot)
     packet->writeInt32(stu.nId);
     packet->writeInt32(stu.IsLock);
     packet->setSize(packet->getWOffset());
-    GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+    sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 // ========== Pack ==========
@@ -227,7 +227,7 @@ int32_t CMingGeExt::OnMingGeLevelUp(Answer::NetPacket *inPacket)
     SetSlot(3, nSlot, MG, ICR_MING_GE_LEVEL_UP);
     SendMingGeInfo();
     m_pPlayer->RecalcAttr();
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 
@@ -251,7 +251,7 @@ int32_t CMingGeExt::OnPickupMingGe(Answer::NetPacket *inPacket)
         return 2;
     if (RemoveItem(2, nSlot, ICR_SHI_QU_MING_GE))
         AddBagItem(1, FreeSlot, MG, ICR_SHI_QU_MING_GE);
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), IsAuto);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), IsAuto);
     return 0;
 }
 
@@ -268,7 +268,7 @@ int32_t CMingGeExt::OnLock(Answer::NetPacket *inPacket)
         return 2;
     MG.IsLock = (State == 1) ? 1 : 0;
     SetSlot(1, nSlot, MG, ICR_MING_GE_LOCK);
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 
@@ -293,7 +293,7 @@ int32_t CMingGeExt::OnDecMingGe(Answer::NetPacket *inPacket)
     if (pCfg->nDecMoney > 0)
         m_pPlayer->AddCurrency(CURRENCY_BIND_MONEY, pCfg->nDecMoney, GCR_DEC_MING_GE, 0);
     SendMingGeInfo();
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), nBagType);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nBagType);
     return 0;
 }
 
@@ -316,7 +316,7 @@ int32_t CMingGeExt::OnDuiHuan(Answer::NetPacket *inPacket)
     AddBagItem(1, nFreeSlot, MG, ICR_MING_GE_DUI_HUAN);
     SendMingGeInfo();
     GongGao(510, nId);
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 
@@ -380,7 +380,7 @@ int32_t CMingGeExt::OnLieMing(Answer::NetPacket *inPacket)
     if (pCfg->nQuality > 4 && !pCfg->nCanPickup)
         GongGao(509, MingGeId);
 
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), IsAuto);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), IsAuto);
     return 0;
 }
 
@@ -400,7 +400,7 @@ int32_t CMingGeExt::OnDress(Answer::NetPacket *inPacket)
     SetSlot(1, nBagSlot, SlotItem, ICR_MING_GE_DRESS);
     SetSlot(3, nEquipSlot, BagMingGe, ICR_MING_GE_DRESS);
     m_pPlayer->RecalcAttr();
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 
@@ -418,7 +418,7 @@ int32_t CMingGeExt::OnUnDress(Answer::NetPacket *inPacket)
     SetSlot(3, nEquipSlot, MingGe(), ICR_MING_GE_UNDRESS);
     AddBagItem(1, nFreeSlot, Stu, ICR_MING_GE_UNDRESS);
     m_pPlayer->RecalcAttr();
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 
@@ -438,7 +438,7 @@ int32_t CMingGeExt::OnBuyNpc(Answer::NetPacket *inPacket)
         return 2;
     *(&m_MingChip + nType) = 1;
     SendMingGeInfo();
-    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 
@@ -648,7 +648,7 @@ void CMingGeExt::GongGao(int32_t GongGaoId, int32_t MingGeId)
 {
     if (!m_pPlayer)
         return;
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM);
+    Answer::NetPacket* packet = popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM);
     if (!packet)
         return;
     packet->writeInt32(GongGaoId);
@@ -656,7 +656,7 @@ void CMingGeExt::GongGao(int32_t GongGaoId, int32_t MingGeId)
     packet->writeUTF8(m_pPlayer->getName());
     packet->writeInt32(MingGeId);
     packet->setSize(packet->getWOffset());
-    GAME_SERVICE.worldBroadcast(packet);
+    worldBroadcast(m_pPlayer->getConnId(), packet);
 }
 
 void CMingGeExt::AddMingGeLog(MGLog Stu)

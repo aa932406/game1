@@ -254,6 +254,7 @@ public:
     void checkRefreshMysteryShop();
     void broadcastRefreshMysteryShop();
     void RefreshMysteryShopItem();
+    bool RefreshMysteryShopItem( Player* player );
     void BroadCastMoYuShiJieIconState();
     int32_t getMoYuShiJieIconState();
     bool CheckDropGroup(int32_t nDropGroup);

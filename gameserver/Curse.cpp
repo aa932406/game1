@@ -2,8 +2,8 @@
 #include "CfgData.h"
 #include "Player.h"
 #include "GameService.h"
-#include "DBService.h"
-#include "GameLogs.h"
+
+#include "KaiFuHuoDong.h"
 
 Curse::Curse()
 {
@@ -83,8 +83,22 @@ int32_t Curse::OnCurseLevelUp(Answer::NetPacket* inPacket)
 	m_pPlayer->sendUpdateSocialPlayerInfo(PII_ZU_ZHOU, CurLevel + 1);
 	m_pPlayer->RecalcAttr();
 
-	// TODO: KaiFuHuoDong icon update, GongGao broadcast, and important_system_log
-	// These require additional service integrations
+	KAI_FU_HUO_DONG->SendKaiFuHuoDongIcon( m_pPlayer );
+
+	if ( NextCfg->GongGaoId > 0 )
+	{
+		NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		if ( packet != NULL )
+		{
+			packet->writeInt32( NextCfg->GongGaoId );
+			packet->writeUTF8( m_pPlayer->getName() );
+			packet->writeInt64( m_pPlayer->getCid() );
+			packet->writeInt32( CurLevel + 1 );
+			packet->setSize( packet->getWOffset() );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
+		}
+	}
+
 
 	return 0;
 }

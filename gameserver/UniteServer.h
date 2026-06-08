@@ -46,6 +46,7 @@ public:
 	bool			IsInUnitServerTime();
 	bool			IsInTime( UnitServerActivityType nType );
 	bool			IsInSpiderQueenTime();
+	bool			IsInMysteryShopTime();
 	int32_t			getLeftTime();
 
 	// Daily callbacks

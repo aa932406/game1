@@ -25,7 +25,5 @@ public:
 public:
 	void init();
 
-private:
-	AttrAddon m_restore[2];
 };
 

@@ -3,6 +3,8 @@
 #include "Player.h"
 #include "GameService.h"
 #include "CfgData.h"
+#include "FestivalDoubleEleven.h"
+#include "UniteServer.h"
 
 using namespace Answer;
 
@@ -62,20 +64,18 @@ int32_t CExtCharDraw::OnDraw( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( !m_pPlayer->GetBag().AddItem( pReward.vItem, IACR_ACTIVITY ) )
+	if ( !m_pPlayer->GetBag().AddItem( pReward.vItem, ICR_DRAW_GET_REWARD2 ) )
 	{
 		return ERR_INVALID_DATA;
 	}
 
 	addDrawTimes( nType, nGetItemList );
 
-	// 回复成功
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pReward.nIndex );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pReward.nIndex );
 
-	// 广播
 	if ( pReward.nBroad > 0 )
 	{
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( packet != NULL )
 		{
 			packet->writeInt32( pReward.nBroad );
@@ -83,7 +83,7 @@ int32_t CExtCharDraw::OnDraw( Answer::NetPacket *inPacket )
 			packet->writeInt64( m_pPlayer->getCid() );
 			packet->writeInt32( pReward.nIndex );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 
@@ -112,19 +112,41 @@ bool CExtCharDraw::canDraw( int8_t nType )
 	{
 	case 1:
 		{
-			int32_t nTaskCycleTimes = m_pPlayer->GetCharTaskCycle().GetSurplusTimes();
-			if ( nTaskCycleTimes > 0 )
+			int32_t nDrawTimes = m_pPlayer->GetCharTaskCycle().GetDrawTimes();
+			int32_t nLimitCount = m_pPlayer->GetOperateLimit().GetLimitCount( 2032 );
+			if ( nDrawTimes > nLimitCount )
 			{
 				return true;
 			}
 			break;
 		}
 	case 2:
-		return true;
+		{
+			CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
+			if ( pFDE && pFDE->CanUseXiaoFeiDraw( m_pPlayer ) )
+			{
+				return true;
+			}
+			break;
+		}
 	case 3:
-		return true;
+		{
+			CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
+			if ( pFDE && pFDE->CanUseRechargeDraw( m_pPlayer ) )
+			{
+				return true;
+			}
+			break;
+		}
 	case 4:
-		return true;
+		{
+			CUniteServer* pUS = UNITE_SERVER;
+			if ( pUS && pUS->GetCanXiaoFeiDrawTime( m_pPlayer ) > 0 )
+			{
+				return true;
+			}
+			break;
+		}
 	}
 	return false;
 }
@@ -139,14 +161,26 @@ void CExtCharDraw::addDrawTimes( int8_t nType, int32_t nGetItemRecord )
 	case 2:
 		m_pPlayer->updateRecord( 1608, nGetItemRecord );
 		m_pPlayer->GetOperateLimit().AddLimitCount( 1606, 1 );
+		{
+			CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
+			if ( pFDE ) pFDE->SendIconState( m_pPlayer );
+		}
 		break;
 	case 3:
 		m_pPlayer->updateRecord( 1633, nGetItemRecord );
 		m_pPlayer->GetOperateLimit().AddLimitCount( 1632, 1 );
+		{
+			CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
+			if ( pFDE ) pFDE->SendIconState( m_pPlayer );
+		}
 		break;
 	case 4:
 		m_pPlayer->updateRecord( 1404, nGetItemRecord );
 		m_pPlayer->GetOperateLimit().AddLimitCount( 1403, 1 );
+		{
+			CUniteServer* pUS = UNITE_SERVER;
+			if ( pUS ) pUS->SendIconState( m_pPlayer );
+		}
 		break;
 	}
 }

@@ -150,8 +150,7 @@ int32_t CBossKilledReward::OnGetBossKilledReward( Answer::NetPacket* inPacket )
 	SendBossKilledInfo();
 	SendBossKilledIcon();
 
-	// 世界广播
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( packet != NULL )
 	{
 		packet->writeInt32( 450 );
@@ -159,7 +158,7 @@ int32_t CBossKilledReward::OnGetBossKilledReward( Answer::NetPacket* inPacket )
 		packet->writeInt64( m_pPlayer->getCid() );
 		packet->writeInt8( type );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( packet );
+		GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 	}
 
 	return 0;
@@ -203,7 +202,7 @@ void CBossKilledReward::SendBossKilledInfo()
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_BOSS_KILLED_REWARD_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_BOSS_KILLED_REWARD_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -218,7 +217,7 @@ void CBossKilledReward::SendBossKilledInfo()
 
 		int32_t OldWoffset = packet->getWOffset();
 		int32_t Count = 0;
-		packet->writeInt32( 0 ); // placeholder for count
+		packet->writeInt32( 0 );
 
 		for ( std::list<BossKilledInfo>::iterator iter = it->second.BossKeilled.begin(); iter != it->second.BossKeilled.end(); ++iter )
 		{
@@ -236,15 +235,28 @@ void CBossKilledReward::SendBossKilledInfo()
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 // ========== 获取图标状态 ==========
-void CBossKilledReward::GetBossKilledIcon( ShowIcon& icon )
+void CBossKilledReward::GetBossKilledIcon( IconStateList& IconList )
 {
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+
+	CFunctionOpen* pFuncOpen = &m_pPlayer->GetPlayerFunctionOpen();
+	if ( NULL == pFuncOpen || !pFuncOpen->IsOpened( FT_BOSS_KILLED_REWARD ) )
+	{
+		return;
+	}
+
+	ShowIcon icon;
 	memset( &icon, 0, sizeof( icon ) );
 	icon.nId = BOSS_KILLED_REWARD_ICON;
 	icon.nState = AS_RUNNING;
+	IconList.push_back( icon );
 }
 
 // ========== 推送图标 ==========
@@ -262,20 +274,10 @@ void CBossKilledReward::SendBossKilledIcon()
 	}
 
 	ShowIcon icon;
-	GetBossKilledIcon( icon );
-
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
-	if ( packet != NULL )
-	{
-		packet->writeInt32( icon.nId );
-		packet->writeInt8( icon.nState );
-		packet->writeInt32( icon.nLeftTime );
-		packet->writeInt8( icon.IconLeft );
-		packet->writeInt32( icon.IconRight );
-		packet->writeInt8( icon.Effects );
-		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
-	}
+	memset( &icon, 0, sizeof( icon ) );
+	icon.nId = BOSS_KILLED_REWARD_ICON;
+	icon.nState = AS_RUNNING;
+	m_pPlayer->SendIconState( &icon );
 }
 
 // ========== 是否所有奖励都已领取 ==========

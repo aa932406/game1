@@ -155,7 +155,7 @@ int32_t ScoreShop::OnBuyItem( Answer::NetPacket *inPacket )
 		AddLimitCount( Index, Count );
 		SendLimitInfo( Index );
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(),inPacket->getProc() ,Index);
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),inPacket->getProc() ,Index);
 	return ERR_OK;
 }
 
@@ -197,7 +197,7 @@ void ScoreShop::SendLimitInfo( int32_t Index )
 	}
 
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 int32_t ScoreShop::GetLimitCount( int32_t index )

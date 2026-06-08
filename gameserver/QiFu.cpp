@@ -73,7 +73,7 @@ int32_t CQiFu::OnQiFu( Answer::NetPacket *inPacket )
 		return ERR_SYETEM_ERR;
 	}
 	int8_t Times = 0;
-	//vip系统还未写
+	//vip系统锟斤拷未写
 	int8_t VipLevel = m_pPlayer->GetPlayerVip().GetVipLevel();
 	VipCfg* pVipCfg = CFG_DATA.GetVipTable().GetVipCfg( VipLevel );
 	if ( NULL == pVipCfg )
@@ -157,7 +157,7 @@ int32_t CQiFu::OnQiFu( Answer::NetPacket *inPacket )
 	}
 	SendQiFuInfo();
 	SendQiFuSuccess( Type,AddCount );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(),AddCount  );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(),AddCount  );
 	return ERR_OK;
 }
 
@@ -175,7 +175,7 @@ void CQiFu::SendQiFuSuccess( int8_t Type, int32_t AddCount )
 	packet->writeInt8( Type );
 	packet->writeInt32( AddCount );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
 }
 
 void CQiFu::SendQiFuInfo()
@@ -192,7 +192,7 @@ void CQiFu::SendQiFuInfo()
 	packet->writeInt8( (int8_t)m_pPlayer->GetOperateLimit().GetLimitCount( PR_QI_FU_MONEY ));
 	packet->writeInt8( (int8_t)m_pPlayer->GetOperateLimit().GetLimitCount( PR_QI_FU_EXP ));
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
 }
 
 void CQiFu::GetChouJiangStu( IconStateList& IconList )

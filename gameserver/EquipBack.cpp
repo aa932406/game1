@@ -155,7 +155,7 @@ int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
 			pBroadcast->writeInt32( nItemId );
 			pBroadcast->writeInt32( RecovValue );
 			pBroadcast->setSize( pBroadcast->getWOffset() );
-			GAME_SERVICE.worldBroadcast( pBroadcast );
+			GAME_SERVICE.worldBroadcast( pPlayer->getConnId(), pBroadcast );
 		}
 		else
 		{
@@ -215,7 +215,7 @@ int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
 			pBroadcast->writeInt8( (int8_t)pCfg->nRecovType );
 			pBroadcast->writeInt32( RecovValue );
 			pBroadcast->setSize( pBroadcast->getWOffset() );
-			GAME_SERVICE.worldBroadcast( pBroadcast );
+			GAME_SERVICE.worldBroadcast( pPlayer->getConnId(), pBroadcast );
 		}
 		else
 		{
@@ -317,7 +317,7 @@ int32_t CEquipBack::OnBuyBack( Player* pPlayer, Answer::NetPacket* packet )
 		pBroadcast->writeInt32( nItemId );
 		pBroadcast->writeInt32( pCfg->nBuyBackValue );
 		pBroadcast->setSize( pBroadcast->getWOffset() );
-		GAME_SERVICE.worldBroadcast( pBroadcast );
+		GAME_SERVICE.worldBroadcast( pPlayer->getConnId(), pBroadcast );
 	}
 
 	return 0;
@@ -393,7 +393,7 @@ void CEquipBack::KiaFuEquipBack( int32_t Index, int32_t EquipId, int32_t Mid, Pl
 		pBroadcast->writeInt8( (int8_t)pCfg->nRecovType );
 		pBroadcast->writeInt32( pCfg->nRecovValues );
 		pBroadcast->setSize( pBroadcast->getWOffset() );
-		GAME_SERVICE.worldBroadcast( pBroadcast );
+		GAME_SERVICE.worldBroadcast( pPlayer->getConnId(), pBroadcast );
 	}
 
 	BackLimitInfo stu;

@@ -312,7 +312,7 @@ int32_t CExtCharInsidePet::onGrowIllusion( NetPacket *inPacket )
 	sendBaseInfo();
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_INSID_PET_POINTS,m_pPet->GetPoints() );
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_HUAN_LING_POINTS,m_pPet->GetGrowPoints() );
-	return GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pid );
+	return replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pid );
 }
 
 int32_t	CExtCharInsidePet::onLiBaoIllusion( Answer::NetPacket *inPacket )
@@ -394,7 +394,7 @@ int32_t	CExtCharInsidePet::onLiBaoIllusion( Answer::NetPacket *inPacket )
 	sendBaseInfo();
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_INSID_PET_POINTS,m_pPet->GetPoints() );
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_HUAN_LING_POINTS,m_pPet->GetGrowPoints() );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), 0 );
+	replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0 );
 	return ERR_OK;
 }
 
@@ -571,7 +571,7 @@ int32_t CExtCharInsidePet::onExpIllusion( NetPacket *inPacket )
 	// 先发成功包
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_INSID_PET_POINTS,m_pPet->GetPoints() );
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_WU_LING_POINTS,GetWuLingPoints() );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddExp );
+	replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nAddExp );
 	addExp( nAddExp );
 	return ERR_OK;
 }
@@ -621,14 +621,14 @@ int32_t CExtCharInsidePet::onUseLuckyItem( NetPacket *inPacket )
 
 	if ( pCfgLucky->nRate < RANDOM.generate( 0, 10000 ) )
 	{
-		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_PET_USE_LUCKY_ITEM_FAIL, m_pPet->GetLucky() );
+		replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_PET_USE_LUCKY_ITEM_FAIL, m_pPet->GetLucky() );
 		return ERR_INVALID_DATA;
 	}
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_INSID_PET_POINTS,m_pPet->GetPoints() );
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_LUCK_POINTS,m_pPet->GetLucky() );
 	m_pPet->UseLuckyItem();
 	sendBaseInfo();
-	return GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPet->GetLucky() );
+	return replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPet->GetLucky() );
 }
 
 int32_t CExtCharInsidePet::onUsePhaseItem( NetPacket *inPacket )
@@ -670,7 +670,7 @@ int32_t CExtCharInsidePet::onUsePhaseItem( NetPacket *inPacket )
 		recalAttr();
 
 		// 添加公告
-		NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PET_BROADCASE );
+		NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PET_BROADCASE );
 		if (NULL == packet)
 		{
 			return ERR_INVALID_DATA;
@@ -685,12 +685,12 @@ int32_t CExtCharInsidePet::onUsePhaseItem( NetPacket *inPacket )
 		packet->writeInt8( phase );
 
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast(packet);
+		worldBroadcast(m_pPlayer->getConnId(), packet);
 	}
 	--slotData.itemCount;
 	m_pPlayer->GetBag().SetSlotData( nSlot, slotData, IDCR_INSIDE_PET_CHANGE_PHASE );
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_INSID_PET_POINTS,m_pPet->GetPoints() );
-	return GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), finalPhase );
+	return replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), finalPhase );
 }
 
 int32_t CExtCharInsidePet::onBuyExp( NetPacket *inPacket )
@@ -728,7 +728,7 @@ int32_t CExtCharInsidePet::onBuyExp( NetPacket *inPacket )
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_INSID_PET_POINTS,m_pPet->GetPoints() );
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_WU_LING_POINTS,GetWuLingPoints() );
 	// 先发成功包
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddExp );
+	replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nAddExp );
 	addExp( nAddExp );
 	return ERR_OK;
 }
@@ -806,7 +806,7 @@ void CExtCharInsidePet::sendBaseInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_INSIDE_PET_SEND_BASE_INFO );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_INSIDE_PET_SEND_BASE_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -858,7 +858,7 @@ void CExtCharInsidePet::sendBaseInfo()
 
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CExtCharInsidePet::GetRank( PET_RANK_TYPE nRankType )

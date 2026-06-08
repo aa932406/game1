@@ -78,7 +78,7 @@ int32_t CExtCharTeamDungeon::onTeamDungeonCreate( Answer::NetPacket *inPacket )
 	}
 
 	// ͬ������������
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_CREATE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_CREATE );
 	if (NULL == packet)
 	{
 		return ERR_SYETEM_ERR;
@@ -113,7 +113,7 @@ int32_t CExtCharTeamDungeon::onTeamDungeonJoin( Answer::NetPacket *inPacket )
 	}
 
 	// ͬ������������
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_JOIN );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_JOIN );
 	if (NULL == packet)
 	{
 		return ERR_SYETEM_ERR;
@@ -134,7 +134,7 @@ int32_t CExtCharTeamDungeon::onTeamDungeonStart( Answer::NetPacket *inPacket )
 	}
 
 	// ͬ������������
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_START );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_START );
 	if (NULL == packet)
 	{
 		return ERR_SYETEM_ERR;
@@ -153,7 +153,7 @@ void CExtCharTeamDungeon::LeaveTeamDungeon()
 	}
 
 	// ͬ������������
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_LEAVE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_TEAM_DUNGEON_LEAVE );
 	if (NULL == packet)
 	{
 		return;

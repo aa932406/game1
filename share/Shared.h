@@ -1144,6 +1144,7 @@ enum PlayerInfoIndex
 	PII_SHI_ZHUANG_WEAPON,	// 时装武器外观
 	PII_SHI_ZHUANG_CLOTHES,	// 时装衣服外观
 	PII_SHI_ZHUANG_EFFECT,	// 时装特效ID
+	PII_SHEN_WEI,		// 神威
 };
 
 struct MemChrEquip // ����
@@ -1390,7 +1391,10 @@ enum CURRENCY_TYPE
 	CURRENCY_HONOR			= 7,		// ����
 	CURRENCY_AC_SOCRE		= 8,		// ����
 	CURRENCY_BLOOD			= 9,		// 血魄
-	CURRENCY_TYPE_COUNT,
+		CURRENCY_DRAW_SCORE	= 10,
+	CURRENCY_CONTRIBUTION	= 11,
+	CURRENCY_DUST		= 12,
+CURRENCY_TYPE_COUNT,
 };
 
 inline CURRENCY_TYPE TranseCurrency( CURRENCY_ITEM_ID id )

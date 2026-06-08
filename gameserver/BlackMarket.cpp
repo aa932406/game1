@@ -95,7 +95,7 @@ int32_t CBlackMarket::onEnterMarket( Answer::NetPacket *inPacket )
 	}
 
 	m_pPlayer->GetOperateLimit().UpdateLimitCount( 2041, 1 );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), 1 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 1 );
 	return ERR_OK;
 }
 
@@ -157,7 +157,7 @@ int32_t CBlackMarket::onBuyMarketGoods( Answer::NetPacket *inPacket )
 	}
 
 	SendMarketIcon();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
 	return ERR_OK;
 }
 
@@ -183,7 +183,7 @@ void CBlackMarket::sendMarketInfo()
 
 	int32_t nRecord = m_pPlayer->GetOperateLimit().GetLimitCount( 2042 );
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2F18 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2F18 );
 	if ( NULL == packet )
 	{
 		return;
@@ -196,7 +196,7 @@ void CBlackMarket::sendMarketInfo()
 		packet->writeInt8( (nRecord >> i) & 1 );
 	}
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CBlackMarket::SendMarketIcon()
@@ -214,15 +214,7 @@ void CBlackMarket::SendMarketIcon()
 	stu.IconRight = 0;
 	stu.Effects = 0;
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
-	if ( packet != NULL )
-	{
-		packet->writeInt32( stu.nId );
-		packet->writeInt8( stu.nState );
-		packet->writeInt32( stu.nLeftTime );
-		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
-	}
+	m_pPlayer->SendIconState(&stu);
 }
 
 void CBlackMarket::GetMarketIconState( IconStateList& IconList )
@@ -282,7 +274,7 @@ void CBlackMarket::broadcastBuyItem( int32_t nBroadcast, const MemChrBag& item )
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet )
 	{
 		return;
@@ -295,5 +287,5 @@ void CBlackMarket::broadcastBuyItem( int32_t nBroadcast, const MemChrBag& item )
 	packet->writeInt8( item.itemClass );
 	packet->writeInt32( item.itemCount );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 }

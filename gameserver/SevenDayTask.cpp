@@ -297,7 +297,7 @@ void CSevenDayTask::SendTaskSTate()
     }
     packet->writeInt32( m_SumRewardState );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+    GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CSevenDayTask::GetIcon( IconStateList& IconList )
@@ -340,7 +340,7 @@ void CSevenDayTask::SendIcon()
         packet->writeInt8( stu.nState );
         packet->writeInt32( stu.nLeftTime );
         packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+        GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
     }
 }
 

@@ -1,5 +1,5 @@
 /*
-* Ñ­»·ÈÎÎñ
+* Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 */
 
 #ifndef __TPOC_TASK_CYCLE_H__
@@ -35,6 +35,7 @@ public:
 	bool			IsFunctionOpen();
 	void			OpenCycleTask();
 	int32_t			GetSurplusTimes();
+	int32_t			GetDrawTimes();
 
 private:
 	void			sendTaskInfo();
@@ -44,14 +45,14 @@ private:
 	int32_t			GetTaskCycleTimes();
 
 private:
-	int32_t			m_nFinishTimes;			// µ±Ç°Íê³É¼¸´ÎÁË
-	int32_t			m_nTaskId;				// µ±Ç°ÈÎÎñID
-	int8_t			m_nStar;				// µ±Ç°ÐÇ¼¶
-	int8_t			m_nState;				// µ±Ç°ÈÎÎñ×´Ì¬ 2 ¿É½Ó 3 ÒÑ½Ó 4 ¿ÉÌá½»
-	int32_t			m_nKills;				// ÒÑ¾­É±ÁË¼¸¸öÁË
-	int32_t			m_nMonsterId;			// ÐèÒªÉ±ËÀÄÄ¸ö¹ÖÎï
-	int32_t			m_nNeedKills;			// ×Ü¹²ÐèÒªÉ±¼¸¸ö
-	int32_t			m_nRefreshStarTimes;	// Ë¢ÐÇ´ÎÊý
+	int32_t			m_nFinishTimes;			// ï¿½ï¿½Ç°ï¿½ï¿½É¼ï¿½ï¿½ï¿½ï¿½ï¿½
+	int32_t			m_nTaskId;				// ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ID
+	int8_t			m_nStar;				// ï¿½ï¿½Ç°ï¿½Ç¼ï¿½
+	int8_t			m_nState;				// ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½×´Ì¬ 2 ï¿½É½ï¿½ 3 ï¿½Ñ½ï¿½ 4 ï¿½ï¿½ï¿½á½»
+	int32_t			m_nKills;				// ï¿½Ñ¾ï¿½É±ï¿½Ë¼ï¿½ï¿½ï¿½ï¿½ï¿½
+	int32_t			m_nMonsterId;			// ï¿½ï¿½ÒªÉ±ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½
+	int32_t			m_nNeedKills;			// ï¿½Ü¹ï¿½ï¿½ï¿½ÒªÉ±ï¿½ï¿½ï¿½ï¿½
+	int32_t			m_nRefreshStarTimes;	// Ë¢ï¿½Ç´ï¿½ï¿½ï¿½
 };
 
 #endif	//__TPOC_TASK_CYCLE_H__

@@ -264,11 +264,11 @@ void CCityWar::checkChangeFamily( bool bUpdateScore )
 
 void CCityWar::NotOccupyGongGao()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 342 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 FamilyId_t CCityWar::GetGuilDerFirstFamily()
@@ -320,7 +320,7 @@ void CCityWar::SendPlayerActivityInfo( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -340,7 +340,7 @@ void CCityWar::SendPlayerActivityInfo( Player* player )
 	packet->writeInt32( getNextStartTime() );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CCityWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
@@ -350,7 +350,7 @@ void CCityWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet )
 	{
 		return;
@@ -361,18 +361,18 @@ void CCityWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 	packet->writeInt32( nLeftTime );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 
 	NetPacket* familyPacket = packetActivityFamilyScore();
 	if ( familyPacket != NULL )
 	{
-		GAME_SERVICE.sendPacketTo( player->getGateIndex(), familyPacket );
+		GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), familyPacket );
 	}
 
 	NetPacket* playerPacket = packetActivityPlayerScore( player );
 	if ( playerPacket != NULL )
 	{
-		GAME_SERVICE.sendPacketTo( player->getGateIndex(), playerPacket );
+		GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), playerPacket );
 	}
 }
 
@@ -474,7 +474,7 @@ void CCityWar::SendAppyCityWarInfo( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ONE_ICON );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -488,7 +488,7 @@ void CCityWar::SendAppyCityWarInfo( Player* player )
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CCityWar::AutoApplyCityWar()
@@ -500,11 +500,11 @@ void CCityWar::AutoApplyCityWar()
 
 void CCityWar::GongGao( int32_t nGongGaoId )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( nGongGaoId );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CCityWar::SaveApplyInfo()
@@ -645,7 +645,7 @@ void CCityWar::onPlayerKilled( Player* pDier, Player* pAttacker )
 	}
 
 	// Broadcast notification
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 326 );
 	packet->writeInt64( pAttacker->getCid() );
@@ -653,7 +653,7 @@ void CCityWar::onPlayerKilled( Player* pDier, Player* pAttacker )
 	packet->writeInt64( pDier->getCid() );
 	packet->writeUTF8( pDier->getName() );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CCityWar::onMonsterDie( MonsterActivity* pMonster, Player* pKiller )
@@ -966,7 +966,7 @@ bool CCityWar::OnChangeMap( Player* player, CActivityMap* pMap, int32_t nX, int3
 
 Answer::NetPacket* CCityWar::packetActivityScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ONE_ICON );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -1036,20 +1036,20 @@ void CCityWar::appendPlayerRankInfo( NetPacket* packet, FamilyId_t nFamilyId, in
 
 void CCityWar::broadcastReady()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 332 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CCityWar::broadcastStart()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 335 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CCityWar::broadcastRankInfo()
@@ -1057,13 +1057,13 @@ void CCityWar::broadcastRankInfo()
 	NetPacket* packet = packetActivityScore();
 	if ( packet != NULL )
 	{
-		GAME_SERVICE.worldBroadcast( packet );
+		GAME_SERVICE.worldBroadcast( 0, packet );
 	}
 }
 
 void CCityWar::broadcastResult()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -1097,12 +1097,12 @@ void CCityWar::broadcastResult()
 	packet->setWOffset( oldOffset );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 Answer::NetPacket* CCityWar::packetActivityFamilyScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_FAMILY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_FAMILY_SCORE );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -1155,7 +1155,7 @@ Answer::NetPacket* CCityWar::packetActivityPlayerScore( Player* player )
 	}
 
 	const CityWarPlayerScore& score = iter->second;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_PLAYER_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_PLAYER_SCORE );
 	if ( NULL == packet )
 	{
 		return NULL;

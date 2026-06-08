@@ -2727,6 +2727,9 @@ public:
 public:
 	MemChrBag	gambleDepot[MAX_DEPOT_SLOT];
 	ChrBagInfo	DeoptInfo;
+	int32_t		OpneCount;
+	std::string	Password;
+	std::string	SecondPassword;
 	int32_t		Currency[CURRENCY_TYPE_COUNT];
 };
 //========================================================================================================================================

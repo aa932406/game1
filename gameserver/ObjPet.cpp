@@ -410,7 +410,7 @@ void CObjPet::SendPetInfo( bool bSendBase )
 		m_pPet->SetSyncSelf();
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_PET_LIST );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_PET_LIST );
 	if (NULL == packet)
 	{
 		return;
@@ -420,7 +420,7 @@ void CObjPet::SendPetInfo( bool bSendBase )
 	AppendPetInfo( packet );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CObjPet::SendPetStatus()
@@ -430,7 +430,7 @@ void CObjPet::SendPetStatus()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_PET_STATUS );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_PET_STATUS );
 	if (NULL == packet)
 	{
 		return;
@@ -1132,7 +1132,7 @@ bool CObjPet::Illusion( CObjPet* pPet, int8_t nType, int8_t nUseItem )
 
 void CObjPet::sendPetLearnSkill( int32_t nSkill )
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_PET_LEARN_NEW_SKILL );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_PET_LEARN_NEW_SKILL );
 	if (NULL == packet)
 	{
 		return;
@@ -1141,12 +1141,12 @@ void CObjPet::sendPetLearnSkill( int32_t nSkill )
 	packet->writeInt64( m_pPet->GetPetId() );
 	packet->writeInt32( nSkill );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CObjPet::broadcastPetPhase( PET_PHASE phase )
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PET_BROADCASE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PET_BROADCASE );
 	if (NULL == packet)
 	{
 		return;
@@ -1161,12 +1161,12 @@ void CObjPet::broadcastPetPhase( PET_PHASE phase )
 	packet->writeInt8( phase );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast(packet);
+	GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
 }
 
 void CObjPet::broadcastPetLearnSkill( int16_t nSkillId )
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PET_BROADCASE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PET_BROADCASE );
 	if (NULL == packet)
 	{
 		return;
@@ -1180,12 +1180,12 @@ void CObjPet::broadcastPetLearnSkill( int16_t nSkillId )
 	packet->writeInt64( m_pPet->GetPetId() );
 	packet->writeInt16( nSkillId );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CObjPet::broadcastPetSkillLevelUp( int16_t nSkillId, int16_t nSkillLevel )
 {
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PET_BROADCASE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PET_BROADCASE );
 	if (NULL == packet)
 	{
 		return;
@@ -1200,7 +1200,7 @@ void CObjPet::broadcastPetSkillLevelUp( int16_t nSkillId, int16_t nSkillLevel )
 	packet->writeInt16( nSkillId );
 	packet->writeInt16( nSkillLevel );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 

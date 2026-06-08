@@ -89,6 +89,7 @@ int32_t CExtCharTitle::onDressTitle( Answer::NetPacket* inPacket )
 	unHideTitle( nId );
 	m_pPlayer->recalcAttr();
 	m_pPlayer->setSyncStatusFlag();
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nId );
 	return 0;
 }
 
@@ -106,6 +107,7 @@ int32_t CExtCharTitle::onUnDressTitle( Answer::NetPacket* inPacket )
 	hideTitle( nId );
 	m_pPlayer->recalcAttr();
 	m_pPlayer->setSyncStatusFlag();
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nId );
 	return 0;
 }
 
@@ -196,7 +198,7 @@ void CExtCharTitle::SendTitleInfo()
 	{
 		return;
 	}
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_TITLE_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_TITLE_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -236,7 +238,7 @@ void CExtCharTitle::SendTitleInfo()
 	packet->setWOffset( offset );
 	packet->setSize( packet->getWOffset() );
 
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtCharTitle::AppendDressTitle( Answer::NetPacket* packet )

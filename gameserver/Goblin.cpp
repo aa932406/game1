@@ -173,7 +173,7 @@ void CGoblin::SendAllGoblinInfo()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD1 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD1 );
 	if ( NULL == packet )
 	{
 		return;
@@ -197,7 +197,7 @@ void CGoblin::SendAllGoblinInfo()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CGoblin::OnGoblinLevelUp( Answer::NetPacket *inPacket )
@@ -227,13 +227,13 @@ int32_t CGoblin::OnGoblinLevelUp( Answer::NetPacket *inPacket )
 	m_GoblinInfoMap[nType].GoblinLevel++;
 	SendGoblinInfo( nType );
 	m_pPlayer->RecalcAttr();
-	GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), nType);
+	GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nType);
 
 	int32_t NewSuitId = GetSuitId( IsLeft );
 	if ( NewSuitId != OldSuitId )
 	{
 		int32_t GongGaoId = IsLeft ? 477 : 478;
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( packet != NULL )
 		{
 			packet->writeInt32( GongGaoId );
@@ -242,7 +242,7 @@ int32_t CGoblin::OnGoblinLevelUp( Answer::NetPacket *inPacket )
 			packet->writeInt32( NewSuitId );
 			packet->setSize( packet->getWOffset() );
 			packet->setProc( SM_SEND_NOTICE_PARAM );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 	return ERR_OK;
@@ -254,7 +254,7 @@ void CGoblin::SendGoblinInfo( int32_t nType )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD0 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD0 );
 	if ( NULL == packet )
 	{
 		return;
@@ -273,7 +273,7 @@ void CGoblin::SendGoblinInfo( int32_t nType )
 		packet->writeInt32( it->second.GoblinRes );
 	}
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CGoblin::AddChrAttr()
@@ -323,7 +323,7 @@ void CGoblin::SendAllShouHuRefiningInfo()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD2 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD2 );
 	if ( NULL == packet )
 	{
 		return;
@@ -345,7 +345,7 @@ void CGoblin::SendAllShouHuRefiningInfo()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CGoblin::AddShouHuChrAttr()
@@ -423,7 +423,7 @@ int32_t CGoblin::OnShouHuRefiningLevelUp( Answer::NetPacket *inPacket )
 	m_ShouHuRefiningLeveMap[nType] = NewLevel;
 	m_pPlayer->RecalcAttr();
 	SendShouHuRefiningInfo( nType );
-	GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+	GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 	return ERR_OK;
 }
 
@@ -433,7 +433,7 @@ void CGoblin::SendShouHuRefiningInfo( int32_t nType )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD3 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD3 );
 	if ( NULL == packet )
 	{
 		return;
@@ -441,7 +441,7 @@ void CGoblin::SendShouHuRefiningInfo( int32_t nType )
 	packet->writeInt32( nType );
 	packet->writeInt32( m_ShouHuRefiningLeveMap[nType] );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 
@@ -453,7 +453,7 @@ void CGoblin::SendAllWingEquipPolishInfo()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD4 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD4 );
 	if ( NULL == packet )
 	{
 		return;
@@ -475,7 +475,7 @@ void CGoblin::SendAllWingEquipPolishInfo()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CGoblin::AddWingEquipPolishChrAttr()
@@ -552,7 +552,7 @@ int32_t CGoblin::OnWingEquipPolishLevelUp( Answer::NetPacket *inPacket )
 	m_WingEquipPolishMap[nSlot] = NewLevel;
 	m_pPlayer->RecalcAttr();
 	SendWingEquipPolishInfo( nSlot );
-	GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+	GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 	return ERR_OK;
 }
 
@@ -562,7 +562,7 @@ void CGoblin::SendWingEquipPolishInfo( int32_t nSlot )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD5 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD5 );
 	if ( NULL == packet )
 	{
 		return;
@@ -570,7 +570,7 @@ void CGoblin::SendWingEquipPolishInfo( int32_t nSlot )
 	packet->writeInt32( nSlot );
 	packet->writeInt32( m_WingEquipPolishMap[nSlot] );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 
@@ -582,7 +582,7 @@ void CGoblin::SendAllMoFuZhuNengInfo()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet )
 	{
 		return;
@@ -604,7 +604,7 @@ void CGoblin::SendAllMoFuZhuNengInfo()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CGoblin::GetMoFuChrAttr( int32_t Slot )
@@ -647,7 +647,7 @@ int32_t CGoblin::OnMoFuZhuNeng( Answer::NetPacket *inPacket )
 	m_MoFuZhuNengMap[nSlot] = NewLevel;
 	m_pPlayer->RecalcAttr();
 	SendMoFuZhuNengInfo( nSlot );
-	GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+	GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 	return ERR_OK;
 }
 
@@ -657,7 +657,7 @@ void CGoblin::SendMoFuZhuNengInfo( int32_t nSlot )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD7 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD7 );
 	if ( NULL == packet )
 	{
 		return;
@@ -665,7 +665,7 @@ void CGoblin::SendMoFuZhuNengInfo( int32_t nSlot )
 	packet->writeInt32( nSlot );
 	packet->writeInt32( m_MoFuZhuNengMap[nSlot] );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 
@@ -677,7 +677,7 @@ void CGoblin::SendAllWingEquipRefiningInfo()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD8 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD8 );
 	if ( NULL == packet )
 	{
 		return;
@@ -699,7 +699,7 @@ void CGoblin::SendAllWingEquipRefiningInfo()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CGoblin::AddWingEquipRefiningChrAttr()
@@ -776,7 +776,7 @@ int32_t CGoblin::OnWingEquipRefiningLevelUp( Answer::NetPacket *inPacket )
 	m_WingEquipRefiningMap[nSlot] = NewLevel;
 	m_pPlayer->RecalcAttr();
 	SendWingEquipRefiningInfo( nSlot );
-	GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+	GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 	return ERR_OK;
 }
 
@@ -786,7 +786,7 @@ void CGoblin::SendWingEquipRefiningInfo( int32_t nSlot )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD9 );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD9 );
 	if ( NULL == packet )
 	{
 		return;
@@ -794,7 +794,7 @@ void CGoblin::SendWingEquipRefiningInfo( int32_t nSlot )
 	packet->writeInt32( nSlot );
 	packet->writeInt32( m_WingEquipRefiningMap[nSlot] );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CGoblin::GetWingEquipRefiningAttr( int32_t nSlot )
@@ -821,7 +821,7 @@ void CGoblin::SendAllVipEquipPosLevelInfo()
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CDA );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CDA );
 	if ( NULL == packet )
 	{
 		return;
@@ -843,7 +843,7 @@ void CGoblin::SendAllVipEquipPosLevelInfo()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CGoblin::AddVipEquipPosLevelCharAttr()
@@ -873,7 +873,7 @@ void CGoblin::SendVipEquipPosLevelInfo( int32_t nSlot )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CDB );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CDB );
 	if ( NULL == packet )
 	{
 		return;
@@ -881,7 +881,7 @@ void CGoblin::SendVipEquipPosLevelInfo( int32_t nSlot )
 	packet->writeInt32( nSlot );
 	packet->writeInt32( m_VipEquipPosLevelMap[nSlot] );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CGoblin::GetVipEquipPosLevelSuitId()
@@ -926,6 +926,6 @@ int32_t CGoblin::OnVipEquipPosLevellUp( Answer::NetPacket *inPacket )
 	m_VipEquipPosLevelMap[nSlot] = NewLevel;
 	m_pPlayer->RecalcAttr();
 	SendVipEquipPosLevelInfo( nSlot );
-	GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+	GAME_SERVICE.replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 	return ERR_OK;
 }

@@ -498,7 +498,7 @@ void CKiaFuRecharge::SendIconState(Player* player)
     {
         ShowIcon icon;
         getIconState(icon, player);
-        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
+        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(player->getConnId(), Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
         if (pPacket)
         {
             pPacket->writeInt32(icon.nId);
@@ -508,7 +508,7 @@ void CKiaFuRecharge::SendIconState(Player* player)
             pPacket->writeInt32(icon.IconRight);
             pPacket->writeInt8(icon.Effects);
             pPacket->setSize(pPacket->getWOffset());
-            GAME_SERVICE.sendPacketTo(player->getGateIndex(), pPacket);
+            GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), pPacket);
         }
     }
 }
@@ -535,7 +535,7 @@ void CKiaFuRecharge::SendChouJiangIconState(Player* player)
     {
         ShowIcon icon;
         getChouJiangIconState(icon, player);
-        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
+        Answer::NetPacket* pPacket = GAME_SERVICE.popNetpacket(player->getConnId(), Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
         if (pPacket)
         {
             pPacket->writeInt32(icon.nId);
@@ -545,7 +545,7 @@ void CKiaFuRecharge::SendChouJiangIconState(Player* player)
             pPacket->writeInt32(icon.IconRight);
             pPacket->writeInt8(icon.Effects);
             pPacket->setSize(packet->getWOffset());
-            GAME_SERVICE.sendPacketTo(player->getGateIndex(), pPacket);
+            GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), pPacket);
         }
     }
 }
@@ -561,7 +561,7 @@ void CKiaFuRecharge::hideIcon(int32_t nIconId)
     icon.nLeftTime = 0;
     icon.IconRight = 0;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CC3);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(0, Answer::PACK_DISPATCH, 0x2CC3);
     if (packet)
     {
         packet->writeInt32(icon.nId);
@@ -571,7 +571,7 @@ void CKiaFuRecharge::hideIcon(int32_t nIconId)
         packet->writeInt32(icon.IconRight);
         packet->writeInt8(icon.Effects);
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.worldBroadcast(packet);
+        GAME_SERVICE.worldBroadcast(0, packet);
     }
 }
 
@@ -580,13 +580,13 @@ void CKiaFuRecharge::GongGao(int32_t GongGaoId, Player* player)
     if (!player)
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CD6);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(0, Answer::PACK_DISPATCH, 0x2CD6);
     if (packet)
     {
         packet->writeInt32(GongGaoId);
         packet->writeUTF8(player->getName());
         packet->writeInt64(player->getCid());
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.worldBroadcast(packet);
+        GAME_SERVICE.worldBroadcast(0, packet);
     }
 }

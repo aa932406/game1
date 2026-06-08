@@ -74,7 +74,7 @@ int32_t CShangCheng::BuyShopItem( int32_t ShopId, int32_t ItemCount, bool AddBag
 		return ERR_SYETEM_ERR;
 	}
 
-	if ( IsLimited( pShangCheng, ItemCount ) )	//ÅÐ¶Ï¸öÊýºÍÊ±¼äÏÞÖÆ
+	if ( IsLimited( pShangCheng, ItemCount ) )	//ï¿½Ð¶Ï¸ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	{
 		return ERR_SYETEM_ERR;
 	}
@@ -149,10 +149,10 @@ int32_t CShangCheng::BuyShopItem( int32_t ShopId, int32_t ItemCount, bool AddBag
 		}
 		else if ( !m_pPlayer->GetBag().AddItem( Item,IACR_BUY_SHANG_CHENG_ITEM ) )
 		{
-			LOG_ERROR("¹ºÂòÉÌ³ÇÎïÆ·Ê§°Ü,itemClass=%d,ItemId=%d,ItemCount=%d,time=%d,cid=%lld",pShangCheng->ItemClass,pShangCheng->ItemId,ItemCount,m_pPlayer->getNow(),m_pPlayer->getCid() );
+			LOG_ERROR("ï¿½ï¿½ï¿½ï¿½ï¿½Ì³ï¿½ï¿½ï¿½Æ·Ê§ï¿½ï¿½,itemClass=%d,ItemId=%d,ItemCount=%d,time=%d,cid=%lld",pShangCheng->ItemClass,pShangCheng->ItemId,ItemCount,m_pPlayer->getNow(),m_pPlayer->getCid() );
 		}
 
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_BUY_SHANG_CHENG_ITEM, pShangCheng->ShopId );
+		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_BUY_SHANG_CHENG_ITEM, pShangCheng->ShopId );
 	}
 
 	if ( pShangCheng->LimitType == LIMIT_TYPE_CHAR )
@@ -198,7 +198,7 @@ void CShangCheng::SendItemLimitChange( int32_t ShopId )
 	packet->writeInt32( it->first );
 	packet->writeInt32( it->second );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 int32_t CShangCheng::OnBuyGameLimitItem( Answer::NetPacket *inPacket )
@@ -267,10 +267,10 @@ int32_t CShangCheng::OnBuyGameLimitItem( Answer::NetPacket *inPacket )
 	}
 	else if ( !m_pPlayer->GetBag().AddItem( Item,IACR_BUY_SHANG_CHENG_ITEM ) )
 	{
-		LOG_ERROR("¹ºÂòÉÌ³ÇÎïÆ·Ê§°Ü,itemClass=%d,ItemId=%d,ItemCount=%d,time=%d,cid=%lld",pShangCheng->ItemClass,pShangCheng->ItemId,ItemCount,m_pPlayer->getNow(),m_pPlayer->getCid() );
+		LOG_ERROR("ï¿½ï¿½ï¿½ï¿½ï¿½Ì³ï¿½ï¿½ï¿½Æ·Ê§ï¿½ï¿½,itemClass=%d,ItemId=%d,ItemCount=%d,time=%d,cid=%lld",pShangCheng->ItemClass,pShangCheng->ItemId,ItemCount,m_pPlayer->getNow(),m_pPlayer->getCid() );
 	}
 	SendBuyItemSucceed( ShopId, ItemCount );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_BUY_SHANG_CHENG_ITEM, pShangCheng->ShopId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_BUY_SHANG_CHENG_ITEM, pShangCheng->ShopId );
 	return ERR_OK;
 }
 
@@ -318,7 +318,7 @@ void CShangCheng::SendLimitInfo()
 		packet->writeInt32( it->second );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CShangCheng::AddLimitCount( int32_t ShopId, int32_t AddCount )

@@ -114,7 +114,7 @@ int32_t CCharWuHun::onAskWuHunInfo( Answer::NetPacket *inPacket )
 
 	inPacket->readInt32();
 
-	sendWuHunInfo();
+
 	return 0;
 }
 
@@ -344,7 +344,7 @@ int32_t CCharWuHun::onCreateWuHun( Answer::NetPacket *inPacket )
 	WuHunItem* pCfgItem = CFG_DATA.GetWuHunItem( stu.itemId );
 	if ( pCfgItem && GongGaoId > 0 )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, 0x2CD6 );
 		if ( packet )
 		{
 			packet->writeInt32( GongGaoId );
@@ -352,18 +352,18 @@ int32_t CCharWuHun::onCreateWuHun( Answer::NetPacket *inPacket )
 			packet->writeInt64( m_pPlayer->getCid() );
 			packet->writeInt32( stu.itemId );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 
 	// Update task
 	if ( pCfgItem )
 	{
-		m_pPlayer->GetTask().updateTaskCount( pCfgItem->nType );
+		m_pPlayer->GetTask().updateTaskCount( 43, pCfgItem->nType );
 	}
 
 	// Reply success
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), stu.itemId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), stu.itemId );
 
 	return 0;
 }
@@ -375,7 +375,7 @@ void CCharWuHun::sendWuHunInfo()
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2EA1 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, 0x2EA1 );
 	if ( !packet )
 	{
 		return;
@@ -386,9 +386,9 @@ void CCharWuHun::sendWuHunInfo()
 		packet->writeInt32( i + 1 );
 
 		int32_t oldoffest = packet->getWOffset();
-		packet->writeInt8( 0 ); // placeholder for count
-
 		int8_t Count = 0;
+		packet->writeInt32( 0 );
+
 		for ( int32_t j = 0; j < 16; ++j )
 		{
 			if ( m_WuHun[i][j] > 0 )
@@ -406,7 +406,7 @@ void CCharWuHun::sendWuHunInfo()
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CCharWuHun::sendWuHunSlotInfo( int32_t Level, int32_t Slot )
@@ -416,7 +416,7 @@ void CCharWuHun::sendWuHunSlotInfo( int32_t Level, int32_t Slot )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2EA2 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, 0x2EA2 );
 	if ( !packet )
 	{
 		return;
@@ -426,7 +426,7 @@ void CCharWuHun::sendWuHunSlotInfo( int32_t Level, int32_t Slot )
 	packet->writeInt32( Slot );
 	packet->writeInt32( m_WuHun[Level - 1][Slot] );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CCharWuHun::OnAddTalent( int32_t TalentId, int32_t TalentLevel )

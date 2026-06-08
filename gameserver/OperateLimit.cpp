@@ -90,7 +90,7 @@ void CExtOperateLimit::UpdateLimitCount( int32_t LimitId, int32_t LimitCount )
 	NotifyLimitInfo( updataList );
 }
 
-//Ôö¼ÓÍæ¼ÒÄ³²Ù×÷ÏÞÖÆÊý¾Ý
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void CExtOperateLimit::AddLimitCount( int32_t LimitId, int32_t LimitCount )
 {
 	if ( 0 == LimitCount )
@@ -117,7 +117,7 @@ void CExtOperateLimit::AddLimitCount( int32_t LimitId, int32_t LimitCount )
 	NotifyLimitInfo( updataList );
 }
 
-//ÖØÖÃÍæ¼ÒÄ³²Ù×÷ÏÞÖÆÊý¾Ý
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void CExtOperateLimit::Reset( int32_t LimitId )
 {
 	Int32List updataList;
@@ -173,13 +173,13 @@ bool CExtOperateLimit::CheckCountIsLimited( int32_t LimitId, int32_t LimitCount 
 	{
 		if ( iter->second.LimitCount >= LimitCount )
 		{
-			return true;//³¬¹ý´ÎÊýÏÞÖÆ
+			return true;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
 	}
 	return false;
 }
 
-//¼ì²éÍæ¼ÒÊÇ·ñ´æÔÚ´ËÏÞÖÆ(ÓÀ¾ÃÏÞÖÆ)
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 bool CExtOperateLimit::CheckIsLimitedForever( int32_t LimitId ) const
 {
 	OperateLimitMap::const_iterator iter = m_mOperateLimit.find( LimitId );
@@ -224,7 +224,7 @@ void CExtOperateLimit::NotifyLimitInfo()
 	packet->writeInt32( nCount );
 	packet->setWOffset( offset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtOperateLimit::NotifyLimitInfo( const Int32List& rcList )
@@ -275,7 +275,7 @@ void CExtOperateLimit::NotifyLimitInfo( const Int32List& rcList )
 	packet->writeInt32( nCount );
 	packet->setWOffset( offset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 bool CExtOperateLimit::isNeedNotify( int32_t nLimitId )

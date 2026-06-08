@@ -101,9 +101,8 @@ int32_t Player::OnKaiFuHuoDongOperator( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 2;
-	// CKaiFuHuoDong* pKaiFu = Answer::Singleton<CKaiFuHuoDong>::instance();
-	// return pKaiFu->KaiFuHuoDongOperator(this, inPacket);
-	return 0;
+	CKaiFuHuoDong* pKaiFu = Answer::Singleton<CKaiFuHuoDong>::instance();
+	return pKaiFu->KaiFuHuoDongOperator(this, inPacket);
 }
 
 int32_t Player::OnEquipBackOperator( Answer::NetPacket *inPacket )
@@ -242,8 +241,60 @@ int32_t Player::OnFestivalActivityOperator( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CFestivalActivity* pFA = Answer::Singleton<CFestivalActivity>::instance();
-	// return pFA->Operator(this, inPacket);
+
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	if ( pGS->getLine() == 9 )
+		return 10002;
+
+	int32_t Err = -1;
+	uint16_t Proc = inPacket->getProc();
+	int32_t nProcId = Proc;
+
+	if ( Proc == 683 )
+	{
+		int8_t Type = inPacket->readInt8();
+		if ( Type == 2 )
+		{
+			int8_t nIndex = inPacket->readInt8();
+			CFestivalActivity* pFA = Answer::Singleton<CFestivalActivity>::instance();
+			Err = pFA->GetDaTiReward(this, nIndex);
+		}
+		else if ( Type == 5 )
+		{
+			int32_t nIndex = inPacket->readInt8();
+			CFestivalActivity* pFA = Answer::Singleton<CFestivalActivity>::instance();
+			if ( !pFA->DuiHuan(this, nIndex) )
+			{
+				uint16_t replyProc = inPacket->getProc();
+				int16_t GateIndex = getGateIndex();
+				int8_t ConnId = getConnId();
+				GameService* pGS2 = Answer::Singleton<GameService>::instance();
+				pGS2->replySuccess(ConnId, GateIndex, replyProc, Type);
+			}
+		}
+	}
+	else if ( Proc == 684 )
+	{
+		std::string DaAn;
+		inPacket->readUTF8(DaAn);
+		std::string p_DaAn(DaAn);
+		CFestivalActivity* pFA = Answer::Singleton<CFestivalActivity>::instance();
+		bool bOk = (pFA->DaTi(this, &p_DaAn) == 0);
+		uint16_t replyProc = inPacket->getProc();
+		int16_t GateIndex = getGateIndex();
+		if ( bOk )
+		{
+			int8_t ConnId = getConnId();
+			GameService* pGS2 = Answer::Singleton<GameService>::instance();
+			pGS2->replySuccess(ConnId, GateIndex, replyProc, 0);
+		}
+		else
+		{
+			int8_t ConnId = getConnId();
+			GameService* pGS2 = Answer::Singleton<GameService>::instance();
+			pGS2->replyfailure(ConnId, GateIndex, replyProc, 0, 0);
+		}
+	}
 	return 0;
 }
 
@@ -661,17 +712,26 @@ void Player::PayedDispose( int32_t AddGold )
 	m_CMonthlyChouJiang.OnChongZhi(AddGold + TodayPayGold, TodayPayGold);
 
 	// 跨服充值
-	// CKiaFuRecharge::OnRecharge(this, GetTodayPayGold(), AddGold);
+	{
+		CKiaFuRecharge* pKFR = Answer::Singleton<CKiaFuRecharge>::instance();
+		pKFR->OnRecharge(this, GetTodayPayGold(), AddGold);
+	}
 
 	// 双十一充值
-	// CFestivalDoubleEleven::OnRecharge(this, GetTodayPayGold(), AddGold);
+	{
+		CFestivalDoubleEleven* pFDE = Answer::Singleton<CFestivalDoubleEleven>::instance();
+		pFDE->OnRecharge(this, GetTodayPayGold(), AddGold);
+	}
 
 	// 国庆
 	int32_t totalPay = AddGold + GetTodayPayGold();
 	m_CNationalDayHd.AddNationalValue(NATIONAL_HD_TYPE::HHT_RECHARGE, TodayPayGold, totalPay);
 
 	// 联合服务器
-	// CUniteServer::OnRecharge(this, AddGold);
+	{
+		CUniteServer* pUS = Answer::Singleton<CUniteServer>::instance();
+		pUS->OnRecharge(this, AddGold);
+	}
 
 	// 运营活动累计充值
 	GetPlayerYunYingHd().AddTotalChongZhiCount(AddGold);
@@ -687,21 +747,33 @@ void Player::PayedDispose( int32_t AddGold )
 	GetPlayerYunYingHd().SendEveryDayChongZhiIcon(2);
 
 	// 双十一充值记录+图标
-	// CFestivalDoubleEleven::AddRechargeRecord(this, AddGold);
-	// CFestivalDoubleEleven::SendIconState(this);
+	{
+		CFestivalDoubleEleven* pFDE = Answer::Singleton<CFestivalDoubleEleven>::instance();
+		pFDE->AddRechargeRecord(this, AddGold);
+		pFDE->SendIconState(this);
+	}
 
 	// 联合服务器图标
-	// CUniteServer::SendIconState(this);
+	{
+		CUniteServer* pUS = Answer::Singleton<CUniteServer>::instance();
+		pUS->SendIconState(this);
+	}
 
 	// 综合运营
-	// CZongHeYunYingHD::OnRecharge(this, AddGold);
+	{
+		CZongHeYunYingHD* pZHYHD = Answer::Singleton<CZongHeYunYingHD>::instance();
+		pZHYHD->OnRecharge(this, AddGold);
+	}
 
 	// 公测图标
 	COpenBeta* pOB = Answer::Singleton<COpenBeta>::instance();
 	pOB->SendIconState(this);
 
 	// 开服活动图标
-	// CKaiFuHuoDong::SendKaiFuHuoDongIcon(this);
+	{
+		CKaiFuHuoDong* pKFHD = Answer::Singleton<CKaiFuHuoDong>::instance();
+		pKFHD->SendKaiFuHuoDongIcon(this);
+	}
 
 	// 月抽奖图标
 	m_CMonthlyChouJiang.SendIcon();
@@ -768,11 +840,14 @@ void Player::LevelUped( int32_t OldLevel, int32_t NewLevel )
 	GetPlayerGuanWei().OnLevelUp(NewLevel);
 
 	// 开服活动
-	// CKaiFuHuoDong::OnLevelUp(this, NewLevel);
+	{
+		CKaiFuHuoDong* pKFHD = Answer::Singleton<CKaiFuHuoDong>::instance();
+		pKFHD->OnLevelUp(this, NewLevel);
+	}
 
 	// 腾讯信息
-	// m_extCharTencent.SendTGPIcon();
-	// m_extCharTencent.SendBlueStoneIcon();
+	m_extCharTencent.SendTGPIcon();
+	m_extCharTencent.SendBlueStoneIcon();
 
 	// 公测图标
 	COpenBeta* pOB = Answer::Singleton<COpenBeta>::instance();
@@ -969,7 +1044,8 @@ int32_t Player::OnUniteServerRequestInfo( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CUniteServer::SendUniteServerInfo(this);
+	CUniteServer* pUS = Answer::Singleton<CUniteServer>::instance();
+	pUS->SendUniteServerInfo(this);
 	return 0;
 }
 
@@ -978,10 +1054,12 @@ int32_t Player::OnUniteServerGetRechargeGift( Answer::NetPacket *inPacket )
 	if ( !inPacket )
 		return 10002;
 	int8_t nIndex = inPacket->readInt8();
-	// if ( CUniteServer::GetRechargeGift(this, nIndex) )
-	// 	return 10002;
-	// uint16_t Proc = inPacket->getProc();
-	// GameService::replySuccess(getConnId(), getGateIndex(), Proc, nIndex);
+	CUniteServer* pUS = Answer::Singleton<CUniteServer>::instance();
+	if ( pUS->GetRechargeGift(this, nIndex) )
+		return 10002;
+	uint16_t Proc = inPacket->getProc();
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	pGS->replySuccess(getConnId(), getGateIndex(), Proc, nIndex);
 	return 0;
 }
 
@@ -989,7 +1067,8 @@ int32_t Player::OnDoubleElevenRequestInfo( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CFestivalDoubleEleven::SendInfo(this);
+	CFestivalDoubleEleven* pFDE = Answer::Singleton<CFestivalDoubleEleven>::instance();
+	pFDE->SendActivityInfo(this);
 	return 0;
 }
 
@@ -997,7 +1076,8 @@ int32_t Player::OnZHYYHDRequestInfo( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CZHYYHD::SendInfo(this);
+	CZongHeYunYingHD* pZHYHD = Answer::Singleton<CZongHeYunYingHD>::instance();
+	pZHYHD->SendActivityInfo(this);
 	return 0;
 }
 
@@ -1005,7 +1085,11 @@ int32_t Player::OnZHYYHDGetRechargeDailyReward( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CZHYYHD::GetRechargeDailyReward(this, inPacket);
+	CZongHeYunYingHD* pZHYHD = Answer::Singleton<CZongHeYunYingHD>::instance();
+	pZHYHD->GetRechargeDailyReward(this);
+	uint16_t Proc = inPacket->getProc();
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	pGS->replySuccess(getConnId(), getGateIndex(), Proc, 0);
 	return 0;
 }
 
@@ -1013,7 +1097,12 @@ int32_t Player::OnZHYYHDGetRechargeTeamShopDailyReward( Answer::NetPacket *inPac
 {
 	if ( !inPacket )
 		return 10002;
-	// CZHYYHD::GetRechargeTeamShopDailyReward(this, inPacket);
+	int32_t nIndex = inPacket->readInt32();
+	CZongHeYunYingHD* pZHYHD = Answer::Singleton<CZongHeYunYingHD>::instance();
+	pZHYHD->GetRechargeTeamShopDailyReward(this, nIndex);
+	uint16_t Proc = inPacket->getProc();
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	pGS->replySuccess(getConnId(), getGateIndex(), Proc, nIndex);
 	return 0;
 }
 
@@ -1021,7 +1110,12 @@ int32_t Player::OnZHYYHDBuyOnceShopItem( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CZHYYHD::BuyOnceShopItem(this, inPacket);
+	int32_t nIndex = inPacket->readInt32();
+	CZongHeYunYingHD* pZHYHD = Answer::Singleton<CZongHeYunYingHD>::instance();
+	pZHYHD->BuyOnceShopItem(this, nIndex);
+	uint16_t Proc = inPacket->getProc();
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	pGS->replySuccess(getConnId(), getGateIndex(), Proc, nIndex);
 	return 0;
 }
 
@@ -1029,7 +1123,22 @@ int32_t Player::OnGetKaiFuREcharge( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CKaiFuHuoDong::GetRecharge(this, inPacket);
+	int32_t nHdType = inPacket->readInt32();
+	int32_t nType = inPacket->readInt32();
+	int32_t nIndex = inPacket->readInt32();
+	CKiaFuRecharge* pKFR = Answer::Singleton<CKiaFuRecharge>::instance();
+	switch ( nHdType )
+	{
+		case 1:
+			pKFR->OnGetRechargeSumReward(this, nIndex);
+			break;
+		case 2:
+			pKFR->GetLianRechargeReward(this, nType, nIndex);
+			break;
+		case 4:
+			pKFR->OnGetXiaoFeiReward(this, nIndex);
+			break;
+	}
 	return 0;
 }
 
@@ -1037,7 +1146,9 @@ int32_t Player::OnGetKaiFuChouJiang( Answer::NetPacket *inPacket )
 {
 	if ( !inPacket )
 		return 10002;
-	// CKaiFuHuoDong::GetChouJiang(this, inPacket);
+	int32_t nIndex = inPacket->readInt32();
+	CKiaFuRecharge* pKFR = Answer::Singleton<CKiaFuRecharge>::instance();
+	pKFR->OnGetChouJiangReward(this, nIndex);
 	return 0;
 }
 
@@ -2748,4 +2859,3300 @@ void Player::safeRevive()
 void Player::kickBackFromCross( int32_t reason )
 {
 	// 踢回本服 - 跨服系统待实现
+}
+
+// ======== P0-a: 构造/析构/初始化 ========
+
+Player::Player()
+{
+}
+
+Player::~Player()
+{
+}
+
+void Player::init( PlayerDBData& dbData )
+{
+	int32_t nowTime = getNow();
+
+	m_connid = dbData.connid;
+	m_cgindex = dbData.cgindex;
+	memcpy(&m_chr, &dbData.chr.data, sizeof(m_chr));
+
+	if ( m_chr.pk_time <= nowTime )
+		m_chr.pk_time = 0;
+	if ( !m_chr.pk_mode )
+		m_chr.pk_mode = 1;
+	m_pkMode_bk = m_chr.pk_mode;
+
+	m_levelStartTime = nowTime;
+	m_lastPkValueTick = getTick();
+	m_nLastSaveOnlineTime = nowTime;
+	m_chr.last_login_time = nowTime;
+
+	memcpy(&m_sysUser, &dbData.sysUser.data, sizeof(m_sysUser));
+	m_sysUser.last_login_time = nowTime;
+	m_sysUser.total_offline_time += nowTime - m_sysUser.last_logout_time;
+	if ( m_sysUser.total_offline_time > 17999 )
+	{
+		m_sysUser.total_online_time = 0;
+		m_sysUser.total_offline_time = 0;
+	}
+	m_sysUserPreventWallow = dbData.sysUserPreventWallow.data;
+
+	m_task.init(this, &dbData.taskData.taskVt);
+	memcpy(m_actions, dbData.actionData.actionArry, sizeof(m_actions));
+	memcpy(&m_autoFight, &dbData.autoFight.data, sizeof(m_autoFight));
+	m_systemSetting = dbData.systemSetting.data;
+
+	tm localNow;
+	getLocalNow(&localNow);
+	m_lastLocalNow = localNow;
+	m_lastSaveTick = getTick();
+
+	initBuff(&dbData.buffData.buffVt);
+	m_ExtSysMgr.OnLoadFromDB(dbData);
+
+	if ( m_sysUser.last_logout_time <= 0 )
+	{
+		updateRecord(1016, 0);
+		updateRecord(2003, 0);
+		updateRecord(1908, 100000);
+		CfgData* pCfg = Answer::Singleton<CfgData>::instance();
+		const EnergyCfg* pEnergyCfg = pCfg->GetEnergyCfg();
+		if ( pEnergyCfg )
+			updateRecord(37305, pEnergyCfg->MaxEnergy);
+		updateRecord(37307, nowTime);
+		SendJingLiValue();
+	}
+	else
+	{
+		int32_t offlineTime = nowTime - m_sysUser.last_logout_time;
+		GetOperateLimit().AddLimitCount(1019, offlineTime);
+		int32_t nOffLineDay = Answer::DayTime::daydiffBw(m_sysUser.last_logout_time, nowTime);
+		int32_t curCount = m_extOperateLimit.GetLimitCount(37007);
+		if ( curCount < nOffLineDay )
+			m_extOperateLimit.UpdateLimitCount(37007, nOffLineDay);
+	}
+
+	m_PlayerFunctionOpen.InitFunctionOpen(0, getLevel());
+	m_PlayerFunctionOpen.InitFunctionOpenMailByLevel(getLevel());
+	CfgData* pCfgData = Answer::Singleton<CfgData>::instance();
+	int32_t ServerDiffDay = pCfgData->getServerDiffDay(SERVER_TYPE::SVT_NORMAL);
+	m_PlayerFunctionOpen.InitFunctionOpenMailByKaiFuDay(ServerDiffDay + 1);
+	m_PlayerFunctionOpen.CheckFunctionOpenMailByKaiFuDay(ServerDiffDay + 1);
+
+	refreshDailyCheck(0);
+	checkFestivalVersion();
+
+	if ( dbData.sysUser.data.gold_pay > 0 )
+		syncGold(dbData.sysUser.data.gold_pay);
+
+	m_extCharTitle.InitTitle();
+	m_InBossHomeTime = getRecord(2008);
+
+	CEquipManager* pEM = Answer::Singleton<CEquipManager>::instance();
+	pEM->SendPlayerEquipInfo(this);
+
+	InitSysSetting();
+	setSyncStatusFlag();
+	minuteCheck(0);
+	recalcAttr(1, 1);
+	setHP(dbData.chr.data.hp);
+	setMP(dbData.chr.data.mp);
+	setKunLi(dbData.chr.data.kun_li);
+	adjustUnitAttr();
+
+	if ( !isAlive() )
+		m_bDie = 1;
+
+	int32_t MapId = StaticObj::getMapId(this);
+	int32_t vNow = getNow();
+	CharId_t Cid = getCid();
+	DBService* pDB = Answer::Singleton<DBService>::instance();
+	pDB->logPlayerLogin(m_connid, Cid, 1, vNow, MapId);
+
+	CfgData* pCfg2 = Answer::Singleton<CfgData>::instance();
+	CfgMapRegion* pCfgRegion = pCfg2->getMapRegion(20001);
+	if ( pCfgRegion )
+	{
+		MapManager* pMM = Answer::Singleton<MapManager>::instance();
+		Map* pTempMap = pMM->GetMap(pCfgRegion->mapid);
+		if ( pTempMap )
+		{
+			Position pos = pTempMap->getRandomWalkablePositionInRegion(pCfgRegion);
+			if ( pos.x >= 0 && pos.y >= 0 )
+			{
+				m_oldPosition.mapid = pTempMap->GetMapId();
+				m_oldPosition.x = pos.x;
+				m_oldPosition.y = pos.y;
+				m_oldPosition.runnerId = pTempMap->GetRunnerId();
+			}
+		}
+	}
+
+	if ( Answer::DayTime::daydiff(dbData.chr.data.last_login_time) > 0 )
+	{
+		int32_t nTime = Answer::DayTime::dayzero(dbData.chr.data.create_time);
+		int32_t nDay = Answer::DayTime::daydiff(dbData.chr.data.create_time);
+		if ( nDay <= 30 )
+		{
+			DBService* pDB2 = Answer::Singleton<DBService>::instance();
+			pDB2->LogPlayerStay(getConnId(), nTime, nDay);
+		}
+	}
+
+	CActivityManager* pAM = Answer::Singleton<CActivityManager>::instance();
+	FamilyId_t winFamily = pAM->GetCityWarWinner(getConnId());
+	if ( winFamily > 0 )
+	{
+		if ( getFamilyId() == winFamily )
+			SetActState(1);
+	}
+
+	if ( IsMiniClient() )
+		GetPlayerHuoYueDu().AddHuoYueDuRecord(7, 0, 0);
+
+	std::string fromWay;
+	GetFromWay(fromWay);
+	if ( fromWay == "kkk" && getRecord(1920) <= 0 )
+	{
+		updateRecord(1920, 1);
+		std::string Param;
+		DBService* pDB3 = Answer::Singleton<DBService>::instance();
+		pDB3->OnSendSysMail(getConnId(), getCid(), 6398, &Param, 0);
+	}
+
+	sendUpdateSocialPlayerInfo(PlayerInfoIndex::PII_LOAD, 1);
+	ResetJingLi();
+
+	LoginGongGao();
+
+	std::string p_PickString(m_autoFight);
+	m_CharLittlerhelper.parsePickString(&p_PickString);
+
+	m_TeJieCRI = getTick();
+
+	m_ExtSysMgr.InitSystem();
+}
+
+void Player::initNetPacketHandlers()
+{
+	setNetPacketHandler(8, onLogout);
+	setNetPacketHandler(9, onSyncTime);
+	setNetPacketHandler(10, onMove);
+	setNetPacketHandler(11, onJump);
+	setNetPacketHandler(12, onTrailerMove);
+	setNetPacketHandler(16, onSwitchMap);
+	setNetPacketHandler(18, onEnterDungeon);
+	setNetPacketHandler(21, onLeaveDungeon);
+	setNetPacketHandler(790, onDungeonBuildTower);
+	setNetPacketHandler(792, onDungeonBuyTower);
+	setNetPacketHandler(791, onDungeonStart);
+	setNetPacketHandler(28, onDungeonSelectReward);
+	setNetPacketHandler(796, onDungeonSummonBoss);
+	setNetPacketHandler(793, onBuyDungeonEnterTime);
+	setNetPacketHandler(797, onDungeonSummon);
+	setNetPacketHandler(795, onDungeonQuickDone);
+	setNetPacketHandler(23, onDungeonSaoDang);
+	setNetPacketHandler(24, onDungeonReset);
+	setNetPacketHandler(27, onGuessTheSize);
+	setNetPacketHandler(352, onEnterChargeDungeon);
+	setNetPacketHandler(76, onDungeonYJSKGuWu);
+	setNetPacketHandler(29, onEnterActivity);
+	setNetPacketHandler(30, onLeaveActivity);
+	setNetPacketHandler(31, onGetAwardActivity);
+	setNetPacketHandler(32, onActivityChangeMap);
+	setNetPacketHandler(33, onFamilyWarActivePillar);
+	setNetPacketHandler(41, onPickDropItem);
+	setNetPacketHandler(42, onBeginGather);
+	setNetPacketHandler(43, onEndGather);
+	setNetPacketHandler(47, onSpecialPlant);
+	setNetPacketHandler(44, onUseTrap);
+	setNetPacketHandler(45, onSwitchPkMode);
+	setNetPacketHandler(56, onSafeRevive);
+	setNetPacketHandler(57, onSiteRevive);
+	setNetPacketHandler(58, onStrongRevive);
+	setNetPacketHandler(59, onQueryChrInfo);
+	setNetPacketHandler(60, onUpgradeLevel);
+	setNetPacketHandler(299, checkPreventWallow);
+	setNetPacketHandler(114, onQueryTaskList);
+	setNetPacketHandler(115, onReceiveTask);
+	setNetPacketHandler(116, onSubmitTask);
+	setNetPacketHandler(117, onGiveUpTask);
+	setNetPacketHandler(118, onSetTaskCanSubmit);
+	setNetPacketHandler(125, onTalkWithNpc);
+	setNetPacketHandler(126, onQuickDone);
+	setNetPacketHandler(127, onTeleport);
+	setNetPacketHandler(128, onTeleportActivity);
+	setNetPacketHandler(142, onAddAction);
+	setNetPacketHandler(143, onRemoveAction);
+	setNetPacketHandler(144, onExchangeAction);
+	setNetPacketHandler(145, onSetAutoFight);
+	setNetPacketHandler(146, onSetSystemSetting);
+	setNetPacketHandler(149, onBuyChrShopItem);
+	setNetPacketHandler(151, onBuyBackChrShopItem);
+	setNetPacketHandler(152, onBuyResource);
+	setNetPacketHandler(153, onBuyTaskCount);
+	setNetPacketHandler(159, onTeleportByItem);
+	setNetPacketHandler(161, onClickPayButton);
+	setNetPacketHandler(162, onMapEntered);
+	setNetPacketHandler(163, onDebugCmd);
+	setNetPacketHandler(190, onQueryKillerRankSelf);
+	setNetPacketHandler(197, onGamePublicChat);
+	setNetPacketHandler(194, onCrossPrivateChat);
+	setNetPacketHandler(333, onUpdateFlyIconInt);
+	setNetPacketHandler(334, onSetGuaJi);
+	setNetPacketHandler(438, OnAskBossInfo);
+	setNetPacketHandler(830, OnRequestActivityInfo);
+	setNetPacketHandler(836, OnRequestActivityRankInfo);
+	setNetPacketHandler(833, OnActivityGetDailyReward);
+	setNetPacketHandler(839, OnActivityApplyCityWar);
+	setNetPacketHandler(480, OnClickGame);
+	setNetPacketHandler(495, OnKaiFuHuoDongOperator);
+	setNetPacketHandler(496, OnKaiFuHuoDongOperator);
+	setNetPacketHandler(497, OnKaiFuHuoDongOperator);
+	setNetPacketHandler(498, OnKaiFuHuoDongOperator);
+	setNetPacketHandler(835, OnActivityWorldBossGuWu);
+	setNetPacketHandler(527, OnSubPkValus);
+	setNetPacketHandler(528, OnLevelPrison);
+	setNetPacketHandler(870, OnUniteServerRequestInfo);
+	setNetPacketHandler(871, OnUniteServerGetRechargeGift);
+	setNetPacketHandler(872, OnUniteServerBuyDistinctGift);
+	setNetPacketHandler(873, OnUniteServerHuoYueduGift);
+	setNetPacketHandler(869, OnUniteBuyChangeNameCard);
+	setNetPacketHandler(868, OnGetUniteWingLevelUpReward);
+	setNetPacketHandler(887, OnUniteServerGetLianRechargeGift);
+	setNetPacketHandler(888, OnUniteServerGetChouJiangTimesReward);
+	setNetPacketHandler(846, OnGetKaiFuREcharge);
+	setNetPacketHandler(847, OnGetKaiFuChouJiang);
+	setNetPacketHandler(900, OnDoubleElevenRequestInfo);
+	setNetPacketHandler(901, OnDoubleElevenGetLandGift);
+	setNetPacketHandler(902, OnDoubleElevenGetDrawGift);
+	setNetPacketHandler(907, OnDoubleElevenGetOnlineGift);
+	setNetPacketHandler(908, OnDoubleElevenGetWishGift);
+	setNetPacketHandler(903, OnDoubleElevenGetLandSumGift);
+	setNetPacketHandler(904, OnDoubleElevenBuyDailyLimitShopItem);
+	setNetPacketHandler(905, OnDoubleElevenGetHuoYueDuSumGift);
+	setNetPacketHandler(909, OnDoubleElevenGetDailyRechargeGift);
+	setNetPacketHandler(973, OnDoubleElevenGetRechargeSumGift);
+	setNetPacketHandler(978, OnDoubleElevenGetPetIllusionItemGift);
+	setNetPacketHandler(972, OnDoubleElevenGetXiaoFeiSumGift);
+	setNetPacketHandler(845, OnRequestMoYuShiJieRecord);
+	setNetPacketHandler(970, OnDoubleElevenBuyGiftShopItem);
+	setNetPacketHandler(971, OnDoubleElevenGetFaBaoCritBackItem);
+	setNetPacketHandler(974, OnDoubleElevenBuyGiftShopItem2);
+	setNetPacketHandler(976, OnDoubleElevenBuyGiftItem);
+	setNetPacketHandler(975, OnDoubleElevenGetEquipUpStarBackItem);
+	setNetPacketHandler(260, OnDoubleElevenBuyPetGift);
+	setNetPacketHandler(540, OnFengHao);
+	setNetPacketHandler(977, OnDoubleElevenGetRechargeBack);
+	setNetPacketHandler(985, OnDoubleElevenGetEquipQingYiGift);
+	setNetPacketHandler(986, OnDoubleElevenGetFriendQingYiGift);
+	setNetPacketHandler(988, OnDoubleElevenRandScoreDrawGift);
+	setNetPacketHandler(989, OnDoubleElevenRandGouWuChe);
+	setNetPacketHandler(983, OnGetLianRechargeReward);
+	setNetPacketHandler(541, OnSetFcmTime);
+	setNetPacketHandler(990, onDungeonNpc);
+	setNetPacketHandler(991, onComBackCity);
+	setNetPacketHandler(624, OnCheckAccelerator);
+	setNetPacketHandler(661, OnZHYYHDRequestInfo);
+	setNetPacketHandler(662, OnZHYYHDGetRechargeDailyReward);
+	setNetPacketHandler(663, OnZHYYHDGetRechargeTeamShopDailyReward);
+	setNetPacketHandler(664, OnZHYYHDBuyOnceShopItem);
+	setNetPacketHandler(681, OnOpenBetaOperator);
+	setNetPacketHandler(682, OnOpenBetaOperator);
+	setNetPacketHandler(689, OnOpenBetaOperator);
+	setNetPacketHandler(683, OnFestivalActivityOperator);
+	setNetPacketHandler(684, OnFestivalActivityOperator);
+	setNetPacketHandler(855, OnEquipBackOperator);
+	setNetPacketHandler(856, OnEquipBackOperator);
+	setNetPacketHandler(857, OnEquipBackOperator);
+	setNetPacketHandler(865, OnEquipBackOperator);
+	setNetPacketHandler(866, OnEquipBackOperator);
+	setNetPacketHandler(862, OnEquipBackOperator);
+	setNetPacketHandler(863, OnEquipBackOperator);
+	setNetPacketHandler(864, OnEquipBackOperator);
+	setNetPacketHandler(669, OnAskLastFullHpTime);
+	setNetPacketHandler(670, OnFullHp);
+	setNetPacketHandler(513, OnGetMiniClientReward);
+	setNetPacketHandler(205, OnGetMapBossInfo);
+	setNetPacketHandler(204, OnGetLevelBossInfo);
+	setNetPacketHandler(680, OnPaiMaiHangHanHua);
+	setNetPacketHandler(207, OnEnterSpecialBossMap);
+	setNetPacketHandler(208, OnLeaveSpecialBossMap);
+	setNetPacketHandler(561, OnRollTheDice);
+	setNetPacketHandler(562, OnCycleTowerEvent);
+	setNetPacketHandler(563, ChatValidateed);
+	setNetPacketHandler(564, onBuyXuWuValue);
+	setNetPacketHandler(996, onTeleportByItem);
+	setNetPacketHandler(995, onSwitchMap);
+	setNetPacketHandler(994, onMove);
+	setNetPacketHandler(982, OnChristmasDuiHuan);
+	setNetPacketHandler(937, onDungeonRandom);
+	setNetPacketHandler(938, OnBuyRandomPosTimes);
+	setNetPacketHandler(939, OnBuyJingLiValue);
+}
+
+void Player::InitExtSystems()
+{
+	m_extOperateLimit.Init(this);
+	m_ExtSysMgr.Register(&m_extOperateLimit);
+	m_PlayerFunctionOpen.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerFunctionOpen);
+	m_extCurrency.Init(this);
+	m_ExtSysMgr.Register(&m_extCurrency);
+	m_extCharBag.Init(this);
+	m_ExtSysMgr.Register(&m_extCharBag);
+	m_extEquip.Init(this);
+	m_ExtSysMgr.Register(&m_extEquip);
+	m_extFightChecker.Init(this);
+	m_ExtSysMgr.Register(&m_extFightChecker);
+	m_extCharTeam.Init(this);
+	m_ExtSysMgr.Register(&m_extCharTeam);
+	m_extCharPet.Init(this);
+	m_ExtSysMgr.Register(&m_extCharPet);
+	m_extCharSkill.Init(this);
+	m_ExtSysMgr.Register(&m_extCharSkill);
+	m_extTaskCycle.Init(this);
+	m_ExtSysMgr.Register(&m_extTaskCycle);
+	m_ScoreShop.Init(this);
+	m_ExtSysMgr.Register(&m_ScoreShop);
+	m_extCharFamily.Init(this);
+	m_ExtSysMgr.Register(&m_extCharFamily);
+	m_extCharTeamDungeon.Init(this);
+	m_ExtSysMgr.Register(&m_extCharTeamDungeon);
+	m_extCharWorship.Init(this);
+	m_ExtSysMgr.Register(&m_extCharWorship);
+	m_extCharAuction.Init(this);
+	m_ExtSysMgr.Register(&m_extCharAuction);
+	m_extCharHallOfFame.Init(this);
+	m_ExtSysMgr.Register(&m_extCharHallOfFame);
+	m_extCharTitle.Init(this);
+	m_ExtSysMgr.Register(&m_extCharTitle);
+	m_extCharMysteryShop.Init(this);
+	m_ExtSysMgr.Register(&m_extCharMysteryShop);
+	m_extCharMysteryGift.Init(this);
+	m_ExtSysMgr.Register(&m_extCharMysteryGift);
+	m_extCharExchange.Init(this);
+	m_ExtSysMgr.Register(&m_extCharExchange);
+	m_extCharDraw.Init(this);
+	m_ExtSysMgr.Register(&m_extCharDraw);
+	m_extCharWish.Init(this);
+	m_ExtSysMgr.Register(&m_extCharWish);
+	m_extBlackMarket.Init(this);
+	m_ExtSysMgr.Register(&m_extBlackMarket);
+	m_extCharTencent.Init(this);
+	m_ExtSysMgr.Register(&m_extCharTencent);
+	m_extCharWing.Init(this);
+	m_ExtSysMgr.Register(&m_extCharWing);
+	m_extMagicBox.Init(this);
+	m_ExtSysMgr.Register(&m_extMagicBox);
+	m_extCharCarrier.Init(this);
+	m_ExtSysMgr.Register(&m_extCharCarrier);
+	m_extCharJueWei.Init(this);
+	m_ExtSysMgr.Register(&m_extCharJueWei);
+	m_PlayerDepot.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerDepot);
+	m_PlayerTrade.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerTrade);
+	m_PlayerMail.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerMail);
+	m_FRiendExp.Init(this);
+	m_ExtSysMgr.Register(&m_FRiendExp);
+	m_PlayerFaBao.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerFaBao);
+	m_PlayerShangCheng.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerShangCheng);
+	m_PlayerQiFu.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerQiFu);
+	m_PlayerDailyActivity.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerDailyActivity);
+	m_PlayerVip.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerVip);
+	m_PlayerYunYingHD.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerYunYingHD);
+	m_PlayerTouZi.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerTouZi);
+	m_PlayerHuoYueDu.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerHuoYueDu);
+	m_extCharPortal.Init(this);
+	m_ExtSysMgr.Register(&m_extCharPortal);
+	m_Wan360.Init(this);
+	m_ExtSysMgr.Register(&m_Wan360);
+	m_Vplan.Init(this);
+	m_ExtSysMgr.Register(&m_Vplan);
+	m_XingMai.Init(this);
+	m_ExtSysMgr.Register(&m_XingMai);
+	m_TianLing.Init(this);
+	m_ExtSysMgr.Register(&m_TianLing);
+	m_PlayerChouJiang.Init(this);
+	m_ExtSysMgr.Register(&m_PlayerChouJiang);
+	m_TreasureMap.Init(this);
+	m_ExtSysMgr.Register(&m_TreasureMap);
+	m_CMoneyRewardTask.Init(this);
+	m_ExtSysMgr.Register(&m_CMoneyRewardTask);
+	m_CSpecialEquip.Init(this);
+	m_ExtSysMgr.Register(&m_CSpecialEquip);
+	m_Curse.Init(this);
+	m_ExtSysMgr.Register(&m_Curse);
+	m_CLevelRefining.Init(this);
+	m_ExtSysMgr.Register(&m_CLevelRefining);
+	m_ShenWei.Init(this);
+	m_ExtSysMgr.Register(&m_ShenWei);
+	m_CBossKilledReward.Init(this);
+	m_ExtSysMgr.Register(&m_CBossKilledReward);
+	m_CTestServerReward.Init(this);
+	m_ExtSysMgr.Register(&m_CTestServerReward);
+	m_CWuHunShop.Init(this);
+	m_ExtSysMgr.Register(&m_CWuHunShop);
+	m_CCharWuHun.Init(this);
+	m_ExtSysMgr.Register(&m_CCharWuHun);
+	m_CSuperTeHui.Init(this);
+	m_ExtSysMgr.Register(&m_CSuperTeHui);
+	m_CGoblin.Init(this);
+	m_ExtSysMgr.Register(&m_CGoblin);
+	m_extShiZhuang.Init(this);
+	m_ExtSysMgr.Register(&m_extShiZhuang);
+	m_CMonthlyChouJiang.Init(this);
+	m_ExtSysMgr.Register(&m_CMonthlyChouJiang);
+	m_CGuardPrivilege.Init(this);
+	m_ExtSysMgr.Register(&m_CGuardPrivilege);
+	m_CDaTingReward.Init(this);
+	m_ExtSysMgr.Register(&m_CDaTingReward);
+	m_CMingGeExt.Init(this);
+	m_ExtSysMgr.Register(&m_CMingGeExt);
+	m_CKunExt.Init(this);
+	m_ExtSysMgr.Register(&m_CKunExt);
+	m_CExtFlopDraw.Init(this);
+	m_ExtSysMgr.Register(&m_CExtFlopDraw);
+	m_CSevenDayTask.Init(this);
+	m_ExtSysMgr.Register(&m_CSevenDayTask);
+	m_CGongMing.Init(this);
+	m_ExtSysMgr.Register(&m_CGongMing);
+	m_CXinMo.Init(this);
+	m_ExtSysMgr.Register(&m_CXinMo);
+	m_CharLittlerhelper.Init(this);
+	m_ExtSysMgr.Register(&m_CharLittlerhelper);
+	m_CNationalDayHd.Init(this);
+	m_ExtSysMgr.Register(&m_CNationalDayHd);
+	m_CRongHe.Init(this);
+	m_ExtSysMgr.Register(&m_CRongHe);
+}
+
+void Player::SaveDBData( PlayerDBData& dbData )
+{
+	int32_t mapid = m_chr.mapid;
+	int32_t x = m_chr.x;
+	int32_t y = m_chr.y;
+
+	if ( m_pMap )
+	{
+		mapid = m_pMap->GetMapId();
+		x = StaticObj::getCurrentTile(this).x;
+		y = StaticObj::getCurrentTile(this).y;
+		if ( StaticObj::InDungeon(this) || StaticObj::InActivity(this) )
+		{
+			mapid = m_oldPosition.mapid;
+			x = m_oldPosition.x;
+			y = m_oldPosition.y;
+		}
+	}
+
+	dbData.chr.data.cid = m_chr.cid;
+	snprintf(dbData.chr.data.name, 30, m_chr.name);
+	snprintf(dbData.chr.data.familyName, 30, m_chr.familyName);
+	dbData.chr.data.sex = m_chr.sex;
+	dbData.chr.data.job = m_chr.job;
+	dbData.chr.data.level = m_chr.level;
+	dbData.chr.data.exp = m_chr.exp;
+	dbData.chr.data.mapid = mapid;
+	dbData.chr.data.x = x;
+	dbData.chr.data.y = y;
+	dbData.chr.data.hp = getHP();
+	dbData.chr.data.mp = GetMP();
+	dbData.chr.data.kun_li = getKunLi();
+	dbData.chr.data.battle = getBattle();
+	dbData.chr.data.head = m_chr.head;
+	dbData.chr.data.pk_mode = m_pkMode_bk;
+	dbData.chr.data.pk_value = m_chr.pk_value;
+	dbData.chr.data.pk_time = (m_chr.pk_time > getNow()) ? m_chr.pk_time : 0;
+	dbData.chr.data.kill_count = m_chr.kill_count;
+	dbData.chr.data.last_task_id = m_chr.last_task_id;
+	dbData.chr.data.logout_count = m_chr.logout_count;
+	m_chr.level_stay_time = m_chr.level_stay_time + getNow() - m_levelStartTime;
+	dbData.chr.data.level_stay_time = m_chr.level_stay_time;
+	dbData.chr.data.last_login_time = m_chr.last_login_time;
+	dbData.chr.data.last_logout_time = m_chr.last_logout_time;
+	dbData.chr.data.create_time = m_chr.create_time;
+	dbData.chr.data.pay_click_count = m_chr.pay_click_count;
+	dbData.chr.weapon = getMainWeaponId();
+	dbData.chr.cloth = getClothesId();
+	dbData.chr.wing = m_extCharWing.GetLevel();
+	dbData.chr.equipStar = m_extEquip.GetEquipAllStar();
+	dbData.chr.equipGem = m_extEquip.GetEquipAllGemLevel();
+	dbData.chr.moneyDropRatio = GetAllMoneyRate();
+
+	for ( int32_t i = 0; i <= 49; ++i )
+		dbData.attrData.vAttr[i] = GetAttrValue((CObjAttrs::Index_T)i);
+
+	dbData.sysUser.data.uid = m_sysUser.uid;
+	dbData.sysUser.data.sid = m_sysUser.sid;
+	dbData.sysUser.data.gold_cost_total = m_sysUser.gold_cost_total;
+	dbData.sysUser.data.map_enter_time = m_sysUser.map_enter_time;
+	dbData.sysUser.data.last_login_time = m_sysUser.last_login_time;
+	dbData.sysUser.data.last_logout_time = m_sysUser.last_logout_time;
+	dbData.sysUser.data.total_login_count = getRecord(1011);
+	dbData.sysUser.data.continue_login_count = m_sysUser.continue_login_count;
+	dbData.sysUser.data.total_online_time = m_sysUser.total_online_time;
+	dbData.sysUser.data.total_offline_time = m_sysUser.total_offline_time;
+	dbData.sysUserPreventWallow.data = m_sysUserPreventWallow;
+
+	MemChrBuffVector buffs;
+	getItemBuffs(buffs);
+	dbData.buffData.buffVt = buffs;
+
+	m_task.SaveDBData(dbData);
+	memcpy(dbData.actionData.actionArry, m_actions, sizeof(dbData.actionData.actionArry));
+	memcpy(&dbData.autoFight.data, &m_autoFight, sizeof(dbData.autoFight.data));
+
+	std::string sysSetting;
+	GetSysSetting(sysSetting);
+	dbData.systemSetting.data = sysSetting;
+
+	updateRecord(2008, m_InBossHomeTime);
+	m_ExtSysMgr.OnSaveToDB(dbData);
+}
+
+int32_t Player::enterDungeon( Player* player, int32_t nDungeonId, ProcId_t nProc, int32_t nBuffId, int32_t nLevel, int8_t nHard, int8_t nQuality, int32_t nEvent )
+{
+	CfgData* pCfgData = Answer::Singleton<CfgData>::instance();
+	CfgDungeon* pCfgDungeon = pCfgData->getDungeon(nDungeonId);
+	if ( !pCfgDungeon || !player->m_pMap )
+		return 10002;
+	if ( player->benefitType() != BenefitType::BT_NORMAL )
+		return 10002;
+	if ( player->IsInStall() )
+		return 10002;
+
+	bool bChangeDungeon = true;
+	Dungeon* pCurDungeon = nullptr;
+	if ( player->m_pMap )
+		pCurDungeon = dynamic_cast<Dungeon*>(player->m_pMap);
+
+	if ( pCfgDungeon->type == 35 )
+	{
+		if ( !pCurDungeon )
+			return 10002;
+		if ( pCurDungeon->getDungeonType() != 25 )
+			return 10002;
+		int8_t Hard = pCurDungeon->GetHard();
+		CfgData* pCfg2 = Answer::Singleton<CfgData>::instance();
+		const CfgFamilyDungeonTable* pFDT = pCfg2->GetFamilyDungeonTable();
+		const CfgFamilyDungeon* pCfg = pFDT->GetDungeon(Hard);
+		if ( !pCfg )
+			return 10002;
+		if ( pCfg->nBaoKuFuBen != nDungeonId )
+			return 10002;
+		CfgNpc* cfgNpc = pCfgData->getNpc(5015);
+		if ( !cfgNpc )
+			return 10002;
+		if ( !player->m_pMap->NearNpc(cfgNpc->id, StaticObj::GetPosX(player), StaticObj::GetPosY(player), 10) )
+			return 10002;
+	}
+	else if ( pCfgDungeon->type == 36 && !player->m_pMap->IsBeastShrine() )
+	{
+		return 10002;
+	}
+
+	if ( pCurDungeon )
+	{
+		int32_t DungeonType = pCurDungeon->getDungeonType();
+		if ( DungeonType == 22 )
+		{
+			if ( pCfgDungeon->id != pCurDungeon->getDungeonId() )
+				return 10002;
+			if ( pCurDungeon->getState() != DungeonState::DS_WIN && pCurDungeon->getState() != DungeonState::DS_FAIL )
+				return 10002;
+			bChangeDungeon = false;
+		}
+		else if ( DungeonType != 25 )
+		{
+			if ( DungeonType != 16 )
+				return 10002;
+			if ( pCfgDungeon->type != 16 )
+				return 10002;
+		}
+		if ( bChangeDungeon )
+			player->leaveDungeon();
+	}
+	else if ( StaticObj::InDungeon(player) || StaticObj::InActivity(player) )
+	{
+		return 10002;
+	}
+
+	if ( player->m_extCharTeamDungeon.IsInTeamDungeon() )
+		return 10002;
+
+	if ( pCfgDungeon->type != 12 )
+	{
+		if ( player->m_trailer )
+		{
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			return pGS->replyfailure(player->getConnId(), player->getGateIndex(), nProc, 10055, player->getCid());
+		}
+
+		tm localNow;
+		player->getLocalNow(&localNow);
+		int32_t weekday = pCfgDungeon->weekday;
+		if ( ((weekday >> GetWeekDay(localNow.tm_wday)) & 1) == 0 )
+			return 10002;
+		if ( localNow.tm_hour < pCfgDungeon->start_hour || localNow.tm_hour > pCfgDungeon->end_hour )
+			return 10002;
+
+		if ( pCfgDungeon->job > 0 && pCfgDungeon->job != player->getJob() )
+			return 10002;
+
+		if ( player->getLevel() < pCfgDungeon->level || player->getLevel() > pCfgDungeon->maxLevel )
+		{
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			pGS->replyfailure(player->getConnId(), player->getGateIndex(), nProc, 10022, player->getCid());
+			return 10002;
+		}
+
+		if ( pCfgDungeon->last_id > 0 && !player->m_extOperateLimit.CheckIsLimitedForever(pCfgDungeon->last_id + 20000) )
+			return 10002;
+
+		if ( pCfgDungeon->type == 16 )
+		{
+			int32_t star = pCfgDungeon->star;
+			if ( star != player->m_extOperateLimit.GetLimitCount(37210) + 1 )
+				return 10002;
+		}
+
+		int32_t Record = player->getRecord(pCfgDungeon->group_id);
+		if ( Record >= player->GetDungeonDailyEnterLimit(nDungeonId) )
+		{
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			pGS->replyfailure(player->getConnId(), player->getGateIndex(), nProc, 10023, player->getCid());
+			return 10002;
+		}
+
+		int8_t vip = pCfgDungeon->vip;
+		if ( vip > player->GetPlayerVip().GetVipLevel() )
+			return 2;
+
+		if ( pCfgDungeon->TeQuan > 0 )
+		{
+			if ( !player->GetPlayerVip().GetVipFlg(pCfgDungeon->TeQuan) )
+				return 2;
+		}
+
+		ItemData costItem = pCfgDungeon->costItem;
+		if ( pCfgDungeon->type == 22 )
+			costItem.m_nCount = player->getRecord(pCfgDungeon->group_id) / 2 + 1;
+		else if ( pCfgDungeon->type == 36 && nProc == 810 )
+			costItem.m_nCount = 0;
+
+		if ( pCfgDungeon->task_id > 0 )
+		{
+			CfgTask* pCfgTask = pCfgData->getTask(pCfgDungeon->task_id);
+			if ( pCfgTask && player->m_task.GetTypeTask(pCfgTask->type) )
+				return 10002;
+		}
+
+		if ( costItem.m_nCount > 0 && !player->m_extCharBag.HasItem(&costItem) )
+			return 10002;
+
+		if ( pCfgDungeon->costMoney > 0 )
+		{
+			int64_t money = player->GetCurrency().GetMoneyBindAndNoBind();
+			if ( money < pCfgDungeon->costMoney )
+				return 2;
+		}
+
+		if ( pCfgDungeon->costGold > 0 )
+		{
+			int64_t gold = player->GetCurrency(CURRENCY_TYPE::CURRENCY_GOLD);
+			if ( gold < pCfgDungeon->costGold )
+				return 2;
+		}
+
+		Dungeon* pDungeon = pCurDungeon;
+		if ( bChangeDungeon )
+		{
+			MapManager* pMM = Answer::Singleton<MapManager>::instance();
+			pDungeon = pMM->NewDungeon(nDungeonId);
+		}
+		if ( !pDungeon )
+		{
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			pGS->replyfailure(player->getConnId(), player->getGateIndex(), nProc, 50004, 0);
+			return 10002;
+		}
+
+		if ( pCfgDungeon->type != 17 )
+		{
+			if ( pCfgDungeon->costMoney > 0 )
+			{
+				if ( !player->GetCurrency().DecMoneyAndNoBind(pCfgDungeon->costMoney, CURRENCY_CHANGE_REASON::MCR_ENTER_DUNGEON, 0) )
+					return 2;
+			}
+			if ( pCfgDungeon->costGold > 0 )
+			{
+				if ( !player->DecCurrency(CURRENCY_TYPE::CURRENCY_GOLD, pCfgDungeon->costGold, CURRENCY_CHANGE_REASON::GCR_ENTER_DUNGEON, nDungeonId) )
+					return 2;
+			}
+			if ( costItem.m_nCount > 0 )
+				player->m_extCharBag.RemoveItem(&costItem, ITEM_CHANGE_REASON::ICR_ENETR_DUNGEON);
+		}
+
+		if ( nBuffId > 0 ) pDungeon->SetMonsterBuff(nBuffId);
+		if ( nLevel > 0 ) pDungeon->SetLevel(nLevel);
+		if ( nHard > 0 ) pDungeon->SetHard(nHard);
+		if ( nQuality > 0 ) pDungeon->SetQuality(nQuality);
+		if ( nEvent > 0 ) pDungeon->OpenEvent(nEvent);
+
+		if ( bChangeDungeon )
+		{
+			Position pos(pCfgDungeon->x, pCfgDungeon->y);
+			if ( pDungeon->StayPosition() )
+				pos = StaticObj::getCurrentTile(player);
+			pDungeon->start(0);
+			player->setOldPosition();
+			player->broadcastLeave();
+			player->m_pMap->removePlayer(player, 0);
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			pGS->replySuccess(player->getConnId(), player->getGateIndex(), nProc, nDungeonId);
+			pDungeon->addPlayer(player, pos.x, pos.y);
+			int32_t RunnerId = pDungeon->GetRunnerId();
+			MapManager* pMM = Answer::Singleton<MapManager>::instance();
+			pMM->PostMsg(RunnerId, GameMsgCode::GMC_ADD_DUNGEON, pDungeon, 0, 0, 0, 0);
+		}
+		else
+		{
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			pGS->replySuccess(player->getConnId(), player->getGateIndex(), nProc, nDungeonId);
+			pDungeon->restart(0);
+		}
+
+		if ( pCfgDungeon->type != 13 && pCfgDungeon->type != 15 && pCfgDungeon->type != 17 )
+		{
+			int32_t newCount = player->getRecord(pCfgDungeon->group_id) + 1;
+			player->updateRecord(pCfgDungeon->group_id, newCount);
+			int32_t groupId = pCfgDungeon->group_id;
+			player->GetPlayerHuoYueDu().AddHuoYueDuRecord(2, groupId, 0);
+			int32_t curCount = player->getRecord(pCfgDungeon->group_id);
+			player->m_PlayerDailyActivity.AddDungeonRecord(pCfgDungeon->type, curCount, 0);
+		}
+
+		if ( pCfgDungeon->type == 22 )
+			player->SendNewEquipDungeonIconState();
+
+		LogDungeon logDungeon;
+		memset(&logDungeon, 0, sizeof(logDungeon));
+		logDungeon.cid = player->getCid();
+		logDungeon.did = nDungeonId;
+		logDungeon.type = pDungeon->getDungeonType();
+		logDungeon.level = player->getLevel();
+		logDungeon.start_time = pDungeon->GetStartTime();
+		DBService* pDB = Answer::Singleton<DBService>::instance();
+		pDB->insertDungeon(player->getConnId(), &logDungeon);
+
+		player->m_CNationalDayHd.AddNationalValue(NATIONAL_HD_TYPE::HHT_YJSK, 1, pCfgDungeon->group_id);
+	}
+	return 0;
+}
+
+// ======== P0-b: 核心网络包处理器 ========
+
+int32_t Player::onMove( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+	if ( IsInStall() )
+		return 10002;
+	if ( HasBuffState(CObjState::OBS_BINGDONG) || HasBuffState(CObjState::OBS_YUNXUAN)
+		|| HasBuffState(CObjState::OBS_SLEEP) || HasBuffState(CObjState::OBS_PLYSIS)
+		|| HasBuffState(CObjState::OBS_FROZEN) )
+		return 10002;
+	if ( m_pMap->GetMapParam() == 21 )
+		return 10002;
+
+	int64_t Tick = getTick();
+	if ( !GetCharSkill().CanUseSkillAndMove(Tick, 0) )
+	{
+		setStand();
+		return 10002;
+	}
+
+	BreakGather(1);
+	int32_t ProcId = inPacket->getProc();
+	LogProc(ProcId);
+
+	int16_t currentX = inPacket->readInt16();
+	int16_t currentY = inPacket->readInt16();
+	int16_t targetX = inPacket->readInt16();
+	int16_t targetY = inPacket->readInt16();
+	int16_t finalX = inPacket->readInt16();
+	int16_t finalY = inPacket->readInt16();
+	inPacket->readInt8();
+
+	Tile* pCurrentTile = m_pMap->getTile(currentX, currentY);
+	Tile* pTargetTile = m_pMap->getTile(targetX, targetY);
+	Tile* pFinalTile = m_pMap->getTile(finalX, finalY);
+
+	if ( GetStartProtect() > 0 && (currentX != targetX || currentY != targetY) )
+		SetStartProtect(0);
+
+	if ( pCurrentTile && pTargetTile && pFinalTile )
+	{
+		Position pos(currentX, currentY);
+		Position CurrentTile = StaticObj::getCurrentTile(this);
+		int32_t ndistan = CurrentTile.tileDistance(pos);
+		if ( ndistan <= 3 )
+		{
+			setTargetTile(targetX, targetY);
+			m_extCharPet.SetTargetTile(targetX, targetY, getDirection());
+			m_CharLittlerhelper.SetTargetTile(targetX, targetY, getDirection());
+			broadcastMove();
+			return 0;
+		}
+		else
+		{
+			Position curPos = StaticObj::getCurrentTile(this);
+			instantMove(curPos.x, curPos.y, InstanceMoveReason::IMR_PULL_BACK, 0);
+			return 10002;
+		}
+	}
+	return 10002;
+}
+
+int32_t Player::onTrailerMove( Answer::NetPacket *inPacket )
+{
+	if ( !m_pMap || !m_trailer || !inPacket )
+		return 10002;
+
+	int32_t mapId = inPacket->readInt32();
+	int16_t currentX = inPacket->readInt16();
+	int16_t currentY = inPacket->readInt16();
+	int16_t targetX = inPacket->readInt16();
+	int16_t targetY = inPacket->readInt16();
+
+	if ( StaticObj::getMapId(m_trailer) != mapId )
+		return 10002;
+
+	Position pos = StaticObj::getCurrentPixel(this);
+	Position CurrentPixel = StaticObj::getCurrentPixel(m_trailer);
+	double Dist = CurrentPixel.distance(pos);
+
+	if ( Dist < 700.0 )
+	{
+		Position Pixel = Map::tileToPixel(targetX, targetY);
+		Position myPixel = StaticObj::getCurrentPixel(this);
+		double DistTar = myPixel.distance(Pixel);
+		if ( DistTar < 700.0 )
+			return m_trailer->move(mapId, currentX, currentY, targetX, targetY, 0, 0, Direction::DOWN);
+		return 10002;
+	}
+	else
+	{
+		Position curPos(currentX, currentY);
+		Position trailerTile = StaticObj::getCurrentTile(m_trailer);
+		int32_t ndistan = trailerTile.tileDistance(curPos);
+		if ( ndistan > 3 )
+		{
+			Position tPos = StaticObj::getCurrentTile(m_trailer);
+			m_trailer->instantMove(tPos.x, tPos.y, InstanceMoveReason::IMR_PULL_BACK, 0);
+		}
+		return 10002;
+	}
+}
+
+int32_t Player::onJump( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+	if ( HasBuffState(CObjState::OBS_BINGDONG) || HasBuffState(CObjState::OBS_YUNXUAN)
+		|| HasBuffState(CObjState::OBS_SLEEP) || HasBuffState(CObjState::OBS_PLYSIS)
+		|| HasBuffState(CObjState::OBS_FROZEN) )
+		return 10002;
+
+	BreakGather(1);
+	int16_t currentX = inPacket->readInt16();
+	int16_t currentY = inPacket->readInt16();
+	int16_t targetX = inPacket->readInt16();
+	int16_t targetY = inPacket->readInt16();
+
+	if ( !m_pMap->isWalkablePosition(targetX, targetY) )
+		return 10002;
+
+	Position pos(targetX, targetY);
+	Position CurrentTile = StaticObj::getCurrentTile(this);
+	int32_t dist = CurrentTile.tileDistance(pos);
+	if ( dist > 5 )
+		return 10002;
+
+	setTargetTile(targetX, targetY);
+	broadcastMove();
+	return 0;
+}
+
+int32_t Player::onHit( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+	if ( HasBuffState(CObjState::OBS_CHENMO) || HasBuffState(CObjState::OBS_YUNXUAN)
+		|| HasBuffState(CObjState::OBS_SLEEP) || HasBuffState(CObjState::OBS_PLYSIS)
+		|| HasBuffState(CObjState::OBS_FROZEN) )
+		return 10002;
+
+	BreakGather(1);
+	int16_t currentX = inPacket->readInt16();
+	int16_t currentY = inPacket->readInt16();
+	int16_t targetX = inPacket->readInt16();
+	int16_t targetY = inPacket->readInt16();
+
+	if ( !m_pMap->isWalkablePosition(targetX, targetY) )
+		return 10002;
+
+	Position targetPos(targetX, targetY);
+	Position CurrentTile = StaticObj::getCurrentTile(this);
+	int32_t distToTarget = CurrentTile.tileDistance(targetPos);
+
+	if ( distToTarget > 16 )
+	{
+		Position curPos(currentX, currentY);
+		int32_t distToCurrent = CurrentTile.tileDistance(curPos);
+		Position curPos2(currentX, currentY);
+		Position targetPos2(targetX, targetY);
+		int32_t distCurrentToTarget = curPos2.tileDistance(targetPos2);
+
+		if ( distToCurrent <= 6 && distCurrentToTarget <= 10 )
+		{
+			instantMove(targetX, targetY, InstanceMoveReason::IMR_HIT, 0);
+			return 0;
+		}
+		Position myPos = StaticObj::getCurrentTile(this);
+		instantMove(myPos.x, myPos.y, InstanceMoveReason::IMR_PULL_BACK, 0);
+		return 10002;
+	}
+
+	instantMove(targetX, targetY, InstanceMoveReason::IMR_HIT, 0);
+	return 0;
+}
+
+int32_t Player::onSwitchPkMode( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t pkMode = inPacket->readInt32();
+	if ( getLevel() <= 69 )
+		return 10002;
+	if ( pkMode == 2 && !IsInTeam() )
+		return 10002;
+	if ( pkMode == 3 && getFamilyId() <= 0 )
+		return 10002;
+	if ( pkMode == 5 )
+	{
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		if ( pGS->getLine() != 9 )
+			return 10002;
+	}
+
+	if ( !m_pMap->IsPkDisabled() && pkMode > 0 && pkMode <= 7 )
+	{
+		if ( pkMode != 1 )
+			m_chr.pk_time = 0;
+		setPkMode(pkMode, 1);
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		pGS->replySuccess(getConnId(), getGateIndex(), inPacket->getProc(), pkMode);
+	}
+	return 0;
+}
+
+int32_t Player::onSafeRevive( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	if ( StaticObj::InDungeon(this) )
+	{
+		if ( m_pMap )
+		{
+			m_pMap->onPlayerSafeRevive(this);
+			if ( m_pMap->hasAutoFight() )
+				GetCharLittlerHelper().OnAutoWork();
+		}
+		return 0;
+	}
+
+	int32_t Now = getNow();
+	if ( Now >= m_extOperateLimit.GetLimitCount(1111) )
+	{
+		safeRevive();
+		if ( m_pMap && m_pMap->hasAutoFight() )
+			GetCharLittlerHelper().OnAutoWork();
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		pGS->replySuccess(getConnId(), getGateIndex(), inPacket->getProc(), 0);
+		return 0;
+	}
+	return 10002;
+}
+
+int32_t Player::onSiteRevive( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+	if ( isAlive() )
+		return 10002;
+
+	if ( !m_pMap->IsNormalMap() && m_pMap->GetMapId() != 50129 )
+	{
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		return pGS->replyfailure(getConnId(), getGateIndex(), inPacket->getProc(), 10061, 0);
+	}
+
+	auto doRevive = [&]() {
+		recalcAttr(1, 100);
+		SetDieTick();
+		FillMP(100);
+		SetStartProtect(getNow());
+		setNeedSyncSelf();
+		m_pMap->addPlayer(this, 0);
+		if ( m_pMap->hasAutoFight() )
+			GetCharLittlerHelper().OnAutoWork();
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		pGS->replySuccess(getConnId(), getGateIndex(), inPacket->getProc(), 0);
+	};
+
+	if ( m_pMap->IsDungeonMap() )
+	{
+		if ( m_pMap->onPlayerSiteRevive(this) != 1 )
+			return 10002;
+		doRevive();
+		return 0;
+	}
+
+	if ( GetPlayerVip().CanSiteRevive() )
+	{
+		GetOperateLimit().AddLimitCount(2021, 1);
+		doRevive();
+		return 0;
+	}
+
+	int32_t Slot = inPacket->readInt32();
+	Int32Vector vSlot;
+	vSlot.push_back(Slot);
+	ItemData data;
+	data.m_nId = 9;
+	data.m_nClass = 1;
+	data.m_nCount = 1;
+
+	bool bOk = false;
+	if ( m_extCharBag.RemoveItem(&vSlot, &data, ITEM_CHANGE_REASON::ICR_SITE_REVIVE)
+		|| DecCurrency(CURRENCY_TYPE::CURRENCY_GOLD, 100, CURRENCY_CHANGE_REASON::GCT_LI_JI_FU_HUO, 0) )
+	{
+		bOk = true;
+	}
+
+	if ( bOk )
+	{
+		doRevive();
+		return 0;
+	}
+	return 10002;
+}
+
+int32_t Player::onSubmitTask( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t tid = inPacket->readInt32();
+	int8_t bDouble = inPacket->readInt8();
+
+	CfgData* pCfgData = Answer::Singleton<CfgData>::instance();
+	CfgTask* cfgTask = pCfgData->getTask(tid);
+	if ( !cfgTask )
+		return 10002;
+
+	int32_t nTimes = 1;
+	if ( bDouble > 0 )
+	{
+		float Rate = 1.0f;
+		if ( GetPlayerVip().GetVipFlg(2) )
+			Rate = 0.8f;
+		if ( GetCurrency(CURRENCY_TYPE::CURRENCY_GOLD) < (int)((float)cfgTask->Double * Rate) )
+			return 10002;
+		nTimes = 2;
+	}
+
+	if ( m_task.submit(tid, nTimes) )
+	{
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		return pGS->replyfailure(getConnId(), getGateIndex(), inPacket->getProc(), 10070, tid);
+	}
+
+	if ( bDouble > 0 && cfgTask->Double > 0 )
+	{
+		float Rate = 1.0f;
+		if ( GetPlayerVip().GetVipFlg(2) )
+			Rate = 0.8f;
+		DecCurrency(CURRENCY_TYPE::CURRENCY_GOLD, (int)((float)cfgTask->Double * Rate), CURRENCY_CHANGE_REASON::GCR_TASK_DOUBLE_REWARD, 0);
+	}
+	return 0;
+}
+
+int32_t Player::onGamePublicChat( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int8_t channel = inPacket->readInt8();
+	std::string content;
+	inPacket->readUTF8(content);
+	int32_t targetId = inPacket->readInt32();
+
+	if ( content.empty() || content.size() > 256 )
+		return 10002;
+
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	if ( !pGS->ChatValidate(getConnId(), channel, content) )
+		return 10002;
+
+	pGS->broadcastChat(getConnId(), getGateIndex(), channel, getCid(), getName(), content, targetId);
+	return 0;
+}
+
+int32_t Player::onCrossPrivateChat( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t targetCid = inPacket->readInt32();
+	std::string content;
+	inPacket->readUTF8(content);
+
+	if ( content.empty() || content.size() > 256 )
+		return 10002;
+
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	pGS->sendCrossPrivateChat(getConnId(), getGateIndex(), getCid(), targetCid, content);
+	return 0;
+}
+
+int32_t Player::onPickDropItem( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t dropId = inPacket->readInt32();
+	m_pMap->onPickDropItem(this, dropId);
+	return 0;
+}
+
+int32_t Player::onSwitchMap( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t targetMapId = inPacket->readInt32();
+	int16_t x = inPacket->readInt16();
+	int16_t y = inPacket->readInt16();
+
+	MapManager* pMM = Answer::Singleton<MapManager>::instance();
+	Map* pTargetMap = pMM->GetMap(targetMapId);
+	if ( !pTargetMap )
+		return 10002;
+
+	if ( !pTargetMap->canEnter(this) )
+		return 10002;
+
+	switchMap(pTargetMap, x, y, 1);
+	return 0;
+}
+
+int32_t Player::onLeaveDungeon( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+	leaveDungeon();
+	return 0;
+}
+
+int32_t Player::onEnterDungeon( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t nDungeonId = inPacket->readInt32();
+	ProcId_t nProc = inPacket->getProc();
+	return enterDungeon(this, nDungeonId, nProc, 0, 0, 0, 0, 0);
+}
+
+int32_t Player::onEnterChargeDungeon( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t nDungeonId = inPacket->readInt32();
+	ProcId_t nProc = inPacket->getProc();
+	return enterDungeon(this, nDungeonId, nProc, 0, 0, 0, 0, 0);
+}
+
+int32_t Player::onEnterActivity( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t nActivityId = inPacket->readInt32();
+	CActivityManager* pAM = Answer::Singleton<CActivityManager>::instance();
+	return pAM->enterActivity(this, nActivityId);
+}
+
+int32_t Player::onLeaveActivity( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+	leaveActivity();
+	return 0;
+}
+
+int32_t Player::onGetAwardActivity( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t nAwardId = inPacket->readInt32();
+	CActivityManager* pAM = Answer::Singleton<CActivityManager>::instance();
+	return pAM->getAwardActivity(this, nAwardId);
+}
+
+int32_t Player::onActivityChangeMap( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int16_t x = inPacket->readInt16();
+	int16_t y = inPacket->readInt16();
+
+	if ( !m_pMap->isWalkablePosition(x, y) )
+		return 10002;
+
+	instantMove(x, y, InstanceMoveReason::IMR_TRANSFER, 0);
+	return 0;
+}
+
+int32_t Player::onLogout( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	pGS->onPlayerLogout(this);
+	return 0;
+}
+
+int32_t Player::onSyncTime( Answer::NetPacket *inPacket )
+{
+	return 0;
+}
+
+int32_t Player::onBeginGather( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t npcId = inPacket->readInt32();
+	return m_pMap->onBeginGather(this, npcId);
+}
+
+int32_t Player::onEndGather( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	BreakGather(0);
+	return 0;
+}
+
+int32_t Player::onSpecialPlant( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t plantId = inPacket->readInt32();
+	int32_t x = inPacket->readInt16();
+	int32_t y = inPacket->readInt16();
+	return m_pMap->onSpecialPlant(this, plantId, x, y);
+}
+
+int32_t Player::onUseTrap( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t trapId = inPacket->readInt32();
+	return m_pMap->onUseTrap(this, trapId);
+}
+
+int32_t Player::onFamilyWarActivePillar( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t pillarId = inPacket->readInt32();
+	CActivityManager* pAM = Answer::Singleton<CActivityManager>::instance();
+	pAM->onFamilyWarActivePillar(this, pillarId);
+	return 0;
+}
+
+int32_t Player::onDungeonBuildTower( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t towerType = inPacket->readInt32();
+	int16_t x = inPacket->readInt16();
+	int16_t y = inPacket->readInt16();
+	return pDungeon->buildTower(this, towerType, x, y);
+}
+
+int32_t Player::onDungeonBuyTower( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t towerId = inPacket->readInt32();
+	return pDungeon->buyTower(this, towerId);
+}
+
+int32_t Player::onDungeonStart( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	pDungeon->start(0);
+	return 0;
+}
+
+int32_t Player::onDungeonSelectReward( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t rewardIndex = inPacket->readInt32();
+	return pDungeon->selectReward(this, rewardIndex);
+}
+
+int32_t Player::onDungeonSummonBoss( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t bossId = inPacket->readInt32();
+	return pDungeon->summonBoss(this, bossId);
+}
+
+int32_t Player::onBuyDungeonEnterTime( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	int32_t dungeonId = inPacket->readInt32();
+	return m_extCharTeamDungeon.onBuyDungeonEnterTime(this, dungeonId);
+}
+
+int32_t Player::onDungeonSummon( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t summonType = inPacket->readInt32();
+	return pDungeon->summon(this, summonType);
+}
+
+int32_t Player::onDungeonQuickDone( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	pDungeon->quickDone(this);
+	return 0;
+}
+
+int32_t Player::onDungeonSaoDang( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t count = inPacket->readInt32();
+	return pDungeon->saoDang(this, count);
+}
+
+int32_t Player::onDungeonReset( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	pDungeon->reset(this);
+	return 0;
+}
+
+int32_t Player::onGuessTheSize( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int8_t guess = inPacket->readInt8();
+	return pDungeon->guessTheSize(this, guess);
+}
+
+int32_t Player::onDungeonYJSKGuWu( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket )
+		return 10002;
+
+	Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+	if ( !pDungeon )
+		return 10002;
+
+	int32_t type = inPacket->readInt32();
+	return pDungeon->yjskGuWu(this, type);
+}
+
+int32_t Player::onDungeonNpc( Answer::NetPacket *inPacket )
+{
+	if ( !inPacket || !m_pMap )
+		return 10002;
+
+	int32_t npcId = inPacket->readInt32();
+	return m_pMap->onDungeonNpc(this, npcId);
+}
+
+int32_t Player::onKillMonster( Unit *pMonster )
+{
+	if ( !pMonster )
+		return 0;
+
+	m_task.onKillMonster(pMonster);
+	m_extCharSkill.onKillMonster(pMonster);
+	m_PlayerDailyActivity.OnKillMonster(pMonster);
+	return 0;
+}
+
+// ======== P0-c: 信息发送器 ========
+
+void Player::sendBasicInfo( int32_t reason )
+{
+	if ( reason == 3 )
+	{
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2828);
+		if ( !packet ) return;
+		packet->writeInt32(0);
+		packet->setSize(packet->getWOffset());
+		pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+	}
+
+	SyncTime();
+	sendChrLoginInInfo();
+	sendChrInfo();
+	sendCharAttrInfo();
+	m_extCurrency.SendCurrencyInfo(1);
+	m_extCharBag.SendBagItem();
+	m_extCharBag.SendBagSellItem();
+	m_extCharBag.SendLimitCount();
+	m_extEquip.SendEquipInfo();
+	m_extEquip.SendGemInfo();
+	m_extEquip.SendPosLevelInfo();
+	m_extEquip.SendStrenGthenInfo();
+	m_PlayerDepot.SendDepotCurrency();
+	m_PlayerDepot.SendDepotInfo();
+	m_PlayerDepot.SendDepotItem();
+	m_PlayerVip.SendVipInfo();
+	m_extCharSkill.SendTalentInfo();
+	m_extCharSkill.SendTalentAddon();
+	m_extCharPet.SendPetInfo();
+	m_task.sendTaskList();
+	m_extMagicBox.SendItemCombiPoint();
+	m_PlayerDailyActivity.SendSearchBackInfo();
+	m_PlayerChouJiang.SendChouJiangItem();
+	m_CBossKilledReward.SendBossKilledInfo();
+	sendAutoFight();
+	sendSystemSetting();
+	sendChrRecord();
+	sendLoginInfo();
+	m_CSpecialEquip.SendActivationInfo();
+	m_extTaskCycle.SendTaskCycle();
+	m_CMoneyRewardTask.sendTaskInfo();
+	m_CMoneyRewardTask.SendPdbfTaskInfo();
+	m_CMoneyRewardTask.SendBackEquipTaskInfo();
+	m_CMoneyRewardTask.SendTrailerInfo();
+	m_CMoneyRewardTask.SendXiangYaoTaskInfo();
+	m_CMoneyRewardTask.SendShenWeiTaskInfo();
+	m_PlayerDailyActivity.SendDailyActivityInfo();
+	m_extCharWorship.SendWorshipInfo();
+	m_PlayerQiFu.SendQiFuInfo();
+	m_PlayerHuoYueDu.SendHuoYueDuInfo();
+	m_PlayerShangCheng.SendLimitInfo();
+	m_extCharTitle.SendTitleInfo();
+	m_FRiendExp.SendDieRecord();
+	m_FRiendExp.SendDieBoard();
+	m_PlayerFaBao.SendAllFaBaoInfo();
+	m_CCharWuHun.sendWuHunInfo();
+	m_CWuHunShop.sendShopRefreshTimes();
+	m_extCharJueWei.sendJueWeiInfo();
+	m_extCharWing.SendWingInfo();
+	m_CGoblin.SendAllGoblinInfo();
+	m_extShiZhuang.SendShiZhuangInfo();
+	m_CGoblin.SendAllShouHuRefiningInfo();
+	m_CGoblin.SendAllWingEquipPolishInfo();
+	m_CGoblin.SendAllMoFuZhuNengInfo();
+	m_CGoblin.SendAllWingEquipRefiningInfo();
+	m_CGoblin.SendAllVipEquipPosLevelInfo();
+	m_extCharFamily.SendHoe();
+	m_CMingGeExt.SendMingGeBagInfo(1);
+	m_CMingGeExt.SendMingGeBagInfo(2);
+	m_CMingGeExt.SendMingGeBagInfo(3);
+	m_CMingGeExt.SendMingGeInfo();
+	m_CKunExt.SendKunLingInfo();
+	m_CKunExt.SendLingZhuBagAllItem();
+	m_CKunExt.SendDanTianInfo(-1);
+	m_CKunExt.SendLingZhuPosInfo(-1);
+	m_CGongMing.SendGongMinInfo();
+	m_extEquip.SendShenYaoPosLevelInfo();
+	m_CXinMo.SendXiMoInfo();
+	m_CXinMo.SendAllItem();
+	m_CXinMo.SendXinMoQiQingLevel(0);
+	m_CXinMo.SendXinQingInfo();
+	m_PlayerVip.SendClubInfo();
+	m_CSpecialEquip.SendActivationInfo();
+	m_CRongHe.SendAllRongHeInfo();
+	SendJingLiValue();
+	m_CharLittlerhelper.SendCharLittlerhelper();
+	m_PlayerYunYingHD.SendShouChongInfo();
+	SendCycleTowerInfo();
+	sendActionList();
+	SendHDIcon();
+}
+
+void Player::sendLoginInfo()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2718);
+	if ( !packet ) return;
+
+	packet->writeInt32(m_chr.last_task_id);
+	packet->writeInt32(m_sysUser.adult);
+	packet->writeInt32(m_sysUser.total_online_time);
+	packet->writeInt32(getRecord(1009));
+
+	CfgData* pCfg = Answer::Singleton<CfgData>::instance();
+	packet->writeInt8(pCfg->getServerType());
+	packet->writeInt32(pCfg->getServerStartTime(SERVER_TYPE::SVT_NORMAL));
+	packet->writeInt32(pCfg->getServerStartDayZeroTime(SERVER_TYPE::SVT_NORMAL));
+	packet->writeInt32(pCfg->getServerDiffDay(SERVER_TYPE::SVT_NORMAL));
+	packet->writeInt32(pCfg->getServerStartTime(SERVER_TYPE::SVT_UNITE));
+	packet->writeInt32(pCfg->getServerStartDayZeroTime(SERVER_TYPE::SVT_UNITE));
+	packet->writeInt32(pCfg->getServerDiffDay(SERVER_TYPE::SVT_UNITE));
+	packet->writeInt32(m_chr.create_time);
+	packet->writeInt32(m_sysUserPreventWallow.isGrowUp);
+	packet->writeInt32(getRecord(1011));
+	packet->writeInt32(m_sysUser.continue_login_count);
+
+	CActivityManager* pAM = Answer::Singleton<CActivityManager>::instance();
+	packet->writeInt64(pAM->GetCityWarWinner(getConnId()));
+
+	std::string crossTowerName;
+	pAM->GetCrossTowerName(crossTowerName);
+	packet->writeUTF8(&crossTowerName);
+	packet->writeInt64(pAM->GetCrossTowerWinner());
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendChrInfo()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2755);
+	if ( !packet ) return;
+
+	packet->writeInt64(getCid());
+
+	std::string name;
+	getName(name);
+	packet->writeUTF8(&name);
+
+	packet->writeInt64(getFamilyId());
+
+	std::string familyName;
+	getFamilyName(familyName);
+	packet->writeUTF8(&familyName);
+
+	packet->writeInt8(getSex());
+	packet->writeInt8(getJob());
+	packet->writeInt16(getLevel());
+	packet->writeInt64(getExp());
+	packet->writeInt64(GetLevelExp());
+	packet->writeInt32(getHP());
+	packet->writeInt32(GetMP());
+	packet->writeInt32(m_extCharSkill.GetPower());
+	packet->writeInt32(m_nJumpEnergy);
+	packet->writeInt32(m_extCharTitle.GetDressTitleId());
+	packet->writeInt32(getPkValue());
+	packet->writeInt8(getPkMode());
+
+	int32_t pkProtect = getPkProtectTime() - getNow();
+	packet->writeInt32(pkProtect > 0 ? pkProtect : 0);
+
+	packet->writeInt8(m_extFightChecker.IsBuleName());
+	packet->writeInt8(m_extOperateLimit.CheckIsLimitedForever(37203));
+	packet->writeInt8(IsInStall());
+
+	m_extCharTencent.AppendInfo(packet);
+	packet->writeInt32(m_extCharTencent.GetEndTime());
+	m_Vplan.AppendYYInfo(packet);
+	m_Vplan.AppendSwVipInfo(packet);
+
+	std::string platform;
+	GetPlatform(platform);
+	if ( platform == "37wan" )
+		packet->writeInt8(m_Vplan.GetPlatformVipLevel());
+	else
+		packet->writeInt8(0);
+
+	packet->writeInt32(m_extCharCarrier.GetCarrierId());
+	packet->writeInt32(getHP());
+	packet->writeInt32(getKunLi());
+	packet->writeInt8(GetTotalPayGold() > 0 ? 1 : 0);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendChrLoginInInfo()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2802);
+	if ( !packet ) return;
+
+	packet->writeInt64(m_sysUser.uid);
+	packet->writeInt64(m_chr.cid);
+	packet->writeInt8(m_sysUser.gm_level);
+
+	CfgData* pCfg = Answer::Singleton<CfgData>::instance();
+	packet->writeInt8(pCfg->getDebug());
+	packet->writeInt32(pGS->getLine());
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendGainInfo( int32_t type, int64_t value, BenefitType benefitType )
+{
+	if ( benefitType == BenefitType::BT_NORMAL && !value )
+		return;
+
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2763);
+	if ( !packet ) return;
+
+	packet->writeInt32(type);
+	packet->writeInt64(value);
+	packet->writeInt32((int32_t)benefitType);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendActivityGain( int32_t activityId, int32_t exp, int32_t money, int32_t isEnd )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2764);
+	if ( !packet ) return;
+
+	packet->writeInt32(activityId);
+	packet->writeInt32(exp);
+	packet->writeInt32(money);
+	packet->writeInt32(isEnd);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendBuyItemInfo( int32_t item_id, int32_t item_type, int32_t count, int32_t money, int32_t index )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2765);
+	if ( !packet ) return;
+
+	packet->writeInt32(item_id);
+	packet->writeInt32(item_type);
+	packet->writeInt32(count);
+	packet->writeInt32(money);
+	packet->writeInt32(index);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendSellItemInfo( int32_t item_id, int32_t item_type, int32_t count, int32_t money )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2766);
+	if ( !packet ) return;
+
+	packet->writeInt32(item_id);
+	packet->writeInt32(item_type);
+	packet->writeInt32(count);
+	packet->writeInt32(money);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendItemEffect( const std::string &effect )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2762);
+	if ( !packet ) return;
+
+	packet->writeUTF8(&effect);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendKillerRankSelf()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27F2);
+	if ( !packet ) return;
+
+	packet->writeInt32(getRecord(1010));
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendPreventWallow()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2823);
+	if ( !packet ) return;
+
+	packet->writeInt32(m_sysUserPreventWallow.isGrowUp);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendActionList()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27A4);
+	if ( !packet ) return;
+
+	packet->writeInt32(m_actions[12].id);
+	packet->writeInt32(m_actions[12].type);
+	for ( int32_t i = 1; i <= 10; ++i )
+	{
+		packet->writeInt32(m_actions[i].id);
+		packet->writeInt32(m_actions[i].type);
+	}
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendAutoFight()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27A5);
+	if ( !packet ) return;
+
+	std::string val(m_autoFight);
+	packet->writeUTF8(&val);
+	std::string pickStr(m_autoFight.pick);
+	packet->writeUTF8(&pickStr);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendSystemSetting()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27A6);
+	if ( !packet ) return;
+
+	int32_t nSize = (int32_t)m_SystemSetting.size();
+	packet->writeInt32(nSize);
+	for ( auto it = m_SystemSetting.begin(); it != m_SystemSetting.end(); ++it )
+	{
+		packet->writeInt32(it->first);
+		packet->writeInt32(it->second);
+	}
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendKilledByPlayer( CharId_t cid, const std::string &name )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27B0);
+	if ( !packet ) return;
+
+	packet->writeInt64(cid);
+	packet->writeUTF8(&name);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendUpdateSocialPlayerInfo( PlayerInfoIndex index, int32_t value )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_PROC, 0x4E33);
+	if ( !packet ) return;
+
+	packet->writeInt64(getCid());
+	packet->writeInt32((int32_t)index);
+	packet->writeInt64(value);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacket(getConnId(), packet);
+}
+
+void Player::sendGambel( const MemChrBagVector& item )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27A7);
+	if ( !packet ) return;
+
+	int32_t nSize = (int32_t)item.size();
+	packet->writeInt32(nSize);
+	for ( int32_t i = 0; i < nSize; ++i )
+	{
+		packet->writeInt32(item[i].id);
+		packet->writeInt32(item[i].count);
+	}
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::SendHDIcon()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27B1);
+	if ( !packet ) return;
+
+	m_PlayerYunYingHD.SendEveryDayChongZhiIcon(packet);
+	m_PlayerYunYingHD.SendEveryDayXiaoFeiIcon(packet);
+	m_CKiaFuRecharge.SendIconState(packet);
+	m_CNationalDayHd.SendIconState(packet);
+	m_PlayerVip.SendVipGiftIcon(packet);
+	m_CMonthlyChouJiang.SendMonthlyChouJiangIcon(packet);
+	m_PlayerDailyActivity.SendJiangLiDaTingIcon(packet);
+	m_CDaTingReward.SendDaTingIcon(packet);
+	m_PlayerTouZi.SendTouZiIcon(packet);
+	m_extCharTitle.SendTitleIcon(packet);
+	m_CGuardPrivilege.SendIconState(packet);
+	m_CSuperTeHui.SendIconState(packet);
+	m_CGoblin.SendIconState(packet);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+// ======== P0-d: 空壳函数补全 ========
+
+void Player::onKillMonster( int32_t mid, int32_t groupId, int32_t level, int32_t exp, bool isBoss, bool bKiller )
+{
+	if ( bKiller )
+	{
+		if ( isBoss )
+			GetPlayerHuoYueDu().AddHuoYueDuRecord(4, 0, 0);
+		GetPlayerHuoYueDu().AddHuoYueDuRecord(3, 0, 0);
+	}
+
+	m_task.updateTaskMonster(mid, groupId, level);
+
+	int32_t ExpRate = 0;
+	int32_t nCurLevel = getLevel();
+	int32_t tLevel = nCurLevel - level;
+	float LevelRatio = 1.0f;
+
+	if ( !isBoss && level <= 179 )
+	{
+		if ( tLevel < -30 )
+			LevelRatio = 1.5f;
+		else if ( tLevel < -15 )
+			LevelRatio = 1.2f;
+		else if ( tLevel <= 14 )
+			LevelRatio = 1.0f;
+		else if ( tLevel <= 29 )
+			LevelRatio = 0.8f;
+		else if ( tLevel <= 59 )
+			LevelRatio = 0.3f;
+		else
+			LevelRatio = 0.1f;
+	}
+
+	ExpRate = GetAllExpRate();
+	int32_t nFinalExp = (int)(((float)ExpRate / 100.0f + 1.0f) * (float)exp * LevelRatio);
+	if ( !bKiller )
+		nFinalExp /= 2;
+
+	int32_t baseExp = (int)((float)exp * LevelRatio);
+	addExp(nFinalExp, baseExp, 1);
+
+	if ( StaticObj::InDungeon(this) )
+	{
+		Dungeon* pDungeon = dynamic_cast<Dungeon*>(m_pMap);
+		if ( pDungeon && pDungeon->getDungeonType() == 23 )
+			pDungeon->AddMonsterExp(nFinalExp);
+	}
+
+	CfgData* pCfgData = Answer::Singleton<CfgData>::instance();
+	CfgMonsterTaskDropVector* pCfgMonsterTaskDrop = pCfgData->getMonsterTaskDrop(mid);
+	if ( pCfgMonsterTaskDrop )
+	{
+		for ( auto it = pCfgMonsterTaskDrop->begin(); it != pCfgMonsterTaskDrop->end(); ++it )
+		{
+			int32_t randVal = Answer::Random::generate(1, 1000);
+			if ( randVal <= it->probability )
+				m_task.updateTaskDrop(it->tid, it->item);
+		}
+	}
+
+	int32_t randVal2 = Answer::Random::generate(1, 1000);
+	if ( randVal2 <= 100 )
+		m_extCharSkill.AddSuitSkillEnergy();
+}
+
+void Player::refreshDailyCheck( bool first )
+{
+	int32_t lastRecord = getRecord(1001);
+	int32_t daydiff = Answer::DayTime::daydiff(lastRecord);
+
+	if ( daydiff > 0 )
+	{
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		if ( pGS->getLine() == 9 )
+		{
+			kickBackFromCross(10115);
+			return;
+		}
+	}
+
+	if ( daydiff == 1 )
+		++m_sysUser.continue_login_count;
+	else if ( daydiff > 1 )
+		m_sysUser.continue_login_count = 1;
+
+	if ( daydiff > 0 )
+	{
+		if ( m_pMap && m_pMap->IsXinMoMap() )
+			OnBackCity(1, 1);
+
+		saveOnlineTime();
+		clearRecordRange(2000, 19999, daydiff);
+		syncTodayGoldPay();
+
+		int32_t loginCount = getRecord(1011) + 1;
+		updateRecord(1011, loginCount);
+
+		int32_t loginRecord = getRecord(1069);
+		int32_t newRecord = (loginRecord << daydiff) + 1;
+		updateRecord(1069, newRecord);
+
+		m_ExtSysMgr.OnDaySwitch(daydiff);
+
+		SendFamilyWarIcon();
+
+		CUniteServer* pUS = Answer::Singleton<CUniteServer>::instance();
+		pUS->SendIconState(this);
+
+		CFestivalDoubleEleven* pFDE = Answer::Singleton<CFestivalDoubleEleven>::instance();
+		pFDE->SendIconState(this);
+
+		CFestivalActivity* pFA = Answer::Singleton<CFestivalActivity>::instance();
+		pFA->SendIconState(this);
+
+		CZongHeYunYingHD* pZHYHD = Answer::Singleton<CZongHeYunYingHD>::instance();
+		pZHYHD->SendIconState(this);
+
+		CKiaFuRecharge* pKFR = Answer::Singleton<CKiaFuRecharge>::instance();
+		pKFR->SendIconState(this);
+		pKFR->SendChouJiangIconState(this);
+
+		COpenBeta* pOB = Answer::Singleton<COpenBeta>::instance();
+		pOB->SendIconState(this);
+
+		OnMonthSwitch();
+
+		int32_t PetRecord = getRecord(1030);
+		if ( PetRecord > 0 && getNow() >= PetRecord )
+		{
+			int32_t nIndex = getRecord(1031);
+			CKaiFuHuoDong* pKFHD = Answer::Singleton<CKaiFuHuoDong>::instance();
+			CfgKaiFuHuoDongData* pCfg = pKFHD->GetKaiFuHuoDongData(nIndex);
+			if ( pCfg )
+			{
+				MemChrBag mailItem;
+				memset(&mailItem, 0, sizeof(mailItem));
+				mailItem.itemId = 2;
+				mailItem.itemCount = pCfg->Conditions;
+				std::string Param;
+				DBService* pDB = Answer::Singleton<DBService>::instance();
+				pDB->OnSendSysMail(0, getCid(), 6370, &mailItem, ITEM_CHANGE_REASON::ICR_KAI_HUO_DONG_PET, &Param, 0);
+			}
+			updateRecord(1030, 0);
+			m_extCharPet.SendPetStaus();
+		}
+
+		int32_t Record1905 = getRecord(1905);
+		if ( Record1905 > 0 )
+			AddCurrency(CURRENCY_TYPE::CURRENCY_GOLD, Record1905, CURRENCY_CHANGE_REASON::GCR_KAI_FU_HUO_DONG_FREE_GIFT, 0);
+	}
+
+	updateRecord(1001, getNow());
+}
+
+void Player::InitSysSetting()
+{
+	if ( m_systemSetting.empty() )
+		return;
+
+	StringVector mineString;
+	Answer::StringUtility::split(mineString, m_systemSetting, "|");
+
+	for ( auto it = mineString.begin(); it != mineString.end(); ++it )
+	{
+		StringVector StringVt;
+		Answer::StringUtility::split(StringVt, *it, ":");
+		if ( StringVt.size() == 2 )
+		{
+			int32_t Key = atoi(StringVt[0].c_str());
+			int32_t Values = atoi(StringVt[1].c_str());
+			m_SystemSetting[Key] = Values;
+		}
+	}
+
+	int32_t key7 = 7;
+	m_SystemSetting[key7] = 0;
+}
+
+void Player::minuteCheck( bool bSend )
+{
+	int32_t nowTime = getNow();
+	tm localNow;
+	getLocalNow(&localNow);
+
+	int32_t Record = getRecord(1002);
+	if ( nowTime - Record > 59 )
+	{
+		updateRecord(1002, nowTime);
+		UpdateGmGold();
+	}
+
+	if ( m_lastLocalNow.tm_min != localNow.tm_min )
+	{
+		ResetJingLi();
+
+		if ( m_pMap && m_pMap->IsXinMoMap() && 60 * localNow.tm_hour + localNow.tm_min == 1435 )
+		{
+			GameService* pGS = Answer::Singleton<GameService>::instance();
+			Answer::NetPacket* packet = pGS->popNetpacket(0, Answer::PackType::PACK_DISPATCH, 0x2D41);
+			if ( packet )
+			{
+				packet->writeInt32(1);
+				packet->setSize(packet->getWOffset());
+				pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+			}
+		}
+	}
+
+	if ( m_lastLocalNow.tm_mday != localNow.tm_mday )
+	{
+		onNewDayCome();
+		CKaiFuHuoDong* pKFHD = Answer::Singleton<CKaiFuHuoDong>::instance();
+		pKFHD->SendKaiFuHuoDongIcon(this);
+		pKFHD->SendKaiFuPetIcon(this);
+		SendCycleTowerInfo();
+	}
+
+	if ( m_lastLocalNow.tm_hour != 18 && localNow.tm_hour == 18 )
+		refeshKillerRecord();
+
+	m_lastLocalNow = localNow;
+}
+
+void Player::syncGold( int32_t nGold )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	if ( pGS->getLine() == 9 )
+	{
+		if ( m_sysUser.gold_pay != nGold )
+		{
+			m_sysUser.gold_pay = nGold;
+			SendRechargeNotice(nGold);
+		}
+	}
+	else
+	{
+		DBPool* pDBPool = Answer::Singleton<DBPool>::instance();
+		MySqlDBGuard db(pDBPool);
+		char szSQL[4096];
+		memset(szSQL, 0, sizeof(szSQL));
+		snprintf(szSQL, 4096, "call GetPayGold(%lld,%d,@OutPayGold)", (int64_t)m_sysUser.uid, m_sysUser.sid);
+		auto result = db.query(szSQL);
+		MySqlQuery query(result);
+		if ( !query.eof() )
+		{
+			int32_t gold_pay = query.getIntValue(0, 0);
+			if ( gold_pay > 0 )
+			{
+				m_sysUser.gold_pay = 0;
+				AddCurrency(CURRENCY_TYPE::CURRENCY_GOLD, gold_pay, CURRENCY_CHANGE_REASON::GCR_RECHARGE, 0);
+				m_sysUser.gold_pay_total += gold_pay;
+				setNeedSyncSelf();
+				syncTodayGoldPay();
+				m_PlayerYunYingHD.SendShouChongInfo();
+				PayedDispose(gold_pay);
+			}
+		}
+	}
+}
+
+void Player::addLogoutPacket( int32_t reason, int32_t param )
+{
+	if ( m_pMap )
+	{
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 8);
+		if ( packet )
+		{
+			packet->writeInt32(reason);
+			packet->writeInt32(param);
+			packet->setSize(packet->getWOffset());
+			m_netPackets.push(packet);
+		}
+	}
+	else
+	{
+		Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_INFO,
+			"Player::addLogoutPacket with m_pMap == NULL, cid = %lld\n", m_chr.cid);
+		saveToDB(reason, param);
+		GameService* pGS = Answer::Singleton<GameService>::instance();
+		pGS->onPlayerLogout(this);
+	}
+}
+
+void Player::kickBackFromCross( int32_t Reason )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_PROC, 0x4E2C);
+	if ( packet )
+	{
+		packet->writeInt64(getUid());
+		packet->writeInt32(getSid());
+		packet->setSize(packet->getWOffset());
+		pGS->sendPacket(getConnId(), packet);
+		Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_INFO,
+			"Kick_back_from_cross cid=%lld\tReason=%d\n", getCid(), Reason);
+	}
+}
+
+void Player::refeshKillerRecord()
+{
+	int32_t Record = getRecord(1010);
+	updateRecord(1010, Record);
+}
+
+void Player::EnterMapGongGao( int32_t gongGaoId, int32_t mapId )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27B2);
+	if ( !packet ) return;
+
+	packet->writeInt32(gongGaoId);
+	packet->writeInt32(mapId);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::broadcastLeave()
+{
+	if ( !m_pMap ) return;
+	m_pMap->broadcastLeave(this);
+}
+
+// ======== P0-f+P0-g: 剩余缺失方法+空壳函数补全 ========
+
+void Player::recalcAttr( bool bNow, bool bInit )
+{
+	if ( !bNow )
+	{
+		m_needRecalAttr = true;
+		return;
+	}
+
+	m_needRecalAttr = false;
+	CObjAttrs oldAttr;
+	memcpy(&oldAttr, GetBaseAttr(), sizeof(oldAttr));
+
+	m_BeiGongAttr.clear();
+	ResetAttrs();
+	setBaseAttr();
+
+	m_extCharSkill.AddCharAttr();
+	m_extEquip.AddCharAttr();
+	m_extCharPet.AddCharAttr();
+	m_extCharWing.AddCharAttr();
+	m_extCharJueWei.AddCharAttr();
+	m_PlayerFaBao.AddPlayerAttr();
+	m_extCharTitle.AddCharAttr();
+	m_PlayerVip.AddVipAttr();
+	m_extCharFamily.AddSkillAttr();
+	m_XingMai.AddCharAttr();
+	m_TianLing.AddCharAttr();
+	m_CSpecialEquip.AddCharAttr();
+	m_Curse.AddCharAttr();
+	m_ShenWei.AddCharAttr();
+	m_CCharWuHun.AddCharAttr();
+	m_CGoblin.AddChrAttr();
+	m_extShiZhuang.AddPlayerAttr();
+	m_Vplan.AddAttr();
+	m_CGoblin.AddShouHuChrAttr();
+	m_CGoblin.AddWingEquipPolishChrAttr();
+	m_CGoblin.AddWingEquipRefiningChrAttr();
+	m_CGoblin.AddVipEquipPosLevelCharAttr();
+	m_CMingGeExt.AddAttr();
+	m_CKunExt.AddCharAttr();
+	m_CGongMing.AddCharAttr();
+	m_CXinMo.AddCharAttr();
+
+	int32_t ShiHua = getRecord(1153);
+	if ( ShiHua > 0 )
+		AddAttrValue(CObjAttrs::ATTR_XUAN_YUN, ShiHua);
+	int32_t Valuse = getRecord(1154);
+	if ( Valuse > 0 )
+		AddAttrValue(CObjAttrs::ATTR_QIE_GE_PEC, Valuse);
+	int32_t DropRate = getRecord(37505);
+	if ( DropRate > 0 )
+		AddAttrValue(CObjAttrs::ATTR_DROP_RATE, DropRate);
+
+	int32_t PetRecord = getRecord(1030);
+	if ( PetRecord > 0 )
+	{
+		int32_t nIndex = getRecord(1031);
+		CKaiFuHuoDong* pKFHD = Answer::Singleton<CKaiFuHuoDong>::instance();
+		CfgKaiFuHuoDongData* pCfg = pKFHD->GetKaiFuHuoDongData(nIndex);
+		if ( pCfg )
+			AddAttrValue(CObjAttrs::ATTR_QIE_GE_PEC, pCfg->PetAttr);
+	}
+
+	m_CharLittlerhelper.AddCharAttr();
+	AddAppendAttr();
+	CalBattle();
+	adjustUnitAttr();
+
+	if ( !bInit )
+	{
+		AttrAddonList addAttrs;
+		CObjAttrs newAttr;
+		memcpy(&newAttr, GetBaseAttr(), sizeof(newAttr));
+
+		for ( int32_t i = 0; i <= 49; ++i )
+		{
+			int32_t nOldAttr = oldAttr.GetAttr((CObjAttrs::Index_T)i);
+			int32_t nNewAttr = newAttr.GetAttr((CObjAttrs::Index_T)i);
+			if ( nNewAttr > nOldAttr )
+			{
+				AttrAddon addon;
+				addon.index = i;
+				addon.addon = nNewAttr - nOldAttr;
+				addAttrs.push_back(addon);
+			}
+		}
+
+		if ( !addAttrs.empty() )
+			sendAttrAddon(addAttrs);
+	}
+
+	setNeedSync();
+	setNeedSyncAttr();
+	SendBeiGongAttr();
+}
+
+void Player::sendCharAttrInfo()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2756);
+	if ( !packet ) return;
+
+	appendCharAttrInfo(packet);
+	packet->writeInt32(getBattle());
+	packet->writeInt32(GetAllMoneyRate());
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::appendCharAttrInfo( Answer::NetPacket* packet )
+{
+	if ( !packet ) return;
+	for ( int32_t i = 1; i <= 49; ++i )
+		packet->writeInt32(GetAttrValue((CObjAttrs::Index_T)i));
+}
+
+void Player::sendAttrAddon( const AttrAddonList& attrs )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x2757);
+	if ( !packet ) return;
+
+	packet->writeInt32((int32_t)attrs.size());
+	for ( auto it = attrs.begin(); it != attrs.end(); ++it )
+	{
+		packet->writeInt8(it->index);
+		packet->writeInt32(it->addon);
+	}
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+bool Player::checkNetPackets()
+{
+	while ( true )
+	{
+		Answer::NetPacket* packet = m_netPackets.pop();
+		if ( !packet )
+			break;
+
+		ProcId_t nProc = packet->getProc();
+
+		if ( !isAlive() && !isDeadProc(nProc) )
+		{
+			packet->destroy();
+			continue;
+		}
+
+		NetPacketHandler handler = getNetPacketHandler(nProc);
+		if ( handler )
+		{
+			int32_t ret = handler(this, packet);
+			if ( ret == 1 )
+			{
+				packet->destroy();
+				return false;
+			}
+		}
+
+		int32_t nErr = m_ExtSysMgr.DispatchNetDatas(nProc, packet);
+
+		if ( NeedJianKong() )
+		{
+			proc_log stu;
+			stu.log_Sid = getSid();
+			stu.log_time = getNow();
+			std::string passport;
+			GetPassport(passport);
+			stu.passport = passport;
+			stu.cid = getCid();
+			std::string name;
+			getName(name);
+			stu.name = name;
+			stu.op_time = getNow();
+			stu.proc_id = packet->getProc();
+			DBService* pDB = Answer::Singleton<DBService>::instance();
+			pDB->AddPlatformLog(getConnId(), PLATFORM_LOG_DATA_TYPE::PLDT_PROC, &stu);
+		}
+
+		packet->destroy();
+
+		if ( nProc == 8 )
+			return true;
+	}
+	return false;
+}
+
+void Player::saveToDB( int32_t reason, int32_t param )
+{
+	PlayerDBData dbData;
+	SaveDBData(dbData);
+
+	int32_t logout_time = getNow();
+	dbData.chr.data.last_logout_time = logout_time;
+	dbData.sysUser.data.last_logout_time = logout_time;
+
+	saveOnlineTime();
+	DBService* pDB = Answer::Singleton<DBService>::instance();
+	pDB->savePlayer(getConnId(), reason, param, &dbData);
+}
+
+int32_t Player::verifyBagInfo( const Int32Vector& vSlot, int32_t nType, int32_t nNeedCount )
+{
+	int32_t nCount = 0;
+	for ( size_t i = 0; i < vSlot.size(); ++i )
+	{
+		MemChrBag* pItem = m_extCharBag.GetItemBySlot(vSlot[i]);
+		if ( !pItem )
+			return -1;
+		if ( nType > 0 && pItem->itemId != nType )
+			return -1;
+		++nCount;
+	}
+	if ( nCount < nNeedCount )
+		return -1;
+	return 0;
+}
+
+int32_t Player::verifyBagInfoForGroup( const Int32Vector& vSlot, const ItemData& data, int32_t nNeedCount )
+{
+	int32_t nCount = 0;
+	for ( size_t i = 0; i < vSlot.size(); ++i )
+	{
+		MemChrBag* pItem = m_extCharBag.GetItemBySlot(vSlot[i]);
+		if ( !pItem )
+			return -1;
+		if ( pItem->itemId != data.m_nId )
+			return -1;
+		nCount += pItem->itemCount;
+	}
+	if ( nCount < nNeedCount )
+		return -1;
+	return 0;
+}
+
+void Player::onDamageEvent( int32_t damage, UnitHandle launcher, int32_t skillId )
+{
+	if ( damage <= 0 ) return;
+
+	AddHp(-damage);
+	if ( getHP() <= 0 )
+	{
+		m_bDie = true;
+		m_nDieTick = getTick();
+		onDamagedEvent(launcher, skillId);
+	}
+}
+
+void Player::onDamagedEvent( UnitHandle killer, int32_t skillId )
+{
+	if ( !m_bDie ) return;
+
+	if ( killer )
+	{
+		Unit* pKiller = (Unit*)killer;
+		if ( pKiller->getUnitId() == getUnitId() )
+			return;
+
+		m_chr.kill_count++;
+		sendKilledByPlayer(getCid(), getName());
+	}
+
+	SetDieTick();
+	m_extCharSkill.onPlayerDie();
+	m_extFightChecker.OnPlayerDie();
+
+	if ( m_pMap )
+		m_pMap->onPlayerDie(this);
+}
+
+void Player::updatePkValue( int32_t delta )
+{
+	if ( delta == 0 ) return;
+
+	int32_t oldPkValue = m_chr.pk_value;
+	m_chr.pk_value += delta;
+	if ( m_chr.pk_value < 0 )
+		m_chr.pk_value = 0;
+
+	int32_t maxPkValue = 9999;
+	if ( m_chr.pk_value > maxPkValue )
+		m_chr.pk_value = maxPkValue;
+
+	if ( oldPkValue != m_chr.pk_value )
+		setNeedSyncSelf();
+}
+
+void Player::addSkill( int32_t skillid, int32_t level )
+{
+	m_extCharSkill.addSkill(skillid, level);
+}
+
+void Player::removeSkill( int32_t skillid )
+{
+	m_extCharSkill.removeSkill(skillid);
+}
+
+void Player::DieResetXp()
+{
+	m_extCharSkill.DieResetXp();
+}
+
+void Player::sendChrRecord()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27A8);
+	if ( !packet ) return;
+
+	m_extOperateLimit.SendRecordList(packet);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendSkillList()
+{
+	m_extCharSkill.SendSkillList();
+}
+
+void Player::sendNewSkill( int32_t skillid )
+{
+	m_extCharSkill.SendNewSkill(skillid);
+}
+
+void Player::sendPvpInfo()
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27B3);
+	if ( !packet ) return;
+
+	packet->writeInt32(getPkValue());
+	packet->writeInt8(getPkMode());
+	packet->writeInt32(getPkProtectTime());
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendGetGoldInfo()
+{
+	m_extCurrency.SendCurrencyInfo(0);
+}
+
+void Player::sendYellowStone()
+{
+	m_extCharTencent.SendBlueStoneIcon();
+}
+
+void Player::sendJungongChangeInfo( int32_t addon, BenefitType bnfType )
+{
+	sendGainInfo(1, addon, bnfType);
+}
+
+void Player::sendWuhuenChangeInfo( int32_t addon, BenefitType bnfType )
+{
+	sendGainInfo(2, addon, bnfType);
+}
+
+void Player::sendjiangxingChangeInfo( int32_t addon, BenefitType bnfType )
+{
+	sendGainInfo(3, addon, bnfType);
+}
+
+void Player::sendKingdomChangeInfo( int32_t addon )
+{
+	sendGainInfo(4, addon, BenefitType::BT_NORMAL);
+}
+
+void Player::sendFightExpMoney( int32_t exp, int32_t kingdom_contribute )
+{
+	sendGainInfo(0, exp, BenefitType::BT_NORMAL);
+}
+
+void Player::sendViewStarFinished( int32_t sid, int32_t level )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27B4);
+	if ( !packet ) return;
+
+	packet->writeInt32(sid);
+	packet->writeInt32(level);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendToastInfo( CharId_t cid, CharId_t beCid )
+{
+	GameService* pGS = Answer::Singleton<GameService>::instance();
+	Answer::NetPacket* packet = pGS->popNetpacket(getConnId(), Answer::PackType::PACK_DISPATCH, 0x27B5);
+	if ( !packet ) return;
+
+	packet->writeInt64(cid);
+	packet->writeInt64(beCid);
+
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(getConnId(), getGateIndex(), packet);
+}
+
+void Player::sendActivityState()
+{
+	m_PlayerDailyActivity.SendDailyActivityInfo();
+}
+
+void Player::setTaskCanSubmit( int32_t tid )
+{
+	m_task.setTaskCanSubmit(tid);
+}
+
+void Player::checkTaskCanSubmit( int32_t dungeonID )
+{
+	m_task.checkTaskCanSubmit(dungeonID);
+}
+
+void Player::taskTalkWithNpc( int32_t npcid )
+{
+	m_task.talkWithNpc(npcid);
+}
+
+void Player::autoUseItem( MemChrBagVector &items )
+{
+	m_extCharBag.autoUseItem(items);
+}
+
+void Player::addContribution( int32_t addon, int32_t rate )
+{
+	m_extCharFamily.addContribution(addon, rate);
+}
+
+void Player::kingdomTaskFaile()
+{
+	m_task.kingdomTaskFaile();
+}
+
+void Player::setKingdomTaskState( int32_t tid, int32_t state )
+{
+	m_task.setKingdomTaskState(tid, state);
+}
+
+void Player::onActAddHL()
+{
+	GetPlayerHuoYueDu().AddHuoYueDuRecord(3, 0, 0);
+}
+
+void Player::doSkillCost( CfgSkill *pCfgSkill, MemChrSkillVector::iterator &itSkill )
+{
+	m_extCharSkill.doSkillCost(pCfgSkill, itSkill);
+}
+
+void Player::doSkillLevel( int32_t sid, int32_t slevel, UnitHandle target )
+{
+	m_extCharSkill.doSkillLevel(sid, slevel, target);
+}
+
+// ===== P6-2: Missing method implementations =====
+
+void Player::setBaseAttr()
+{
+	int32_t level = getLevel();
+	Job_t job = getJob();
+	CfgData* pCfg = CFG_DATA;
+	CfgLevelAttr levelAttr;
+	pCfg->getLevelAttr(levelAttr, job, level);
+	if ( levelAttr.job > 0 && levelAttr.level > 0 )
+	{
+		for ( auto it = levelAttr.addonattr.begin(); it != levelAttr.addonattr.end(); ++it )
+		{
+			AddAttrValue(it->index, it->addon);
+			if ( it->index == 45 )
+				AddBeiGongAttr(1, it->addon);
+		}
+	}
+}
+
+bool Player::isDeadProc(ProcId_t nProc) const
+{
+	if ( nProc > 0x4E20 && nProc <= 0x61AA )
+		return true;
+	if ( nProc <= 0x3A )
+		return nProc >= 0x38 || nProc == 8 || nProc == 38;
+	if ( nProc == 434 )
+		return true;
+	if ( nProc > 0x1B2 )
+		return nProc == 440 || nProc == 463;
+	return nProc == 197;
+}
+
+bool Player::isPreventWallow(std::string card)
+{
+	int nLen = card.length();
+	if ( nLen != 18 )
+		return true;
+	if ( !CheckString(card) )
+		return true;
+	if ( BirthdayIsRight(card) == 0 )
+		return true;
+	int no[17] = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
+	const char* id = "10X98765432";
+	const char* p = card.c_str();
+	int sum = 0;
+	for ( int i = 0; i < nLen - 1; ++i )
+		sum += (p[i] - '0') * no[i];
+	bool bResult = false;
+	if ( (p[17] < '0' || p[17] > '9') && p[17] != 'X' && p[17] != 'x' )
+		bResult = true;
+	int wi = sum % 11;
+	if ( p[17] == 'x' || p[17] == 'X' )
+	{
+		if ( id[wi] != 'x' && id[wi] != 'X' )
+			return true;
+	}
+	else if ( id[wi] != p[17] )
+	{
+		return true;
+	}
+	return bResult;
+}
+
+Int32Vector Player::getStrategicsReadState(int32_t *pIndexArry)
+{
+	Int32Vector result;
+	for ( int32_t i = 0; i < MAX_STRATEGICS_READ_COUNT; ++i )
+	{
+		int32_t nIndex = pIndexArry[i];
+		result.push_back(getRecord(nIndex));
+	}
+	return result;
+}
+
+int32_t Player::doTeleport(int32_t aid)
+{
+	if ( !m_pMap )
+		return 10002;
+	CfgData* pCfg = CFG_DATA;
+	CfgTeleport* pCfgTeleport = pCfg->getTeleport(aid);
+	if ( !pCfgTeleport )
+		return 10002;
+	int32_t nRegionId = pCfgTeleport->regionId;
+	CfgMapRegion* pCfgRegion = pCfg->getMapRegion(nRegionId);
+	if ( !pCfgRegion )
+		return 10002;
+	MapManager* pMM = Answer::Singleton<MapManager>::instance();
+	Map* pTargetMap = pMM->GetMap(pCfgRegion->mapid);
+	if ( !pTargetMap )
+		return 10002;
+	Position pos = pTargetMap->getRandomWalkablePositionInRegion(pCfgRegion);
+	if ( pos.x < 0 || pos.y < 0 )
+		return 10002;
+	if ( m_pMap != pTargetMap )
+		return switchMap(pTargetMap, pos.x, pos.y, 1);
+	instantMove(pos.x, pos.y, InstanceMoveReason::IMR_TELEPORT, 0);
+	return 0;
+}
+
+int32_t Player::doTeleportActivity(int32_t aid)
+{
+	if ( !m_pMap )
+		return 10002;
+	CfgData* pCfg = CFG_DATA;
+	CfgActivity* activityInfo = pCfg->getActivity(aid);
+	if ( !activityInfo || !activityInfo->target_mapid )
+		return 10002;
+	CActivityManager* pAM = Answer::Singleton<CActivityManager>::instance();
+	if ( !pAM->IsActivityRunning(activityInfo->id) )
+		return 10002;
+	if ( activityInfo->target_regiona.empty() )
+		return 10002;
+	int32_t nReginId = getActivityBirthRegion(&activityInfo->target_regiona);
+	CfgMapRegion* pCfgRegion = pCfg->getMapRegion(nReginId);
+	if ( !pCfgRegion )
+		return 10002;
+	MapManager* pMM = Answer::Singleton<MapManager>::instance();
+	Map* pTargetMap = pMM->GetMap(activityInfo->target_mapid);
+	if ( !pTargetMap )
+		return 10002;
+	Position pos = pTargetMap->getRandomWalkablePositionInRegion(pCfgRegion);
+	if ( pos.x < 0 || pos.y < 0 )
+		return 10002;
+	if ( m_pMap != pTargetMap )
+		return switchMap(pTargetMap, pos.x, pos.y, 1);
+	instantMove(pos.x, pos.y, InstanceMoveReason::IMR_ACTIVITY, 0);
+	return 0;
+}
+
+void Player::sendPlayerEquipInfo()
+{
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* packet = pGS->popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x2774);
+	if ( packet )
+	{
+		GetEquip().PackageEquipInfo(packet);
+		packet->setSize(packet->getWOffset());
+		pGS->sendPacketTo(connid, getGateIndex(), packet);
+	}
+}
+
+void Player::sendEquipInfo(const MemEquip &memEquip)
+{
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* packet = pGS->popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x2775);
+	if ( packet )
+	{
+		packet->writeInt64(memEquip.id);
+		packet->writeInt32(memEquip.base);
+		packet->writeInt8(memEquip.star);
+		packet->writeInt32(memEquip.MapId);
+		packet->writeInt32(memEquip.Mid);
+		packet->writeInt32(memEquip.time);
+		packet->writeUTF8(memEquip.name);
+		packet->writeInt32(memEquip.Lucky);
+		packet->setSize(packet->getWOffset());
+		pGS->sendPacketTo(connid, getGateIndex(), packet);
+	}
+}
+
+void Player::sendEquipInfo(const MemEquipVector &memEquips)
+{
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* packet = pGS->popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x2776);
+	if ( packet )
+	{
+		packet->writeInt32(memEquips.size());
+		for ( auto it = memEquips.begin(); it != memEquips.end(); ++it )
+		{
+			packet->writeInt64(it->id);
+			packet->writeInt32(it->base);
+			packet->writeInt8(it->star);
+			packet->writeInt32(it->MapId);
+			packet->writeInt32(it->Mid);
+			packet->writeInt32(it->time);
+			packet->writeUTF8(it->name);
+			packet->writeInt32(it->Lucky);
+		}
+		packet->setSize(packet->getWOffset());
+		pGS->sendPacketTo(connid, getGateIndex(), packet);
+	}
+}
+
+void Player::sendPublicChat(int32_t channel, Answer::NetPacket *inPacket)
+{
+	if ( !inPacket )
+		return;
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* chatPacket = pGS->popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x27F7);
+	if ( !chatPacket )
+		return;
+	chatPacket->writeInt32(channel);
+	chatPacket->writeInt32(getLevel());
+	chatPacket->writeInt8(m_sysUser.gm_level);
+	chatPacket->writeInt64(getCid());
+	chatPacket->writeInt32(getSid());
+	chatPacket->writeUTF8(getIP());
+	chatPacket->writeInt8(GetPlayerVip().GetVipType());
+	chatPacket->writeInt8(GetPlayerVip().GetVipLevel());
+	chatPacket->writeInt8(getSex());
+	chatPacket->writeInt8(pGS->getLine());
+	chatPacket->writeUTF8(getName());
+	chatPacket->writeInt8(getJob());
+	chatPacket->writeInt8(GetCharJueWei().GetJueWei());
+	m_extCharTencent.AppendInfo(chatPacket);
+	m_extVplan.AppendYYInfo(chatPacket);
+	m_extVplan.AppendSwVipInfo(chatPacket);
+	chatPacket->writeInt8(connid);
+	chatPacket->write(inPacket->getBuffer(), inPacket->getSize());
+	chatPacket->setSize(chatPacket->getWOffset());
+	std::string platform = getPf();
+	bool bCanSend = (platform != "37wan" && platform != "tanwan" && platform != "w360");
+	if ( bCanSend || !pGS->SendChatValidate(this, channel, chatPacket) )
+	{
+		if ( channel == 1 || channel == 6 )
+		{
+			pGS->worldBroadcast(connid, chatPacket);
+		}
+		else if ( channel == 4 && IsInTeam() )
+		{
+			GetCharTeam().Broadcast(chatPacket);
+		}
+		else if ( channel == 5 && m_pMap )
+		{
+			m_pMap->broadcast(chatPacket);
+		}
+		else if ( channel == 7 )
+		{
+			pGS->broadcast(chatPacket);
+		}
+		else
+		{
+			Answer::NetPacket::destroy(chatPacket);
+		}
+	}
+}
+
+int32_t Player::queryAutoBuyBagInfo(const Int32Vector& vSlot, int32_t nItemId, int32_t& count, int32_t nShopId)
+{
+	if ( count <= 0 )
+		return 0;
+	int32_t nCount = count;
+	int32_t slotCount = vSlot.size();
+	for ( int32_t i = 0; i < slotCount; ++i )
+	{
+		MemChrBag bagSlot = getBagSlotData(vSlot[i]);
+		if ( !bagSlot.itemId )
+			return 10002;
+		if ( bagSlot.itemId != nItemId )
+			return 10002;
+		if ( bagSlot.itemCount >= nCount )
+		{
+			nCount = 0;
+			break;
+		}
+		nCount -= bagSlot.itemCount;
+	}
+	if ( nCount > 0 )
+	{
+		CfgData* pCfg = CFG_DATA;
+		CfgGameShop* pCfgGameShop = pCfg->GetGameShop(nShopId);
+		if ( !pCfgGameShop )
+			return 10002;
+		int32_t totalCost = nCount * pCfgGameShop->Price;
+		int64_t nTotalGold = GetCurrency(CURRENCY_GOLD);
+		if ( totalCost > nTotalGold )
+			return 10002;
+		DecCurrency(CURRENCY_GOLD, totalCost, GCR_AUTOBUYBAG, nShopId);
+	}
+	count -= nCount;
+	return 0;
+}
+
+bool Player::queryBagInfo(Answer::NetPacket* inPacket, Int32Vector& vSlot)
+{
+	if ( !inPacket )
+		return false;
+	int32_t slotCount = inPacket->readInt32();
+	if ( slotCount > 150 )
+		return false;
+	vSlot.resize(slotCount, 0);
+	for ( int32_t i = 0; i < slotCount; ++i )
+		vSlot[i] = inPacket->readInt32();
+	return true;
+}
+
+void Player::queryBagInfoByItemId(int32_t nItemId, int32_t nCount, Int32Vector& vSlot)
+{
+	vSlot.clear();
+	int32_t remaining = nCount;
+	int32_t freeSlot = getFirstFreeSlot();
+	for ( int32_t i = 0; i < freeSlot && remaining > 0; ++i )
+	{
+		MemChrBag bagSlot = getBagSlotData(i);
+		if ( bagSlot.itemId == nItemId && bagSlot.itemCount > 0 )
+		{
+			vSlot.push_back(i);
+			remaining -= bagSlot.itemCount;
+		}
+	}
+}
+
+int Player::BirthdayIsRight(std::string cardId)
+{
+	if ( cardId.length() != 18 )
+		return 0;
+	int year = (cardId[6] - '0') * 1000 + (cardId[7] - '0') * 100 + (cardId[8] - '0') * 10 + (cardId[9] - '0');
+	int month = (cardId[10] - '0') * 10 + (cardId[11] - '0');
+	int day = (cardId[12] - '0') * 10 + (cardId[13] - '0');
+	if ( month < 1 || month > 12 )
+		return 0;
+	int maxDay = GetDay(year, month);
+	if ( day < 1 || day > maxDay )
+		return 0;
+	return 1;
+}
+
+int Player::GetDay(int year, int month)
+{
+	int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	if ( month < 1 || month > 12 )
+		return 0;
+	int maxDay = days[month - 1];
+	if ( month == 2 )
+	{
+		if ( (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 )
+			maxDay = 29;
+	}
+	return maxDay;
+}
+
+bool Player::CheckString(std::string card)
+{
+	const char* szStr = "1234567890";
+	int nLen1 = card.length();
+	int nLen2 = strlen(szStr);
+	for ( int i = 0; i < nLen1; ++i )
+	{
+		bool bFound = false;
+		for ( int j = 0; j < nLen2; ++j )
+		{
+			if ( card[i] == szStr[j] )
+			{
+				bFound = true;
+				break;
+			}
+		}
+		if ( !bFound )
+		{
+			if ( i == 17 && (card[17] == 'x' || card[17] == 'X') )
+				return true;
+			return false;
+		}
+	}
+	return true;
+}
+
+void Player::moveToReviveRegion(bool bInAct)
+{
+	if ( !m_pMap )
+		return;
+	int32_t region = m_pMap->getReviveRegion(this);
+	CfgData* pCfg = CFG_DATA;
+	CfgMapRegion* pCfgMapRegion = pCfg->getMapRegion(region);
+	if ( !pCfgMapRegion )
+		return;
+	if ( !pCfg->getMap(pCfgMapRegion->mapid) )
+		return;
+	MapManager* pMM = Answer::Singleton<MapManager>::instance();
+	Map* pTargetMap = pMM->GetMap(pCfgMapRegion->mapid);
+	if ( !pTargetMap )
+		return;
+	Position pos = pTargetMap->getRandomWalkablePositionInRegion(pCfgMapRegion);
+	if ( pos.x >= 0 && pos.y >= 0 )
+	{
+		if ( m_pMap == pTargetMap )
+			instantMove(pos.x, pos.y, InstanceMoveReason::IMR_FU_HUO, 0);
+		else
+			switchMap(pTargetMap, pos.x, pos.y, 1);
+	}
+}
+
+int32_t Player::getActivityBirthRegion(Int32Vector* pRegsions) const
+{
+	if ( !pRegsions )
+		return 0;
+	int32_t lenth = pRegsions->size();
+	if ( lenth == 1 )
+		return pRegsions->at(0);
+	int32_t nIndex = RANDOM.generate(0, lenth - 1);
+	return pRegsions->at(nIndex);
+}
+
+Answer::NetPacket* Player::getOtherQueryInfo()
+{
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* packet = pGS->popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x281C);
+	if ( !packet )
+		return nullptr;
+	packet->writeInt64(getCid());
+	packet->writeInt32(getSid());
+	packet->writeUTF8(getName());
+	packet->writeInt32(getLevel());
+	packet->writeInt8(getJob());
+	packet->writeInt32(0);
+	packet->writeUTF8(getFamilyName());
+	packet->writeInt64(getFamilyId());
+	m_extCharTencent.AppendInfo(packet);
+	GetEquip().PackageEquipInfo(packet);
+	appendCharAttrInfo(packet);
+	packet->writeInt32(getDeadTime());
+	packet->writeInt32(GetAllMoneyRate());
+	packet->writeInt32(getPkValue());
+	packet->writeInt32(GetCharWing().GetHuanHua());
+	packet->writeInt8(10);
+	for ( int8_t i = 0; i <= 9; ++i )
+	{
+		packet->writeInt8(i);
+		packet->writeInt32(GetEquip().GetPosLevel(i));
+	}
+	packet->writeInt8(10);
+	for ( int8_t i = 0; i <= 9; ++i )
+	{
+		packet->writeInt8(i);
+		packet->writeInt32(GetEquip().getStrenGthenLevel(i));
+	}
+	GetEquip().PackageGemInfo(packet);
+	m_CGoblin.AppendInfo(packet);
+	GetShiZhuang().PackShiZhuangInfo(packet);
+	GetEquip().PackageShenYaoPosLevelUp(packet);
+	packet->setSize(packet->getWOffset());
+	return packet;
+}
+
+void Player::UpdateKilledByPlayer(CharId_t KillerId)
+{
+	GameService* pGS = GAME_SERVICE;
+	if ( pGS->getLine() != 9 )
+	{
+		int8_t connid = getConnId();
+		Answer::NetPacket* packet = pGS->popNetpacket(connid, Answer::PackType::PACK_PROC, 0x4EB1);
+		if ( packet )
+		{
+			packet->writeInt32(getGateIndex());
+			packet->writeInt64(KillerId);
+			packet->setSize(packet->getWOffset());
+			pGS->sendPacket(connid, packet);
+		}
+	}
+}
+
+void Player::sendToastInfo(CharId_t cid, CharId_t beCid)
+{
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* packet = pGS->popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x27B5);
+	if ( !packet )
+		return;
+	packet->writeInt64(cid);
+	packet->writeInt64(beCid);
+	packet->setSize(packet->getWOffset());
+	pGS->sendPacketTo(connid, getGateIndex(), packet);
+}
+
+void Player::sendActivityState()
+{
+	m_PlayerDailyActivity.SendDailyActivityInfo();
+}
+
+void Player::addNetPacket(Answer::NetPacket *inPacket, uint32_t rsize)
+{
+	if ( !inPacket || inPacket->getSize() <= rsize )
+		return;
+	uint32_t size = inPacket->getSize();
+	uint16_t proc = inPacket->getProc();
+	Answer::PackType type = inPacket->getType();
+	int8_t connid = getConnId();
+	GameService* pGS = GAME_SERVICE;
+	Answer::NetPacket* packet = pGS->popNetpacket(connid, type, proc, size);
+	if ( packet )
+	{
+		uint32_t remainSize = inPacket->getSize() - rsize;
+		packet->write(inPacket->getBuffer() + rsize, remainSize);
+		packet->setSize(remainSize);
+		m_netPackets.push(packet);
+	}
+}
+
+void Player::appendInfo(Answer::NetPacket *packet)
+{
+	if ( !packet )
+		return;
+	packet->writeInt8(getType());
+	packet->writeInt64(getCid());
+	packet->writeUTF8(getName());
+	packet->writeInt64(getFamilyId());
+	packet->writeInt8(getFamilyPosition());
+	packet->writeUTF8(getFamilyName());
+	packet->writeInt8(getSex());
+	packet->writeInt8(getJob());
+	packet->writeInt8(0);
+	packet->writeInt16(getLevel());
+	packet->writeInt8(m_chr.pk_mode);
+	packet->writeInt32(m_chr.pk_value);
+	packet->writeInt8(GetFightChecker().IsBuleName());
+	int32_t pkProtect = getPkProtectTime() - getNow();
+	if ( pkProtect <= 0 )
+		pkProtect = 0;
+	packet->writeInt32(pkProtect);
+	Position curTile = getCurrentTile();
+	packet->writeInt16(curTile.x);
+	packet->writeInt16(curTile.y);
+	Position targetTile = getTargetTile();
+	packet->writeInt16(targetTile.x);
+	packet->writeInt16(targetTile.y);
+	packet->writeInt32(getHp());
+	packet->writeInt32(getMp());
+	packet->writeInt32(getMaxHp());
+	packet->writeInt32(getMaxMp());
+	packageBuffList(packet);
+	packet->writeInt16(getSpeed());
+	packet->writeInt8(getHead());
+	packet->writeInt8(GetTeamStatus());
+	packet->writeInt32(getAction());
+	packet->writeInt8(m_PlantState);
+	packet->writeInt32(getMainWeaponId());
+	packet->writeInt32(getClothesId());
+	packet->writeInt32(getWingId());
+	packet->writeInt32(m_CGoblin.GetWingEquipPolishSuitId());
+	packet->writeInt8(GetPlayerVip().GetVipType());
+	packet->writeInt8(GetPlayerVip().GetVipLevel());
+	packet->writeInt8(GetCharJueWei().GetJueWei());
+	GetCharTitle().AppendDressTitle(packet);
+	packet->writeInt8(GetCamp());
+	packet->writeInt8(0);
+	packet->writeInt32(getShiZhuangWeapon());
+	packet->writeInt32(getShiZhuangClothes());
+	packet->writeInt32(GetShiZhuang().GetEffectId());
+	packet->writeInt32(getShiZhuangFeet());
+	m_extCharTencent.AppendInfo(packet);
+	m_extVplan.AppendYYInfo(packet);
+	m_extVplan.AppendSwVipInfo(packet);
+	packet->writeInt8(getConnId());
+	packet->writeInt8(0);
+	packet->writeInt32(GetCharCarrier().GetCarrierId());
+	packet->writeInt8(GetActState());
+	packet->writeInt32(getRecord(3));
+	packet->writeInt8(GetCharPet().IsFitting());
+	packet->writeInt32(getRecord(1148));
+	packet->writeInt32(getRecord(1153));
+}
+
+void Player::RecalcAttr()
+{
+	recalcAttr(false, false);
 }

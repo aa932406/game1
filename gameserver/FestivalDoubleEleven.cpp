@@ -1391,9 +1391,20 @@ void CFestivalDoubleEleven::OnRecharge(Player* player, int32_t nValue)
 
 void CFestivalDoubleEleven::RefreshMysteryShopItem()
 {
-    // 刷新神秘商店物品
-    // 遍历所有玩家，刷新其神秘商店数据
     broadcastRefreshMysteryShop();
+}
+
+bool CFestivalDoubleEleven::RefreshMysteryShopItem( Player* player )
+{
+    if ( !player )
+    {
+        return false;
+    }
+    if ( !IsInTime( FAT_MYSTERY_SHOP ) )
+    {
+        return false;
+    }
+    return true;
 }
 
 

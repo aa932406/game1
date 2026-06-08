@@ -505,12 +505,12 @@ bool Map::CanJump() const
 
 bool Map::IsXinMoMap() const
 {
-	return false; // XinMo map config not yet ported
+	return m_cfgmap.type == 1 && m_cfgmap.param == 25;
 }
 
 bool Map::IsXinMoCun() const
 {
-	return false; // XinMo village config not yet ported
+	return m_cfgmap.type == 1 && m_cfgmap.param == 24;
 }
 
 //Kingdom* Map::getKingdom() const
@@ -676,7 +676,7 @@ void Map::sendSelfEnterArea( Player* player, const Position& oldPos )
 	Position oldArea = getAreaByPos( oldPos );
 	Position newArea = getAreaByPos( player->getCurrentPixel() );
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SELF_ENTER_AREA );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_SELF_ENTER_AREA );
 	if ( NULL == packet )
 	{
 		return;
@@ -687,7 +687,7 @@ void Map::sendSelfEnterArea( Player* player, const Position& oldPos )
 	packet->writeInt32( newArea.x );
 	packet->writeInt32( newArea.y );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void Map::getAreaUnits( const PositionVector& areas, UnitList& outUnits )
@@ -803,7 +803,7 @@ NetPacket* Map::packageUnitEnterAreaBuff( const UnitList& inList )
 		return NULL;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_UNIT_BUFF_LIST );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_UNIT_BUFF_LIST );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -844,7 +844,7 @@ NetPacket* Map::packageUnitEnterArea( const UnitList& inList )
 		return NULL;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_UNIT_ENTER_AREA );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_UNIT_ENTER_AREA );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -929,12 +929,12 @@ void Map::checkAreaChange( Unit *pUnit, const Position& oldPos )
 		NetPacket *packet = packageUnitEnterArea( newUnits );
 		if ( packet != NULL )
 		{
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 		}
 		NetPacket* packetBuff = packageUnitEnterAreaBuff( newUnits );
 		if ( NULL != packetBuff )
 		{
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packetBuff );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packetBuff );
 		}
 		player->setSyncToTeamFlag();
 	}
@@ -1698,7 +1698,7 @@ void Map::sendEnterMap(Player *player, int32_t x, int32_t y)
 {
 	if (player != NULL)
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_ENTER_MAP);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_ENTER_MAP);
 		if (NULL == packet)
 		{
 			return;
@@ -1710,7 +1710,7 @@ void Map::sendEnterMap(Player *player, int32_t x, int32_t y)
 		packet->writeInt32(y);
 		packet->writeInt32(GAME_SERVICE.getLine());
 		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
+		GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
 	}
 }
 
@@ -1725,7 +1725,7 @@ void Map::sendPlayersInMap(Player *player)
 	PlayerList::iterator eiter = m_players.end();
 	while ( iter != eiter )
 	{
-		NetPacket *playerPacket = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_PLYAER_INTO_MAP);
+		NetPacket *playerPacket = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_PLYAER_INTO_MAP);
 		if ( NULL == playerPacket )
 		{
 			return;
@@ -1757,7 +1757,7 @@ void Map::sendPlayersInMap(Player *player)
 			playerPacket->writeInt32( playerCount );
 			playerPacket->setWOffset( oldwoffset );
 			playerPacket->setSize( oldwoffset );
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), playerPacket );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), playerPacket );
 		}
 		else
 		{
@@ -1777,7 +1777,7 @@ void Map::sendPetsInMap( Player* player )
 	ObjPetList::iterator eiter = m_pets.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_PET_INTO_MAP);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_PET_INTO_MAP);
 		if ( NULL == packet )
 		{
 			return;
@@ -1809,7 +1809,7 @@ void Map::sendPetsInMap( Player* player )
 			packet->writeInt16( nCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
+			GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
 		}
 		else
 		{
@@ -1829,7 +1829,7 @@ void Map::sendMonstersInMap( Player *player )
 	MonsterList::iterator eiter = m_monsters.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_MONSTER_INTO_MAP);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_MONSTER_INTO_MAP);
 		if (NULL == packet)
 		{
 			return;
@@ -1859,7 +1859,7 @@ void Map::sendMonstersInMap( Player *player )
 			packet->writeInt32( monsterCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( oldwoffset );
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 		}
 		else
 		{
@@ -1902,7 +1902,7 @@ void Map::sendNpcsInMap(Player *player)
 	NpcList::iterator eiter = m_npcs.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_NPC_INTO_MAP);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_NPC_INTO_MAP);
 		if (NULL == packet)
 		{
 			return;
@@ -1932,7 +1932,7 @@ void Map::sendNpcsInMap(Player *player)
 			packet->writeInt32( npcCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( oldwoffset );
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 		}
 		else
 		{
@@ -1952,7 +1952,7 @@ void Map::sendDropItemsInMap(Player *player)
 	DropItemGroupList::iterator eiter = m_dropItems.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_ADD_DROP_ITEM);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_ADD_DROP_ITEM);
 		if ( NULL == packet )
 		{
 			return;
@@ -1982,7 +1982,7 @@ void Map::sendDropItemsInMap(Player *player)
 			packet->writeInt16( nCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( oldwoffset );
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 		}
 		else
 		{
@@ -2002,7 +2002,7 @@ void Map::sendPlantsInMap(Player *player)
 	PlantList::iterator eiter = m_plants.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_ADD_PLANT);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_ADD_PLANT);
 		if (NULL == packet)
 		{
 			return;
@@ -2032,7 +2032,7 @@ void Map::sendPlantsInMap(Player *player)
 			packet->writeInt16( plantCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 		}
 		else
 		{
@@ -2052,7 +2052,7 @@ void Map::sendTrailersInMap( Player *player )
 	TrailerList::iterator eiter = m_trailers.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_TRAILER_INTO_MAP);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_TRAILER_INTO_MAP);
 		if ( NULL == packet )
 		{
 			return;
@@ -2082,7 +2082,7 @@ void Map::sendTrailersInMap( Player *player )
 			packet->writeInt16( trailerCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
+			GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
 		}
 		else
 		{
@@ -2102,7 +2102,7 @@ void Map::sendTrapsInMap( Player *player )
 	TrapList::iterator eiter = m_traps.end();
 	while ( iter != eiter )
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_ADD_TRAP );
+		NetPacket *packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_ADD_TRAP );
 		if ( NULL == packet )
 		{
 			return;
@@ -2132,7 +2132,7 @@ void Map::sendTrapsInMap( Player *player )
 			packet->writeInt16( trapCount );
 			packet->setWOffset( oldwoffset );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
+			GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
 		}
 		else
 		{
@@ -2148,7 +2148,7 @@ void Map::sendTeamsInMap( Player *player )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_TEAMS_AROUND);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_TEAMS_AROUND);
 	if (NULL == packet)
 	{
 		return;
@@ -2176,7 +2176,7 @@ void Map::sendTeamsInMap( Player *player )
 	packet->writeInt32( count );
 	packet->setWOffset( oldwoffset );
 	packet->setSize( oldwoffset );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void Map::broadcastPlayerIntoMap(Player *player)
@@ -2186,7 +2186,7 @@ void Map::broadcastPlayerIntoMap(Player *player)
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PLYAER_INTO_MAP );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_PLYAER_INTO_MAP );
 	if (NULL == packet)
 	{
 		return;
@@ -2212,7 +2212,7 @@ void Map::broadcastNpcIntoMap(Npc *npc)
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_NPC_INTO_MAP);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_NPC_INTO_MAP);
 	if (NULL == packet)
 	{
 		return;
@@ -2230,7 +2230,7 @@ void Map::broadcastDropItemIntoMap(CDropItemGroup *dropItemGroup)
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_ADD_DROP_ITEM);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_ADD_DROP_ITEM);
 	if (NULL == packet)
 	{
 		return;
@@ -2248,7 +2248,7 @@ void Map::broadcastPlantIntoMap(Plant *plant)
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_ADD_PLANT);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_ADD_PLANT);
 	if (NULL == packet)
 	{
 		return;
@@ -2266,7 +2266,7 @@ void Map::broadcastTrailerIntoMap(Trailer *trailer)
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_TRAILER_INTO_MAP);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_TRAILER_INTO_MAP);
 	if (NULL == packet)
 	{
 		return;
@@ -2284,7 +2284,7 @@ void Map::broadcastPetIntoMap( CObjPet *pet )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_PET_INTO_MAP);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_PET_INTO_MAP);
 	if (NULL == packet)
 	{
 		return;
@@ -2305,7 +2305,7 @@ void Map::broadcastTrapIntoMap( Trap *trap )
 {
 	if (trap != NULL)
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_ADD_TRAP );
+		NetPacket *packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_ADD_TRAP );
 		if (NULL == packet)
 		{
 			return;
@@ -2891,7 +2891,7 @@ void Map::SendStacksInMap( Player *player )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_STACKS_ADD_INTO_MAP );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_STACKS_ADD_INTO_MAP );
 	if ( NULL == packet )
 	{
 		return;
@@ -2899,7 +2899,7 @@ void Map::SendStacksInMap( Player *player )
 
 	appendStack( packet, m_lstStack );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
 }
 
 void Map::SendBuffList( Player* player )
@@ -2915,7 +2915,7 @@ void Map::SendBuffList( Player* player )
 	if ( outUnits.size() > 0 )
 	{
 		UnitList::iterator it = outUnits.begin();
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_UNIT_BUFF_LIST);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(player->getConnId(), PACK_DISPATCH, SM_UNIT_BUFF_LIST);
 		if (NULL == packet)
 		{
 			return;
@@ -2926,7 +2926,7 @@ void Map::SendBuffList( Player* player )
 			(*it)->PacketBuffList( packet );
 		}
 		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
+		GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
 	}
 }
 
@@ -2954,7 +2954,7 @@ void Map::AddStack( const PosList& posList )
 		m_lstStack.push_back( *iter );
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_STACKS_ADD_INTO_MAP );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_STACKS_ADD_INTO_MAP );
 	if ( NULL == packet )
 	{
 		return;
@@ -2972,7 +2972,7 @@ void Map::RemoveStack( const PosList& posList )
 		removeStack( *iter );
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_STACKS_REMOVE_FROM_MAP );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_STACKS_REMOVE_FROM_MAP );
 	if ( NULL == packet )
 	{
 		return;

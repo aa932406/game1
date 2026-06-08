@@ -245,7 +245,7 @@ int32_t CExtCharBag::patchUseItem( int32_t slot, int32_t count )
 
 	if (m_pPlayer->getTick() - m_lastItemTick[cfgItem->cd_group] < m_itemCD[cfgItem->cd_group])
 	{
-		return GAME_SERVICE.replyfailure(m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, ERR_ITEM_CD);
+		return replyfailure(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, ERR_ITEM_CD);
 	}
 
 	 int32_t err = ITEM_EFFECT.effect( slotData.itemId, *m_pPlayer, *m_pPlayer, count );
@@ -257,7 +257,7 @@ int32_t CExtCharBag::patchUseItem( int32_t slot, int32_t count )
 
 		 m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
 
-		 GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, cfgItem->id);
+		 replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, cfgItem->id);
 	 }
 
 	 return err;
@@ -295,7 +295,7 @@ int32_t CExtCharBag::useItem( int32_t slot, int32_t type )
 
 	if (m_pPlayer->getTick() - m_lastItemTick[cfgItem->cd_group] < m_itemCD[cfgItem->cd_group])
 	{
-		return GAME_SERVICE.replyfailure(m_pPlayer->getGateIndex(), CM_USE_ITEM, ERR_ITEM_CD);
+		return replyfailure(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_USE_ITEM, ERR_ITEM_CD);
 	}
 	if ( slotData.itemId == ISI_XIAO_JV_HUA )
 	{
@@ -324,7 +324,7 @@ int32_t CExtCharBag::useItem( int32_t slot, int32_t type )
 
 		m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
 
-		GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), CM_USE_ITEM, cfgItem->id);
+		replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_USE_ITEM, cfgItem->id);
 	}
 
 	return err;
@@ -779,13 +779,13 @@ int32_t	CExtCharBag::OnAskRansomItem( Answer::NetPacket *inPacket )
 	EQUIP_RANSOM.DeleteRansom( EquipId );
 	SendRansomInfo();
 	RansomGongGao( EquipInfo, NeedGold );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc());
+	replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc());
 	return ERR_OK;
 }
 
 void CExtCharBag::RansomGongGao( DropEquipInfo EquipInfo, int32_t Gold )
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if (NULL == packet)
 	{
 		return;
@@ -812,7 +812,7 @@ void CExtCharBag::RansomGongGao( DropEquipInfo EquipInfo, int32_t Gold )
 		packet->writeInt64( EquipInfo.srcId );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast(packet);
+	worldBroadcast( m_pPlayer->getConnId(), packet );
 }
 
 int32_t CExtCharBag::buyBackChrShopItem(int32_t index,int32_t itemID,int32_t itemClass)
@@ -981,7 +981,7 @@ void CExtCharBag::SendLimitCount()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_CHAR_SHOP_LINIT );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_CHAR_SHOP_LINIT );
 	if (NULL == packet)
 	{
 		return;
@@ -995,7 +995,7 @@ void CExtCharBag::SendLimitCount()
 		packet->writeInt32( it->second );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 const MemChrBag& CExtCharBag::GetSlotData( int32_t slot ) const
@@ -1185,7 +1185,7 @@ void CExtCharBag::SendBagItem()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_BAG_ITEMS);
+	NetPacket *packet = popNetpacket(m_pPlayer->getConnId(), PACK_DISPATCH, SM_BAG_ITEMS);
 	if (NULL == packet)
 	{
 		return;
@@ -1217,7 +1217,7 @@ void CExtCharBag::SendBagItem()
 	packet->setWOffset( endOffSet );
 
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CExtCharBag::SendBagInfo()
@@ -1227,7 +1227,7 @@ void CExtCharBag::SendBagInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_BAG_INFO );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_BAG_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -1238,7 +1238,7 @@ void CExtCharBag::SendBagInfo()
 	packet->writeInt32( m_bagInfo.m_nLeftSeconds );
 
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CExtCharBag::SendBagSellItem()
@@ -1248,7 +1248,7 @@ void CExtCharBag::SendBagSellItem()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_BAG_SELL_ITEMS );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_BAG_SELL_ITEMS );
 	if (NULL == packet)
 	{
 		return;
@@ -1279,7 +1279,7 @@ void CExtCharBag::SendBagSellItem()
 	packet->setWOffset( endOffSet );
 
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CExtCharBag::SaveDBData( PlayerDBData& dbData )
@@ -1326,12 +1326,12 @@ void CExtCharBag::sendGoldCashChange(int32_t type, int32_t addon, BenefitType be
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_GOLD_CASH_CHANGE);
+	NetPacket *packet = popNetpacket(m_pPlayer->getConnId(), PACK_DISPATCH, SM_GOLD_CASH_CHANGE);
 	packet->writeInt32(type);
 	packet->writeInt32(addon);
 	packet->writeInt32(benefitType);
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 int32_t CExtCharBag::GetItemCount( const Int32Vector& vSlot, int8_t nClass, int32_t nId ) const
@@ -1669,7 +1669,7 @@ bool CExtCharBag::addItem( const MemChrBag& item, ITEM_ADD_REASON addReason )
 		}
 	}
 
-	GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), CM_QUERY_BAG_ITEMS, ERR_BAG_IS_FULL );
+	replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_QUERY_BAG_ITEMS, ERR_BAG_IS_FULL );
 	return false;
 }
 
@@ -2070,7 +2070,7 @@ bool CExtCharBag::sendDirty()
 		return false;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_BAG_DIRTY );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_BAG_DIRTY );
 	if (NULL == packet)
 	{
 		return false;
@@ -2104,7 +2104,7 @@ bool CExtCharBag::sendDirty()
 	packet->setWOffset( endOffSet );
 
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 
 	return true;
 }
@@ -2489,7 +2489,7 @@ void CExtCharBag::SendRansomInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_RANSOM_INFO );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_RANSOM_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -2498,7 +2498,7 @@ void CExtCharBag::SendRansomInfo()
 	EQUIP_RANSOM.GetRansomInfo( m_pPlayer->getCid(), EquipList );
 	EQUIP_RANSOM.PackRansomInfo( packet, EquipList );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CExtCharBag::SendSpoilsInfo()
@@ -2508,7 +2508,7 @@ void CExtCharBag::SendSpoilsInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_SPOILS_INFO );
+	NetPacket *packet = popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_SPOILS_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -2517,7 +2517,7 @@ void CExtCharBag::SendSpoilsInfo()
 	EQUIP_RANSOM.GetSpoilsInfo( m_pPlayer->getCid(), EquipList );
 	EQUIP_RANSOM.PackRansomInfo( packet, EquipList );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 
@@ -2721,7 +2721,7 @@ int32_t CExtCharBag::onUseItem( Answer::NetPacket *inPacket )
 			sendUseBroadcast( cfgItem->broadcast, m_pPlayer->getName(), m_pPlayer->getCid(), slotData.itemId );
 		}
 
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_USE_ITEM, cfgItem->id );
+		replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_USE_ITEM, cfgItem->id );
 	}
 
 	return err;
@@ -2792,7 +2792,7 @@ int32_t CExtCharBag::onPatchUseItem( Answer::NetPacket *inPacket )
 		}
 
 		m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, nItemId );
+		replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, nItemId );
 		err = ERR_OK;
 	}
 	else
@@ -2805,7 +2805,7 @@ int32_t CExtCharBag::onPatchUseItem( Answer::NetPacket *inPacket )
 			SetSlotData( slot, slotData, IDCR_BAG_USE, count );
 
 			m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
-			GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, cfgItem->id );
+			replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_PATCH_USE_ITEM, cfgItem->id );
 		}
 	}
 
@@ -2870,7 +2870,7 @@ int32_t CExtCharBag::onSelectItem( Answer::NetPacket *inPacket )
 		return ERR_SYETEM_ERR;
 	}
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_SELECT_ITEM, nId );
+	replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_SELECT_ITEM, nId );
 	return ERR_OK;
 }
 
@@ -2933,7 +2933,7 @@ int32_t CExtCharBag::onDiscardItem( Answer::NetPacket *inPacket )
 		CleanSlot( nSlot, IDCR_DISCARD );
 	}
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_DISCARD_ITEM, nSlot );
+	replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_DISCARD_ITEM, nSlot );
 	return ERR_OK;
 }
 
@@ -2980,7 +2980,7 @@ int32_t CExtCharBag::onUseMutiItem( Answer::NetPacket *inPacket )
 		m_pPlayer->GetTask().updateTaskUseItem( nId, nCount );
 		RemoveItem( ItemData( nId, IC_NORMAL, nCount ), IDCR_BAG_USE );
 		m_lastItemTick[cfgItem->cd_group] = m_pPlayer->getTick();
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_USE_MMULTI_ITEM, nId );
+		replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_USE_MMULTI_ITEM, nId );
 	}
 
 	return err;
@@ -3052,7 +3052,7 @@ bool CExtCharBag::canUseItem( int32_t nSlot, const CfgItem* cfgItem )
 
 	if ( m_pPlayer->getTick() - m_lastItemTick[cfgItem->cd_group] < m_itemCD[cfgItem->cd_group] )
 	{
-		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), CM_USE_ITEM, ERR_ITEM_CD );
+		replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_USE_ITEM, ERR_ITEM_CD );
 		return false;
 	}
 
@@ -3127,7 +3127,7 @@ bool CExtCharBag::autoUseItem( const MemChrBag& item )
 
 void CExtCharBag::sendUseBroadcast( int32_t nBroadcast, const std::string& p_name, CharId_t cid, int32_t nItemId )
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket* packet = popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet )
 	{
 		return;
@@ -3138,7 +3138,7 @@ void CExtCharBag::sendUseBroadcast( int32_t nBroadcast, const std::string& p_nam
 	packet->writeInt64( cid );
 	packet->writeInt32( nItemId );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	worldBroadcast( m_pPlayer->getConnId(), packet );
 }
 
 void CExtCharBag::CleanItemId( int32_t nId, int32_t nReason, int8_t nClass )

@@ -161,7 +161,7 @@ void CKaiFuHuoDong::SendHuoDongState( Player* pPlayer )
 			HDState[it->second.Type].CanGetReward++;
 		}
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_KAI_FU_HUO_DONG_STATE);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_KAI_FU_HUO_DONG_STATE);
 	if (NULL == packet)
 	{
 		return;
@@ -176,7 +176,7 @@ void CKaiFuHuoDong::SendHuoDongState( Player* pPlayer )
 		packet->writeInt8( Hdit->second.CanGetReward );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(pPlayer->getConnId(), pPlayer->getGateIndex(), packet);
 }
 
 void CKaiFuHuoDong::AddRewardRecord( Player* pPlayer, int32_t Index )
@@ -394,7 +394,7 @@ void CKaiFuHuoDong::SendHuoDongInfo( Player* pPlayer,int8_t Type )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_SEND_KAI_FU_HUO_DONG_INFO);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_KAI_FU_HUO_DONG_INFO);
 	if (NULL == packet)
 	{
 		return;
@@ -463,7 +463,7 @@ void CKaiFuHuoDong::SendHuoDongInfo( Player* pPlayer,int8_t Type )
 		}
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(pPlayer->getConnId(), pPlayer->getGateIndex(), packet);	
 }
 
 int32_t CKaiFuHuoDong::AskInfo( Player* pPlayer, Answer::NetPacket *inPacket )
@@ -687,11 +687,11 @@ void CKaiFuHuoDong::SendKaiFuHuoDongIcon( Player* pPlayer )
 	{
 		return;
 	}
- 	if ( GetDiffDay() > m_HDLastDay + 2 )
- 	{
- 		return;
- 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
+  	if ( GetDiffDay() > m_HDLastDay + 2 )
+  	{
+  		return;
+  	}
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
 	if (NULL == packet)
 	{
 		return;
@@ -705,7 +705,7 @@ void CKaiFuHuoDong::SendKaiFuHuoDongIcon( Player* pPlayer )
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(pPlayer->getConnId(), pPlayer->getGateIndex(), packet);	
 }
 
 ShowIcon CKaiFuHuoDong::GetKaiFuHuoDongIconStu( Player *pPlayer )
@@ -774,7 +774,7 @@ void CKaiFuHuoDong::GongGao( Player* pPlayer, int32_t GongGaoId, int32_t Index )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet )
 	{
 		return;
@@ -785,7 +785,7 @@ void CKaiFuHuoDong::GongGao( Player* pPlayer, int32_t GongGaoId, int32_t Index )
 	packet->writeInt32( Index );
 	packet->setSize( packet->getWOffset() );
 	packet->setProc( SM_SEND_NOTICE_PARAM );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast(pPlayer->getConnId(), packet );
 }
 
 int32_t CKaiFuHuoDong::GetLimitCount( int32_t index )
@@ -945,7 +945,7 @@ void CKaiFuHuoDong::SendBossFirstKillInfo( Player* pPlayer )
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CED );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CED );
 	if ( NULL == packet )
 	{
 		return;
@@ -967,7 +967,7 @@ void CKaiFuHuoDong::SendBossFirstKillInfo( Player* pPlayer )
 	packet->writeInt32( Count );
 	packet->setWOffset( NewWoffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo(pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 }
 
 bool CKaiFuHuoDong::HaveTeHuiGift( Player* pPlayer )
@@ -1038,7 +1038,7 @@ void CKaiFuHuoDong::SendKaiFuPetIcon( Player* pPlayer )
 		return;
 	}
 	// Send icon manually since Player::SendIconState is not available
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
 	if (NULL == packet)
 	{
 		return;
@@ -1051,7 +1051,7 @@ void CKaiFuHuoDong::SendKaiFuPetIcon( Player* pPlayer )
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(pPlayer->getConnId(), pPlayer->getGateIndex(), packet);
 }
 
 int32_t CKaiFuHuoDong::GetKaiFuPetStartDay()
@@ -1424,7 +1424,7 @@ void CKaiFuHuoDong::OnDaySwitch()
 	
 	if ( m_nDay == m_nEndDay )
 	{
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CC3 );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CC3 );
 		if ( packet )
 		{
 			packet->writeInt32( m_nIcon );
@@ -1434,7 +1434,7 @@ void CKaiFuHuoDong::OnDaySwitch()
 			packet->writeInt32( 0 );
 			packet->writeInt8( 0 );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( 0, packet );
 		}
 	}
 	
@@ -1480,7 +1480,7 @@ void CKaiFuHuoDong::SendIconState( Player* player )
 		ShowIcon stu;
 		getIconState( stu, player );
 		// Send icon directly
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ONE_ICON );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_SEND_ONE_ICON );
 		if ( packet )
 		{
 			packet->writeInt32( stu.nId );
@@ -1490,7 +1490,7 @@ void CKaiFuHuoDong::SendIconState( Player* player )
 			packet->writeInt32( stu.IconRight );
 			packet->writeInt8( stu.Effects );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+			GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 		}
 	}
 }
@@ -1511,7 +1511,7 @@ void CKaiFuHuoDong::SendActivityInfo( Player* player )
 	if ( !player || GAME_SERVICE.getLine() == 9 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2EBD );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, 0x2EBD );
 	if ( !packet )
 		return;
 	
@@ -1521,7 +1521,7 @@ void CKaiFuHuoDong::SendActivityInfo( Player* player )
 		packet->writeInt8( ( nRecord >> i ) & 1 );
 	
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CKaiFuHuoDong::GetBossIconState( IconStateList& IconList )
@@ -1550,7 +1550,7 @@ void CKaiFuHuoDong::SendBossIconState()
 	if ( GAME_SERVICE.getLine() != 1 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CC3 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CC3 );
 	if ( !packet )
 		return;
 	
@@ -1563,7 +1563,7 @@ void CKaiFuHuoDong::SendBossIconState()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CKaiFuHuoDong::CheckBoss()
@@ -1605,7 +1605,7 @@ void CKaiFuHuoDong::BroadcastBossKilled( const std::string* name, CharId_t cid )
 	if ( GAME_SERVICE.getLine() == 9 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 	
@@ -1613,7 +1613,7 @@ void CKaiFuHuoDong::BroadcastBossKilled( const std::string* name, CharId_t cid )
 	packet->writeUTF8( *name );
 	packet->writeInt64( cid );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CKaiFuHuoDong::broadcastBossStart()
@@ -1621,13 +1621,13 @@ void CKaiFuHuoDong::broadcastBossStart()
 	if ( GAME_SERVICE.getLine() == 9 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 	
 	packet->writeInt32( m_nBossStartBroadcast );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CKaiFuHuoDong::broadcastBossEnd()
@@ -1635,13 +1635,13 @@ void CKaiFuHuoDong::broadcastBossEnd()
 	if ( GAME_SERVICE.getLine() == 9 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 	
 	packet->writeInt32( m_nBossEndBroadcast );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 int32_t CKaiFuHuoDong::GetRechargeGift( Player* player, int32_t nIndex )
@@ -2210,7 +2210,7 @@ void CKaiFuHuoDong::sendBroadcast( int32_t nBroadId, CharId_t cid, const std::st
 	if ( GAME_SERVICE.getLine() == 9 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 	
@@ -2219,7 +2219,7 @@ void CKaiFuHuoDong::sendBroadcast( int32_t nBroadId, CharId_t cid, const std::st
 	packet->writeInt64( cid );
 	packet->setSize( packet->getWOffset() );
 	packet->setProc( 0x2CD6 );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CKaiFuHuoDong::SendResult( Player* pPlayer, int8_t Type, int32_t Index, int32_t param )
@@ -2227,7 +2227,7 @@ void CKaiFuHuoDong::SendResult( Player* pPlayer, int8_t Type, int32_t Index, int
 	if ( !pPlayer || GAME_SERVICE.getLine() == 9 )
 		return;
 	
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2EBE );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), PACK_DISPATCH, 0x2EBE );
 	if ( !packet )
 		return;
 	
@@ -2235,5 +2235,5 @@ void CKaiFuHuoDong::SendResult( Player* pPlayer, int8_t Type, int32_t Index, int
 	packet->writeInt32( Index );
 	packet->writeInt32( param );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 }

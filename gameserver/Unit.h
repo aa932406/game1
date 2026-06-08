@@ -94,14 +94,14 @@ public:
 	//virtual int32_t addBuffAttr(int32_t index, int32_t rate, int32_t addon);
 	virtual void postDamage(int32_t damge, UnitHandle launcher) = 0;
 	virtual bool isFriendSide(Unit *pUnit);
-	virtual bool checkSkillTarget(CfgSkill *pCfg, Unit *pUnit);				// ¼ì²â¼¼ÄÜÊÇ·ñ¿ÉÒÔ¶ÔÄ¿±êÊ©·Å
+	virtual bool checkSkillTarget(CfgSkill *pCfg, Unit *pUnit);				// ï¿½ï¿½â¼¼ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ô¶ï¿½Ä¿ï¿½ï¿½Ê©ï¿½ï¿½
 	virtual bool needMapBroadcast();
 	virtual Position getCurrentTile();
 	virtual void onArriveTarget();
 	virtual bool isBoss() const;
 	virtual int32_t GetCalLevel() const;
 
-	virtual int32_t GetHurtIncreace() const;	// ÉËº¦¼ÓÉî
+	virtual int32_t GetHurtIncreace() const;	// ï¿½Ëºï¿½ï¿½ï¿½ï¿½ï¿½
 
 	int32_t GetPosX() const;
 	int32_t GetPosY() const;
@@ -110,15 +110,17 @@ public:
 	int32_t	AddAttrValue( CObjAttrs::Index_T const nIdx, int32_t nAddVal );
 	int32_t	AddBuffAttrRatio( CObjAttrs::Index_T const nIdx, int32_t nRate );
 	int32_t	AddBuffAttrValue( CObjAttrs::Index_T const nIdx, int32_t nAddVal );
+	int32_t	AddSpeedBuffRatio( int32_t nRate );
+	int32_t	RemoveSpeedBuffRatio( int32_t nRate );
 
 	bool	HasBuffState( CObjState::Index_T const nIdx ) const;
 	void	AddBuffState( CObjState::Index_T const nIdx );
 	void	RemoveBuffState( CObjState::Index_T const nIdx );
 
-	int32_t	GetHP() const;		// ÉúÃüÖµ
-	int32_t	GetMP() const;		// ·¨Á¦Öµ
-	int32_t	GetPP() const;		// ÌåÁ¦Öµ
-	int32_t	GetXP() const;		// ±ØÉ±Öµ
+	int32_t	GetHP() const;		// ï¿½ï¿½ï¿½ï¿½Öµ
+	int32_t	GetMP() const;		// ï¿½ï¿½ï¿½ï¿½Öµ
+	int32_t	GetPP() const;		// ï¿½ï¿½ï¿½ï¿½Öµ
+	int32_t	GetXP() const;		// ï¿½ï¿½É±Öµ
 
 	int32_t	GetMaxHP() const;
 	int32_t	GetMaxMP() const;
@@ -209,9 +211,9 @@ private:
 	//int32_t m_buffStates[BS_BUFF_STATE_MAX];
 
 
-	CObjAttrs	m_baseAttr;				// »ù´¡ÊôÐÔÖµ
-	CObjAttrs	m_buffAttrValue;				// BUFFÖ±½ÓÖµ
-	CObjAttrs	m_buffAttrRatio;		// BUFF°Ù·Ö±ÈÖµ
+	CObjAttrs	m_baseAttr;				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+	CObjAttrs	m_buffAttrValue;				// BUFFÖ±ï¿½ï¿½Öµ
+	CObjAttrs	m_buffAttrRatio;		// BUFFï¿½Ù·Ö±ï¿½Öµ
 	CObjState	m_buffStates;
 
 	int32_t		m_nSkillFlag;

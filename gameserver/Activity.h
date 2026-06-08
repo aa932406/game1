@@ -41,6 +41,7 @@ public:
 	virtual void	BroadcastActivityScore( CActivityMap* pMap );
 	virtual bool	OnSitRevive( Player* player );
 	virtual int32_t GetRevive( Player* player );
+	virtual int32_t GetEnterMapId( Player* player );
 	virtual int32_t	GiveDailyReward( Player* player );
 	virtual bool	CanUseXP() const;
 	virtual bool	CanUsePet( MapId_t mid ) const;

@@ -165,7 +165,7 @@ int32_t CMonthlyChouJiang::OnMonthlyChouJiang(Answer::NetPacket* inPacket)
 
     if (Item.nGongGaoId > 0)
     {
-        Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CD6);
+        Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD6);
         if (packet)
         {
             packet->writeInt32(Item.nGongGaoId);
@@ -175,7 +175,7 @@ int32_t CMonthlyChouJiang::OnMonthlyChouJiang(Answer::NetPacket* inPacket)
             packet->writeInt8(stu.itemClass);
             packet->writeInt32(stu.itemCount);
             packet->setSize(packet->getWOffset());
-            GAME_SERVICE.worldBroadcast(packet);
+            GAME_SERVICE.worldBroadcast(m_pPlayer->getConnId(), packet);
         }
     }
 
@@ -194,7 +194,7 @@ void CMonthlyChouJiang::SendMonthlyChouJiangInfo()
     if (!m_pPlayer)
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CDB);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CDB);
     if (!packet)
         return;
 
@@ -213,7 +213,7 @@ void CMonthlyChouJiang::SendMonthlyChouJiangInfo()
     }
 
     packet->setSize(packet->getWOffset());
-    GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+    GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CMonthlyChouJiang::SendMonthlyChouJiangResult(int32_t nId)
@@ -221,13 +221,13 @@ void CMonthlyChouJiang::SendMonthlyChouJiangResult(int32_t nId)
     if (!m_pPlayer)
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, 0x2CDC);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CDC);
     if (!packet)
         return;
 
     packet->writeInt32(nId);
     packet->setSize(packet->getWOffset());
-    GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+    GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CMonthlyChouJiang::GetIcon(ShowIcon& icon)
@@ -266,18 +266,7 @@ void CMonthlyChouJiang::SendIcon()
 
     ShowIcon icon;
     GetIcon(icon);
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
-    if (packet)
-    {
-        packet->writeInt32(icon.nId);
-        packet->writeInt8(icon.nState);
-        packet->writeInt32(icon.nLeftTime);
-        packet->writeInt8(icon.IconLeft);
-        packet->writeInt32(icon.IconRight);
-        packet->writeInt8(icon.Effects);
-        packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
-    }
+    m_pPlayer->SendIconState(&icon);
 }
 
 int32_t CMonthlyChouJiang::GetSocreTimes(int32_t nId)

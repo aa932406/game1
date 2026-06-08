@@ -203,6 +203,11 @@ bool CUniteServer::IsInSpiderQueenTime()
 	return false;
 }
 
+bool CUniteServer::IsInMysteryShopTime()
+{
+	return IsInTime( US_MYSTERY_SHOP );
+}
+
 int32_t CUniteServer::getLeftTime()
 {
 	if ( !IsInUnitServerTime() )
@@ -219,7 +224,7 @@ void CUniteServer::OnDaySwitch()
 
 	if ( m_nDay == m_nEndDay )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CC3 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CC3 );
 		if ( packet )
 		{
 			packet->writeInt32( m_nIcon );
@@ -229,7 +234,7 @@ void CUniteServer::OnDaySwitch()
 			packet->writeInt32( 0 );
 			packet->writeInt8( 0 );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( 0, packet );
 		}
 	}
 }
@@ -283,7 +288,7 @@ void CUniteServer::SendIconState( Player* player )
 	ShowIcon stu;
 	getIconState( stu, player );
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ONE_ICON );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if ( packet )
 	{
 		packet->writeInt32( stu.nId );
@@ -293,7 +298,7 @@ void CUniteServer::SendIconState( Player* player )
 		packet->writeInt32( stu.IconRight );
 		packet->writeInt8( stu.Effects );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 	}
 }
 
@@ -323,7 +328,7 @@ void CUniteServer::SendSpiderQueenIconState()
 	if ( GAME_SERVICE.getLine() != 1 )
 		return;
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CC3 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CC3 );
 	if ( !packet )
 		return;
 
@@ -336,7 +341,7 @@ void CUniteServer::SendSpiderQueenIconState()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CUniteServer::SendUniteServerInfo( Player* player )
@@ -344,7 +349,7 @@ void CUniteServer::SendUniteServerInfo( Player* player )
 	if ( !player || !IsInUnitServerTime() )
 		return;
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E9A );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, 0x2E9A );
 	if ( !packet )
 		return;
 
@@ -362,7 +367,7 @@ void CUniteServer::SendUniteServerInfo( Player* player )
 	appendHuoYueDuInfo( packet, player );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CUniteServer::appendRechargeInfo( NetPacket* packet, Player* player )
@@ -483,7 +488,7 @@ void CUniteServer::BossDie( int32_t MonsterId, std::string* p_name, CharId_t Cid
 
 void CUniteServer::BroadcastSpiderQueenKilled( const std::string* name, CharId_t cid )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 
@@ -491,34 +496,34 @@ void CUniteServer::BroadcastSpiderQueenKilled( const std::string* name, CharId_t
 	packet->writeUTF8( *name );
 	packet->writeInt64( cid );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CUniteServer::broadcastSpiderQueenStart()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 
 	packet->writeInt32( m_nSpiderQueenStartBroadcast );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CUniteServer::broadcastSpiderQueenEnd()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 
 	packet->writeInt32( m_nSpiderQueenEndBroadcast );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CUniteServer::sendBroadcast( int32_t nBroadId, CharId_t cid, const std::string* name )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( !packet )
 		return;
 
@@ -527,7 +532,7 @@ void CUniteServer::sendBroadcast( int32_t nBroadId, CharId_t cid, const std::str
 	packet->writeInt64( cid );
 	packet->setSize( packet->getWOffset() );
 	packet->setProc( 0x2CD6 );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 int32_t CUniteServer::GetRechargeGift( Player* player, int32_t nIndex )
@@ -664,12 +669,12 @@ void CUniteServer::checkMysteryShopRefreshBroad()
 {
 	if ( GAME_SERVICE.getLine() == 1 && IsInTime( US_MYSTERY_SHOP ) && !( m_nMinute % 120 ) )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 		if ( packet )
 		{
 			packet->writeInt32( m_nMysteryShopRefreshBroad );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( 0, packet );
 		}
 	}
 }
@@ -884,7 +889,7 @@ void CUniteServer::GongGao( Player* pPlayer, int32_t GongGaoId, int32_t Index )
 	if ( !pPlayer )
 		return;
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( !packet )
 		return;
 
@@ -894,5 +899,5 @@ void CUniteServer::GongGao( Player* pPlayer, int32_t GongGaoId, int32_t Index )
 	packet->writeInt32( Index );
 	packet->setSize( packet->getWOffset() );
 	packet->setProc( SM_SEND_NOTICE_PARAM );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( pPlayer->getConnId(), packet );
 }

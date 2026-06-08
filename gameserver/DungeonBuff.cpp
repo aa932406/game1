@@ -6,7 +6,7 @@
 DungeonBuff::DungeonBuff(Unit &unit, CfgBuff &cfgBuff)
 	: Buff(unit, cfgBuff)
 {
-	bzero(&m_restore, sizeof(m_restore));
+
 }
 
 DungeonBuff::~DungeonBuff()
@@ -21,6 +21,7 @@ bool DungeonBuff::expire()
 
 void DungeonBuff::effect()
 {
+	m_restore.resize(2);
 	for (int32_t i = 0; i < 2; ++i)
 	{
 		if ( m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_HP )

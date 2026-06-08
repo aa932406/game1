@@ -111,7 +111,7 @@ void CActivity::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 
 void CActivity::BroadcastActivityState()
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
+	Answer::NetPacket *packet = popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if (NULL == packet)
 	{
 		return;
@@ -130,7 +130,7 @@ void CActivity::BroadcastActivityState()
 		packet->writeInt8( 0 );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast( packet );	
+	worldBroadcast( 0, packet );	
 }
 
 int32_t	CActivity::HaveRewardCount( Player* Player )
@@ -567,7 +567,7 @@ bool CActivity::checkRevive( CActivityMap* pMap )
 
 void CActivity::sendSocialUpdateActivityState( int8_t nState )
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
+	Answer::NetPacket *packet = popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if ( NULL == packet )
 	{
 		return;
@@ -579,7 +579,7 @@ void CActivity::sendSocialUpdateActivityState( int8_t nState )
 	packet->writeInt32( 0 );
 	packet->writeInt8( nState == AS_RUNNING ? 1 : 0 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacket( packet );
+	sendPacketTo( 0, packet );
 }
 bool CActivity::checkData()
 {
@@ -726,6 +726,15 @@ int32_t CActivity::GetRevive( Player* player )
     {
         return m_cfgActivity.target_regiona[RANDOM.generate( 0, lenth-1 )];
     }
+}
+
+int32_t CActivity::GetEnterMapId( Player* player )
+{
+    if ( m_activityMaps.empty() )
+    {
+        return 0;
+    }
+    return (*m_activityMaps.begin())->GetId();
 }
 
 void CActivity::removePlayer( Player* player, bool islogout )

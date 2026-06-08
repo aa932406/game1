@@ -177,7 +177,7 @@ void CGuanWei::SendGuanWeiInfo()
 	packet->writeInt32( m_pPlayer->getRecord( RP_CUR_GUAN_WEI ) );
 	packet->writeInt8( (int8_t)m_pPlayer->getRecord( RP_CUR_GUAN_WEI_DAILY_REWARD ) );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CGuanWei::AddGuanWeiAttr()

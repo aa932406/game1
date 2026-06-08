@@ -164,7 +164,7 @@ void CGuiGuDaoRen::SendBackItemCount( Player* pPlayer, int32_t NpcId )
 		packet->writeInt32( it->first );
 		packet->writeInt32( it->second );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 	}
 }
 
@@ -252,7 +252,7 @@ void CGuiGuDaoRen::SendBackEquipCount( Player* pPlayer )
 	{
 		packet->writeInt32( EquipCount );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 	}
 }
 
@@ -306,7 +306,7 @@ void CGuiGuDaoRen::SendBackEquipRank( Player* pPlayer )
 			m_EquipBackRank[i].PackageData( packet );
 		}
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 	}
 }
 
@@ -457,7 +457,7 @@ void CGuiGuDaoRen::SendAllRongHeRecord( Player* pPlayer )
 			packet->writeInt32( it->nTime );
 		}
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 	}
 }
 

@@ -48,12 +48,12 @@ int32_t CActivityWorldBoss::canEnter( Player* player, CActivityMap* pTargetMap )
 void CActivityWorldBoss::SendPlayerActivityInfo( Player* player )
 {
 	if ( NULL == player ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
 	if ( NULL == packet ) return;
 	packet->writeInt32( m_cfgActivity.id );
 	packet->writeInt32( getLeftTime() );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CActivityWorldBoss::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
@@ -67,7 +67,7 @@ void CActivityWorldBoss::SendPlayerActivityScore( Player* player, int32_t nLeftT
 		nDamage = iter->second.nDamage;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -75,7 +75,7 @@ void CActivityWorldBoss::SendPlayerActivityScore( Player* player, int32_t nLeftT
 	packet->writeInt32( nLeftTime );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 int32_t CActivityWorldBoss::GetRevive( Player* player )
@@ -293,7 +293,7 @@ void CActivityWorldBoss::sendPlayerScore( Player* player )
 
 	const PlayerScore& score = scoreIter->second;
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E24 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, 0x2E24 );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -301,7 +301,7 @@ void CActivityWorldBoss::sendPlayerScore( Player* player )
 	packet->writeInt32( score.nDamage );
 	packet->writeInt32( DieTimes );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CActivityWorldBoss::addRewards()
@@ -388,7 +388,7 @@ void CActivityWorldBoss::onTimeEnd()
 
 Answer::NetPacket* CActivityWorldBoss::packetActivityScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E26 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2E26 );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -426,24 +426,24 @@ Answer::NetPacket* CActivityWorldBoss::packetActivityScore()
 
 void CActivityWorldBoss::broadcastStart()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( 323 );
 	packet->writeInt32( m_cfgActivity.id );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CActivityWorldBoss::broadcastEnd()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( 325 );
 	packet->writeInt32( m_cfgActivity.id );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CActivityWorldBoss::broadcastActivityResult()
@@ -453,7 +453,7 @@ void CActivityWorldBoss::broadcastActivityResult()
 		CActivityMap* pMap = *iter;
 		if ( NULL == pMap ) continue;
 
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E27 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2E27 );
 		if ( NULL == packet ) return;
 
 		packet->writeInt32( m_cfgActivity.id );
@@ -465,14 +465,14 @@ void CActivityWorldBoss::broadcastActivityResult()
 
 void CActivityWorldBoss::broadcastBossKilled( const std::string& name, CharId_t cid )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( 324 );
 	packet->writeUTF8( name );
 	packet->writeInt64( cid );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( 0, packet );
 }
 
 void CActivityWorldBoss::refreshRank()

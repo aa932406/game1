@@ -132,7 +132,7 @@ int32_t CRongHe::OnRongLian( Answer::NetPacket *inPacket )
 	// Broadcast if needed
 	if ( resultItem.nGongGaoId > 0 )
 	{
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( packet )
 		{
 			packet->writeInt32( resultItem.nGongGaoId );
@@ -143,7 +143,7 @@ int32_t CRongHe::OnRongLian( Answer::NetPacket *inPacket )
 			packet->writeInt8( resultItem.item.itemClass );
 			packet->writeInt32( resultItem.item.itemCount );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 
@@ -165,12 +165,12 @@ int32_t CRongHe::OnRongLian( Answer::NetPacket *inPacket )
 	}
 
 	// Reply success
-	Answer::NetPacket* reply = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, inPacket->getProc() );
+	Answer::NetPacket* reply = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, inPacket->getProc() );
 	if ( reply )
 	{
 		reply->writeInt64( resultItem.nSuccess );
 		reply->setSize( reply->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), reply );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), reply );
 	}
 	return 0;
 }
@@ -244,12 +244,12 @@ int32_t CRongHe::OnEquipRongLian( Answer::NetPacket *inPacket )
 	m_pPlayer->RecalcAttr();
 	SendOneRongHeInfo( nSlot );
 
-	Answer::NetPacket* reply = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, inPacket->getProc() );
+	Answer::NetPacket* reply = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, inPacket->getProc() );
 	if ( reply )
 	{
 		reply->writeInt32( nSlot );
 		reply->setSize( reply->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), reply );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), reply );
 	}
 	return 0;
 }
@@ -287,7 +287,7 @@ int32_t CRongHe::OnDismantlingEquip( Answer::NetPacket *inPacket )
 		{
 			m_RongLianInfoMap.erase( it );
 			m_pPlayer->RecalcAttr();
-			GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nSlot );
+			GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nSlot );
 			return 0;
 		}
 	}
@@ -342,7 +342,7 @@ int32_t CRongHe::OnItemRecovery( Answer::NetPacket *inPacket )
 	}
 
 	m_pPlayer->GetBag().ForceSendDirty();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pItem->RongHeReceovery.nParam2 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pItem->RongHeReceovery.nParam2 );
 	return 0;
 }
 
@@ -404,13 +404,13 @@ int32_t CRongHe::OnOneKeyItemRecovery( Answer::NetPacket *inPacket )
 	}
 
 	m_pPlayer->GetBag().ForceSendDirty();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), (int32_t)vRemoveSlot.size() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), (int32_t)vRemoveSlot.size() );
 	return 0;
 }
 
 void CRongHe::SendAllRongHeInfo()
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 11716 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 11716 );
 	if ( NULL == packet )
 	{
 		return;
@@ -425,12 +425,12 @@ void CRongHe::SendAllRongHeInfo()
 		packet->writeInt32( it->second.nEquipId );
 	}
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CRongHe::SendOneRongHeInfo( int32_t nSlot )
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 11717 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 11717 );
 	if ( NULL == packet )
 	{
 		return;
@@ -452,12 +452,12 @@ void CRongHe::SendOneRongHeInfo( int32_t nSlot )
 		packet->writeInt32( 0 );
 	}
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CRongHe::SendRongHeResult( int32_t nId, int32_t nSuccess, const MemChrBag& stu )
 {
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 11718 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 11718 );
 	if ( NULL == packet )
 	{
 		return;
@@ -469,7 +469,7 @@ void CRongHe::SendRongHeResult( int32_t nId, int32_t nSuccess, const MemChrBag& 
 	packet->writeInt8( stu.itemClass );
 	packet->writeInt32( stu.itemCount );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 std::string CRongHe::GetRongHeEquipString()

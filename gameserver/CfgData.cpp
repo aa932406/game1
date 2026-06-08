@@ -8074,9 +8074,7 @@ int8_t VipTable::GetVipLevel( int32_t VipExp )
 }// Auto-generated stub implementations for missing CfgData Init* methods
 // NOTE: Disabled — these require further porting of decompiled code
 // See README.md for remaining struct definitions needed
-#if 0
-#include "stdafx.h"
-#include "CfgData.h"
+#if 1
 
 
 void CfgData::Init360RewardTable()
@@ -8303,7 +8301,7 @@ void CfgData::InitAttrBattleTable()
     iBaseColumnCount = readFile.GetFieldsNum();
     if ( iBaseColumnCount > 0 )
     {
-      bzero(this->m_cfgAttrBattle, 0xC8u);
+      memset(this->m_cfgAttrBattle, 0, sizeof(m_cfgAttrBattle));
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;

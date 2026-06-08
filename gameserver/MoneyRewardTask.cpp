@@ -312,7 +312,7 @@ int32_t CMoneyRewardTask::OneKeyCompletion( Answer::NetPacket* inPacket )
 void CMoneyRewardTask::sendTaskInfo()
 {
 	if ( !m_pPlayer || !IsFunctionOpen() ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_MONEY_REWARD_TASK_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_MONEY_REWARD_TASK_INFO );
 	if ( !packet ) return;
 	packet->writeInt32( m_FinishTimes );
 	packet->writeInt8( m_IsGetReward );
@@ -322,7 +322,7 @@ void CMoneyRewardTask::sendTaskInfo()
 		packet->writeInt32( m_MoneyRewardTask[i].TaskId );
 		packet->writeInt8( m_MoneyRewardTask[i].TaskState );
 	}
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CMoneyRewardTask::parseMoneyRewardTaskInfo( const std::string& infoString )
@@ -427,12 +427,12 @@ int32_t CMoneyRewardTask::OnPdbfRandStar( Answer::NetPacket* inPacket )
 void CMoneyRewardTask::SendPdbfTaskInfo()
 {
 	if ( !m_pPlayer || !IsPdbfFunctionOpen() ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PDBF_TASK_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PDBF_TASK_INFO );
 	if ( !packet ) return;
 	packet->writeInt32( m_TaskId );
 	packet->writeInt32( m_Star );
 	packet->writeInt32( m_PdbfFinishTimes );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CMoneyRewardTask::RandTaskId()
@@ -604,11 +604,11 @@ int32_t CMoneyRewardTask::RandTaskIndex( int32_t nRandTimes )
 void CMoneyRewardTask::SendBackEquipTaskInfo()
 {
 	if ( !m_pPlayer || !IsBackEquipFunctionOpen() ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_BACK_EQUIP_TASK_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_BACK_EQUIP_TASK_INFO );
 	if ( !packet ) return;
 	packet->writeInt32( m_EquipBackTaskId );
 	packet->writeInt32( m_EquipBackTaskFinishTimes );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CMoneyRewardTask::OnAskTrailerPos( Answer::NetPacket* inPacket )
@@ -617,10 +617,10 @@ int32_t CMoneyRewardTask::OnAskTrailerPos( Answer::NetPacket* inPacket )
 	Trailer* pTrailer = m_pPlayer->getTrailer();
 	if ( pTrailer )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TRAILER_INFO );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TRAILER_INFO );
 		if ( packet )
 			pTrailer->appendInfo( packet );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 	}
 	return 0;
 }
@@ -661,13 +661,13 @@ int32_t CMoneyRewardTask::OnStartTrailer( Answer::NetPacket* inPacket )
 	else if ( m_TrailerQuality == 4 ) GongGaoId = 428;
 	if ( GongGaoId > 0 )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( packet )
 		{
 			packet->writeInt32( GongGaoId );
 			packet->writeUTF8( m_pPlayer->getName() );
 			packet->writeInt64( m_pPlayer->getCid() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 	return 0;
@@ -704,14 +704,14 @@ int32_t CMoneyRewardTask::OnRequestSupport( Answer::NetPacket* inPacket )
 {
 	if ( !inPacket || !m_pPlayer ) return ERR_INVALID_DATA;
 	if ( m_pPlayer->getFamilyId() <= 0 ) return ERR_INVALID_DATA;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_PROC, SM_REQUEST_SUPPORT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_PROC, SM_REQUEST_SUPPORT );
 	if ( !packet ) return ERR_INVALID_DATA;
 	packet->writeInt64( m_pPlayer->getCid() );
 	packet->writeUTF8( m_pPlayer->getName() );
 	packet->writeInt32( m_pPlayer->getMapId() );
 	packet->writeInt16( m_pPlayer->GetPosX() );
 	packet->writeInt16( m_pPlayer->GetPosY() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 	return 0;
 }
 
@@ -743,21 +743,21 @@ void CMoneyRewardTask::ResetTrailer()
 void CMoneyRewardTask::SendTrailerInfo()
 {
 	if ( !m_pPlayer ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TRAILER_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TRAILER_INFO );
 	if ( !packet ) return;
 	packet->writeInt32( m_JieBiaoTimes );
 	packet->writeInt32( m_YaBiaoTimes );
 	packet->writeInt8( m_TrailerQuality );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CMoneyRewardTask::SendTRailerEnd()
 {
 	if ( !m_pPlayer ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TRAILER_END );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TRAILER_END );
 	if ( !packet ) return;
 	packet->writeInt8( 0 );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 bool CMoneyRewardTask::IsXiangYaoFunctionOpen()
@@ -890,26 +890,26 @@ void CMoneyRewardTask::RandXiangYaoTask( bool bBest, bool bNeedGongGao )
 			int32_t nStart = CFG_DATA.getXiangYaoStart( m_XiangYaoTask[i].TaskId );
 			if ( nStart == 4 )
 			{
-				NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+				NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 				if ( packet )
 				{
 					packet->writeInt32( 458 );
 					packet->writeInt64( m_pPlayer->getCid() );
 					packet->writeUTF8( m_pPlayer->getName() );
-					GAME_SERVICE.worldBroadcast( packet );
+					GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 				}
 			}
 		}
 	}
 	if ( bBest )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( packet )
 		{
 			packet->writeInt32( 459 );
 			packet->writeInt64( m_pPlayer->getCid() );
 			packet->writeUTF8( m_pPlayer->getName() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 }
@@ -932,7 +932,7 @@ void CMoneyRewardTask::LoginInitXiangYaoTask()
 void CMoneyRewardTask::SendXiangYaoTaskInfo()
 {
 	if ( !m_pPlayer || !IsXiangYaoFunctionOpen() ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_XIANG_YAO_TASK_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_XIANG_YAO_TASK_INFO );
 	if ( !packet ) return;
 	packet->writeInt32( m_RefreshTimes );
 	packet->writeInt32( m_XiangYaoFinishTimes );
@@ -943,7 +943,7 @@ void CMoneyRewardTask::SendXiangYaoTaskInfo()
 		packet->writeInt32( m_XiangYaoTask[i].TaskId );
 		packet->writeInt8( m_XiangYaoTask[i].TaskState );
 	}
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CMoneyRewardTask::parseXiangYaoTask( const std::string& infoString )
@@ -1069,7 +1069,7 @@ void CMoneyRewardTask::LoginInitShenWeiTask()
 void CMoneyRewardTask::SendShenWeiTaskInfo()
 {
 	if ( !m_pPlayer || !IsShenWeiFunctionOPen() ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_XIANG_YAO_TASK_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_XIANG_YAO_TASK_INFO );
 	if ( !packet ) return;
 	packet->writeInt8( 5 );
 	for ( int32_t i = 0; i <= 4; ++i )
@@ -1077,7 +1077,7 @@ void CMoneyRewardTask::SendShenWeiTaskInfo()
 		packet->writeInt8( i + 1 );
 		packet->writeInt8( m_ShenWeiTaskState[i] );
 	}
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CMoneyRewardTask::parseShenWeiTask( const std::string& infoString )

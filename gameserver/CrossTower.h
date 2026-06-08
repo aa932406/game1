@@ -23,6 +23,7 @@ public:
     virtual void        SendPlayerActivityScore( Player* player, int32_t nLeftTime );
     virtual Position    GetRandBornPos( Player* player );
     virtual int32_t     GetRevive( Player* player );
+    virtual int32_t     GetEnterMapId( Player* player );
 
     void    SetWinnerInfo( CharId_t nWinnerId, const std::string& sName );
     void    SetBattle( int32_t nBattle ) { m_nBattle = nBattle; }
@@ -34,6 +35,18 @@ protected:
     virtual void    removePlayer( Player* player, bool islogout );
     virtual int32_t canEnter( Player* player, CActivityMap* pTargetMap ) const;
     virtual void    onTimeEnd();
+    virtual void    onPlayerKilled( Player* pDier, Player* pKiller );
+    virtual void    onMonsterAdd( MonsterActivity* pMonster );
+    virtual void    onMonsterDie( MonsterActivity* pMonster, Player* pKiller );
+    virtual void    onPlayerRevive( Player* player, bool bSafe );
+    virtual int32_t onBeginGather( Plant* plant, Player* player );
+    virtual void    onPlantGather( Plant* pPlant, Player* player );
+    virtual void    broadcastReady();
+    virtual void    broadcastStart();
+    virtual void    broadcastActivityResult();
+    virtual int32_t GiveDailyReward( Player* player );
+    void    ActUpdate( int64_t CurTick );
+    void    sendPlayerScore( Player* player );
 
 private:
     struct PlayerScore
@@ -46,6 +59,10 @@ private:
             nScoreTime  = 0;
             nCurMapId   = 0;
             bInActivity = 0;
+            nKillCount  = 0;
+            nIsMoBai    = 0;
+            nBattle     = 0;
+            nSid        = 0;
         }
         CharId_t    nCharId;
         int8_t      nConnId;
@@ -53,6 +70,11 @@ private:
         int32_t     nScoreTime;
         int32_t     nCurMapId;
         int32_t     bInActivity;
+        int32_t     nKillCount;
+        int32_t     nIsMoBai;
+        int32_t     nBattle;
+        uint32_t    nSid;
+        std::string strName;
     };
 
     void    addRewards();

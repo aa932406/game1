@@ -7,7 +7,7 @@
 
 using namespace Answer;
 
-#define CLEAR_CD_VIP_LEVEL	3		// VIP3ÒÔÉÏÏû³ýÀäÈ´
+#define CLEAR_CD_VIP_LEVEL	3		// VIP3ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È´
 
 CExtCharHallOfFame::CExtCharHallOfFame()
 {
@@ -25,14 +25,14 @@ void CExtCharHallOfFame::OnCleanUp()
 
 void CExtCharHallOfFame::GetInterestsProtocol( ProcIdList& procList )
 {
-	procList.push_back( CM_HALL_OF_FAME_FIGHT );						// ÌôÕ½
-	procList.push_back( CM_HALL_OF_FAME_BUY_TIMES );					// ¹ºÂò´ÎÊý
-	procList.push_back( CM_HALL_OF_FAME_CLEAR_CD );						// ÃëCD
-	procList.push_back( CM_HALL_OF_FAME_INFO );							// ÇëÇó½çÃæÐÅÏ¢
+	procList.push_back( CM_HALL_OF_FAME_FIGHT );						// ï¿½ï¿½Õ½
+	procList.push_back( CM_HALL_OF_FAME_BUY_TIMES );					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	procList.push_back( CM_HALL_OF_FAME_CLEAR_CD );						// ï¿½ï¿½CD
+	procList.push_back( CM_HALL_OF_FAME_INFO );							// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 
-	procList.push_back( IM_SOCIAL_GAME_HALL_OF_FAME_FIGHT_RESULT );		// ÌôÕ½½á¹û
-	procList.push_back( IM_SOCIAL_GAME_HALL_OF_FAME_GET_REWARD );		// ÁìÈ¡½±Àø
-	procList.push_back( IM_SOCIAL_GAME_HALL_OF_FAME_RANK_REWARD_INFO );	// ½±ÀøÐÅÏ¢
+	procList.push_back( IM_SOCIAL_GAME_HALL_OF_FAME_FIGHT_RESULT );		// ï¿½ï¿½Õ½ï¿½ï¿½ï¿½
+	procList.push_back( IM_SOCIAL_GAME_HALL_OF_FAME_GET_REWARD );		// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
+	procList.push_back( IM_SOCIAL_GAME_HALL_OF_FAME_RANK_REWARD_INFO );	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 }
 
 int32_t CExtCharHallOfFame::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -103,7 +103,7 @@ int32_t CExtCharHallOfFame::onBuyTimes( Answer::NetPacket *inPacket )
 	}
 
 	addBuyTimes();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), getBuyTimes() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), getBuyTimes() );
 	return ERR_OK;
 }
 
@@ -125,7 +125,7 @@ int32_t CExtCharHallOfFame::onClearCD( Answer::NetPacket* inPacket )
 	}
 
 	clearCDTime();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -191,7 +191,7 @@ int32_t CExtCharHallOfFame::onSocialGetReward( Answer::NetPacket* inPacket )
 
 	sendSocialRewardResult( nLastIndex, true );
 	m_pPlayer->AddCurrency( CURRENCY_HONOR, pReward->nHonor, HCR_HALL_OF_FAME_RANK_REWARD );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_HALL_OF_FAME_GET_REWARD );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_HALL_OF_FAME_GET_REWARD );
 	SendIconState();
 	return ERR_OK;
 }
@@ -228,7 +228,7 @@ void CExtCharHallOfFame::sendSocialFight( int32_t nIndex )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_HALL_OF_FAME_FIGHT );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_HALL_OF_FAME_FIGHT );
 	if ( NULL == packet )
 	{
 		return;
@@ -247,7 +247,7 @@ void CExtCharHallOfFame::sendSocialRequestInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_HALL_OF_FAME_REQUEST_INFO );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_HALL_OF_FAME_REQUEST_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -268,7 +268,7 @@ void CExtCharHallOfFame::sendSocialRewardResult( int32_t nLastIndex, bool bSucce
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_HALL_OF_FAME_REWARD_RESULT );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_HALL_OF_FAME_REWARD_RESULT );
 	if ( NULL == packet )
 	{
 		return;
@@ -415,25 +415,11 @@ void CExtCharHallOfFame::SendIconState( int32_t nReward )
 		return;
 	}
 
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket(Answer::PACK_DISPATCH, SM_SEND_ONE_ICON);
-	if (NULL == packet)
-	{
-		return;
-	}
-
 	ShowIcon stu = {};
 	stu.nId			= HALL_OF_FAME_ICON;
 	stu.nState		= AS_RUNNING;
 	stu.nLeftTime	= -1;
 	stu.IconRight	= nReward;
 
-	packet->writeInt32( stu.nId );
-	packet->writeInt8(  stu.nState );
-	packet->writeInt32( stu.nLeftTime );
-	packet->writeInt8( stu.IconLeft );
-	packet->writeInt32( stu.IconRight );
-	packet->writeInt8( stu.Effects );
-
-	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);		
+	m_pPlayer->SendIconState(&stu);
 }

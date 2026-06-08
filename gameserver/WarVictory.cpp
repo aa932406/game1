@@ -4,8 +4,8 @@
 #include "GameService.h"
 enum WarVictoryType
 {
-	EVERY_DAY_LOGIN		= 1,	//Ã¿ÌìµÇÂ½
-	EVENY_DAY_BUY		= 2,	//Ã¿´Î¹ºÂò
+	EVERY_DAY_LOGIN		= 1,	//Ã¿ï¿½ï¿½ï¿½Â½
+	EVENY_DAY_BUY		= 2,	//Ã¿ï¿½Î¹ï¿½ï¿½ï¿½
 };
 
 CWarVictory::CWarVictory()
@@ -131,7 +131,7 @@ int32_t	CWarVictory::OnGetWarVictoryReward( Answer::NetPacket *inPacket )
 			}
 		}
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), Index );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), Index );
 	return ERR_OK;
 }
 
@@ -184,7 +184,7 @@ void CWarVictory::SendWarVictoryIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
 }
 
 ShowIcon CWarVictory::GetWarVictoryIconStu()

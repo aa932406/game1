@@ -280,7 +280,7 @@ void Plant::SendGainItem( Player* pPlayer, const MemChrBagVector &vItem )
 		packet->writeInt32( it->itemCount );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(pPlayer->getConnId(), pPlayer->getGateIndex(), packet);
 }
 
 int32_t Plant::onBreakGather(Player *player)

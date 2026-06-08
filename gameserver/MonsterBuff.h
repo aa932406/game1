@@ -25,7 +25,5 @@ public:
 public:
 	void init();
 
-private:
-	BuffAttrAddon m_restore[2];
 };
 

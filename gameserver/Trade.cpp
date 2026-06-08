@@ -4,8 +4,8 @@
 #include "PetManager.h"
 using namespace Answer;
 
-#define MAX_TRADE_DISTANCE 20	//×î´ó½»Ò×¾àÀë
-#define TRADE_LEVEL		   70   //½»Ò×µÈ¼¶70¼¶
+#define MAX_TRADE_DISTANCE 20	//ï¿½ï¿½ï¿½ï¿½×¾ï¿½ï¿½ï¿½
+#define TRADE_LEVEL		   70   //ï¿½ï¿½ï¿½×µÈ¼ï¿½70ï¿½ï¿½
 
 CTrade::CTrade()
 {
@@ -117,7 +117,7 @@ int32_t	CTrade::OnAskTrade( Answer::NetPacket *inPacket )
 	}
 	if ( pTarget->getLevel() < TRADE_LEVEL )
 	{
-		return GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_LEVEL_LOW );
+		return GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_LEVEL_LOW );
 	}
 	if ( pTarget->getMapId() != m_pPlayer->getMapId() )
 	{
@@ -125,7 +125,7 @@ int32_t	CTrade::OnAskTrade( Answer::NetPacket *inPacket )
 	}
 	if ( pTarget->GetPlayerTrade().IsTrading() )
 	{
-		return GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_TRADING);
+		return GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_TRADING);
 	}
 	if ( IsTrading() )
 	{
@@ -138,7 +138,7 @@ int32_t	CTrade::OnAskTrade( Answer::NetPacket *inPacket )
 		return ERR_SYETEM_ERR;
 	}
 	SendAskTrade( pTarget );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc());
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc());
 	return ERR_OK;
 }
 
@@ -166,7 +166,7 @@ int32_t	CTrade::OnAgreeTrade( Answer::NetPacket *inPacket )
 	}
 	if ( pTarget->GetPlayerTrade().IsTrading() )
 	{
-		return GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_TRADING);
+		return GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_TRADING);
 	}
 	Position TarPos = pTarget->getCurrentTile();
 	int32_t Distance = m_pPlayer->getCurrentTile().tileDistance(TarPos);
@@ -181,7 +181,7 @@ int32_t	CTrade::OnAgreeTrade( Answer::NetPacket *inPacket )
 	pTarget->GetPlayerTrade().SetTrading();
 
 	SendOperateToTarget( OPERATE_AGREE_TRADE );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPlayer->getCid() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPlayer->getCid() );
 	return ERR_OK;
 }
 
@@ -363,7 +363,7 @@ int32_t	CTrade::OnLock( Answer::NetPacket *inPacket )
 	}
 	SetLock();
 	SendOperateToTarget( OPERATE_SET_LOCK );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc());
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc());
 	return ERR_OK;
 }
 
@@ -443,7 +443,7 @@ int32_t	CTrade::OnSured( Answer::NetPacket *inPacket )
 			return GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(),ERR_TARGET_NOT_THIS_ITEM );
 		}
 
-		//¼ì²éÊÇ·ñÓÐ×°±¸,ºÍ³èÎï
+		//ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½×°ï¿½ï¿½,ï¿½Í³ï¿½ï¿½ï¿½
 		MemChrBagVector::iterator TargetIt = TargetItemVector.begin();
 		for ( ; TargetIt != TargetItemVector.end(); ++TargetIt )
 		{
@@ -492,13 +492,13 @@ int32_t	CTrade::OnSured( Answer::NetPacket *inPacket )
 			}
 
 		}
-		//ÎïÆ·½»»»
+		//ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½
 		RemoveBagItem();		
 		pTarget->GetPlayerTrade().RemoveBagItem();
 		AddBagItem( TargetItemVector );
 		pTarget->GetPlayerTrade().AddBagItem( ItemVector );
 		
-		//½ð±Ò½»»»
+		//ï¿½ï¿½Ò½ï¿½ï¿½ï¿½
 		if ( Money > 0 )
 		{
 			m_pPlayer->DecCurrency( CURRENCY_MONEY, Money, MCR_TRADE_CONST_MONEY, pTarget->getCid() );
@@ -546,7 +546,7 @@ int32_t	CTrade::OnSured( Answer::NetPacket *inPacket )
 	{
 		SetSureTrad();
 		SendOperateToTarget( OPERATE_SET_SURED );
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc());
+		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc());
 	}
 	return ERR_OK;
 }
@@ -566,7 +566,7 @@ int32_t	CTrade::OnCancel( Answer::NetPacket *inPacket )
 	{	
 		return ERR_SYETEM_ERR;
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc());
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc());
 	SendOperateToTarget( OPERATE_CANCEL );
 	OnCleanUp();
 	pTarget->GetPlayerTrade().OnCleanUp();
@@ -579,7 +579,7 @@ void CTrade::SendAskTrade( Player *pTarget )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ASK_TRADE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_ASK_TRADE );
 	if (NULL == packet)
 	{
 		return;
@@ -587,9 +587,9 @@ void CTrade::SendAskTrade( Player *pTarget )
 	packet->writeInt64( m_pPlayer->getCid() );
 	packet->writeInt32( m_pPlayer->getLevel() );
 	packet->writeUTF8( m_pPlayer->getName() );
-	packet->writeInt32( m_pPlayer->getBattle() );		//Õ½¶·Á¦,ÏÈÔ¤Áô³öÀ´
+	packet->writeInt32( m_pPlayer->getBattle() );		//Õ½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pTarget->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), pTarget->getGateIndex(), packet);
 }
 
 void CTrade::SendOperateToTarget( OPERATE_VALUES OperateType )
@@ -599,7 +599,7 @@ void CTrade::SendOperateToTarget( OPERATE_VALUES OperateType )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_OPERATE_TO_TARGET );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_OPERATE_TO_TARGET );
 	if (NULL == packet)
 	{
 		return;
@@ -610,7 +610,7 @@ void CTrade::SendOperateToTarget( OPERATE_VALUES OperateType )
 		packet->writeInt64( m_pPlayer->getCid() );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pTarget->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), pTarget->getGateIndex(), packet);
 }
 
 void CTrade::SendItemChange( int32_t TradeSlot )
@@ -623,7 +623,7 @@ void CTrade::SendItemChange( int32_t TradeSlot )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TRADE_ITEM_CHANGE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TRADE_ITEM_CHANGE );
 	if (NULL == packet)
 	{
 		return;
@@ -635,7 +635,7 @@ void CTrade::SendItemChange( int32_t TradeSlot )
 	packet->writeInt8( TradeSlot );
 	packet->writeInt32( m_TradeData[TradeSlot].BagSlot );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CTrade::SendTargetItemChange( int32_t TradeSlot )
@@ -649,7 +649,7 @@ void CTrade::SendTargetItemChange( int32_t TradeSlot )
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TARGET_TRADE_ITEM_CHANGE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TARGET_TRADE_ITEM_CHANGE );
 	if (NULL == packet)
 	{
 		return;
@@ -672,7 +672,7 @@ void CTrade::SendTargetItemChange( int32_t TradeSlot )
 	packet->writeInt32(	m_TradeData[TradeSlot].CharBagData.endTime );
 	packet->writeInt64(	m_TradeData[TradeSlot].CharBagData.srcId );		
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pTarget->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), pTarget->getGateIndex(), packet);
 }
 
 void CTrade::SendTradeMoneyChange()
@@ -681,7 +681,7 @@ void CTrade::SendTradeMoneyChange()
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TRADE_MONEY_CHANGE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TRADE_MONEY_CHANGE );
 	if (NULL == packet)
 	{
 		return;
@@ -689,7 +689,7 @@ void CTrade::SendTradeMoneyChange()
 	packet->writeInt32( m_TradMoney );
 	packet->writeInt32( m_TradGold );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CTrade::SendTargetTradeMoneychange()
@@ -699,7 +699,7 @@ void CTrade::SendTargetTradeMoneychange()
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TARGET_MONEY_CHANGE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TARGET_MONEY_CHANGE );
 	if (NULL == packet)
 	{
 		return;
@@ -707,7 +707,7 @@ void CTrade::SendTargetTradeMoneychange()
 	packet->writeInt32( m_TradMoney );
 	packet->writeInt32( m_TradGold );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(pTarget->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), pTarget->getGateIndex(), packet);
 }
 
 void CTrade::SendTradeSucceed( int32_t& Moeny, int32_t& Gold, MemChrBagVector& ItemVector )
@@ -716,7 +716,7 @@ void CTrade::SendTradeSucceed( int32_t& Moeny, int32_t& Gold, MemChrBagVector& I
 	{
 		return;
 	}
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_TRADE_SUCCEED );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_TRADE_SUCCEED );
 	if (NULL == packet)
 	{
 		return;
@@ -736,7 +736,7 @@ void CTrade::SendTradeSucceed( int32_t& Moeny, int32_t& Gold, MemChrBagVector& I
 		packet->writeInt64(	it->srcId );	
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
 }
 
 void CTrade::RemoveItem( int32_t TradeSlot )

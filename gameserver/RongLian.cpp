@@ -38,5 +38,5 @@ void CRongLian::sendPlayerScore( Player* player )
     packet->writeInt32( m_cfgActivity.id );
     packet->writeInt32( getLeftTime() );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+    GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }

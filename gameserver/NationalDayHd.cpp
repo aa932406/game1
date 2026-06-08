@@ -123,14 +123,14 @@ bool CNationalDayHd::UnLockHighReward()
 	m_UnLockReward = 1;
 
 	// Broadcast unlock announcement
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD6 );
 	if ( packet )
 	{
 		packet->writeInt32( 3023 );
 		packet->writeInt64( m_pPlayer->getCid() );
 		packet->writeUTF8( m_pPlayer->getName() );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( packet );
+		GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 	}
 	return true;
 }
@@ -155,7 +155,7 @@ bool CNationalDayHd::GetSeniorReward( int32_t nLevel )
 	// Broadcast if configured
 	if ( pCfg->nGongGaoId > 0 )
 	{
-		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2CD6 );
+		Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2CD6 );
 		if ( packet )
 		{
 			packet->writeInt32( pCfg->nGongGaoId );
@@ -165,7 +165,7 @@ bool CNationalDayHd::GetSeniorReward( int32_t nLevel )
 			packet->writeInt8( pCfg->vSeniorReward.itemClass );
 			packet->writeInt32( pCfg->vSeniorReward.itemCount );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 	return true;
@@ -290,13 +290,13 @@ void CNationalDayHd::SendLevelInfo()
 {
 	if ( NULL == m_pPlayer ) return;
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, 0x2844 );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, 0x2844 );
 	if ( packet )
 	{
 		packet->writeInt32( m_Level );
 		packet->writeInt32( m_Exp );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( packet );
+		GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 	}
 }
 
@@ -395,12 +395,12 @@ int32_t CNationalDayHd::onAskNationalDayInfo( Answer::NetPacket* inPacket )
 {
 	if ( NULL == m_pPlayer || NULL == inPacket ) return ERR_INVALID_DATA;
 	// Send full HD info
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NATIONAL_DAY_HD_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_NATIONAL_DAY_HD_INFO );
 	if ( packet )
 	{
 		PackHdInfo( packet );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( packet );
+		GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 	}
 	return 0;
 }

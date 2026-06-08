@@ -182,7 +182,7 @@ void CDropItemGroup::init(Map *pMap, const Position &centerPos, Player *pOwner, 
 				}
 				else
 				{
-					Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+					Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( (pOwner != NULL ? pOwner->getConnId() : 0), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 					if ( packet != NULL )
 					{
 						packet->writeInt32( BCI_MOUNT_DIE_DROP_GONG_GAO );
@@ -203,7 +203,7 @@ void CDropItemGroup::init(Map *pMap, const Position &centerPos, Player *pOwner, 
 						packet->writeInt8( m_dropItems[i].getItemClass() );
 						packet->writeInt32( m_dropItems[i].getItemId() );
 						packet->setSize(packet->getWOffset());
-						GAME_SERVICE.worldBroadcast(packet);
+						GAME_SERVICE.worldBroadcast((pOwner != NULL ? pOwner->getConnId() : 0), packet);
 					}
 				}
 			}
@@ -486,7 +486,7 @@ void CDropItemGroup::broadcastRemoveDropItem(EntityId_t dropid)
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_REMOVE_DROP_ITEM);
+	NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_REMOVE_DROP_ITEM);
 	if (NULL == packet)
 	{
 		return;
@@ -507,7 +507,7 @@ void CDropItemGroup::broadcastRemoveFromMap()
 	int16_t dropItemCount = getDropItemCount();
 	if (dropItemCount > 0)
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, SM_REMOVE_DROP_ITEM);
+		NetPacket *packet = GAME_SERVICE.popNetpacket(0, PACK_DISPATCH, SM_REMOVE_DROP_ITEM);
 		if (NULL == packet)
 		{
 			return;

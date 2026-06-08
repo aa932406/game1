@@ -213,7 +213,7 @@ int32_t CExtCharFamily::onContribution( Answer::NetPacket *inPacket )
 	}
 
 	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_FAMILY_DONATE , nAddValue );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddValue );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nAddValue );
 
 	sendSocialAddContribution( nMoney, nGold );
 	return ERR_OK;
@@ -237,7 +237,7 @@ void CExtCharFamily::sendSocialAddTaskContribution( int32_t GongXian, int32_t Ju
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
 	if (NULL == packet)
 	{
 		return;
@@ -281,7 +281,7 @@ int32_t CExtCharFamily::onRegistPet( Answer::NetPacket* inPacket )
 
 	if ( m_vPetRegistTime[nBaseId] > 0 )
 	{
-		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_FAMILY_REGIST_PET_ALREADY );
+		GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_FAMILY_REGIST_PET_ALREADY );
 		return ERR_INVALID_DATA;
 	}
 
@@ -317,7 +317,7 @@ int32_t CExtCharFamily::onRegistPet( Answer::NetPacket* inPacket )
 	pPet->SetRegInFamily( m_pPlayer->getFamilyId() );
 	m_vRegistPetList[nBaseId] = pPet;
 	m_vPetRegistTime[nBaseId] = 1;
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nPetId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nPetId );
 
 	sendSocialRegistPet( nPetId );
 	recalPetAddContribute();
@@ -348,7 +348,7 @@ int32_t CExtCharFamily::onUnRegistPet( Answer::NetPacket* inPacket )
 	--m_nRegistPetCount;
 
 	m_vRegistPetList[nBaseId] = NULL;
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pPet->GetPetId() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pPet->GetPetId() );
 
 	sendSocialUnRegistPet( pPet->GetPetId() );
 	recalPetAddContribute();
@@ -371,7 +371,7 @@ int32_t CExtCharFamily::onSocialCreateFamily( Answer::NetPacket *inPacket )
 	std::string	name = inPacket->readUTF8( true );
 	std::string notice = inPacket->readUTF8(true);
 	// ͬ������������
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_CREATE_FAMILY );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_CREATE_FAMILY );
 	if (NULL == packet)
 	{
 		return ERR_SYETEM_ERR;
@@ -495,7 +495,7 @@ int32_t CExtCharFamily::onFamilyWarAddPillarMoney( Answer::NetPacket *inPacket )
 	}
 
 	// ͬ������������
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILYWAR_ADD_PILLAR_MONEY );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILYWAR_ADD_PILLAR_MONEY );
 	if (NULL == packet)
 	{
 		return ERR_SYETEM_ERR;
@@ -529,7 +529,7 @@ int32_t CExtCharFamily::onSocialFamilyWarPillarAddMoney( Answer::NetPacket *inPa
 	}
 
 	int32_t nNowMoney = pAct->AddPillarMoney( nMoney );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_ACTIVITY_FAMILYWAR_ADD_PILLAR_MONEY, nNowMoney );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_ACTIVITY_FAMILYWAR_ADD_PILLAR_MONEY, nNowMoney );
 	return ERR_OK;
 }
 
@@ -681,7 +681,7 @@ void CExtCharFamily::sendSocialAddContribution( int32_t nMoney, int32_t nGold )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_ADD_FAMILY_CONTRIBUTE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_ADD_FAMILY_CONTRIBUTE );
 	if (NULL == packet)
 	{
 		return;
@@ -700,7 +700,7 @@ void CExtCharFamily::sendSocialUpdatePetContribution()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_UPDATE_PET_CONTRIBUTE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_UPDATE_PET_CONTRIBUTE );
 	if (NULL == packet)
 	{
 		return;
@@ -718,7 +718,7 @@ void CExtCharFamily::sendSocialRegistPet( PetId_t nPetId )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_REGIST_PET );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_REGIST_PET );
 	if (NULL == packet)
 	{
 		return;
@@ -736,7 +736,7 @@ void CExtCharFamily::sendSocialUnRegistPet( PetId_t nPetId )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_UNREGIST_PET );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_UNREGIST_PET );
 	if (NULL == packet)
 	{
 		return;
@@ -784,7 +784,7 @@ void CExtCharFamily::SendAddFamilyTaskCount()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_TASK_COUTN );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_TASK_COUTN );
 	if (NULL == packet)
 	{
 		return;
@@ -1107,7 +1107,7 @@ int32_t CExtCharFamily::onUpgradeTotem( Answer::NetPacket* inPacket )
 		return ERR_FAMILY_LEVEL_LOW;
 	}
 	// Upgrade totem: send social message
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
 	if ( NULL == packet )
 	{
 		return ERR_SYETEM_ERR;
@@ -1117,7 +1117,7 @@ int32_t CExtCharFamily::onUpgradeTotem( Answer::NetPacket* inPacket )
 	packet->writeInt32( 0 );
 	packet->setSize( packet->getWOffset() );
 	GAME_SERVICE.sendPacket( packet );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nPetBaseId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nPetBaseId );
 	return ERR_OK;
 }
 
@@ -1158,7 +1158,7 @@ int32_t CExtCharFamily::onPray( Answer::NetPacket* inPacket )
 	m_pPlayer->addExp( nAddExp );
 	m_nContribution += nAddContrib;
 	// Send to social server
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
 	if ( NULL == packet )
 	{
 		return ERR_SYETEM_ERR;
@@ -1169,7 +1169,7 @@ int32_t CExtCharFamily::onPray( Answer::NetPacket* inPacket )
 	packet->setSize( packet->getWOffset() );
 	GAME_SERVICE.sendPacket( packet );
 	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_FAMILY_DONATE, nAddContrib );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddContrib );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nAddContrib );
 	return ERR_OK;
 }
 
@@ -1184,7 +1184,7 @@ int32_t CExtCharFamily::onAskPrayRank( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 	// Reply with current contribution rank info
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nContribution );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_nContribution );
 	return ERR_OK;
 }
 
@@ -1199,7 +1199,7 @@ int32_t CExtCharFamily::onAskTotemRank( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 	// Reply with family level as totem rank
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), GetFamilyLevel() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), GetFamilyLevel() );
 	return ERR_OK;
 }
 
@@ -1234,7 +1234,7 @@ int32_t CExtCharFamily::onActiveFamilyLight( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 	pLight->DrinkWine( m_pPlayer, nCount );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nCount );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nCount );
 	return ERR_OK;
 }
 
@@ -1278,7 +1278,7 @@ int32_t CExtCharFamily::onStartFamilyWar( Answer::NetPacket* inPacket )
 	{
 		return ERR_INVALID_DATA;
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nFamilyId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_nFamilyId );
 	return ERR_OK;
 }
 
@@ -1328,7 +1328,7 @@ int32_t CExtCharFamily::onDonateItem( Answer::NetPacket* inPacket )
 	}
 	m_nContribution += nAddContrib;
 	// Send to social server
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_FAMILY_ADD_CONTRIBUTION );
 	if ( NULL == packet )
 	{
 		return ERR_SYETEM_ERR;
@@ -1339,7 +1339,7 @@ int32_t CExtCharFamily::onDonateItem( Answer::NetPacket* inPacket )
 	packet->setSize( packet->getWOffset() );
 	GAME_SERVICE.sendPacket( packet );
 	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_FAMILY_DONATE, nAddContrib );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nAddContrib );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nAddContrib );
 	return ERR_OK;
 }
 
@@ -1354,6 +1354,6 @@ int32_t CExtCharFamily::onAskFamilyDonateLog( Answer::NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 	// Send current contribution as donation log
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nContribution );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_nContribution );
 	return ERR_OK;
 }

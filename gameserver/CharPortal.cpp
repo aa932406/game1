@@ -154,23 +154,22 @@ void CExtCharPortal::SendPortalInfo( const PortalInfo* info )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PORTAL_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PORTAL_INFO );
 	if ( NULL == packet )
 	{
 		return;
 	}
 
-	packet->writeInt32( 1 );	// 数量
+	packet->writeInt32( 1 );
 	packet->writeInt32( info->nId );
 	packet->writeInt32( info->nMapId );
 	packet->writeInt32( info->nPosX );
 	packet->writeInt32( info->nPosY );
 	packet->writeInt32( info->nDungeon );
 	packet->writeInt32( info->nStartTime );
-	packet->writeInt32( info->nDuration );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 // ========== 发送传送门列表 ==========
@@ -181,7 +180,7 @@ void CExtCharPortal::SendPortalInfo( const PortalInfoList* lst )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PORTAL_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PORTAL_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -189,7 +188,7 @@ void CExtCharPortal::SendPortalInfo( const PortalInfoList* lst )
 
 	int32_t nCount = 0;
 	uint32_t nOldOffset = packet->getWOffset();
-	packet->writeInt32( 0 );	// 占位，稍后写入实际数量
+	packet->writeInt32( 0 );
 
 	for ( PortalInfoList::const_iterator iter = lst->begin(); iter != lst->end(); ++iter )
 	{
@@ -204,7 +203,6 @@ void CExtCharPortal::SendPortalInfo( const PortalInfoList* lst )
 		packet->writeInt32( iter->nPosY );
 		packet->writeInt32( iter->nDungeon );
 		packet->writeInt32( iter->nStartTime );
-		packet->writeInt32( iter->nDuration );
 		++nCount;
 	}
 
@@ -216,7 +214,7 @@ void CExtCharPortal::SendPortalInfo( const PortalInfoList* lst )
 		packet->setWOffset( nNewOffset );
 
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 	}
 }
 
@@ -228,7 +226,7 @@ void CExtCharPortal::SendPortalClose( int32_t nId )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_PORTAL_CLOSE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_PORTAL_CLOSE );
 	if ( NULL == packet )
 	{
 		return;
@@ -237,7 +235,7 @@ void CExtCharPortal::SendPortalClose( int32_t nId )
 	packet->writeInt32( nId );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 // ========== 广播传送门 ==========
@@ -248,19 +246,18 @@ void CExtCharPortal::BroadcastPortal()
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_BROADCAST_PORTAL );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet )
 	{
 		return;
 	}
 
-	packet->writeInt32( 538 );	// portal广播ID
-	std::string name = m_pPlayer->getName();
-	packet->writeUTF8( name );
+	packet->writeInt32( 538 );
+	packet->writeUTF8( m_pPlayer->getName() );
 	packet->writeInt64( m_pPlayer->getCid() );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 }
 
 // ========== 获取传送门ID ==========

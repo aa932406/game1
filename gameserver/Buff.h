@@ -1,10 +1,10 @@
 #pragma once
 
 #include "CfgData.h"
+#include "DataStructs.h"
 
 #include <list>
-
-class Unit;
+#include <vector>
 
 enum BuffType
 {
@@ -19,48 +19,48 @@ enum BuffType
 
 //enum BuffState
 //{
-//	BS_XUANYUN = 1,//Ñ£ÔÎ
-//	BS_WUDI,//ÎÞµÐ
-//	BS_PERSIST_HP,//³ÖÐø»ØÑª
-//	BS_BINGDONG,//±ù¶³
-//	BS_SLOW,//³Ù»º
-//	BS_CONFUSION,//»ìÂÒ
-//	BS_WEAK,//ÐéÈõ
-//	BS_BURN,//×ÆÉË
-//	BS_REBOUND,//·´µ¯
-//	BS_EXCITE,//ÐË·Ü
+//	BS_XUANYUN = 1,//Ñ£ï¿½ï¿½
+//	BS_WUDI,//ï¿½Þµï¿½
+//	BS_PERSIST_HP,//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñª
+//	BS_BINGDONG,//ï¿½ï¿½ï¿½ï¿½
+//	BS_SLOW,//ï¿½Ù»ï¿½
+//	BS_CONFUSION,//ï¿½ï¿½ï¿½ï¿½
+//	BS_WEAK,//ï¿½ï¿½ï¿½ï¿½
+//	BS_BURN,//ï¿½ï¿½ï¿½ï¿½
+//	BS_REBOUND,//ï¿½ï¿½ï¿½ï¿½
+//	BS_EXCITE,//ï¿½Ë·ï¿½
 //	BS_ANTI_JUMP,
-//	BS_BATEPDEF, // ÎïÀí·ÀÓù¼õÈõ
-//	BS_BATEMDEF, // ·¨Êõ·ÀÓù¼õÈõ
-//	BS_BATEHITP, // ¼õÃüÖÐ
-//	BS_BATEDP, // ¼õÉÁ±Ü
-//	BS_HERO_DUNGEON_MONSTER, //Ó¢ÐÛ¸±±¾¹ÖÎï¼Ó×´Ì¬
+//	BS_BATEPDEF, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	BS_BATEMDEF, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	BS_BATEHITP, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	BS_BATEDP, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	BS_HERO_DUNGEON_MONSTER, //Ó¢ï¿½Û¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
 //	BS_BUFF_STATE_MAX,
 //};
 
 enum SkillSpecial
 {
 	SS_NONE			= 0,
-	SS_SHUNYI		= 1,	// ÒÆÎ»
-	SS_XUANYUN		= 2,	// Ñ£ÔÎ
-	SS_WUDI			= 3,	// ÎÞµÐ
-	SS_PERSIST_HP	= 4,	// ³ÖÐø»ØÑª
-	SS_BINGDONG		= 5,	// ±ù¶³
-	SS_SLOW			= 6,	// ³Ù»º
-	SS_CONFUSION	= 7,	// »ìÂÒ
-	SS_WEAK			= 8,	// ÐéÈõ
-	SS_BURN			= 9,	// ×ÆÉË
-	SS_EXCITE		= 10,	// ÐË·Ü
-	SS_FUHUO		= 11,	// ¸´»î
+	SS_SHUNYI		= 1,	// ï¿½ï¿½Î»
+	SS_XUANYUN		= 2,	// Ñ£ï¿½ï¿½
+	SS_WUDI			= 3,	// ï¿½Þµï¿½
+	SS_PERSIST_HP	= 4,	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñª
+	SS_BINGDONG		= 5,	// ï¿½ï¿½ï¿½ï¿½
+	SS_SLOW			= 6,	// ï¿½Ù»ï¿½
+	SS_CONFUSION	= 7,	// ï¿½ï¿½ï¿½ï¿½
+	SS_WEAK			= 8,	// ï¿½ï¿½ï¿½ï¿½
+	SS_BURN			= 9,	// ï¿½ï¿½ï¿½ï¿½
+	SS_EXCITE		= 10,	// ï¿½Ë·ï¿½
+	SS_FUHUO		= 11,	// ï¿½ï¿½ï¿½ï¿½
 	SS_ANTI_JUMP	= 12,
 	SS_JUMP			= 21,
 	SS_SHAKE		= 22,
 	SS_PULL			= 23,
 	SS_HIT			= 24,
 	SS_KICKOUT		= 25,
-	SS_SPEED_UP		= 26,	//¼ÓËÙ
-	SS_DIVIDE		= 28,	//ÉËº¦ÆÀ·Ö
-	SS_CLEAR = 100,			//Çå³ýÒì³£×´Ì¬	
+	SS_SPEED_UP		= 26,	//ï¿½ï¿½ï¿½ï¿½
+	SS_DIVIDE		= 28,	//ï¿½Ëºï¿½ï¿½ï¿½ï¿½ï¿½
+	SS_CLEAR = 100,			//ï¿½ï¿½ï¿½ï¿½ì³£×´Ì¬	
 };
 
 struct BuffAttrAddon 
@@ -73,7 +73,7 @@ struct BuffAttrAddon
 class Buff
 {
 public:
-	Buff(Unit &unit, CfgBuff &cfgBuff);
+	Buff(Unit &unit, CfgBuff &cfgBuff, const UnitHandle &launcher = UnitHandle(), int8_t nType = 0, bool bClear = true);
 	virtual ~Buff();
 
 public:
@@ -87,9 +87,9 @@ public:
 public:
 	virtual bool expire();
 
-	virtual void effect() = 0;
-	virtual void interval() = 0;
-	virtual void restore() = 0;
+	virtual void effect();
+	virtual void interval();
+	virtual void restore();
 
 	virtual bool deathClear() = 0;
 
@@ -97,11 +97,22 @@ public:
 	virtual int32_t getGroupId() const = 0;
 	virtual int32_t getLevel() const = 0;
 
+	bool shieldDamage(int32_t &nDamage);
+	void trigTime();
+	bool effectTimes();
+
 protected:
 	Unit &m_unit;
 	CfgBuff &m_cfgBuff;
+	UnitHandle m_launcher;
 
 	int64_t m_endTick;
 	int64_t m_lastEffectTick;
+	int64_t m_lastIntervalTick;
+	int32_t m_nShield;
+	int32_t m_nEffectTimes;
+	int8_t m_nType;
+	bool m_bDeathClear;
+	std::vector<BuffAttrAddon> m_restore;
 };
 typedef std::list<Buff*> BuffList;

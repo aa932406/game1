@@ -7,13 +7,13 @@
 
 enum GRADE_BAO_XIANG_STATE
 {
-	NOT_FLUSH			= 0,		//Ã»ÓÐË¢ÐÂ
-	ALREADY_FLUSH		= 1,		//ÒÑË¢ÐÂ
-	ALREADY_GATHER		= 2,		//ÒÑ±»²É¼¯
+	NOT_FLUSH			= 0,		//Ã»ï¿½ï¿½Ë¢ï¿½ï¿½
+	ALREADY_FLUSH		= 1,		//ï¿½ï¿½Ë¢ï¿½ï¿½
+	ALREADY_GATHER		= 2,		//ï¿½Ñ±ï¿½ï¿½É¼ï¿½
 };
 
-#define MAX_CAN_GATHER	  10		//×î´ó²É¼¯Êý
-#define SUB_MOMEY	      1000000   //½øÈëÐèÒªµÄÍ­Ç®
+#define MAX_CAN_GATHER	  10		//ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½
+#define SUB_MOMEY	      1000000   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Í­Ç®
 CTianJiangBaoXiang::CTianJiangBaoXiang( const CfgActivity& cfgActivity )
 :CActivity( cfgActivity )
 {
@@ -86,7 +86,7 @@ void CTianJiangBaoXiang::SendPlayerActivityInfo( Player* player )
 	packet->writeInt32( getNextStartTime() );
 	packet->writeInt64( ACTIVITY_MANAGER.GetFamilyWarWinner() );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CTianJiangBaoXiang::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
@@ -115,7 +115,7 @@ void CTianJiangBaoXiang::SendPlayerActivityScore( Player* player, int32_t nLeftT
 	packet->writeInt8( IsGetSpecial );
 	packet->writeInt32( nLeftTime );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 void CTianJiangBaoXiang::AddPlant( Plant* plant )

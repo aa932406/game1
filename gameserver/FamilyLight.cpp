@@ -111,7 +111,7 @@ void CFamilyLight::reset()
 
 // bool CFamilyLight::checkData()
 // {
-// 	int32_t startDays = TIMER.GetDaysFromStart();	// ¿ª·þ¡¢ºÏ·þºóµÚÈýÌì¿ªÆô
+// 	int32_t startDays = TIMER.GetDaysFromStart();	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ì¿ªï¿½ï¿½
 // 	if ( startDays == 2 )
 // 	{
 // 		return true;
@@ -192,7 +192,7 @@ void CFamilyLight::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 	packet->writeInt32( nLeftTime );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
 }
 
 bool CFamilyLight::CanUseXP() const

@@ -313,7 +313,7 @@ int32_t CExtEquip::onEquipUpGrade( NetPacket *inPacket )
 		}
 		m_pPlayer->GetTask().updateTaskCount( TC_UP_EQUIP_GRADE );
 		EquipUpGradeGongGao( pCfgUpGrade->m_nGiveId, pCfgUpGrade->m_nId, equip.id );
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpGrade->m_nGiveId );
+		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpGrade->m_nGiveId );
 		return ERR_OK;
 	}
 
@@ -398,7 +398,7 @@ int32_t CExtEquip::onEquipUpGrade( NetPacket *inPacket )
 		equip.UpGradeLucky += pCfgUpGrade->m_nGetLucky;
 		++equip.nFlag;
 		EQUIP_MANAGER.UpdateMemEquip( equip );
-		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPGRADE_FAIL, pCfgUpGrade->m_nGetLucky );
+		GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPGRADE_FAIL, pCfgUpGrade->m_nGetLucky );
 		return ERR_SYETEM_ERR;
 	}
 
@@ -433,7 +433,7 @@ int32_t CExtEquip::onEquipUpGrade( NetPacket *inPacket )
 		m_pPlayer->GetBag().SetSlotData( nPos, bagItem );
 	}
 	EquipUpGradeGongGao( pCfgUpGrade->m_nGiveId, pCfgUpGrade->m_nId,equip.id );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpGrade->m_nGiveId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpGrade->m_nGiveId );
 	return ERR_OK;
 }
 
@@ -506,7 +506,7 @@ int32_t CExtEquip::onEquipUpStar( NetPacket *inPacket )
 			m_pPlayer->GetTask().updateTaskCount( TC_EQUIP_STAR_COUNT );
 		}
 		UpStarSuccess( equip, nBagType, nPos, bagItem, BindCount > 0 ? true:false );
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), equip.star );
+		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), equip.star );
 		m_pPlayer->GetTask().updateTaskCount( TC_UP_EQUIP_STAR );
 		m_pPlayer->GetAchievemnet().AddAchievement( AT_EQUIP_UP_STAR );
 		m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_EQUIP_STAT_UP );
@@ -616,8 +616,8 @@ int32_t CExtEquip::onEquipUpStar( NetPacket *inPacket )
 		}
 		else if ( SPECIAL_STAT == equip.star )
 		{
-			//9����ʧ��,װ��ʲô��û�ı�
-			GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, equip.star );
+			//9Ã¯Â¿Â½Ã¯Â¿Â½Ã¯Â¿Â½Ã¯Â¿Â½ÃÂ§Ã¯Â¿Â½Ã¯Â¿Â½,ÃÂ°Ã¯Â¿Â½Ã¯Â¿Â½ÃÂ²ÃÂ´Ã¯Â¿Â½Ã¯Â¿Â½ÃÂ»Ã¯Â¿Â½ÃÂ±Ã¯Â¿Â½
+			GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, equip.star );
 			return ERR_SYETEM_ERR;
 		}
 		else
@@ -628,11 +628,11 @@ int32_t CExtEquip::onEquipUpStar( NetPacket *inPacket )
 		EQUIP_MANAGER.UpdateMemEquip( equip );
 		if ( SPECIAL_STAT <= equip.star )
 		{
-			GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, equip.star );
+			GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, equip.star );
 		}
 		else
 		{
-			GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, pCfgUpStar->m_nFailAddLucky );
+			GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPSTAR_FAIL, pCfgUpStar->m_nFailAddLucky );
 		}
 
 		return ERR_SYETEM_ERR;
@@ -644,7 +644,7 @@ int32_t CExtEquip::onEquipUpStar( NetPacket *inPacket )
 		m_pPlayer->recalcAttr();
 		m_pPlayer->GetTask().updateTaskCount( TC_EQUIP_STAR_COUNT );
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), equip.star );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), equip.star );
 	return ERR_OK;
 }
 
@@ -801,7 +801,7 @@ int32_t CExtEquip::onEquipUpQuality( NetPacket *inPacket )
 			EquipUpQualityGongGao( pCfgUpQuality->m_nGiveId, pCfgUpQuality->m_nId, equip.id );
 		}
 		m_pPlayer->GetTask().updateTaskCount( TC_UP_EQUIP_QUALITY );
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpQuality->m_nGiveId );
+		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpQuality->m_nGiveId );
 		return ERR_OK;
 	}
 
@@ -886,7 +886,7 @@ int32_t CExtEquip::onEquipUpQuality( NetPacket *inPacket )
 		equip.UpQuality += pCfgUpQuality->m_nGetLucky;
 		++equip.nFlag;
 		EQUIP_MANAGER.UpdateMemEquip( equip );
-		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPQUALITY_FAIL, pCfgUpQuality->m_nGetLucky );
+		GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_EQUIP_UPQUALITY_FAIL, pCfgUpQuality->m_nGetLucky );
 		return ERR_SYETEM_ERR;
 	}
 
@@ -929,7 +929,7 @@ int32_t CExtEquip::onEquipUpQuality( NetPacket *inPacket )
 	{
 		EquipUpQualityGongGao( pCfgUpQuality->m_nGiveId, pCfgUpQuality->m_nId,equip.id );
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpQuality->m_nGiveId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pCfgUpQuality->m_nGiveId );
 	return ERR_OK;
 }
 
@@ -970,7 +970,7 @@ void CExtEquip::SendOpenGemHole( int8_t HoleIndex, int8_t BagType, int32_t slot 
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_OPEN_GEM_HOLE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_OPEN_GEM_HOLE );
 	if (NULL == packet)
 	{
 		return;
@@ -979,7 +979,7 @@ void CExtEquip::SendOpenGemHole( int8_t HoleIndex, int8_t BagType, int32_t slot 
 	packet->writeInt8( BagType );
 	packet->writeInt32( slot );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CExtEquip::onEquipAddGem( NetPacket *inPacket )
@@ -1136,7 +1136,7 @@ bool CExtEquip::checkCombiItemList( ItemDataList& NeedItemList, Int32Vector& vSl
 	bool IsSucceed = false;
 	int32_t isize = vSlot.size();
 	ItemDataList::iterator it = NeedItemList.begin();
-	int32_t ItemIndex = 0;	//�ڼ�����Ʒ
+	int32_t ItemIndex = 0;	//ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ¼ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·
 	for ( ; it != NeedItemList.end(); ++it )
 	{
 		ItemIndex++;
@@ -1151,7 +1151,7 @@ bool CExtEquip::checkCombiItemList( ItemDataList& NeedItemList, Int32Vector& vSl
 			{
 				return false;
 			}
-			//�ж��Ƿ����ظ���id
+			//ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ¶ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ¸ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½id
 			Int32Vector::iterator Slotit = SlotID.begin();
 			for ( ; Slotit != SlotID.end(); ++Slotit )
 			{
@@ -1165,7 +1165,7 @@ bool CExtEquip::checkCombiItemList( ItemDataList& NeedItemList, Int32Vector& vSl
 			if ( bagItem.itemId != it->m_nId 
 				|| bagItem.itemClass != it->m_nClass 
 				|| bagItem.itemCount <= 0
-				|| bagItem.endTime != 0 )		// ��ʱ���߲�����ϳ�
+				|| bagItem.endTime != 0 )		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ±ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ²ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ³ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
 			{
 				continue;
 			}
@@ -1203,14 +1203,14 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
  			return ERR_SYETEM_ERR;
  		}
  	
- 		// ������������
+ 		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
  		int32_t nId			= inPacket->readInt32();
  		int32_t nTimes		= inPacket->readInt32();
  	
  		Int32Vector vSlot;
  		m_pPlayer->queryBagInfo( inPacket, vSlot );
  		int8_t AutoBuy		= inPacket->readInt8();
- 		// �����ж�
+ 		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ¶ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
  		if ( nTimes <= 0 )
  		{
  			return ERR_SYETEM_ERR;
@@ -1222,7 +1222,7 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
  			return ERR_SYETEM_ERR;
  		}
  	
-		// ��Ǯ���
+		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ®ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
 		if ( pCfgItemCombi->m_nMoney < 0 )
 		{
 			return ERR_SYETEM_ERR;
@@ -1301,7 +1301,7 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
 
 		int32_t nGiveBind   = nBindTimes * nGiveCount;
 		int32_t nGiveUnBind = nUnBindTimes * nGiveCount;
-		// ����ɾ����������
+		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ¾ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
 		MemChrBagVector addVt;
 		if ( nGiveBind > 0 )
 		{
@@ -1390,7 +1390,7 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
 		
  		if ( nSuccessTimes <= 0 )
  		{
- 			GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nSuccessTimes );
+ 			GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nSuccessTimes );
  			return ERR_SYETEM_ERR;
  		}
  		if ( !m_pPlayer->GetBag().AddItemsAndEggs( addVt, IACR_COMBINE ) )
@@ -1401,7 +1401,7 @@ int32_t CExtEquip::onEquipItemCombi( NetPacket *inPacket )
 		{
 			CombiGongGao( pCfgItemCombi->m_nGiveId, pCfgItemCombi->m_nGiveClass );
 		}
- 		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nSuccessTimes );
+ 		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nSuccessTimes );
   	 	return ERR_OK;
 }
 
@@ -1575,7 +1575,7 @@ int32_t CExtEquip::onEquipExchangeStar( NetPacket* inPacket )
 // 	vEquip.push_back( srcEquip );
 // 	vEquip.push_back( desEquip );
 // 	m_pPlayer->sendEquipInfo( vEquip );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -1632,7 +1632,7 @@ int32_t	CExtEquip::onUpXunZhangLevel( Answer::NetPacket * inPacket )
 		m_pPlayer->sendEquipInfo( equip );
 	}
 	addDirty( EQUIP_SLOT_XUNZHANG );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(),inPacket->getProc(),pCfg->EquipId);
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),inPacket->getProc(),pCfg->EquipId);
 	m_pPlayer->recalcAttr();
 	return ERR_OK;
 }
@@ -1904,7 +1904,7 @@ void CExtEquip::SendEquipInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_EQUIP_INFO );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_EQUIP_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -1930,7 +1930,7 @@ void CExtEquip::SendEquipInfo()
 	packet->setWOffset( oldwoffset );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtEquip::SendGemInfo()
@@ -1940,7 +1940,7 @@ void CExtEquip::SendGemInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_GEM_INFO );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_GEM_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -1949,7 +1949,7 @@ void CExtEquip::SendGemInfo()
 	PackageGemInfo( packet );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtEquip::SendGemInfo( int8_t nPos, int8_t nSlot )
@@ -1964,7 +1964,7 @@ void CExtEquip::SendGemInfo( int8_t nPos, int8_t nSlot )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_GEM_INFO );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_GEM_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -1976,7 +1976,7 @@ void CExtEquip::SendGemInfo( int8_t nPos, int8_t nSlot )
 	packet->writeInt32( m_vMemGem[nPos][nSlot] );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtEquip::AddCharAttr()
@@ -2085,7 +2085,7 @@ void CExtEquip::addEquipAttr()
 			continue;
 		}
 
-		// ������
+		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
 		for ( int32_t j = 0; j < MAX_EQUIP_BASE_ATTR_COUNT; ++j )
 		{
 			if ( pCfgEquip->m_vAttr[j].addon > 0 )
@@ -2100,7 +2100,7 @@ void CExtEquip::addEquipAttr()
 			}
 		}
 
-		// ��������
+		// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
 		if ( equip.addAttr > 0 )
 		{
 			int32_t nAddCount = EQUIP_MANAGER.GetAddAttrCount( pCfgEquip->m_nQuality );
@@ -2139,7 +2139,7 @@ void CExtEquip::addSuitAttr()
 	{
 		return;
 	}
-	// ǿ����װ
+	// ÃÂÃÂÃÂÃÂ¿ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ°
 	const CfgEquipGoal* pGoalStar = CFG_DATA.GetEquipTable().GetEquipGoal( EQUIP_GOAL_STAR, m_nEquipGoalStarLevel );
 	if ( pGoalStar != NULL )
 	{
@@ -2151,7 +2151,7 @@ void CExtEquip::addSuitAttr()
 			}
 		}
 	}
-	// ��ʯ��װ
+	// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ¯ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ°
 	const CfgEquipGoal* pGoalGem = CFG_DATA.GetEquipTable().GetEquipGoal( EQUIP_GOAL_GEM, m_nEquipGoalGemLevel );
 	if ( pGoalGem != NULL )
 	{
@@ -2163,7 +2163,7 @@ void CExtEquip::addSuitAttr()
 			}
 		}
 	}
-	// װ����װ
+	// ÃÂÃÂÃÂÃÂ°ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ°
 	EquipSuitMap::iterator iter = m_mEquipSuit.begin();
 	EquipSuitMap::iterator eiter = m_mEquipSuit.end();
 	for ( ; iter != eiter; ++iter )
@@ -2321,7 +2321,7 @@ bool CExtEquip::sendDirty()
 		return false;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_BAG_DIRTY );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_BAG_DIRTY );
 	if (NULL == packet)
 	{
 		return false;
@@ -2466,7 +2466,7 @@ int32_t	CExtEquip::OnNewEquipAddGem( Answer::NetPacket *inPacket )
 	}
 //	m_pPlayer->GetBag().ForceSendDirty();
 	m_pPlayer->sendEquipInfo( equip );	
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), CostItem.itemId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), CostItem.itemId );
 	return ERR_OK;
 }
 
@@ -2539,7 +2539,7 @@ int32_t	CExtEquip::OnNewEquipRemoveGem( Answer::NetPacket *inPacket )
 		m_pPlayer->recalcAttr();
 		m_pPlayer->GetCharPet().RecalPetsAttr();
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -2643,7 +2643,7 @@ int32_t	CExtEquip::OnNewEquipOpenHole( Answer::NetPacket *inPacket )
 		m_pPlayer->GetBag().SetSlotData( nPos, BagItem );
 	}
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	EquipOpenGemHoelGongGao( equip.base, nOpenIndex, equip.id );
 	return ERR_OK;
 }
@@ -2868,7 +2868,7 @@ void CExtEquip::EquipOpenGemHoelGongGao( int32_t EquipBaseId, int8_t HoleIndex, 
 
 void CExtEquip::GetDropEquip( Player *pKiller, int32_t DropCount, int32_t DropRate, MemChrBagVector &DropItemVt, int32_t Mid  )
 {
-// 	if ( NULL == pKiller ) // �����������Ϊ��
+// 	if ( NULL == pKiller ) // ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂªÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½
 // 	{
 // 		return;
 // 	}
@@ -3196,22 +3196,22 @@ void CExtEquip::GetEquipInfo( int32_t& HoleCount, int32_t& BattleGemCount, int32
 		}
 		switch ( pCfgEquip->m_nQuality )
 		{	
-		case IQ_GREEN:	// ��Ʒ
+		case IQ_GREEN:	// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·
 			{
 				EquipQualityBattle += 1;
 				break;
 			}
-		case IQ_BLUE:	// ��Ʒ
+		case IQ_BLUE:	// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·
 			{
 				EquipQualityBattle += 2;
 				break;
 			}
-		case IQ_PURPLE:	// ��Ʒ
+		case IQ_PURPLE:	// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·
 			{
 				EquipQualityBattle += 3;
 				break;
 			}
-		case IQ_GOLD:	// ��Ʒ
+		case IQ_GOLD:	// ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·
 			{
 				EquipQualityBattle += 4;
 				break;
@@ -3312,7 +3312,7 @@ int32_t CExtEquip::HaveStarEquipCount( int32_t Star )
 	return Count;
 }
 
-// ========== ���°汾 CExtEquip �·��� ==========
+// ========== ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ°ÃÂÃÂ¦ÃÂÃÂ±ÃÂÃÂ¾ CExtEquip ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂÃÂÃÂ·ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ ==========
 
 void CExtEquip::loadGemString( const std::string& strGem )
 {
@@ -3738,7 +3738,7 @@ void CExtEquip::broadcastGemLevelUp( int8_t nEquipSlot, int8_t nHolePos, int32_t
 	{
 		return;
 	}
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_EQUIP_UP_STAR );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_NOTIFY_EQUIP_UP_STAR );
 	if ( NULL == packet )
 	{
 		return;
@@ -3750,7 +3750,7 @@ void CExtEquip::broadcastGemLevelUp( int8_t nEquipSlot, int8_t nHolePos, int32_t
 	packet->writeInt32( m_vMemEquip[nEquipSlot].itemId );
 	packet->writeInt32( nGemId );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( packet );
+	GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 }
 
 std::vector<int32_t> CExtEquip::getCanDropEquipSlots() const
@@ -3777,7 +3777,7 @@ void CExtEquip::SendPosLevelInfo()
 	{
 		return;
 	}
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_EQUIP_POS_LEVEL_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_EQUIP_POS_LEVEL_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -3799,7 +3799,7 @@ void CExtEquip::SendPosLevelInfo()
 	packet->writeInt8( nCount );
 	packet->setWOffset( nNewOffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtEquip::SendShenYaoPosLevelInfo()
@@ -3808,7 +3808,7 @@ void CExtEquip::SendShenYaoPosLevelInfo()
 	{
 		return;
 	}
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SHENYAO_POS_LEVEL_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SHENYAO_POS_LEVEL_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -3819,7 +3819,7 @@ void CExtEquip::SendShenYaoPosLevelInfo()
 		packet->writeInt32( m_vShenYaoEquipPos[i] );
 	}
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtEquip::SendStrenGthenInfo()
@@ -3828,7 +3828,7 @@ void CExtEquip::SendStrenGthenInfo()
 	{
 		return;
 	}
-	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_EQUIP_STRENGTHEN_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_EQUIP_STRENGTHEN_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -3850,7 +3850,7 @@ void CExtEquip::SendStrenGthenInfo()
 	packet->writeInt8( nCount );
 	packet->setWOffset( nNewOffset );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtEquip::PackageShenYaoPosLevelUp( Answer::NetPacket* packet ) const
@@ -4048,7 +4048,7 @@ int32_t CExtEquip::onBackEquip( Answer::NetPacket* inPacket )
 	}
 
 	m_pPlayer->GetTask().updateTaskCount( 0 );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nCount );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nCount );
 	return ERR_OK;
 }
 
@@ -4085,7 +4085,7 @@ int32_t CExtEquip::onEquipStrenGthen( Answer::NetPacket* inPacket )
 
 	if ( pCfg->m_nGongGaoId > 0 )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( NULL != packet )
 		{
 			packet->writeInt32( pCfg->m_nGongGaoId );
@@ -4094,11 +4094,11 @@ int32_t CExtEquip::onEquipStrenGthen( Answer::NetPacket* inPacket )
 			packet->writeInt32( nPos );
 			packet->writeInt32( m_vMemStrengthen[nPos] );
 			packet->setSize( packet->getWOffset() );
-			GAME_SERVICE.worldBroadcast( packet );
+			GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 		}
 	}
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nPos );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nPos );
 	return ERR_OK;
 }
 
@@ -4113,7 +4113,7 @@ int32_t CExtEquip::onEquipUpPhase( Answer::NetPacket* inPacket )
 	int32_t nPos = inPacket->readInt32();
 
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4205,7 +4205,7 @@ int32_t CExtEquip::onEquipUpPos( Answer::NetPacket* inPacket )
 		m_pPlayer->recalcAttr();
 		if ( pCfg->m_nGongGaoId > 0 )
 		{
-			NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+			NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 			if ( NULL != packet )
 			{
 				packet->writeInt32( pCfg->m_nGongGaoId );
@@ -4214,12 +4214,12 @@ int32_t CExtEquip::onEquipUpPos( Answer::NetPacket* inPacket )
 				packet->writeInt32( nPos );
 				packet->writeInt32( m_vMemPosLevel[nPos] );
 				packet->setSize( packet->getWOffset() );
-				GAME_SERVICE.worldBroadcast( packet );
+				GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
 			}
 		}
 		m_pPlayer->GetTask().updateTaskCount( 0 /* TC_EQUIP_UP_POS */ );
 		m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( 0 /* HYDT_EQUIP_POS_UP */ );
-		GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+		GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	}
 	else
 	{
@@ -4228,14 +4228,14 @@ int32_t CExtEquip::onEquipUpPos( Answer::NetPacket* inPacket )
 			m_vMemPosLevel[nPos]--;
 		}
 		m_pPlayer->recalcAttr();
-		GAME_SERVICE.replyfailure( m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_INVALID_DATA );
+		GAME_SERVICE.replyfailure( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), ERR_INVALID_DATA );
 	}
 
 	return ERR_OK;
 }
 
 
-// ========== 完善版装备系统方法 ==========
+// ========== å®åçè£å¤ç³»ç»æ¹æ³ ==========
 
 int32_t CExtEquip::onGemLevelUp( Answer::NetPacket* inPacket )
 {
@@ -4296,7 +4296,7 @@ int32_t CExtEquip::onGemLevelUp( Answer::NetPacket* inPacket )
 	{
 		broadcastGemLevelUp( nEquipPos, nGemSlot, pCfgGemLevelUp->nNextGemId );
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4343,7 +4343,7 @@ int32_t CExtEquip::onGemOpenHole( Answer::NetPacket* inPacket )
 	// Mark hole as open (slot is now available for gem insertion)
 	m_vMemGem[nEquipPos][nHoleIndex] = 0;
 	SendGemInfo( nEquipPos, (int8_t)nHoleIndex );
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4379,7 +4379,7 @@ int32_t CExtEquip::onGemRemove( Answer::NetPacket* inPacket )
 	updateEquipGem( nEquipPos, m_vMemGem[nEquipPos][nGemSlot], nGemSlot );
 	SendGemInfo( nEquipPos, (int8_t)nGemSlot );
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4408,7 +4408,7 @@ int32_t CExtEquip::onMoFuDuiHuan( Answer::NetPacket* inPacket )
 	// Apply mofu to equipment
 	m_vMemMoFu[nEquipPos] = nMoFuId;
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4439,7 +4439,7 @@ int32_t CExtEquip::onMoFuHuiShou( Answer::NetPacket* inPacket )
 	}
 	m_vMemMoFu[nEquipPos] = 0;
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4473,7 +4473,7 @@ int32_t CExtEquip::onRelieveBind( Answer::NetPacket* inPacket )
 	// Unbind equipped item
 	m_vMemEquip[nEquipPos].bind = IBS_UNBIND;
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4501,7 +4501,7 @@ int32_t CExtEquip::onShenYaoPosLevelUp( Answer::NetPacket* inPacket )
 	}
 	m_vShenYaoEquipPos[nPos]++;
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4525,7 +4525,7 @@ int32_t CExtEquip::OnXinMoEquipHuiShou( Answer::NetPacket* inPacket )
 		m_vMemGem[nEquipPos][i] = 0;
 	}
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -4582,6 +4582,6 @@ int32_t CExtEquip::onGemAdd( Answer::NetPacket* inPacket )
 	checkEquipGoalGemLevel();
 	SendGemInfo( nEquipPos, (int8_t)nGemSlot );
 	m_pPlayer->recalcAttr();
-	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
