@@ -159,6 +159,8 @@ public:
 	bool isLeader() const; //�Ƿ��ǰ���
 	int32_t getLeaderCid() const;
 	int32_t leaveActivity();
+	void EnterMapGongGao( int32_t gongGaoId, int32_t mapId );
+	void kickBackFromCross( int32_t reason );
 	CharId_t getCid() const;
 	std::string getName() const;
 	Sex_t getSex() const;

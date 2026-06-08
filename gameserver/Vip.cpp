@@ -474,9 +474,19 @@ void CVip::GetVipGiftIconState( IconStateList& IconList )
 
 void CVip::SendVipGiftIcon()
 {
-	// 发送VIP礼包图标
+	if ( !m_pPlayer )
+		return;
+
 	ShowIcon icon = GetVipGiftIconStu();
-	// TODO: 实现发送逻辑
+	int8_t connid = m_pPlayer->getConnId();
+	NetPacket* outPacket = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, SM_SEND_ONE_ICON );
+	if ( !outPacket )
+		return;
+
+	outPacket->writeInt32( icon.nId );
+	outPacket->writeInt8( icon.bState ? 1 : 0 );
+	outPacket->setSize( outPacket->getWOffset() );
+	GAME_SERVICE.sendPacket( connid, outPacket );
 }
 
 ShowIcon CVip::GetVipGiftIconStu()

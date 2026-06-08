@@ -26,9 +26,9 @@ void CExtCharTeam::OnCleanUp()
 
 void CExtCharTeam::GetInterestsProtocol( ProcIdList& procList )
 {
-	procList.push_back( CM_QUERY_TEAMS_AROUND );					// ËÑÑ°¸½½ü¶ÓÎé
-	procList.push_back( CM_TEAM_SET_AUTO_OPERATE );					// ×é¶ÓÄ¬ÈÏÉèÖÃ
-	procList.push_back( IM_SOCIAL_GAME_UPDATE_TEAM_INFO );			// ¸üĞÂ×é¶ÓĞÅÏ¢
+	procList.push_back( CM_QUERY_TEAMS_AROUND );					// æœå¯»é™„è¿‘é˜Ÿä¼
+	procList.push_back( CM_TEAM_SET_AUTO_OPERATE );					// ç»„é˜Ÿé»˜è®¤è®¾ç½®
+	procList.push_back( IM_SOCIAL_GAME_UPDATE_TEAM_INFO );			// æ›´æ–°ç»„é˜Ÿä¿¡æ¯
 }
 
 int32_t CExtCharTeam::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -67,7 +67,7 @@ int32_t CExtCharTeam::onQueryTeamsAround( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	// ×ö¸öÊ±¼äÏŞÖÆ°É ÏÈÅª¸ö5Ãë
+	// åšä¸ªæ—¶é—´é™åˆ¶å§ å…ˆå¼„ä¸ª5ç§’
 	int64_t nCurTick = m_pPlayer->getTick();
 	if (  nCurTick - m_nLastQueryTeamTick < 5000 )
 	{
@@ -174,7 +174,9 @@ int32_t CExtCharTeam::GetMemberCount() const
 
 bool CExtCharTeam::IsFunctionOpen() const
 {
-	return true;
+	if ( !m_pPlayer )
+		return false;
+	return m_pPlayer->GetPlayerFunctionOpen().IsOpened( FT_DUAN_ZHAO );
 }
 
 void CExtCharTeam::Broadcast( Answer::NetPacket* inPacket )
@@ -228,7 +230,7 @@ void CExtCharTeam::LeaveTeam()
 		return;
 	}
 
-	// ½«ÏûÏ¢·¢ËÍµ½µ½Éç»á·şÎñÆ÷
+	// å°†æ¶ˆæ¯å‘é€åˆ°åˆ°ç¤¾ä¼šæœåŠ¡å™¨
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_LEAVE_TEAM );
 	if (NULL == packet)
 	{
@@ -292,8 +294,8 @@ void CExtCharTeam::UpdateTeamSetting()
 	int8_t bAutoAcceptInvite = (int8_t)m_pPlayer->getRecord( PR_TEAM_AUTO_ACCEPT_INVITE ); 
 	int8_t bAutoAcceptApply  = (int8_t)m_pPlayer->getRecord( PR_TEAM_AUTO_ACCEPT_APPLY );
 	int8_t bCanInvite		 = (int8_t)m_pPlayer->GetSysSettingInfo( SS_TEAM );
-	int8_t bCanAddFriend	 = (int8_t)m_pPlayer->GetSysSettingInfo( SS_FRIEND );	//ºÃÓÑµÄÉèÖÃ·ÅÕâÀïÒ»ÆğÍ¬²½
-	// ×é¶ÓÉèÖÃÍ¬²½µ½Éç»á·şÎñÆ÷
+	int8_t bCanAddFriend	 = (int8_t)m_pPlayer->GetSysSettingInfo( SS_FRIEND );	//å¥½å‹çš„è®¾ç½®æ”¾è¿™é‡Œä¸€èµ·åŒæ­¥
+	// ç»„é˜Ÿè®¾ç½®åŒæ­¥åˆ°ç¤¾ä¼šæœåŠ¡å™¨
 	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_SET_TEAM_AUTO_OPERATE );
 	if (NULL == packet)
 	{

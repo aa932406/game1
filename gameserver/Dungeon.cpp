@@ -17,7 +17,7 @@
 
 using namespace Answer;
 
-#define FIRST_DUNGEON_ID 10002		//µÚÒ»¸ö¸±±¾
+#define FIRST_DUNGEON_ID 10002		//ç¬¬ä¸€ä¸ªå‰¯æœ¬
 Dungeon::Dungeon()
 	: m_state(DS_FREE), m_nId(0), m_nStartTime(0)
 {
@@ -61,6 +61,24 @@ int32_t Dungeon::GetId() const
 int32_t Dungeon::GetStartTime() const
 {
 	return m_nStartTime;
+}
+
+int32_t Dungeon::GetBackMapId() const
+{
+	return m_cfgDungeon.backMapId;
+}
+
+bool Dungeon::StayPosition() const
+{
+	return m_cfgDungeon.stayPosition != 0;
+}
+
+Position Dungeon::GetBackPos() const
+{
+	Position pos;
+	pos.x = m_cfgDungeon.backX;
+	pos.y = m_cfgDungeon.backY;
+	return pos;
 }
 
 void Dungeon::init( const CfgDungeon &cfgDungeon, const CfgMap &cfgmap, int32_t nId )
@@ -128,7 +146,7 @@ void Dungeon::addPlayer( Player *player, int32_t x, int32_t y )
 	{
 		
 	}
-// 	else if ( m_cfgDungeon.id == FIRST_DUNGEON_ID ) // µÚÒ»´Î¸±±¾Òýµ¼xp
+// 	else if ( m_cfgDungeon.id == FIRST_DUNGEON_ID ) // ç¬¬ä¸€æ¬¡å‰¯æœ¬å¼•å¯¼xp
 // 	{
 // 		if ( player->GetCharSkill().IsLearnedXPSkill() )
 // 		{
@@ -184,7 +202,7 @@ void Dungeon::update()
 				{
 					teamDungeonMemberEnter();
 				}
-				setState( DS_RUNNING );	// ×¼±¸Ê±¼ä½áÊø
+				setState( DS_RUNNING );	// å‡†å¤‡æ—¶é—´ç»“æŸ
 			}
 		}
 		break;
@@ -946,7 +964,7 @@ bool Dungeon::flashMonster( MonsterWait& waitAddMonster, int64_t curTick, bool r
 
 	if ( waitAddMonster.times >= pCfgDungeonMonster->times )
 	{
-		return false;	// Ë¢Íê´ÓÁÐ±íÖÐÉ¾³ý
+		return false;	// åˆ·å®Œä»Žåˆ—è¡¨ä¸­åˆ é™¤
 	}
 	return true;
 }
@@ -1369,7 +1387,7 @@ void Dungeon::onMonsterArriveRoadEnd(MonsterDungeon *monster)
 			Level = 0;
 		}
 		LostExp = static_cast<int32_t>( monster->getExp() * ( 1.0f + static_cast<float>(Level) / 50 ) * ( 1.0f + static_cast<float>(Level) / 50 ) );
-		break;//¾­Ñé¸±±¾ÊÇµ¥ÈË¸±±¾
+		break;//ç»éªŒå‰¯æœ¬æ˜¯å•äººå‰¯æœ¬
 	}
 	m_finshInfo.lost_exp += LostExp;
 	monster->remove();
@@ -1525,20 +1543,20 @@ void Dungeon::broadcastFinishDungon(int32_t param)
 	{
 		return;
 	}
-	packet->writeInt32( m_cfgDungeon.id );						// ¸±±¾ID
+	packet->writeInt32( m_cfgDungeon.id );						// å‰¯æœ¬ID
 	if ( m_cfgDungeon.type == DT_TD )
 	{
-		packet->writeInt32( m_finshInfo.get_exp );				// »ñµÃµÄ¾­ÑéÖµ
-		packet->writeInt32( m_finshInfo.lost_exp );				// ËðÊ§µÄ¾­ÑéÖµ
-		packet->writeInt32( m_finshInfo.kill_count );			// »÷É±¸öÊý
-		packet->writeInt32( m_finshInfo.escape_count );			// ÌÓÅÜ¸öÊý
+		packet->writeInt32( m_finshInfo.get_exp );				// èŽ·å¾—çš„ç»éªŒå€¼
+		packet->writeInt32( m_finshInfo.lost_exp );				// æŸå¤±çš„ç»éªŒå€¼
+		packet->writeInt32( m_finshInfo.kill_count );			// å‡»æ€ä¸ªæ•°
+		packet->writeInt32( m_finshInfo.escape_count );			// é€ƒè·‘ä¸ªæ•°
 	}
 	else if ( m_cfgDungeon.type == DT_MONEY )
 	{
-		packet->writeInt32( m_finshInfo.kill_count );			// »÷É±¹ÖÎï
-		packet->writeInt32( m_finshInfo.normal_wave );			// ³£¹æ²¨Êý
-		packet->writeInt32( m_finshInfo.reward_wave );			// ½±Àø²¨Êý
-		packet->writeInt32( m_finshInfo.get_money );			// »ñµÃ½ð±Ò
+		packet->writeInt32( m_finshInfo.kill_count );			// å‡»æ€æ€ªç‰©
+		packet->writeInt32( m_finshInfo.normal_wave );			// å¸¸è§„æ³¢æ•°
+		packet->writeInt32( m_finshInfo.reward_wave );			// å¥–åŠ±æ³¢æ•°
+		packet->writeInt32( m_finshInfo.get_money );			// èŽ·å¾—é‡‘å¸
 	}
 	else
 	{
@@ -1600,11 +1618,11 @@ void Dungeon::broadcastDungeonInfo()
 	{
 		return;
 	}
-	packet->writeInt32( m_cfgDungeon.id );							// ¸±±¾ID
+	packet->writeInt32( m_cfgDungeon.id );							// å‰¯æœ¬ID
 	if ( m_cfgDungeon.type == DT_TD )
 	{
-		packet->writeInt32( m_finshInfo.kill_count );				// É±µÐÊýÁ¿
-		packet->writeInt32( m_finshInfo.get_exp );					// »ñµÃµÄ¾­ÑéÖµ
+		packet->writeInt32( m_finshInfo.kill_count );				// æ€æ•Œæ•°é‡
+		packet->writeInt32( m_finshInfo.get_exp );					// èŽ·å¾—çš„ç»éªŒå€¼
 		packet->writeInt8( m_waitTower.size() );
 		DungeonTowerList::iterator iter = m_waitTower.begin();
 		DungeonTowerList::iterator eiter = m_waitTower.end();
@@ -1612,16 +1630,16 @@ void Dungeon::broadcastDungeonInfo()
 		{
 			packet->writeInt32( iter->id );							// ID
 			packet->writeInt32( iter->mid );						// Mid
-			packet->writeInt32( iter->free - iter->count );			// Ê£ÓàÊýÁ¿
-			packet->writeInt32( iter->limit - iter->free );			// Ê£Óà¹ºÂòÊýÁ¿
-			packet->writeInt8( iter->costType );					// ¼Û¸ñ
+			packet->writeInt32( iter->free - iter->count );			// å‰©ä½™æ•°é‡
+			packet->writeInt32( iter->limit - iter->free );			// å‰©ä½™è´­ä¹°æ•°é‡
+			packet->writeInt8( iter->costType );					// ä»·æ ¼
 			packet->writeInt32( iter->costValue );
 		}
 	}
 	else if ( m_cfgDungeon.type == DT_MONEY )
 	{
-		packet->writeInt32( m_finshInfo.kill_count );				// É±µÐÊýÁ¿
-		packet->writeInt32( m_finshInfo.get_money );				// »ñµÃµÄ¾­ÑéÖµ
+		packet->writeInt32( m_finshInfo.kill_count );				// æ€æ•Œæ•°é‡
+		packet->writeInt32( m_finshInfo.get_money );				// èŽ·å¾—çš„ç»éªŒå€¼
 		packet->writeInt32( GetLeftTime() );
 	}
 	else
@@ -1641,7 +1659,7 @@ void Dungeon::broadcastDamageList()
 		return;
 	}
 
-	packet->writeInt8( m_damages.size() );							// ¸±±¾ID
+	packet->writeInt8( m_damages.size() );							// å‰¯æœ¬ID
 	DamageSumList::iterator iter = m_damages.begin();
 	DamageSumList::iterator eiter = m_damages.end();
 	for ( ; iter != eiter; ++iter )
@@ -1820,7 +1838,7 @@ bool Dungeon::GetReward( Player* player, int8_t nRatio )
 				{
 					return false;
 				}
-				// ¿ÛÔª±¦, =0Ãâ·ÑÁìÈ¡Ë«±¶
+				// æ‰£å…ƒå®, =0å…è´¹é¢†å–åŒå€
 				if ( m_cfgDungeon.double_cost > 0 )
 				{
 					if ( !player->DecCurrency( CURRENCY_GOLD, m_cfgDungeon.double_cost, GCR_DUNGEON_DOUBLE_REWARD, getDungeonId() ) )
@@ -1846,7 +1864,7 @@ bool Dungeon::GetReward( Player* player, int8_t nRatio )
 			{
 				player->addExp( static_cast<int32_t>(iter->exp * m_dRatio)*nRatio );
 			}
-			if ( ( player->getRecord( PR_DUNGEON_COMPLETED_BEING + getDungeonId() ) == 1 ) && ( m_cfgDungeon.rewardOnce.itemCount > 0 ) )	// Ê×´ÎÍ¨¹Ø
+			if ( ( player->getRecord( PR_DUNGEON_COMPLETED_BEING + getDungeonId() ) == 1 ) && ( m_cfgDungeon.rewardOnce.itemCount > 0 ) )	// é¦–æ¬¡é€šå…³
 			{
 				if ( m_cfgDungeon.rewardOnce.itemClass == IC_PET_EGG )
 				{

@@ -194,7 +194,10 @@ int32_t CExtCharTeamDungeon::onSocialTeamDungeonUpdateInfo( Answer::NetPacket* i
 
 bool CExtCharTeamDungeon::IsFunctionOpen() const
 {
-	return true;
+	if ( !m_pPlayer )
+		return false;
+	// 团队副本：官阶功能开启后开放
+	return m_pPlayer->GetPlayerFunctionOpen().IsOpened( FT_JUE_WEI );
 }
 
 bool CExtCharTeamDungeon::IsInTeamDungeon() const

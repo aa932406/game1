@@ -2526,3 +2526,226 @@ int64_t Player::GetStartGather()
 {
 	return m_startGatherTick;
 }
+
+// ========== 地图切换/离开 ==========
+
+int32_t Player::switchMap( Map *pMap, int32_t x, int32_t y, bool isFly )
+{
+	if ( !m_pMap || !pMap || m_pMap == pMap )
+		return 10002;
+
+	// 检查是否可以进入目标地图
+	int32_t err = pMap->canEnter( this );
+	if ( err )
+	{
+		GAME_SERVICE.replyfailure( m_connid, m_cgindex, 0x10, err, pMap->GetMapId() );
+		return err;
+	}
+
+	// 如果当前在副本中，先离开副本
+	if ( InDungeon() )
+	{
+		leaveDungeon();
+		return 0;
+	}
+
+	// 记录换图日志
+	setOldPosition();
+	BreakGather( true );
+	broadcastLeave();
+	m_pMap->removePlayer( this, false );
+
+	// 进入新地图
+	pMap->addPlayer( this, x, y );
+
+	// 回复客户端
+	int32_t nRunnerId = m_pMap ? m_pMap->GetRunnerId() : 0;
+	int32_t tarRunnerId = pMap->GetRunnerId();
+	if ( nRunnerId == tarRunnerId )
+	{
+		GAME_SERVICE.replySuccess( m_connid, m_cgindex, 0x10, pMap->GetMapId() );
+	}
+	else
+	{
+		// 跨Runner需要通过PostMsg转发
+		MAP_MANAGER.PostMsg( tarRunnerId, GMC_PLAYER_LEAVE_MAP, this, pMap, x, y, 0 );
+	}
+
+	return 0;
+}
+
+int32_t Player::leaveDungeon()
+{
+	if ( !m_pMap )
+		return 10002;
+
+	Dungeon *pDungeon = dynamic_cast<Dungeon*>( m_pMap );
+	if ( !pDungeon )
+	{
+		Answer::Logger::print( Answer::LogLevel::LOG_LEVEL_INFO, "pDungeon NULL" );
+		return 10002;
+	}
+
+	// 计算返回位置
+	Position oldPos( m_oldPosition.x, m_oldPosition.y );
+	if ( pDungeon->StayPosition() )
+		oldPos = getCurrentTile();
+
+	int32_t backMapId = pDungeon->GetBackMapId();
+	if ( backMapId > 0 )
+	{
+		oldPos = pDungeon->GetBackPos();
+	}
+	else
+	{
+		backMapId = m_oldPosition.mapid;
+	}
+
+	Map *pTargetMap = MAP_MANAGER.GetMap( backMapId );
+	if ( !pTargetMap )
+	{
+		int32_t runnerId = GetRunnerId();
+		Answer::Logger::print( Answer::LogLevel::LOG_DUNGEON_INFO,
+			"leave dungeon is null fail oldmap id %d, kingdom id %d\n", m_oldPosition.mapid, runnerId );
+		return 10002;
+	}
+
+	if ( pTargetMap == pDungeon )
+	{
+		int32_t runnerId = GetRunnerId();
+		Answer::Logger::print( Answer::LogLevel::LOG_DUNGEON_INFO,
+			"==== id %d, kingdom id %d\n", m_oldPosition.mapid, runnerId );
+		return 10002;
+	}
+
+	// 离开副本
+	broadcastLeave();
+	pDungeon->removePlayer( this, false );
+
+	if ( !isAlive() )
+		safeRevive();
+
+	// 团队副本特殊处理
+	if ( pDungeon->getDungeonType() == 12 )
+		m_extCharTeamDungeon.LeaveTeamDungeon();
+
+	// 离开坐骑
+	if ( m_extCharCarrier.IsInCarrier() )
+		m_extCharCarrier.LeaveCarrier();
+
+	// 进入返回地图
+	pTargetMap->addPlayer( this, oldPos.x, oldPos.y );
+	pDungeon->onPlayerLeave( this );
+	BreakGather( true );
+
+	return 0;
+}
+
+int32_t Player::leaveActivity()
+{
+	if ( !m_pMap )
+		return 10002;
+
+	if ( !isAlive() )
+	{
+		AddHp( 100 );
+		SetDieTick();
+	}
+
+	// 获取返回地图
+	int32_t backMapId = m_oldPosition.mapid;
+	Map *pTargetMap = MAP_MANAGER.GetMap( backMapId );
+	int32_t nLine = GAME_SERVICE.getLine();
+
+	if ( !pTargetMap || m_pMap == pTargetMap || nLine != 9 )
+	{
+		// 返回主城
+		CfgMapRegion *pCfgRegion = CFG_DATA.getMapRegion( 20001 );
+		if ( !pCfgRegion )
+		{
+			Answer::Logger::print( Answer::LogLevel::LOG_LEVEL_ERROR,
+				"leave activity back city fail! city region err!\n" );
+			return 10002;
+		}
+		backMapId = pCfgRegion->mapid;
+		pTargetMap = MAP_MANAGER.GetMap( backMapId );
+		if ( !pTargetMap )
+		{
+			Answer::Logger::print( Answer::LogLevel::LOG_DUNGEON_INFO,
+				"leave activity back city fail! city map err!\n" );
+			return 10002;
+		}
+		Position pos = pTargetMap->getRandomWalkablePositionInRegion( *pCfgRegion );
+		if ( pos.x >= 0 && pos.y >= 0 )
+		{
+			m_oldPosition.mapid = pTargetMap->GetMapId();
+			m_oldPosition.x = pos.x;
+			m_oldPosition.y = pos.y;
+		}
+	}
+
+	// 离开坐骑
+	if ( m_extCharCarrier.IsInCarrier() )
+		m_extCharCarrier.LeaveCarrier();
+
+	// 离开当前地图
+	broadcastLeave();
+	int32_t curRunnerId = m_pMap->GetRunnerId();
+	int32_t tarRunnerId = pTargetMap->GetRunnerId();
+
+	if ( curRunnerId == tarRunnerId )
+	{
+		m_pMap->removePlayer( this, false );
+		pTargetMap->addPlayer( this, m_oldPosition.x, m_oldPosition.y );
+	}
+	else
+	{
+		m_pMap->removePlayer( this, false );
+		MAP_MANAGER.PostMsg( tarRunnerId, GMC_PLAYER_LEAVE_MAP, this, pTargetMap,
+			m_oldPosition.x, m_oldPosition.y, 0 );
+	}
+
+	recalcAttr();
+
+	// 通知客户端
+	int8_t connid = m_connid;
+	NetPacket* outPacket = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, 0x4EBD );
+	if ( outPacket )
+	{
+		outPacket->writeInt32( m_cgindex );
+		outPacket->writeInt32( 0 );
+		outPacket->setSize( outPacket->getWOffset() );
+		GAME_SERVICE.sendPacket( connid, outPacket );
+	}
+
+	BreakGather( true );
+
+	// 跨服特殊处理
+	if ( GAME_SERVICE.getLine() == 9 )
+	{
+		int32_t v20 = getNow() + 120;
+		updateRecord( 1924, v20 );
+		kickBackFromCross( 10114 );
+	}
+
+	return 0;
+}
+
+void Player::EnterMapGongGao( int32_t gongGaoId, int32_t mapId )
+{
+	// 进入地图公告 - 待完善公告系统
+}
+
+void Player::safeRevive()
+{
+	// 安全复活
+	m_bDie = false;
+	m_nDieTick = 0;
+	AddHp( getMaxHp() );
+	AddMp( getMaxMp() );
+}
+
+void Player::kickBackFromCross( int32_t reason )
+{
+	// 踢回本服 - 跨服系统待实现
+}

@@ -69,7 +69,10 @@ int32_t CExtCharTitle::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket* in
 
 bool CExtCharTitle::IsFunctionOpen() const
 {
-	return true;
+	if ( !m_pPlayer )
+		return false;
+	// 称号系统跟随主线任务开放，默认开放
+	return m_pPlayer->getLevel() >= 10;
 }
 
 int32_t CExtCharTitle::onDressTitle( Answer::NetPacket* inPacket )

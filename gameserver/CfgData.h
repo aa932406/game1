@@ -564,6 +564,10 @@ struct CfgDungeon
 	int32_t	  Battle;		// ս��������֮սͨ�ؼӵ�ս����
 	int32_t  costGold;		// ���ĵ�Ԫ��
 	int32_t  costMoney;		// ���ĵ�ͭǮ
+	int32_t  backMapId;		// ���ǵ�ͼID
+	int16_t  backX;			// ���ǵ�X
+	int16_t  backY;			// ���ǵ�Y
+	int8_t   stayPosition;	// �Ƿ񱣳�ǰλ��
 };
 typedef std::vector<CfgDungeon> CfgDungeonVector;
 typedef std::map<int32_t, CfgDungeon> CfgDungeonTable;
