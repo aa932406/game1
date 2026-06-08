@@ -171,11 +171,18 @@ make
 | PetManager | ✅ 完成 | ID缓存，排名缓存，多连接感知 |
 | WorldBoss | ✅ 完成 | DB持久化，Boss升级，掉落记录，遗迹Boss |
 | Monster | ✅ 完成 | OnLevelUp |
+| **Player核心方法** | ✅ 完成 | +1108行：Unit虚函数/属性getter/PK系统/背包委托/记录委托/canAttackTarget |
+| **CharSkill技能系统** | ✅ 完成 | addSkillBuffTo完整实现、召唤逻辑、canAttackTarget |
+| **DungeonBuff** | ✅ 完成 | 恢复effect()/interval()注释掉的buff效果逻辑 |
+| **FightChecker** | ✅ 完成 | UpdateFightState恢复并适配2019多连接 |
+| **CharTeamDungeon** | ✅ 完成 | onSocialTeamDungeonCost完整实现 |
 | **EquipBack** | ⏳ **待做** | 装备找回（反编译1086行 vs 当前610行） |
 | **FamilyManager** | ⏳ **待做** | 家族系统（反编译433行 vs 当前192行） |
 | **OpenBeta** | ⏳ **待做** | 公测活动（20+空壳TODO） |
 | **ItemEffect子类** | ⏳ **待做** | 6个TODO子类待完善 |
-| **connid签名** | ⏳ **待做** | ~20+调用端文件需更新 |
+| **Player复杂方法** | ⏳ **待做** | ~50+方法：switchMap/leaveDungeon/init等大函数 |
+| **Vip/Curse** | ⏳ **待做** | SendVipGiftIcon/OnCurseLevelUp未实现 |
+| **IsFunctionOpen** | ⏳ **待做** | 6处硬编码true + 2处CanUseXP返回false |
 | CfgData 93函数 | ⏳ 待做 | 反编译风格→干净版重写（优先级低） |
 
 ### 新增协议
