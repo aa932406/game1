@@ -105,7 +105,8 @@ int32_t	CYunYingHD::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inPac
 
 void CYunYingHD::OnCleanUp()
 {
-
+	m_TotalChongZhiDay = 0;
+	m_nLastTeHui = 0;
 }
 
 void CYunYingHD::OnUpdate( int64_t curTick )

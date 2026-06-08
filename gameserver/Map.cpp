@@ -212,6 +212,16 @@ Position Map::getAroundTile(int32_t tx, int32_t ty, Direction direction)
 	}
 }
 
+Position Map::GetDirTileByDistance(int32_t tx, int32_t ty, Direction direction, int32_t distance)
+{
+	Position pos(tx, ty);
+	for (int32_t i = 0; i < distance; ++i)
+	{
+		pos = getAroundTile(pos.x, pos.y, direction);
+	}
+	return pos;
+}
+
 void Map::init( const CfgMap &cfgmap )
 {
 	m_cfgmap = cfgmap;

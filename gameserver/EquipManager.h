@@ -28,6 +28,7 @@ public:
 
 public:
 	MemEquip		CreateMemEquip( int32_t nBaseId, int32_t nServerId, CharId_t nCreaterId, int32_t nStar = 0, int32_t nAddAttr = 0 );			// 创建一件装备
+	MemEquip		CreateMemEquip( int8_t connid, int32_t nReason, int32_t nBaseId, int32_t nServerId, CharId_t nCreaterId, const std::string& p_name, int32_t mapid, int32_t mid, int32_t nStar = 0, int32_t nAddAttr = 0, int32_t nTime = 0 );
 	MemEquip		GetMemEquip( EquipId_t nEquipId );																			// 查找一件装备
 	void			UpdateMemEquip( int8_t connid, const MemEquip &equip, int32_t nReason = 0 );								// 更新一件装备
 	void			UpdateMemEquip( const MemEquip &equip ) { UpdateMemEquip(0, equip, 0); }									// 兼容旧调用

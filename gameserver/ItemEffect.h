@@ -5,6 +5,8 @@
 
 class Player;
 class Unit;
+struct CfgMapMonster;
+struct CfgMonster;
 
 class ItemEffect
 {
@@ -413,9 +415,8 @@ public:
 	virtual bool parseEffect(int32_t id, const std::string &strEffect);
 
 private:
-	int32_t m_MapId;
-	int32_t m_X;
-	int32_t m_Y;
+	int32_t m_itemid;
+	bool m_BXinMo;
 };
 
 class BlessWater1
@@ -660,7 +661,7 @@ public:
 	virtual bool parseEffect(int32_t id, const std::string &strEffect);
 
 private:
-	int32_t m_MapId;
+	int32_t m_itemid;
 };
 
 class RechargeCard
@@ -705,7 +706,7 @@ public:
 	virtual bool parseEffect(int32_t id, const std::string &strEffect);
 
 private:
-	int32_t m_Index;
+	int32_t Value;
 };
 
 class SkillBook
@@ -753,7 +754,8 @@ public:
 	virtual bool parseEffect(int32_t id, const std::string &strEffect);
 
 private:
-	int32_t m_BossId;
+	CfgMapMonster* m_pCfgMapMonster;
+	CfgMonster* m_pCfgMonster;
 };
 
 class SuperCurse
@@ -847,7 +849,7 @@ public:
 	virtual bool parseEffect(int32_t id, const std::string &strEffect);
 
 private:
-	int32_t m_DropId;
+	int32_t m_Type;
 };
 
 class WingLevelUp

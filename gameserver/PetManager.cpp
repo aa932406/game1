@@ -204,7 +204,7 @@ CPet* CPetManager::CreateNewPet( int32_t nBaseId, Player* pCreater, int8_t nFrom
 	return pPet;
 }
 
-void CPetManager::AddPet( CPet* pPet )
+void CPetManager::AddPet( int8_t connid, CPet* pPet )
 {
 	if ( NULL == pPet )
 	{
@@ -218,7 +218,7 @@ void CPetManager::AddPet( CPet* pPet )
 	}
 	MemPetDBData pet;
 	pPet->OnSaveToDB( pet );
-	DB_SERVICE.insertMemPet( 0, pet );
+	DB_SERVICE.insertMemPet( connid, pet );
 
 	if ( IsInsidePet( pPet->GetBaseId() ) ||  ( pPet->GetLevel() >= PET_RANK_OPEN_LEVEL  && !pPet->IsXOType() ) )
 	{
@@ -226,7 +226,7 @@ void CPetManager::AddPet( CPet* pPet )
 	}
 }
 
-void CPetManager::DelPet( CPet* pPet )
+void CPetManager::DelPet( int8_t connid, CPet* pPet )
 {
 	if ( NULL == pPet )
 	{
@@ -243,10 +243,10 @@ void CPetManager::DelPet( CPet* pPet )
 		sendSocialDeletePet( nPetId );
 	}
 	POOL_MANAGER.push<CPet>( pPet );
-	DB_SERVICE.deleteMemPet( 0, nPetId );
+	DB_SERVICE.deleteMemPet( connid, nPetId );
 }
 
-void CPetManager::UpdatePet( CPet* pPet )
+void CPetManager::UpdatePet( int8_t connid, CPet* pPet )
 {
 	if ( NULL == pPet )
 	{
@@ -255,7 +255,7 @@ void CPetManager::UpdatePet( CPet* pPet )
 
 	MemPetDBData pet;
 	pPet->OnSaveToDB( pet );
-	DB_SERVICE.updateMemPet( 0, pet );
+	DB_SERVICE.updateMemPet( connid, pet );
 	if ( IsInsidePet( pPet->GetBaseId() ) || ( pPet->GetLevel() >= PET_RANK_OPEN_LEVEL  && !pPet->IsXOType() ) )
 	{
 		sendSocialUpdatePet( pPet );

@@ -7,6 +7,7 @@ public:
 	static	int32_t	GetItemType( int32_t nId, int8_t nClass );
 	static  MemChrBagVector parseItemString(int32_t id, const std::string &strItems);
 	static  MemChrBagVector parseItemVectorString(const std::string &strItems);
+	static  ItemData parseItemDataString(const std::string &strItems);
 	static  std::list<ItemData> parseItemDataListString(const std::string &strItems);
 	static	void parseRateItemDataString(RateItem& outItem, const std::string& strData);
 };

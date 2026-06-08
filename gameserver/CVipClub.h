@@ -41,6 +41,7 @@ public:
     void    Init( int32_t line );
     void    UpdateClubData( CharId_t nCid, const std::string& strName, int32_t nVipLevel, int32_t nTime );
     void    AppendClubWallInfo( Answer::NetPacket* packet );
+    int32_t GetClubLevel() const { return m_ClubLevel; }
 
 private:
     int32_t CalculationClubLevel();

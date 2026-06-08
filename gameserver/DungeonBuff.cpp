@@ -21,63 +21,57 @@ bool DungeonBuff::expire()
 
 void DungeonBuff::effect()
 {
-	//for (int32_t i = 0; i < 2; ++i)
-	//{
-	//	if ( m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_HP )
-	//	{
-	//		if (m_cfgBuff.buffAttr[i].getAddon(0) !=0)
-	//		{
-	//			m_unit.AddHp(m_cfgBuff.buffAttr[i].getAddon(0));
-	//		}
-	//	}
-	//	else if (m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_MP)
-	//	{
-	//		if (m_cfgBuff.buffAttr[i].getAddon(0) != 0)
-	//		{
-	//			m_unit.AddMp(m_cfgBuff.buffAttr[i].getAddon(0));
-	//		}
-	//	}
-	//	else
-	//	{
-	//		int32_t realaddon = m_unit.AddBuffAttrValue( static_cast<CObjAttrs::Index_T>( m_cfgBuff.buffAttr[i].attr ),
-	//														m_cfgBuff.buffAttr[i].getRatio(getLevel()), m_cfgBuff.buffAttr[i].getAddon(getLevel()));
-	//		if (realaddon != 0)
-	//		{
-	//			m_restore[i].index = m_cfgBuff.buffAttr[i].attr;
-	//			m_restore[i].addon = -1*realaddon;
-	//		}
-	//	}
-	//}
+	for (int32_t i = 0; i < 2; ++i)
+	{
+		if ( m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_HP )
+		{
+			if (m_cfgBuff.buffAttr[i].getAddon(0) != 0)
+			{
+				m_unit.AddHp(m_cfgBuff.buffAttr[i].getAddon(0));
+			}
+		}
+		else if (m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_MP)
+		{
+			if (m_cfgBuff.buffAttr[i].getAddon(0) != 0)
+			{
+				m_unit.AddMp(m_cfgBuff.buffAttr[i].getAddon(0));
+			}
+		}
+		else
+		{
+			int32_t realaddon = m_unit.AddBuffAttrValue( static_cast<CObjAttrs::Index_T>( m_cfgBuff.buffAttr[i].attr ),
+															m_cfgBuff.buffAttr[i].getRatio(getLevel()), m_cfgBuff.buffAttr[i].getAddon(getLevel()));
+			if (realaddon != 0)
+			{
+				m_restore[i].index = m_cfgBuff.buffAttr[i].attr;
+				m_restore[i].addon = -1*realaddon;
+			}
+		}
+	}
 }
 
 void DungeonBuff::interval()
 {
 	if (m_cfgBuff.interval > 0 && m_unit.getTick() - m_lastEffectTick >= m_cfgBuff.interval)
 	{
-		//for (int32_t i = 0; i < 2; ++i)
-		//{
-		//	if ( m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_HP )
-		//	{
-		//		//int32_t hpchange = 0;
-		//		if (m_cfgBuff.buffAttr[i].getAddon(1) > 0)
-		//		{
-		//			m_unit.AddHp( m_cfgBuff.buffAttr[i].getAddon(1) );
-		//		}
-		//		else
-		//		{
-		//			m_unit.struckDamage(-1*m_cfgBuff.buffAttr[i].getAddon(m_skilllevel), 0, m_launcher);
-		//		}
-
-		//		if (hpchange != 0)
-		//		{
-		//			broadcastIntervalEffect(hpchange);
-		//		}
-		//		if (m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_MP)
-		//		{
-		//			m_unit.AddMp(m_cfgBuff.buffAttr[i].getAddon(1));
-		//		}
-		//	}
-		//}
+		for (int32_t i = 0; i < 2; ++i)
+		{
+			if ( m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_HP )
+			{
+				if (m_cfgBuff.buffAttr[i].getAddon(1) > 0)
+				{
+					m_unit.AddHp( m_cfgBuff.buffAttr[i].getAddon(1) );
+				}
+				else
+				{
+					m_unit.struckDamage(-1*m_cfgBuff.buffAttr[i].getAddon(m_skilllevel), 0, m_launcher);
+				}
+			}
+			else if (m_cfgBuff.buffAttr[i].attr == CObjAttrs::ATTR_MP)
+			{
+				m_unit.AddMp(m_cfgBuff.buffAttr[i].getAddon(1));
+			}
+		}
 
 		m_lastEffectTick = m_unit.getTick();
 	}
@@ -131,4 +125,3 @@ void DungeonBuff::init()
 {
 	m_endTick = m_unit.getTick() + m_cfgBuff.duration;
 }
-

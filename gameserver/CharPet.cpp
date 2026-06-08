@@ -94,7 +94,7 @@ void CExtCharPet::AddPetFromGift( CfgPetGift* pPetGift )
 		return;
 	}
 	pPet1->ReSetBaseAttr( pPetGift );
-	PET_MANAGER.AddPet( pPet1 );
+	PET_MANAGER.AddPet( m_pPlayer->getConnId(), pPet1 );
 	pPet1->SetPetBorn();
 	pObjPet1->Init( pPet1, m_pPlayer );
 	GAME_SERVICE.addPet( pObjPet1 );
@@ -120,7 +120,7 @@ void CExtCharPet::OnLoadFromDB( const PlayerDBData& dbData )
 				return;
 			}
 
-			PET_MANAGER.AddPet( pPet );
+			PET_MANAGER.AddPet( m_pPlayer->getConnId(), pPet );
 			pPet->SetPetBorn();
 			pObjPet->Init( pPet, m_pPlayer );
 			if ( addFightPet( pObjPet ) )
@@ -980,7 +980,7 @@ int32_t CExtCharPet::onDropEgg( Answer::NetPacket* inPacket )
 
 	if ( pPet != NULL )
 	{
-		PET_MANAGER.DelPet( pPet );	// ɾ������
+		PET_MANAGER.DelPet( m_pPlayer->getConnId(), pPet );	// ɾ������
 	}
 	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nSlot );
 	return ERR_OK;
@@ -2595,7 +2595,7 @@ bool CExtCharPet::RemovePet( CObjPet* pPet, bool bDel )
 
 	if ( bDel )
 	{
-		PET_MANAGER.DelPet( pPet->GetPet() );
+		PET_MANAGER.DelPet( m_pPlayer->getConnId(), pPet->GetPet() );
 	}
 	GAME_SERVICE.removePet( pPet );
 	POOL_MANAGER.push<CObjPet>( pPet );
@@ -2741,7 +2741,7 @@ bool CExtCharPet::removeEgg( int8_t nBag, const Int32List& slotList )
 			CPet* pPet = PET_MANAGER.GetPet( pEggPool[nIndex].GetPetId() );
 			if ( pPet != NULL )
 			{
-				PET_MANAGER.DelPet( pPet );
+				PET_MANAGER.DelPet( m_pPlayer->getConnId(), pPet );
 			}
 		}
 		pEggPool[nIndex].CleanUp();
@@ -3022,7 +3022,7 @@ void CExtCharPet::petBorn( PetEgg& egg )
 		if ( pEgg != NULL )
 		{
 			pPet->Reborn( *pEgg );
-			PET_MANAGER.UpdatePet( pPet );
+			PET_MANAGER.UpdatePet( m_pPlayer->getConnId(), pPet );
 		}
 	}
 	else
@@ -3032,7 +3032,7 @@ void CExtCharPet::petBorn( PetEgg& egg )
 		{
 			return;
 		}
-		PET_MANAGER.AddPet( pPet );
+		PET_MANAGER.AddPet( m_pPlayer->getConnId(), pPet );
 	}
 
 	pPet->SendPetInfo( m_pPlayer );
@@ -4003,7 +4003,7 @@ void CExtCharPet::OnSummon( int32_t nPetId )
 	{
 		return;
 	}
-	PET_MANAGER.AddPet( pPet );
+	PET_MANAGER.AddPet( m_pPlayer->getConnId(), pPet );
 	pObjPet->Init( pPet, m_pPlayer );
 	GAME_SERVICE.addPet( pObjPet );
 	m_lSummons.push_back( pObjPet );
@@ -4033,7 +4033,7 @@ void CExtCharPet::OnInitPet()
 	{
 		return;
 	}
-	PET_MANAGER.AddPet( pPet );
+	PET_MANAGER.AddPet( m_pPlayer->getConnId(), pPet );
 	pPet->SetPetBorn();
 	pObjPet->Init( pPet, m_pPlayer );
 	GAME_SERVICE.addPet( pObjPet );

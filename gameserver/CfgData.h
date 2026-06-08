@@ -818,20 +818,6 @@ struct CfgFamilyLevel
 };
 typedef std::map<int32_t,CfgFamilyLevel>CfgFamilyLevelTable;
 
-struct CfgItemGiftRandom 
-{
-	int32_t id;
-	int32_t item;
-	int32_t type;
-	int32_t count;
-	int8_t	bind;
-	int32_t static_probability;
-	int32_t sum_probability;
-	int8_t	job;
-};
-typedef std::vector<CfgItemGiftRandom> CfgItemGiftRandomVector;
-typedef std::map<int32_t, CfgItemGiftRandomVector*> CfgItemGiftRandomTable;
-
 struct CfgJob 
 {
 	int32_t id;
@@ -1256,7 +1242,8 @@ struct CfgSkill
 	int32_t maxLevel;
 	ChangeJobIndexVector change_skill_id;
 };
-typedef std::map<int32_t, CfgSkill> CfgSkillTable;
+// CfgSkillTable is now a class (see below) — old map typedef renamed
+typedef std::map<int32_t, CfgSkill> CfgSkillMap;
 
 #define MAX_SKILL_LEVEL		5
 struct CfgSkillLevelUp 
@@ -2474,16 +2461,35 @@ class CfgPetAttrInitRateTable
 {
 	friend class CfgData; 
 
-// Auto-generated from decompiled code
+// CfgActiveSkill - 主动技能配置 (2019完整版)
 struct CfgActiveSkill
 {
-    CfgActiveSkill() : nId(0), nTalent(0), nGroupId(0), nDistance(0), nCd(0) {}
-    int32_t nId;
-    int32_t nTalent;
-    int32_t nGroupId;
-    int32_t nDistance;
-    int32_t nCd;
-    AttrAddonVector vAttrAddon;
+	CfgActiveSkill()
+		: id(0), talent(0), groupid(0), cd(0), distance(0), attack_type(0),
+		  range(0), target_num(0), kind(0), beneficial(0), mp(0), power(0),
+		  addon_skill(0), addon_time(0), addon_trig_times(0),
+		  summon_id(0), summon_limit(0), summon_delay(0),
+		  shu_lian_du(0) {}
+	int32_t id;
+	int32_t talent;
+	int32_t groupid;
+	int32_t cd;
+	int32_t distance;
+	int32_t attack_type;
+	int32_t range;				// 0=self, 1=single target, 10=team, other=AOE
+	int32_t target_num;
+	int32_t kind;				// 2=特殊(OperateLimit), else=normal
+	int32_t beneficial;
+	int32_t mp;
+	int32_t power;
+	int32_t addon_skill;
+	int32_t addon_time;
+	int32_t addon_trig_times;
+	int32_t summon_id;
+	int32_t summon_limit;
+	int32_t summon_delay;
+	int32_t shu_lian_du;		// 熟练度
+	AttrAddonVector vAttrAddon;
 };
 typedef std::map<int32_t, CfgActiveSkill> CfgActiveSkillMap;
 
@@ -3763,21 +3769,34 @@ struct VipCfg
 	int32_t		FamilyLightAddRate;	// ����֮��ӳ�
 	int32_t		HallOfFameBuyTimes;	// �����ù������
 	int32_t		SiteRevive;			// ÿ�츴�����
+	// 2019新增字段
+	int32_t		Luck1;				// 普通幸运掉落次数
+	int32_t		Luck2;				// 特殊幸运掉落次数
+	int32_t		ClubBuyTimes;		// Club购买掉落次数
+	int32_t		EquipBackRate;		// 装备找回比率
+	int32_t		TreasureTimes;		// 寻宝次数
+	int32_t		CycleTower;			// 循环塔次数
+	int32_t		StorePage;			// 仓库页数
 };
 typedef map<int8_t, VipCfg> VipCfgMap;
 
 struct VipCardCfg
 {
 	int8_t		VipCardId;
+	int8_t		VipLevel;			// 2019: 所需VIP等级
 	int32_t		AddVipExp;
 	int32_t		DailyAddExp;
 	int32_t		AddVipTime;
-	int32_t		NeedGold;
+	int32_t		NeedGold;			// 首次购买价格
+	int32_t		ReNeedGold;			// 2019: 续费价格
 	int32_t		ExpRate;
 	int32_t		AddPlayerExp;
 	int32_t		AddPetExp;
 	MemChrBagVector Items;
 	AddAttrList AddAttr;
+	int32_t		Money;				// 2019: 绑定元宝
+	int32_t		TianShuJinHua;		// 2019: 天书精华
+	int32_t		WeiWang;			// 2019: 威望
 };
 
 typedef map<int32_t,VipCardCfg> VipCardCfgMap;
@@ -4755,6 +4774,34 @@ struct SunAndMoonCfg
 };
 typedef std::map<int32_t, SunAndMoonCfg> SunAndMoonCfgMap;
 
+// ===== VIP Lucky Drop Config =====
+struct SpecialItemDrop
+{
+	SpecialItemDrop() : Rate(0) { memset(&Item, 0, sizeof(Item)); }
+	MemChrBag Item;
+	int32_t	Rate;
+};
+typedef std::list<SpecialItemDrop> SpecialItemDropList;
+
+struct LuckDrop
+{
+	LuckDrop() : Type(0), VipLevel(0), Rate(0) {}
+	int32_t	Type;
+	int32_t	VipLevel;
+	SpecialItemDropList ItemList;
+	int32_t	Rate;
+};
+
+class LuckDropTable
+{
+public:
+	LuckDropTable();
+	void		AddLuckDrop( LuckDrop* p_stu );
+	int32_t		GetLuckRate( int32_t Type, int32_t VipLevel ) const;
+	void		GetItem( MemChrBag* pItem, int32_t Type, int32_t VipLevel ) const;
+private:
+	std::map<std::pair<int,int>, LuckDrop> m_LuckDropMap;
+};
 
 struct RateItem
 {
@@ -5674,6 +5721,7 @@ struct CVipClubLuckyDrop
     int32_t nRate;
     int32_t nTotalRate;
     MemChrBagVector vItem;
+    std::list<RateItem> lRateItemList;			// 2019: Club掉落概率列表
 };
 typedef std::map<int32_t, CVipClubLuckyDrop> CVipClubLuckyDropMap;
 
@@ -6047,6 +6095,7 @@ public:
 	CfgMonster* getMonster(int32_t mid);
 	CfgMonsterAdjust* GetMonsterAdjust(int32_t mid, int32_t nLevel, int32_t nDiff);
 	int32_t GetMonsterReviveTime(int32_t Time, int32_t BossId);
+	int32_t GetMapMonsterId() { return ++m_MapMonsterId; }
 	bool isMonsterBroadcast(int32_t mid);
 	CfgMonsterDropGroupVector* getMonsterDropGroup(int32_t group_id);
 	CfgMonsterGroupDropVector* getMonsterGroupDrop(int32_t mid);
@@ -6159,6 +6208,8 @@ public:
 	CfgWeekOnlineReward*		GetWeekOnlineReward( int32_t Week );
 	CfgOffLineExp*				GetOfflineExpCfg( int32_t Level );
 	VipCardCfg*					GetVipCardCfg( int8_t VipType );
+	LuckDropTable&				GetLuckDropTableTable();
+	const CVipClubLuckyDrop*	GetCVipClubLuckyDrop( int32_t nIndex ) const;
 	CfgBossHome*				GetBossHomeCfg( int32_t MapId );
 	bool						IsBossHomeMap( int32_t MapId );
 	VipGuaJiMap*				GetVipGuaJiMapCfg( int32_t MapId);
@@ -6617,7 +6668,7 @@ private:
 	CfgNpcAirportTable m_npcAirports;
 	CfgChrShopTable m_chrShops;
 	CfgPlantTable m_plants;
-	CfgSkillTable m_skills;
+	CfgSkillMap m_skills;
 	CfgTaskTable m_tasks;
 	CfgTrailer m_tailers;
 	CfgTrapTable m_traps;
@@ -6831,6 +6882,12 @@ const GongMingCfg*			GetGongMingCfg( int32_t nLevel );
 	const void*		GetTencentTable() const { return NULL; }
 	const void*		GetTouZiTable() const { return NULL; }
 
+	// SkillTable/TalentTable accessors (2019)
+	const CfgSkillTable*	GetSkillTable() const { return &m_cfgSkillTable; }
+	CfgSkillTable*			GetSkillTable() { return &m_cfgSkillTable; }
+	const CfgTalentTable*	GetTalentTable() const { return &m_cfgTalentTable; }
+	CfgTalentTable*			GetTalentTable() { return &m_cfgTalentTable; }
+
 	// WuHunShop accessors
 	const CfgWuHunShop*		GetWuHunShopItem(int32_t nIndex) const;
 	CfgWuHunShopList			GetWuHunShopItemList() const;
@@ -6904,6 +6961,7 @@ private:
 	int m_cfgAttrBattle;  // placeholder
 	CfgBFZLEnterCostTable		m_cfgBFZLEnterCostTable;
 	// ===== Decompiled-port members (names matching CfgData.cpp usage) =====
+	int32_t m_MapMonsterId;
 	int32_t m_serverType;
 	int32_t m_kaiFuTime;
 	int32_t m_heFuTime;
@@ -6931,7 +6989,7 @@ private:
 	int m_cfgMYSJRewardTable;    // placeholder
 	CfgShiZhuangTable m_cfgShiZhuangTable_member; // note: m_cfgShiZhuang already exists above
 	int m_cfgSpecialMonsterTable; // placeholder
-	CfgTalentActiveMap m_cfgTalentTable;
+	CfgTalentTable m_cfgTalentTable;
 	int m_cfgTouZiTable;         // placeholder
 	int m_cfgTrailerTable;       // placeholder
 	CfgVplanMap m_CfgVplan;
@@ -6966,7 +7024,8 @@ private:
 	GuWuCfgMap m_GuWuCfgMap;
 	HoeCfgMap m_HoeCfgMap;
 	CfgLimitTimeTable m_LimitTimeTable;
-	int m_LuckDropTable;         // placeholder
+	LuckDropTable m_LuckDropTable;
+	CVipClubLuckyDropMap m_CVipClubLuckyDropMap;
 	LuDaShiVipMap m_LuDaShiVipMap;
 	CfgMingGeMap m_MingGeCfgMap;
 	int m_mMapPlants;            // placeholder
@@ -7335,30 +7394,38 @@ public:
 	CfgGoldEggMap m_map;
 };
 
-// CfgTalent - 天赋配置
+// CfgTalent - 天赋配置 (2019完整版)
 struct CfgTalent
 {
-	CfgTalent() : nId(0), nPageId(0), nLevel(0), nCostType(0), nCostValue(0), nNeedLevel(0) {}
-	int32_t nId;
+	CfgTalent()
+		: id(0), nPageId(0), Level(0), Point(0), maxLevel(0),
+		  Playerlevel(0), skillid(0), nCostType(0), nCostValue(0), GongGaoId(0) {}
+	int32_t id;
 	int32_t nPageId;
-	int32_t nLevel;
+	int32_t Level;
+	int32_t Point;				// 天赋点消耗
+	int32_t maxLevel;
+	int32_t Playerlevel;		// 玩家等级需求
+	int32_t skillid;			// 关联技能ID
 	int32_t nCostType;
 	int32_t nCostValue;
-	int32_t nNeedLevel;
+	int32_t GongGaoId;			// 公告ID
 	AddAttrList lAttrList;
+	Int32Vector vSkill;			// 关联技能列表
 };
 typedef std::map<int32_t, CfgTalent> CfgTalentMap;
 
-// CfgTalentPage - 天赋页配置
+// CfgTalentPage - 天赋页配置 (2019版)
 struct CfgTalentPage
 {
-	CfgTalentPage() : nId(0), nCostType(0), nCostValue(0) {}
+	CfgTalentPage() : job(0), nId(0), nCostType(0), nCostValue(0) {}
+	int8_t job;					// 职业作为key
 	int32_t nId;
 	int32_t nCostType;
 	int32_t nCostValue;
-	Int32Vector vTalents;
+	std::list<int32_t> talents;	// 天赋ID列表
 };
-typedef std::map<int32_t, CfgTalentPage> CfgTalentPageMap;
+typedef std::map<int8_t, CfgTalentPage> CfgTalentPageMap;
 
 // CfgTalentActive - 天赋激活配置
 struct CfgTalentActive
@@ -7369,6 +7436,190 @@ struct CfgTalentActive
 	int32_t nParam;
 };
 typedef std::map<int32_t, CfgTalentActive> CfgTalentActiveMap;
+
+// SkillLevelInfo - 技能等级信息（DB持久化）
+struct SkillLevelInfo
+{
+	SkillLevelInfo() : Level(0), Point(0) {}
+	int32_t Level;
+	int32_t Point;
+};
+
+// AddonSkill - 附加技能（带时效）
+struct AddonSkill
+{
+	AddonSkill() : nEndTick(0), nTrigTimes(0), nSkillFlag(0), nSkillId(0) {}
+	int64_t nEndTick;
+	int32_t nTrigTimes;
+	int32_t nSkillFlag;
+	int32_t nSkillId;
+};
+
+// SummonSkill - 召唤技能（带延迟）
+struct SummonSkill
+{
+	SummonSkill() : nSkillId(0), nStartTick(0) {}
+	int32_t nSkillId;
+	int64_t nStartTick;
+	Position targetPos;
+};
+
+// MemTalent - 内存中的天赋信息
+struct MemTalent
+{
+	MemTalent() : nId(0) { memset(vAddon, 0, sizeof(vAddon)); }
+	int32_t nId;
+	int32_t vAddon[9];
+};
+
+// CfgTrigSkill - 触发技能配置
+struct CfgTrigSkill
+{
+	CfgTrigSkill()
+		: id(0), trigType(0), trigRate(0), groupid(0), cdTime(0),
+		  targetType(0), IsPvp(0), trigBuff(0) {}
+	int32_t id;
+	int32_t trigType;			// 触发类型: 1=攻击触发, 2=使用技能, 4=血量百分比, 5=阶段伤害, 6=召唤, 7=击杀
+	int32_t trigRate;			// 触发概率(千分比或百分比)
+	std::string trigParam;		// 触发参数(如血量阈值)
+	int32_t groupid;
+	int32_t cdTime;
+	int32_t targetType;			// 1=自身, 0=目标
+	int32_t IsPvp;				// >0 仅PVP
+	int32_t trigBuff;			// 触发buff
+	Int32Vector vRespondGroups;	// 响应技能组
+
+	bool isRespond(int32_t nSkillGroup) const
+	{
+		if (vRespondGroups.empty()) return true;
+		for (auto gid : vRespondGroups)
+		{
+			if (gid == nSkillGroup) return true;
+		}
+		return false;
+	}
+};
+typedef std::map<int32_t, CfgTrigSkill> CfgTrigSkillMap;
+
+// CfgTalentTable - 天赋配置表（2019版class）
+class CfgTalentTable
+{
+public:
+	void AddTalent(const CfgTalent& stu)
+	{
+		auto key = std::make_pair(stu.id, stu.Level);
+		m_mTalent[key] = stu;
+		auto it = m_mTalentMax.find(stu.id);
+		if (it == m_mTalentMax.end() || stu.Level > it->second)
+			m_mTalentMax[stu.id] = stu.Level;
+	}
+
+	void AddTalentPage(const CfgTalentPage& stu)
+	{
+		m_mTalentPage[stu.job] = stu;
+	}
+
+	const CfgTalent* GetTalent(int32_t nId, int32_t nLevel) const
+	{
+		auto key = std::make_pair(nId, nLevel);
+		auto it = m_mTalent.find(key);
+		return it != m_mTalent.end() ? &it->second : nullptr;
+	}
+
+	const CfgTalentPage* GetTalentPage(Job_t job) const
+	{
+		auto it = m_mTalentPage.find(job);
+		return it != m_mTalentPage.end() ? &it->second : nullptr;
+	}
+
+	int32_t GetTalentMaxLevel(int32_t nId) const
+	{
+		auto it = m_mTalentMax.find(nId);
+		return it != m_mTalentMax.end() ? it->second : 0;
+	}
+
+	bool IsTalentSkill(Job_t job, SkillId_t id) const
+	{
+		auto it = m_mTalentPage.find(job);
+		if (it == m_mTalentPage.end()) return false;
+		for (auto sid : it->second.talents)
+		{
+			if (sid == id) return true;
+		}
+		return false;
+	}
+
+	std::map<std::pair<int32_t,int32_t>, CfgTalent>	m_mTalent;
+	std::map<int32_t, int32_t>	m_mTalentMax;
+	CfgTalentPageMap	m_mTalentPage;
+};
+
+// Forward declaration
+struct CfgFamilySkill;
+
+// CfgSkillTable - 技能配置表（2019版class）
+class CfgSkillTable
+{
+public:
+	void AddActiveSkill(const CfgActiveSkill& skill)
+	{
+		m_mSkillType[skill.id] = 1;
+		m_mActiveSkills[skill.id] = skill;
+	}
+
+	void AddPassiveSkill(const CfgPassiveSkill& skill)
+	{
+		m_mSkillType[skill.id] = 2;
+		m_mPassiveSkills[skill.id] = skill;
+	}
+
+	void AddTrigSkill(const CfgTrigSkill& skill)
+	{
+		m_mSkillType[skill.id] = 3;
+		m_mTrigSkills[skill.id] = skill;
+	}
+
+	void AddFamilySkill(int32_t nId, int32_t nLevel, const CfgFamilySkill& skill)
+	{
+		// CfgFamilySkill defined elsewhere - placeholder
+	}
+
+	void AddTalentActive(const CfgTalentActive& stu)
+	{
+		m_mTalentActive[stu.nId] = stu;
+	}
+
+	int8_t GetSkillType(int32_t id) const
+	{
+		auto it = m_mSkillType.find(id);
+		return it != m_mSkillType.end() ? it->second : 0;
+	}
+
+	const CfgActiveSkill* GetActiveSkill(int32_t nId) const
+	{
+		auto it = m_mActiveSkills.find(nId);
+		return it != m_mActiveSkills.end() ? &it->second : nullptr;
+	}
+
+	const CfgPassiveSkill* GetPassiveSkill(int32_t nId) const
+	{
+		auto it = m_mPassiveSkills.find(nId);
+		return it != m_mPassiveSkills.end() ? &it->second : nullptr;
+	}
+
+	const CfgTrigSkill* GetTrigSkill(int32_t nId) const
+	{
+		auto it = m_mTrigSkills.find(nId);
+		return it != m_mTrigSkills.end() ? &it->second : nullptr;
+	}
+
+	std::map<int32_t, int8_t>	m_mSkillType;
+	CfgActiveSkillMap	m_mActiveSkills;
+	std::map<int32_t, CfgPassiveSkill>	m_mPassiveSkills;
+	CfgTrigSkillMap	m_mTrigSkills;
+	std::map<std::pair<int32_t,int32_t>, CfgFamilySkill>	m_mFamilySkills;
+	std::map<int32_t, CfgTalentActive>	m_mTalentActive;
+};
 
 // CfgTitle - 称号配置
 struct CfgTitle
@@ -7540,7 +7791,7 @@ typedef std::vector<CfgItemGift> CfgItemGiftVector;
 struct CfgItemGiftRandom
 {
 	CfgItemGiftRandom() : item(0), type(0), count(0), bind(0), time(0), job(0)
-		, rate(0), MinLevel(0), MaxLevel(0) {}
+		, rate(0), MinLevel(0), MaxLevel(0), static_probability(0), sum_probability(0) {}
 	int32_t item;
 	int32_t type;
 	int32_t count;
@@ -7550,8 +7801,11 @@ struct CfgItemGiftRandom
 	int32_t rate;
 	int32_t MinLevel;
 	int32_t MaxLevel;
+	int32_t static_probability;
+	int32_t sum_probability;
 };
 typedef std::vector<CfgItemGiftRandom> CfgItemGiftRandomVector;
+typedef std::map<int32_t, CfgItemGiftRandomVector*> CfgItemGiftRandomTable;
 
 // ===== Additional 2019 Config Structs =====
 

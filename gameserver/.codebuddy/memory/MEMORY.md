@@ -70,31 +70,62 @@
 
 ## 待做清单
 
-### 任务 B1：EquipBack 装备找回系统（优先级：高）
-- 反编译源 CEquipBack.cpp（1086行）vs 当前 EquipBack.cpp（610行）
-- 需要对照反编译补充完整的2019逻辑
-- 反编译源含 EquipBackRankCfg.cpp（17行）配置表
+### ~~任务 B1：EquipBack~~ — ✅ 已完成
+### ~~任务 B2：FamilyManager~~ — ✅ 已完成
+### ~~任务 B3：Openbeta~~ — ✅ 已完成
+### ~~任务 B4：ItemEffect~~ — ✅ 已完成
+### ~~任务 B5：Player.cpp/h~~ — ✅ 已完成（2019逻辑完善）
 
-### 任务 B2：FamilyManager 家族系统（优先级：高）
-- 反编译源 CFamilyManager.cpp（433行）vs 当前 FamilyManager.cpp（192行）
-- Init/基础方法已更新，但大量业务方法仍缺失
-- 需要对照反编译补充完整的2019逻辑
+### ~~任务 B6：Vip.cpp/h~~ — ✅ 已完成（2019逻辑完善）
 
-### 任务 B3：OpenBeta 公测活动（优先级：中）
-- OpenBeta.cpp 有 20+ 个 TODO 空壳函数
-- 需要对照 COpenBeta.cpp 反编译源完善
+### Vip.cpp/h 2019完善详情
+- 从48行空壳扩展到~1260行完整实现
+- 43个方法全部对照反编译源 CVip.cpp 实现：
+  - VIP等级/经验：GetVipLevel(从VipExp计算), GetVipExp(record 1020), AddVipExp(升级回调+广播)
+  - VIP卡系统：OnBuyVipCard(3种卡+续费), OnBuyAllVipCard(一键三卡), OnGetVipCardGift(每日奖励)
+  - VIP卡时间：AddVipTime(3种卡到期时间), GetVipFlg(判断卡是否有效), GetVipType(当前卡类型)
+  - Club系统：OnEnterClub(加入+广播), OnBuyDropTimes(购买掉落次数), SendClubInfo, GetClubDrop(概率掉落+装备+邮件)
+  - LuckyDrop系统：GetLuckDropType(双类型掉落), GetDropVipLevel, AddDropTimes, SendLuckDrop
+  - VIP属性：AddVipAttr(卡属性+等级属性), GetExpRate, GetOpenBagRate, GetVipEquipBackRate, GetTreasureTimes, GetCycleTowerTimes, GetStorePage
+  - VIP特权：CanFreeFlying, CanSiteRevive, HaveVipPrivilege, CanAuction, UseVipTiYanCard
+  - 持久化：OnLoadFromDB/OnSaveToDB, OnLoadVipEndTime/OnSaveVipEndTime(3卡时间用:分隔), LoadDropString/SaveDropString
+  - 网络发送：SendVipInfo(0x2CD9), SendClubInfo(0x2CF7), BuyGongGao(0x2CD6), SendLuckDrop(0x2CDA)
+  - 定时检查：OnUpdate(60秒), CheckVipEnd(到期邮件), OnDaySwitch(重置Club次数)
+- 新增成员：m_PlatinumVipEndTime/m_DiamVipEndTime/m_StarVipEndTime(3种VIP卡到期), m_Club/m_ClubDropTimes/m_BuyTimes/m_nVip7Time/m_nVip10Time
+- CfgData.h扩展：VipCfg+7字段(Luck1/Luck2/ClubBuyTimes/EquipBackRate/TreasureTimes/CycleTower/StorePage), VipCardCfg+3字段(VipLevel/ReNeedGold/Money/TianShuJinHua/WeiWang)
+- 新增结构：SpecialItemDrop, LuckDrop, LuckDropTable类(AddLuckDrop/GetLuckRate/GetItem), CVipClubLuckyDrop+lRateItemList
+- DataStructs.h新增枚举：GCR_VIP_BUY_DROP_TIMES(2103), MCR_VIP_CARD(2104), ICR_VIP_GIFT/ICR_CLUB_DROP/ICR_LUCK_DROP
+- EquipManager.h新增CreateMemEquip重载(2019多参数版)
+- Player.h新增GetCSpecialEquip()/GetPlayerFaBaoPtr()声明
+- CVipClub.h新增GetClubLevel()方法
 
-### 任务 B4：ItemEffect 剩余子类（优先级：中）
-- 6个 TODO 子类：BackCityPaper, RandomPosPaper, ShouChongItem, SummonBoss, VipDrop 等
-- 需要对照反编译源完善
+### 任务 A：CfgData 反编译风格函数重写 — **完成 LODWORD/HIDWORD 清理**
+- 原始86个反编译Init函数 + 35+个getter函数
+- 机械清理已完成：IDA寄存器注释、显式operator调用、构造/析构调用等
+- Batch 2完成：_M_node(0)、_Rb_tree_iterator(0)、_List_iterator(0)全部清除
+- LODWORD/HIDWORD：33→0（全部清除）
+- 完整重写的复杂函数：InitGameTable, fetchItem, RandXiangYaoTaskId, GetSuperBuff/Get37wanSuperBuff
+- fetchActivity反编译版删除（707行），干净版已存在于3017-3344行
+- 22406行（从24743减少2337行）
 
-### 任务 A：CfgData 93个反编译风格函数（优先级：低）
-- 功能可用，代码质量差，含 IDA 伪代码标记
-- 可渐进式重写
+### 任务 C：调用端 connid 签名更新 — **部分完成**
+- EquipManager.cpp: CreateMemEquip 修复 connid 参数传递
+- PetManager.h/cpp: AddPet/DelPet/UpdatePet 增加 connid 参数，添加兼容重载
+- 更新所有调用点（CharPet.cpp 7处，CharInsidePet.cpp 1处）
+- Vip.cpp/ShiZhuang.cpp/EquipBack.cpp: 8处 OnSendSysMail 调用更新为 connid 感知
+- 遗留问题：FamilyWar.cpp 中3处 OnSendSysMail 调用传递邮件ID而非玩家ID（疑似bug）
+- GameService.cpp: onNewMinuteCome 调用保持 connid=0（系统级别定时器）
 
-### 任务 C：调用端 connid 签名更新（优先级：中）
-- DBService/GameService 函数签名增加 connid 后
-- ~20+ 调用端文件需逐步更新为 connid 感知调用
+### 任务 E：未实现函数补全 — **进行中**（2026-06-08）
+- Player.cpp: 1415→2523行（+1108行），实现核心getter/Unit虚函数/PK系统/背包/记录/canAttackTarget
+- Player.h: 新增成员 m_Battle/m_nCamp/m_nGuaJi/m_needRecalAttr/m_BeiGongAttr/SetNeedSyncAround/canAttackTarget
+- CharSkill.cpp: addSkillBuffTo完整实现、canAttackTarget委托checkSkillTarget、召唤逻辑实现
+- DungeonBuff.cpp: effect()/interval() 恢复注释掉的buff效果逻辑
+- FightChecker.cpp: UpdateFightState() 恢复并适配2019多连接
+- CharTeamDungeon.cpp: onSocialTeamDungeonCost完整实现
+- Shared.h: SysUser新增gold_pay字段
+- 确认：GongMing/GuardPrivilege/YunYingHD DB持久化通过OperateLimit自动完成，空实现正确
+- 遗留：Player约50+复杂方法未实现、Vip::SendVipGiftIcon/Curse::OnCurseLevelUp未实现
 
 ### 任务 D：编译错误修复（优先级：最终阶段）
 - 统一修复缺少头文件、API名称不匹配、类型转换等问题

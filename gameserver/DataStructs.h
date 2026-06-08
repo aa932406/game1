@@ -316,7 +316,9 @@ enum CurrencyChangeReason
 	GCR_VIP_EQUIP_POS		= 2100,
 	GCR_WING_POLISH			= 2101,
 	GCR_WING_REFINING		= 2102,
-	MCR_EQUIP_GEM_LEVEL_UP		= 2103,
+	GCR_VIP_BUY_DROP_TIMES		= 2103,		// VIP购买Club掉落次数
+	MCR_VIP_CARD			= 2104,		// VIP卡奖励
+	MCR_EQUIP_GEM_LEVEL_UP		= 2105,
 	IDCR_EQUIP_GEM_LEVEL_UP		= 2104,
 	IDCR_EQUIP_STRENGTHEN		= 2105,
 	IDCR_EQUIP_UP_POS		= 2106,
@@ -466,6 +468,8 @@ enum ITEM_ADD_REASON
 	IACR_PALTFORM_DA_TING	= 320,	// 平台答题奖励
 	IACR_PALTFORM_VIP		= 321,	// 平台VIP奖励
 	IACR_PLATFORM_REWARD	= 322,	// 平台奖励
+	IACR_EQUIP_BUY_BACK	= 323,	// 装备回购赎回
+	ICR_OPEN_BETA		= 324,	// 公测活动
 };
 
 enum ITEM_DEL_REASON
@@ -527,6 +531,8 @@ enum ITEM_DEL_REASON
 	IDCR_EQUIP_RONG_HE_DIS	= 50,
 	IDCR_GUI_GU_DAO_REN		= 51,	// 鬼谷道人扣除
 	IDCR_BACK_EQUIP_COUNT	= 52,	// 装备回收
+	IDCR_EQUIP_GOLD_BACK	= 100,	// 金币回购扣除
+	IDCR_KAI_HUO_EQUIP_BACK = 101,	// 开服装备回购
 	IDCR_SPECIAL_TREASURE_MAP	= 53,	// 特殊宝藏图
 	IDCR_DAN_TIAN_GET		= 54,	// 丹田获取灵珠
 	IDCR_BAO_ZHU_HUI_SHOU		= 55,	// 宝珠回收
@@ -1686,6 +1692,9 @@ enum ICR_MING_GE
 	ICR_WU_HUN_SHOP_BUY        = 917,
 	// 测试服奖励
 	ICR_TEST_SERVER        = 918,	// 武魂商店购买
+	ICR_VIP_GIFT           = 919,	// VIP礼包
+	ICR_CLUB_DROP          = 920,	// VIP Club掉落
+	ICR_LUCK_DROP          = 921,	// VIP幸运掉落
 };
 
 typedef int32_t ITEM_CHANGE_REASON;

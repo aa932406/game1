@@ -17,6 +17,8 @@
 #include "FamilyWar.h"
 #include "ActivityMap.h"
 #include "FamilyLight.h"
+#include "OpenBeta.h"
+#include "Vip.h"
 
 using namespace Answer;
 
@@ -1211,7 +1213,7 @@ bool AddStarVipTime::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 BackCityPaper::BackCityPaper()
-	: m_MapId(0), m_X(0), m_Y(0)
+	: m_itemid(0), m_BXinMo(false)
 {
 
 }
@@ -1223,22 +1225,23 @@ BackCityPaper::~BackCityPaper()
 
 int32_t BackCityPaper::effect(Player &launcher, Unit &target,int32_t count)
 {
-	// TODO: implement BackCityPaper::effect - teleport player
-	return 0;
+	if (!m_BXinMo)
+		return launcher.OnBackCity(0);
+
+	Map* pMap = launcher.getMap();
+	if (!pMap)
+		return 10002;
+
+	if (!pMap->IsXinMoMap())
+		return 10002;
+
+	return launcher.OnBackCity(0);
 }
 
 bool BackCityPaper::parseEffect(int32_t id, const std::string &strEffect)
 {
-	StringVector params;
-	Answer::StringUtility::split(params, strEffect, ":");
-	if (params.size() >= 3)
-	{
-		m_MapId = atoi(params[0].c_str());
-		m_X = atoi(params[1].c_str());
-		m_Y = atoi(params[2].c_str());
-		return true;
-	}
-	return false;
+	m_itemid = id;
+	return true;
 }
 
 BlessWater1::BlessWater1()
@@ -1878,7 +1881,7 @@ bool RandomBuff::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 RandomPosPaper::RandomPosPaper()
-	: m_MapId(0)
+	: m_itemid(0)
 {
 
 }
@@ -1890,14 +1893,13 @@ RandomPosPaper::~RandomPosPaper()
 
 int32_t RandomPosPaper::effect(Player &launcher, Unit &target,int32_t count)
 {
-	// TODO: implement RandomPosPaper - random teleport
-	return 0;
+	return launcher.OnRandPos(0);
 }
 
 bool RandomPosPaper::parseEffect(int32_t id, const std::string &strEffect)
 {
-	m_MapId = atoi(strEffect.c_str());
-	return m_MapId > 0;
+	m_itemid = id;
+	return true;
 }
 
 RechargeCard::RechargeCard()
@@ -1955,7 +1957,7 @@ bool RechargeValueCard::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 ShouChongItem::ShouChongItem()
-	: m_Index(0)
+	: Value(0)
 {
 
 }
@@ -1967,14 +1969,17 @@ ShouChongItem::~ShouChongItem()
 
 int32_t ShouChongItem::effect(Player &launcher, Unit &target,int32_t count)
 {
-	// TODO: implement ShouChongItem - first charge item
+	if (launcher.getRecord(37505) > 0)
+		return 2;
+	launcher.updateRecord(37505, Value);
+	launcher.RecalcAttr();
 	return 0;
 }
 
 bool ShouChongItem::parseEffect(int32_t id, const std::string &strEffect)
 {
-	m_Index = atoi(strEffect.c_str());
-	return m_Index > 0;
+	Value = atoi(strEffect.c_str());
+	return Value > 0;
 }
 
 SkillBook::SkillBook()
@@ -2045,7 +2050,7 @@ bool SkillPointBook::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 SummonBoss::SummonBoss()
-	: m_BossId(0)
+	: m_pCfgMapMonster(nullptr), m_pCfgMonster(nullptr)
 {
 
 }
@@ -2057,14 +2062,70 @@ SummonBoss::~SummonBoss()
 
 int32_t SummonBoss::effect(Player &launcher, Unit &target,int32_t count)
 {
-	// TODO: implement SummonBoss - summon world boss
+	if (!m_pCfgMapMonster || !m_pCfgMonster)
+		return 10002;
+
+	if (GAME_SERVICE.getLine() != 1)
+		return 10002;
+
+	Map* pMap = launcher.getMap();
+	if (!pMap)
+		return 10002;
+
+	int32_t nMapId = pMap->GetId();
+	int32_t nPosX = launcher.GetPosX();
+	int32_t nPosY = launcher.GetPosY();
+
+	if (m_pCfgMapMonster->mapid != nMapId)
+		return 10002;
+
+	CfgMapMonster cfgMapMonster = *m_pCfgMapMonster;
+	cfgMapMonster.x = nPosX;
+	cfgMapMonster.y = nPosY;
+
+	CPoolManager* pPool = POOL_MANAGER;
+	Monster* pMonster = pPool->pop<Monster>();
+	if (!pMonster)
+		return 10002;
+
+	pMonster->init(*m_pCfgMonster, cfgMapMonster, nullptr);
+	pMap->addMonster(pMonster, nPosX, nPosY);
+
+	// Broadcast summon boss notification
+	int8_t connid = (int8_t)launcher.getConnId();
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(connid, Answer::PackType::PACK_DISPATCH, 0x2CD6);
+	if (packet)
+	{
+		packet->writeInt32(299);
+		std::string name = launcher.getName();
+		packet->writeUTF8(name);
+		packet->writeInt64(launcher.getCid());
+		packet->writeInt32(nMapId);
+		packet->writeInt32(nPosX);
+		packet->writeInt32(nPosY);
+		packet->writeInt32(m_pCfgMonster->mid);
+		packet->setSize(packet->getWOffset());
+		GAME_SERVICE.worldBroadcast(connid, packet);
+	}
+
 	return 0;
 }
 
 bool SummonBoss::parseEffect(int32_t id, const std::string &strEffect)
 {
-	m_BossId = atoi(strEffect.c_str());
-	return m_BossId > 0;
+	StringVector vStr;
+	std::string delims(":");
+	Answer::StringUtility::split(vStr, strEffect, delims, false);
+	if (vStr.empty())
+		return false;
+
+	int32_t mapMonsterId = atoi(vStr[0].c_str());
+	m_pCfgMapMonster = CFG_DATA.GetMapMonsterInfo(mapMonsterId);
+	if (!m_pCfgMapMonster)
+		return false;
+
+	m_pCfgMonster = CFG_DATA.getMonster(m_pCfgMapMonster->monsterid);
+	return m_pCfgMonster != nullptr;
 }
 
 SuperCurse::SuperCurse()
@@ -2106,9 +2167,88 @@ YanHua::~YanHua()
 
 int32_t YanHua::effect(Player &launcher, Unit &target, int32_t count)
 {
-	// TODO: Full YanHua effect implementation - requires GameService, CfgData, COpenBeta integration
-	// Core logic: get gift random config, roll for items, add to bag, broadcast yanHua
-	return 0;
+	if (GAME_SERVICE.getLine() == 9)
+		return 10002;
+
+	if (launcher.getMapId() != 50001)
+		return 10002;
+
+	CfgItemGiftRandomVector* pCfg = CFG_DATA.getItemGiftRandom(nId);
+	if (!pCfg)
+		return 0;
+
+	CfgItemGiftRandomVector gift = *pCfg;
+	if (gift.empty())
+		return 10002;
+
+	int32_t bagslot = launcher.getFirstFreeSlot();
+	if (bagslot < 0)
+	{
+		GAME_SERVICE.replyfailure((int8_t)launcher.getConnId(), launcher.getGateIndex(), 0x59, 10054, 0);
+		return 10054;
+	}
+
+	MemChrBagVector items;
+	int32_t roll = RANDOM->generate(1, 1000);
+	bool find = false;
+
+	for (auto it = gift.begin(); it != gift.end(); ++it)
+	{
+		if (it->job != 0 && it->job != launcher.getJob())
+			continue;
+
+		int32_t level = launcher.getLevel();
+		if (level < it->MinLevel || level > it->MaxLevel)
+			continue;
+
+		if (it->static_probability <= 0)
+		{
+			if (it->sum_probability < roll)
+			{
+				roll -= it->sum_probability;
+			}
+			else if (!find)
+			{
+				MemChrBag item = {};
+				item.itemId = it->item;
+				item.itemClass = it->type;
+				item.itemCount = it->count;
+				item.bind = it->bind;
+				items.push_back(item);
+				find = true;
+			}
+		}
+		else
+		{
+			int32_t randVal = RANDOM->generate(1, 1000);
+			if (randVal <= it->static_probability)
+			{
+				MemChrBag item = {};
+				item.itemId = it->item;
+				item.itemClass = it->type;
+				item.itemCount = it->count;
+				item.bind = it->bind;
+				items.push_back(item);
+			}
+		}
+	}
+
+	if (!items.empty())
+	{
+		if (launcher.GetBag().AddItemsAndMingGe(items, IACR_SUIJILIBAO))
+		{
+			OPEN_BETA.AddYanHuaPoint(YanHuaValue);
+			launcher.BroadcastYanHua(YanHuaType);
+			OPEN_BETA.SendActivityInfo(&launcher);
+			return 0;
+		}
+		else
+		{
+			return 10016;
+		}
+	}
+
+	return 10002;
 }
 
 bool YanHua::parseEffect(int32_t id, const std::string &strEffect)
@@ -2224,7 +2364,7 @@ bool UseItemGift::parseEffect(int32_t id, const std::string &strEffect)
 }
 
 VipDrop::VipDrop()
-	: m_DropId(0)
+	: m_Type(0)
 {
 
 }
@@ -2236,14 +2376,19 @@ VipDrop::~VipDrop()
 
 int32_t VipDrop::effect(Player &launcher, Unit &target,int32_t count)
 {
-	// TODO: implement VipDrop - vip drop reward
+	if (count <= 0)
+		return 10002;
+
+	if (!launcher.GetPlayerVip().AddVipLuckyDrop(m_Type, count))
+		return 10002;
+
 	return 0;
 }
 
 bool VipDrop::parseEffect(int32_t id, const std::string &strEffect)
 {
-	m_DropId = atoi(strEffect.c_str());
-	return m_DropId > 0;
+	m_Type = atoi(strEffect.c_str());
+	return m_Type > 0;
 }
 
 WingLevelUp::WingLevelUp()

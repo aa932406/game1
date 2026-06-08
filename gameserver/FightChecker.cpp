@@ -97,30 +97,31 @@ void CExtFightChecker::OnEnterFight()
 
 void CExtFightChecker::UpdateFightState()
 {
-// 	if ( NULL == m_pPlayer )
-// 	{
-// 		return;
-// 	}
-// 
-// 	NetPacket* inPacket = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_UPDATE_FIGHT_STATE );
-// 	if ( NULL == inPacket )
-// 	{
-// 		return;
-// 	}
-// 
-// 	inPacket->writeInt64( m_pPlayer->getCid() );
-// 	inPacket->writeInt8( GetFightState() );
-// 	inPacket->setSize( inPacket->getWOffset() );
-// 	
-// 	Map* pMap = m_pPlayer->getMap();
-// 	if ( NULL == pMap )
-// 	{
-// 		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), inPacket );
-// 	}
-// 	else
-// 	{
-// 		pMap->broadcast( inPacket );
-// 	}
+	if ( NULL == m_pPlayer )
+	{
+		return;
+	}
+
+	int8_t connid = m_pPlayer->getConnId();
+	NetPacket* inPacket = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, SM_UPDATE_FIGHT_STATE );
+	if ( NULL == inPacket )
+	{
+		return;
+	}
+
+	inPacket->writeInt64( m_pPlayer->getCid() );
+	inPacket->writeInt8( GetFightState() );
+	inPacket->setSize( inPacket->getWOffset() );
+	
+	Map* pMap = m_pPlayer->getMap();
+	if ( NULL == pMap )
+	{
+		GAME_SERVICE.sendPacketTo( connid, m_pPlayer->getGateIndex(), inPacket );
+	}
+	else
+	{
+		pMap->broadcast( inPacket );
+	}
 }
 
 void CExtFightChecker::ChangeBuleName( bool bFlag )

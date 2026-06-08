@@ -18,8 +18,50 @@ void CEquipBack::Init(int32_t line)
 	if (line == 9)
 		return;
 
-	// Runtime data is loaded asynchronously via DBService callbacks
-	// Configuration data is loaded via CfgData::InitEquipBackTable()
+	// 从DB加载回购记录
+	MySqlDBGuard db(DBPOOL);
+	char szSQL[MAX_SQL_LENGTH] = {};
+
+	// 加载回购记录（最近50条）
+	memset(szSQL, 0, sizeof(szSQL));
+	snprintf(szSQL, sizeof(szSQL)-1, "SELECT * FROM `mem_equip_back_record` order by nTime desc Limit 0, %d", 50);
+	MySqlQuery result = db.query(szSQL);
+	while (!result.eof())
+	{
+		BackRecord stu;
+		memset(&stu, 0, sizeof(stu));
+		stu.nId		= result.getIntValue("nId", 0);
+		stu.nType	= (int8_t)result.getIntValue("nType", 0);
+		stu.nTime	= result.getIntValue("nTime", 0);
+		stu.name	= result.getStringValue("name", "");
+		m_BackRecord.push_back(stu);
+		result.nextRow();
+	}
+
+	// 加载回购仓库和限购信息
+	memset(szSQL, 0, sizeof(szSQL));
+	snprintf(szSQL, sizeof(szSQL)-1, "SELECT * FROM `mem_equip_back_depot`");
+	MySqlQuery result1 = db.query(szSQL);
+	while (!result1.eof())
+	{
+		int8_t Type = (int8_t)result1.getIntValue("nType", 0);
+		if (Type == 1)
+		{
+			BackDepot stu;
+			stu.nId		= result1.getIntValue("nId", 0);
+			stu.Count	= result1.getIntValue("nCount", 0);
+			m_BackDepotMap[stu.nId] = stu;
+		}
+		else if (Type == 2)
+		{
+			BackLimitInfo stu;
+			stu.nId			= result1.getIntValue("nId", 0);
+			stu.nCount		= result1.getIntValue("nCount", 0);
+			stu.sLastName	= result1.getStringValue("name", "");
+			m_BackLimitInfoMap[stu.nId] = stu;
+		}
+		result1.nextRow();
+	}
 }
 
 int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
@@ -88,7 +130,7 @@ int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
 			return 10002;
 		}
 
-		if ( !pPlayer->GetBag().AddAndRemoveItem( MemChrBagVector(), IACR_NONE, vSlot, ItemList, IDCR_BACK_EQUIP_COUNT ) )
+		if ( !pPlayer->GetBag().RemoveItem( vSlot, ItemList, ICR_EQUIP_GOLD_BACK ) )
 		{
 			return 10002;
 		}
@@ -103,16 +145,21 @@ int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
 		SendEquipBackLimitChange( pPlayer, nId );
 
 		int32_t nItemId = ItemList.front().m_nId;
-		Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		int32_t RecovValue = pCfg->nRecovValues;
+		Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( pBroadcast != NULL )
 		{
 			pBroadcast->writeInt32( 451 );
 			pBroadcast->writeUTF8( pPlayer->getName() );
 			pBroadcast->writeInt64( pPlayer->getCid() );
 			pBroadcast->writeInt32( nItemId );
-			pBroadcast->writeInt32( pCfg->nRecovValues );
+			pBroadcast->writeInt32( RecovValue );
 			pBroadcast->setSize( pBroadcast->getWOffset() );
 			GAME_SERVICE.worldBroadcast( pBroadcast );
+		}
+		else
+		{
+			return 10002;
 		}
 		ret = 0;
 	}
@@ -143,7 +190,7 @@ int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
 			return 10002;
 		}
 
-		if ( !pPlayer->GetBag().AddAndRemoveItem( MemChrBagVector(), IACR_NONE, vSlot, ItemList, IDCR_BACK_EQUIP_COUNT ) )
+		if ( !pPlayer->GetBag().RemoveItem( vSlot, ItemList, ICR_EQUIP_GOLD_BACK ) )
 		{
 			return 10002;
 		}
@@ -157,25 +204,28 @@ int32_t CEquipBack::OnGoldBack( Player* pPlayer, Answer::NetPacket* packet )
 		AddLimitCount( &stu );
 		SendEquipBackLimitChange( pPlayer, nId );
 
-		int32_t nItemId = ItemList.front().m_nId;
-		Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		int32_t RecovValue = pCfg->nRecovValues;
+		Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if ( pBroadcast != NULL )
 		{
 			pBroadcast->writeInt32( 443 );
 			pBroadcast->writeInt64( pPlayer->getCid() );
 			pBroadcast->writeUTF8( pPlayer->getName() );
-			pBroadcast->writeInt32( nItemId );
+			pBroadcast->writeInt32( nId );
 			pBroadcast->writeInt8( (int8_t)pCfg->nRecovType );
-			pBroadcast->writeInt32( pCfg->nRecovValues );
+			pBroadcast->writeInt32( RecovValue );
 			pBroadcast->setSize( pBroadcast->getWOffset() );
 			GAME_SERVICE.worldBroadcast( pBroadcast );
 		}
+		else
+		{
+			return 10002;
+		}
 		ret = 0;
 	}
-
-	if ( ret != 0 )
+	else
 	{
-		return ret;
+		return 10002;
 	}
 
 	BackRecord record;
@@ -245,7 +295,7 @@ int32_t CEquipBack::OnBuyBack( Player* pPlayer, Answer::NetPacket* packet )
 	deptStu.Count = -1;
 	ChangeDeptCount( deptStu );
 
-	pPlayer->GetBag().AddItem( ItemVt, (ITEM_ADD_REASON)IACR_EQUIP_BUY_BACK );
+	pPlayer->GetBag().AddItem( ItemVt, (ITEM_ADD_REASON)ICR_EQUIP_BUY_BACK );
 
 	BackRecord record;
 	record.nId = nId;
@@ -258,7 +308,7 @@ int32_t CEquipBack::OnBuyBack( Player* pPlayer, Answer::NetPacket* packet )
 	AddRecord( &record );
 
 	int32_t nItemId = ItemVt.empty() ? 0 : ItemVt.front().itemId;
-	Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( pBroadcast != NULL )
 	{
 		pBroadcast->writeInt32( 452 );
@@ -286,6 +336,7 @@ void CEquipBack::KiaFuEquipBack( int32_t Index, int32_t EquipId, int32_t Mid, Pl
 		return;
 	}
 
+	// 检查装备ID是否在列表中
 	bool bFound = false;
 	for ( std::list<int32_t>::const_iterator it = pCfg->nEquipList.begin(); it != pCfg->nEquipList.end(); ++it )
 	{
@@ -321,16 +372,16 @@ void CEquipBack::KiaFuEquipBack( int32_t Index, int32_t EquipId, int32_t Mid, Pl
 
 	MemChrBag item;
 	memset( &item, 0, sizeof( item ) );
-	item.itemId = (int32_t)pCfg->nRecovType;
+	item.itemId = TranseCurrencyItem( (CURRENCY_TYPE)pCfg->nRecovType );
 	item.itemCount = pCfg->nRecovValues;
 
 	char szParam[32] = { 0 };
 	snprintf( szParam, sizeof( szParam ) - 1, "%d", EquipId );
 	std::string Param( szParam );
 
-	DB_SERVICE.OnSendSysMail( pPlayer->getCid(), 6373, item, Param );
+	DB_SERVICE.OnSendSysMail( pPlayer->getConnId(), pPlayer->getCid(), 6373, item, ICR_KAI_HUO_EQUIP_BACK, Param, 0 );
 
-	Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket* pBroadcast = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( pBroadcast != NULL )
 	{
 		pBroadcast->writeInt32( 441 );
@@ -430,7 +481,8 @@ void CEquipBack::SendEquipBackInfo( Player* pPlayer )
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_EQUIP_BACK_INFO );
+	int8_t connid = pPlayer->getConnId();
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( connid, Answer::PACK_DISPATCH, SM_EQUIP_BACK_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -461,7 +513,7 @@ void CEquipBack::SendEquipBackInfo( Player* pPlayer )
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 }
 
 void CEquipBack::SendEquipBackOnRecord( Player* pPlayer, BackRecord* p_stu )
@@ -471,7 +523,8 @@ void CEquipBack::SendEquipBackOnRecord( Player* pPlayer, BackRecord* p_stu )
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_EQUIP_BACK_ONE_RECORD );
+	int8_t connid = pPlayer->getConnId();
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( connid, Answer::PACK_DISPATCH, SM_EQUIP_BACK_ONE_RECORD );
 	if ( NULL == packet )
 	{
 		return;
@@ -483,7 +536,7 @@ void CEquipBack::SendEquipBackOnRecord( Player* pPlayer, BackRecord* p_stu )
 	packet->writeInt32( p_stu->nTime );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 }
 
 void CEquipBack::SendEquipBackCountChange( Player* pPlayer, int32_t nId )
@@ -499,7 +552,8 @@ void CEquipBack::SendEquipBackCountChange( Player* pPlayer, int32_t nId )
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_EQUIP_BACK_COUNT_CHANGE );
+	int8_t connid = pPlayer->getConnId();
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( connid, Answer::PACK_DISPATCH, SM_EQUIP_BACK_COUNT_CHANGE );
 	if ( NULL == packet )
 	{
 		return;
@@ -509,7 +563,7 @@ void CEquipBack::SendEquipBackCountChange( Player* pPlayer, int32_t nId )
 	packet->writeInt32( it->second.Count );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 }
 
 void CEquipBack::SendEquipBackLimitChange( Player* pPlayer, int32_t nId )
@@ -525,7 +579,8 @@ void CEquipBack::SendEquipBackLimitChange( Player* pPlayer, int32_t nId )
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_EQUIP_BACK_LIMIT_CHANGE );
+	int8_t connid = pPlayer->getConnId();
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( connid, Answer::PACK_DISPATCH, SM_EQUIP_BACK_LIMIT_CHANGE );
 	if ( NULL == packet )
 	{
 		return;
@@ -536,7 +591,7 @@ void CEquipBack::SendEquipBackLimitChange( Player* pPlayer, int32_t nId )
 	packet->writeUTF8( it->second.sLastName );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
 }
 
 void CEquipBack::UpdateEquipRecord( int32_t nId, int8_t nType, int32_t nTime, std::string* p_Name )

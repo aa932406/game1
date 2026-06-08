@@ -863,7 +863,7 @@ CfgPlant* CfgData::getPlant(int32_t id)
 
 CfgSkill* CfgData::getSkill(int32_t id)
 {
-	CfgSkillTable::iterator it = m_skills.find(id);
+	CfgSkillMap::iterator it = m_skills.find(id);
 	if (it != m_skills.end())
 	{
 		return &(it->second);
@@ -2143,7 +2143,6 @@ void CfgData::InitGemAddTable()
         m_cfgGemAdd.Add(nId, stu);
     }
 }
-
 
 
 WarVictoryHd* CfgData::GetWarVictoryHdCfg( int8_t Index )
@@ -3962,7 +3961,6 @@ void CfgData::fetchMovie()
 		}
 	}
 }
-
 
 
 void CfgData::fetchLevelExp()
@@ -7811,7 +7809,6 @@ void CfgData::InitPetGiftTable()
 }
 
 
-
 void CfgData::InitShangChengTable()
 {
 	CDBCFile ShangChengTable(0);
@@ -8136,20 +8133,11 @@ void CfgData::Init360RewardTypeTable()
 }
 void CfgData::InitActDropTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  std::list<ActDropItem> *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-100h] BYREF
-  ActDropItem stu; // [rsp+A0h] [rbp-70h] BYREF
-  int32_t Type; // [rsp+CCh] [rbp-44h] BYREF
-  std::string p_StringTime; // [rsp+D0h] [rbp-40h] BYREF
-  char v8; // [rsp+DFh] [rbp-31h] BYREF
-  std::string v9; // [rsp+E0h] [rbp-30h] BYREF
-  char v10; // [rsp+EEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+F0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+F4h] [rbp-1Ch]
-  int32_t i; // [rsp+F8h] [rbp-18h]
-  int32_t nIndex; // [rsp+FCh] [rbp-14h]
+  CDBCFile tabFile;
+  ActDropItem dropItem;
+  int32_t tableCount;
+  int32_t columnCount;
+  int32_t recordIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/shoujihuodong.txt") )
@@ -8162,84 +8150,65 @@ void CfgData::InitActDropTable()
     iBaseColumnCount = TabFile.GetFieldsNum();
     if ( iBaseColumnCount > 0 )
     {
-      for ( i = 0; i < iBaseTableCount; ++i )
+      for (recordIndex = 0; recordIndex < tableCount; ++recordIndex)
       {
-        nIndex = 0;
-        memset(&stu, 0, sizeof(stu));
-        Type = TabFile.Search_Posistion( i, 0)->iValue;
-        stu.nMinLevel = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nMaxLevel = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nMapType = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nClass = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nCount = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        stu.nBind = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
+        int fieldIndex = 0;
+        memset(&dropItem, 0, sizeof(dropItem));
         
-        v1 = TabFile.Search_Posistion( i, nIndex);
-        p_StringTime.assign(v1->pString);
-        stu.nStartTime = Answer::DayTime::StringToIntTime(p_StringTime);
+        // 读取各字段数据
+        dropItem.nType = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nMinLevel = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nMaxLevel = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nMapType = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nId = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nClass = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nCount = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
+        dropItem.nBind = tabFile.Search_Posistion(recordIndex, fieldIndex++)->iValue;
         
-        ++nIndex;
+        // 读取开始时间
+        const CDBCFile::FIELD* startTimeField = tabFile.Search_Posistion(recordIndex, fieldIndex++);
+        std::string startTimeStr = startTimeField->pString;
+        dropItem.nStartTime = Answer::DayTime::StringToIntTime(startTimeStr);
         
-        v2 = TabFile.Search_Posistion( i, nIndex);
-        v9.assign(v2->pString);
-        stu.nEndTime = Answer::DayTime::StringToIntTime(v9);
+        fieldIndex++; // 跳过未使用的字段索引
         
-        stu.nProbability = TabFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        v3 = std::map<int,std::list<ActDropItem>>::operator[](&this->m_ActDropItemListMap, &Type);
-        std::list<ActDropItem>::push_back(v3, &stu);
+        const CDBCFile::FIELD* endTimeField = tabFile.Search_Posistion(recordIndex, fieldIndex++);
+        std::string endTimeStr = endTimeField->pString;
+        dropItem.nEndTime = Answer::DayTime::StringToIntTime(endTimeStr);
+        
+        dropItem.nProbability = tabFile.Search_Posistion(recordIndex, ++fieldIndex)->iValue;
+        fieldIndex++;
+        
+        // 添加到对应类型的掉落列表中
+        m_ActDropItemListMap[dropItem.nType].push_back(dropItem);
       }
     }
   }
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 ActDropItemList CfgData::GetAcrDropList(int32_t nType)
 {
-  int32_t v2; // edx
-  ActDropItemList result; // rax
-  std::pair<const int,std::list<ActDropItem> > *v4; // rax
-  int32_t nTypea; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  std::_Rb_tree_iterator<std::pair<const int,std::list<ActDropItem> > > it; // [rsp+10h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<ActDropItem> > > __x; // [rsp+20h] [rbp-30h] BYREF
-
-  thisa = *(CfgData **)&nType;
-  nTypea = v2;
-  std::list<ActDropItem>::list((std::list<ActDropItem> *const)this);
-  std::list<ActDropItem>::clear((std::list<ActDropItem> *const)this);
-  it._M_node = std::map<int,std::list<ActDropItem>>::find(
-                 (std::map<int,std::list<ActDropItem>> *const)(*(_QWORD *)&nType + 11832LL),
-                 &nTypea)._M_node;
-  __x._M_node = std::map<int,std::list<ActDropItem>>::end(&thisa->m_ActDropItemListMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<ActDropItem>>>::operator!=(&it, &__x) )
-  {
-    v4 = std::_Rb_tree_iterator<std::pair<int const,std::list<ActDropItem>>>::operator->(&it);
-    std::list<ActDropItem>::operator=((std::list<ActDropItem> *const)this, &v4->second);
-  }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	ActDropItemList result;
+	auto it = m_ActDropItemListMap.find(nType);
+	if (it != m_ActDropItemListMap.end())
+		result = it->second;
+	return result;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 void CfgData::InitActiveSkillTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgActiveSkill skill; // [rsp+10h] [rbp-1A0h] BYREF
-  CDBCFile TabFile(0); // [rsp+C0h] [rbp-F0h] BYREF
-  AttrAddonVector __x; // [rsp+150h] [rbp-60h] BYREF
-  std::string path; // [rsp+170h] [rbp-40h] BYREF
-  char v6; // [rsp+17Fh] [rbp-31h] BYREF
-  std::string addonAttr; // [rsp+180h] [rbp-30h] BYREF
-  char v8; // [rsp+18Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+190h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+194h] [rbp-1Ch]
-  int32_t i; // [rsp+198h] [rbp-18h]
-  int32_t nIndex; // [rsp+19Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgActiveSkill skill;
+  CDBCFile TabFile(0);
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_skill_info.txt") )
@@ -8294,10 +8263,9 @@ void CfgData::InitActiveSkillTable()
         path = "./ServerConfig/Tables/cfg_skill_info.txt";
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&skill.summon_attr, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        skill.summon_attr = __x;
         
         skill.summon_limit = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
@@ -8306,8 +8274,8 @@ void CfgData::InitActiveSkillTable()
         skill.append_value = TabFile.Search_Posistion( i, nIndex++)->iValue;
         skill.shu_lian_du = TabFile.Search_Posistion( i, nIndex++)->iValue;
         skill.cd += skill.cd_adjust;
-        CfgSkillTable::AddActiveSkill(&this->m_cfgSkillTable, &skill);
-        /* CfgActiveSkill::~CfgActiveSkill(&skill); - auto cleanup */
+        m_cfgSkillTable.AddActiveSkill(skill);
+
       }
     }
   }
@@ -8316,13 +8284,13 @@ void CfgData::InitActiveSkillTable()
 //#####################################
 void CfgData::InitAttrBattleTable()
 {
-  CDBCFile readFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  int32_t iBaseTableCount; // [rsp+A8h] [rbp-28h]
-  int32_t iBaseColumnCount; // [rsp+ACh] [rbp-24h]
-  int32_t i; // [rsp+B0h] [rbp-20h]
-  int32_t nIndex; // [rsp+B4h] [rbp-1Ch]
-  int32_t nAttr; // [rsp+B8h] [rbp-18h]
-  int32_t nBattle; // [rsp+BCh] [rbp-14h]
+  CDBCFile readFile(0);
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nAttr;
+  int32_t nBattle;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/AttrBattle.txt") )
@@ -8361,16 +8329,14 @@ int32_t CfgData::GetAttrBattle(int32_t nAttr)
 //#####################################
 void CfgData::InitBFZLEnterCostTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  ItemDataList vItem; // [rsp+A0h] [rbp-40h] BYREF
-  bool bCombi[10]; // [rsp+B0h] [rbp-30h] BYREF
-  char v5; // [rsp+BAh] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+BCh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+C0h] [rbp-20h]
-  int32_t i; // [rsp+C4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+C8h] [rbp-18h]
-  int32_t nTimes; // [rsp+CCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  ItemDataList vItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nTimes;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/BingFengZouLang.txt") )
@@ -8390,12 +8356,11 @@ void CfgData::InitBFZLEnterCostTable()
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v5);
-        CItemHelper::parseItemDataListString((const std::string *const)&vItem, (bool)bCombi);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&vItem, (bool)bCombi);
         
         ++nIndex;
-        CfgBFZLEnterCostTable::AddEnterCost(&this->m_cfgBFZLEnterCostTable, nTimes, &vItem);
-        std::list<ItemData>::~list(&vItem);
+        m_cfgBFZLEnterCostTable.AddEnterCost(nTimes, vItem);
       }
     }
   }
@@ -8405,40 +8370,39 @@ void CfgData::InitBFZLEnterCostTable()
 void CfgData::InitBaoKuFuBen()
 {
   int v1; // ebx
-  BaoKuFuBen *v2; // rax
+  BaoKuFuBen *v2;
   int32_t v3; // ebx
   int32_t v4; // ebx
   int32_t v5; // ebx
   int32_t v6; // ebx
   int32_t v7; // ebx
   int32_t v8; // ebx
-  BaoKuRandom *v9; // rax
-  BaoKuRandom *p_stu_0; // rbx
+  BaoKuRandom *v9;
+  BaoKuRandom *p_stu_0;
   unsigned int v11; // r8d
-  int64_t v12; // rcx
-  CDBCFile readFile_0(0); // [rsp+10h] [rbp-170h] BYREF
-  BaoKuRandom stu_0; // [rsp+A0h] [rbp-E0h] BYREF
-  BaoKuFuBen stu; // [rsp+130h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+148h] [rbp-38h]
-  int32_t iBaseColumnCount; // [rsp+14Ch] [rbp-34h]
-  int32_t i; // [rsp+150h] [rbp-30h]
-  int32_t nIndex; // [rsp+154h] [rbp-2Ch]
-  int32_t iBaseTableCount_0; // [rsp+15Ch] [rbp-24h]
-  int32_t iBaseColumnCount_0; // [rsp+160h] [rbp-20h]
-  int32_t i_0; // [rsp+164h] [rbp-1Ch]
-  int32_t nIndex_0; // [rsp+168h] [rbp-18h]
-  int32_t j; // [rsp+16Ch] [rbp-14h]
+  CDBCFile readFile_0(0);
+  BaoKuRandom stu_0;
+  BaoKuFuBen stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
+  int32_t j;
 
   CDBCFile::CDBCFile((CDBCFile *const)&stu_0, 0);
-  if ( !CDBCFile::OpenFromTXT((CDBCFile *const)&stu_0, "./ServerConfig/Tables/BaoKuFuBen.txt") )
+  if ( !stu_0.OpenFromTXT("./ServerConfig/Tables/BaoKuFuBen.txt") )
   {
     Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileBaoKuF);
     v1 = 0;
   }
   else
   {
-    iBaseTableCount = CDBCFile::GetRecordsNum((const CDBCFile *const)&stu_0);
-    iBaseColumnCount = CDBCFile::GetFieldsNum((const CDBCFile *const)&stu_0);
+    iBaseTableCount = stu_0.GetRecordsNum();
+    iBaseColumnCount = stu_0.GetFieldsNum();
     if ( iBaseColumnCount > 0 )
     {
       std::map<int,BaoKuFuBen>::clear(&this->m_BaoKuFuBenMap);
@@ -8446,11 +8410,11 @@ void CfgData::InitBaoKuFuBen()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        stu.FuBenId = CDBCFile::Search_Posistion((const CDBCFile *const)&stu_0, i, 0)->iValue;
-        stu.InitCount = CDBCFile::Search_Posistion((const CDBCFile *const)&stu_0, i, ++nIndex)->iValue;
-        stu.BuyCount = CDBCFile::Search_Posistion((const CDBCFile *const)&stu_0, i, ++nIndex)->iValue;
-        stu.Gold = CDBCFile::Search_Posistion((const CDBCFile *const)&stu_0, i, ++nIndex)->iValue;
-        stu.AddTimes = CDBCFile::Search_Posistion((const CDBCFile *const)&stu_0, i, ++nIndex)->iValue;
+        stu.FuBenId = stu_0.Search_Posistion(i, 0)->iValue;
+        stu.InitCount = stu_0.Search_Posistion(i, ++nIndex)->iValue;
+        stu.BuyCount = stu_0.Search_Posistion(i, ++nIndex)->iValue;
+        stu.Gold = stu_0.Search_Posistion(i, ++nIndex)->iValue;
+        stu.AddTimes = stu_0.Search_Posistion(i, ++nIndex)->iValue;
         ++nIndex;
         v2 = std::map<int,BaoKuFuBen>::operator[](&this->m_BaoKuFuBenMap, &stu.FuBenId);
         *v2 = stu;
@@ -8510,7 +8474,7 @@ void CfgData::InitBaoKuFuBen()
             v11 = 128;
           }
           v12 = v11 >> 3;
-          qmemcpy(v9, p_stu_0, 8 * v12);
+          memcpy(v9, p_stu_0, 8 * v12);
           if ( (v11 & 4) != 0 )
             *(&v9->Index + 2 * v12) = *(&p_stu_0->Index + 2 * v12);
         }
@@ -8522,19 +8486,10 @@ void CfgData::InitBaoKuFuBen()
 //#####################################
 BaoKuFuBen *CfgData::GetBaoKuFuBen(int32_t FuBenId)
 {
-  int32_t FuBenIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,BaoKuFuBen> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,BaoKuFuBen> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  FuBenIda = FuBenId;
-  it._M_node = std::map<int,BaoKuFuBen>::find(&this->m_BaoKuFuBenMap, &FuBenIda)._M_node;
-  __x._M_node = std::map<int,BaoKuFuBen>::end(&thisa->m_BaoKuFuBenMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,BaoKuFuBen>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,BaoKuFuBen>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_BaoKuFuBenMap.find(FuBenId);
+	if (it != m_BaoKuFuBenMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
@@ -8546,16 +8501,14 @@ BaoKuRandomMap CfgData::GetBaoKuRandomMap()
 //#####################################
 void CfgData::InitBeastShrineEnterCostTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  ItemDataList vItem; // [rsp+A0h] [rbp-40h] BYREF
-  bool bCombi[10]; // [rsp+B0h] [rbp-30h] BYREF
-  char v5; // [rsp+BAh] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+BCh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+C0h] [rbp-20h]
-  int32_t i; // [rsp+C4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+C8h] [rbp-18h]
-  int32_t nTimes; // [rsp+CCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  ItemDataList vItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nTimes;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/AnimalMapCost.txt") )
@@ -8575,12 +8528,11 @@ void CfgData::InitBeastShrineEnterCostTable()
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v5);
-        CItemHelper::parseItemDataListString((const std::string *const)&vItem, (bool)bCombi);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&vItem, (bool)bCombi);
         
         ++nIndex;
-        CfgBeastShrineTable::AddEnterCost(&this->m_CfgBeastShrineTable, nTimes, &vItem);
-        std::list<ItemData>::~list(&vItem);
+        m_CfgBeastShrineTable.AddEnterCost(nTimes, vItem);
       }
     }
   }
@@ -8589,28 +8541,25 @@ void CfgData::InitBeastShrineEnterCostTable()
 //#####################################
 void CfgData::InitBlueDailyRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-210h] BYREF
-  CfgTencentGift high; // [rsp+A0h] [rbp-180h] BYREF
-  CfgTencentGift year; // [rsp+E0h] [rbp-140h] BYREF
-  CfgTencentGift daily; // [rsp+120h] [rbp-100h] BYREF
-  MemChrBagVector __x; // [rsp+160h] [rbp-C0h] BYREF
-  std::string strItems; // [rsp+180h] [rbp-A0h] BYREF
-  char v10; // [rsp+18Fh] [rbp-91h] BYREF
-  MemChrBagVector v11; // [rsp+190h] [rbp-90h] BYREF
-  std::string v12; // [rsp+1B0h] [rbp-70h] BYREF
-  char v13; // [rsp+1BFh] [rbp-61h] BYREF
-  MemChrBagVector v14; // [rsp+1C0h] [rbp-60h] BYREF
-  std::string v15; // [rsp+1E0h] [rbp-40h] BYREF
-  char v16; // [rsp+1F6h] [rbp-2Ah] BYREF
-  int32_t iBaseTableCount; // [rsp+1F8h] [rbp-28h]
-  int32_t iBaseColumnCount; // [rsp+1FCh] [rbp-24h]
-  int32_t i; // [rsp+200h] [rbp-20h]
-  int32_t nIndex; // [rsp+204h] [rbp-1Ch]
-  int32_t nId; // [rsp+208h] [rbp-18h]
-  int32_t nLevel; // [rsp+20Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  CDBCFile TabFile(0);
+  CfgTencentGift high;
+  CfgTencentGift year;
+  CfgTencentGift daily;
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v11;
+  std::string v12;
+  MemChrBagVector v14;
+  std::string v15;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
+  int32_t nLevel;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/BlueEverydayReward.txt") )
@@ -8628,44 +8577,37 @@ void CfgData::InitBlueDailyRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTencentGift::CfgTencentGift(&daily);
-        CfgTencentGift::CfgTencentGift(&year);
-        CfgTencentGift::CfgTencentGift(&high);
         nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&daily.vRewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        daily.vRewards = __x;
         
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        v12.assign(v2->pString);
+        v12 = v2->pString;
         CItemHelper::parseItemVectorString(&v11, &v12);
-        std::vector<MemChrBag>::operator=(&year.vRewards, &v11);
-        std::vector<MemChrBag>::~vector(&v11);
+        year.vRewards = v11;
         
         ++nIndex;
         
         v3 = TabFile.Search_Posistion( i, nIndex);
-        v15.assign(v3->pString);
+        v15 = v3->pString;
         CItemHelper::parseItemVectorString(&v14, &v15);
-        std::vector<MemChrBag>::operator=(&high.vRewards, &v14);
-        std::vector<MemChrBag>::~vector(&v14);
+        high.vRewards = v14;
         
         ++nIndex;
         daily.nLevel = nLevel;
         year.nLevel = nLevel;
         high.nLevel = nLevel;
-        CfgTencentTable::AddBlueDailyGift(&this->m_cfgTencentTable, &daily);
-        CfgTencentTable::AddBlueYearGift(&this->m_cfgTencentTable, &year);
-        CfgTencentTable::AddBlueHighGift(&this->m_cfgTencentTable, &high);
-        /* CfgTencentGift::~CfgTencentGift(&high); - auto cleanup */
-        /* /* CfgTencentGift::~CfgTencentGift(&year); - auto cleanup */ - auto cleanup */
-        /* /* CfgTencentGift::~CfgTencentGift(&daily); - auto cleanup */ - auto cleanup */
+        m_cfgTencentTable.AddBlueDailyGift(daily);
+        m_cfgTencentTable.AddBlueYearGift(year);
+        m_cfgTencentTable.AddBlueHighGift(high);
+
+
       }
     }
   }
@@ -8674,17 +8616,16 @@ void CfgData::InitBlueDailyRewardTable()
 //#####################################
 void CfgData::InitBlueLevelRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-120h] BYREF
-  CfgTencentGift gift; // [rsp+A0h] [rbp-90h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+100h] [rbp-30h] BYREF
-  char v6; // [rsp+10Ah] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+10Ch] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+110h] [rbp-20h]
-  int32_t i; // [rsp+114h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+118h] [rbp-18h]
-  int32_t nId; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile TabFile(0);
+  CfgTencentGift gift;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/BlueLevelReward.txt") )
@@ -8702,19 +8643,17 @@ void CfgData::InitBlueLevelRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTencentGift::CfgTencentGift(&gift);
         nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         gift.nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&gift.vRewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        gift.vRewards = __x;
         
         ++nIndex;
-        CfgTencentTable::AddBlueLevelGift(&this->m_cfgTencentTable, nId, &gift);
-        /* /* /* CfgTencentGift::~CfgTencentGift(&gift); - auto cleanup */ - auto cleanup */ - auto cleanup */
+        m_cfgTencentTable.AddBlueLevelGift(nId, gift);
+
       }
     }
   }
@@ -8723,16 +8662,15 @@ void CfgData::InitBlueLevelRewardTable()
 //#####################################
 void CfgData::InitBlueRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  MemChrBagVector vReward; // [rsp+A0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+C0h] [rbp-30h] BYREF
-  char v5; // [rsp+CAh] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+CCh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+D0h] [rbp-20h]
-  int32_t i; // [rsp+D4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+D8h] [rbp-18h]
-  int32_t nId; // [rsp+DCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile TabFile(0);
+  MemChrBagVector vReward;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/BlueReward.txt") )
@@ -8752,12 +8690,11 @@ void CfgData::InitBlueRewardTable()
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&vReward, &strItems);
         
         ++nIndex;
-        CfgTencentTable::SetBlueNewerGift(&this->m_cfgTencentTable, &vReward);
-        std::vector<MemChrBag>::~vector(&vReward);
+        m_cfgTencentTable.SetBlueNewerGift(vReward);
       }
     }
   }
@@ -8767,27 +8704,25 @@ void CfgData::InitBlueRewardTable()
 void CfgData::InitBossDistribution()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-180h] BYREF
-  std::string BossMapListString_0; // [rsp+A0h] [rbp-F0h] BYREF
-  MapBossInfo stu_0; // [rsp+B0h] [rbp-E0h] BYREF
-  std::string BossMapListString; // [rsp+D0h] [rbp-C0h] BYREF
-  BossLevelInfo stu; // [rsp+E0h] [rbp-B0h] BYREF
-  char v9; // [rsp+FFh] [rbp-91h] BYREF
-  std::list<int> __x; // [rsp+100h] [rbp-90h] BYREF
-  BossLevelInfo p_stu; // [rsp+110h] [rbp-80h] BYREF
-  char v12; // [rsp+12Fh] [rbp-61h] BYREF
-  std::list<int> v13; // [rsp+130h] [rbp-60h] BYREF
-  MapBossInfo v14; // [rsp+140h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+15Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+160h] [rbp-30h]
-  int32_t i; // [rsp+164h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+168h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+170h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+174h] [rbp-1Ch]
-  int32_t i_0; // [rsp+178h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+17Ch] [rbp-14h]
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  CDBCFile TabFile(0);
+  std::string BossMapListString_0;
+  MapBossInfo stu_0;
+  std::string BossMapListString;
+  BossLevelInfo stu;
+  std::list<int> __x;
+  BossLevelInfo p_stu;
+  std::list<int> v13;
+  MapBossInfo v14;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/MonsterRefreshInMaps.txt") )
@@ -8805,20 +8740,18 @@ void CfgData::InitBossDistribution()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::list<int>::list(&stu.BossMapList);
         stu.BossLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        BossMapListString.assign(v2->pString);
+        BossMapListString = v2->pString;
         
         ++nIndex;
-        CfgData::paraseInt32List((CfgData *const)&__x, (const std::string *const)this, (int32_t)&BossMapListString);
-        std::list<int>::operator=(&stu.BossMapList, &__x);
-        std::list<int>::~list(&__x);
-        BossLevelInfo::BossLevelInfo(&p_stu, &stu);
-        BossDistribution::AddBossLevelInfo(&this->m_BossDistribution, &p_stu);
-        /* BossLevelInfo::~BossLevelInfo(&p_stu); - auto cleanup */
-        /* BossLevelInfo::~BossLevelInfo(&stu); - auto cleanup */
+        parseInt32List(__x, BossMapListString);
+        stu.BossMapList = __x;
+        p_stu = stu;
+        m_BossDistribution.AddBossLevelInfo(p_stu);
+
+
       }
       v1 = 1;
     }
@@ -8844,20 +8777,18 @@ void CfgData::InitBossDistribution()
         {
           nIndex_0 = 0;
           memset(&stu_0, 0, sizeof(stu_0));
-          std::list<int>::list(&stu_0.BossMapList);
           stu_0.nId = TabFile.Search_Posistion( i_0, nIndex_0++)->iValue;
           
           v3 = TabFile.Search_Posistion( i_0, nIndex_0);
-          BossMapListString_0.assign(v3->pString);
+          BossMapListString_0 = v3->pString;
           
           ++nIndex_0;
-          CfgData::paraseInt32List((CfgData *const)&v13, (const std::string *const)this, (int32_t)&BossMapListString_0);
-          std::list<int>::operator=(&stu_0.BossMapList, &v13);
-          std::list<int>::~list(&v13);
-          MapBossInfo::MapBossInfo(&v14, &stu_0);
-          BossDistribution::AddMapBossInfo(&this->m_BossDistribution, &v14);
-          /* MapBossInfo::~MapBossInfo(&v14); - auto cleanup */
-          /* MapBossInfo::~MapBossInfo(&stu_0); - auto cleanup */
+          parseInt32List(v13, BossMapListString_0);
+          stu_0.BossMapList = v13;
+          v14 = stu_0;
+          m_BossDistribution.AddMapBossInfo(v14);
+
+
         }
       }
     }
@@ -8867,13 +8798,13 @@ void CfgData::InitBossDistribution()
 //#####################################
 void CfgData::InitBossFirstKilledTable()
 {
-  CfgBossFirstKilled *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgBossFirstKilled stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  CfgBossFirstKilled *v1;
+  CDBCFile readFile(0);
+  CfgBossFirstKilled stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/BossKill.txt") )
@@ -8909,19 +8840,18 @@ void CfgData::InitBossFirstKilledTable()
 //#####################################
 void CfgData::InitBossKilledReward()
 {
-  const CDBCFile::FIELD *v1; // rax
-  BossKilledReward *v2; // rax
-  BossKilledReward *v3; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-120h] BYREF
-  BossKilledReward stu; // [rsp+A0h] [rbp-90h] BYREF
-  int32_t BossId; // [rsp+DCh] [rbp-54h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+100h] [rbp-30h] BYREF
-  char v9; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  BossKilledReward *v2;
+  BossKilledReward *v3;
+  CDBCFile readFile(0);
+  BossKilledReward stu;
+  int32_t BossId;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GoldReward.txt") )
@@ -8940,24 +8870,22 @@ void CfgData::InitBossKilledReward()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::list<int>::list(&stu.BossList);
         /* std::vector<MemChrBag>::vector(&stu.Rewars); */
         stu.nType = readFile.Search_Posistion( i, nIndex++)->iValue;
         BossId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Rewars, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.Rewars = __x;
         
         ++nIndex;
         v2 = std::map<signed char,BossKilledReward>::operator[](&this->m_BossKilledRewardMap, &stu.nType);
         std::list<int>::push_back(&v2->BossList, &BossId);
         v3 = std::map<signed char,BossKilledReward>::operator[](&this->m_BossKilledRewardMap, &stu.nType);
         std::vector<MemChrBag>::operator=(&v3->Rewars, &stu.Rewars);
-        /* BossKilledReward::~BossKilledReward(&stu); - auto cleanup */
+
       }
     }
   }
@@ -8966,32 +8894,24 @@ void CfgData::InitBossKilledReward()
 //#####################################
 BossKilledReward *CfgData::GetBossKilledReward(int32_t BossId)
 {
-  std::_Rb_tree_iterator<std::pair<const signed char,BossKilledReward> > it; // [rsp+10h] [rbp-20h] BYREF
-  char __x; // [rsp+1Fh] [rbp-11h] BYREF
-  std::_Rb_tree_iterator<std::pair<const signed char,BossKilledReward> > v5; // [rsp+20h] [rbp-10h] BYREF
-
-  __x = BossId;
-  it._M_node = std::map<signed char,BossKilledReward>::find(&this->m_BossKilledRewardMap, &__x)._M_node;
-  v5._M_node = std::map<signed char,BossKilledReward>::end(&this->m_BossKilledRewardMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<signed char const,BossKilledReward>>::operator!=(&it, &v5) )
-    return &std::_Rb_tree_iterator<std::pair<signed char const,BossKilledReward>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_BossKilledRewardMap.find(BossId);
+	if (it != m_BossKilledRewardMap.end())
+		return &it->second;
+	return NULL;
 }
 
 void CfgData::InitBuyGiftTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgBuyGift *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgBuyGift stu; // [rsp+A0h] [rbp-80h] BYREF
-  std::string items; // [rsp+D0h] [rbp-50h] BYREF
-  char v6; // [rsp+DFh] [rbp-41h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgBuyGift *v2;
+  CDBCFile readFile(0);
+  CfgBuyGift stu;
+  std::string items;
+  MemChrBagVector __x;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TimeLimit.txt") )
@@ -9007,22 +8927,20 @@ void CfgData::InitBuyGiftTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgBuyGift::CfgBuyGift(&stu);
         stu.nIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nGold = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        items.assign(v1->pString);
+        items = v1->pString;
         
         ++nIndex;
         nIndex += 3;
         stu.nBroad = readFile.Search_Posistion( i, nIndex++)->iValue;
         CItemHelper::parseItemVectorString(&__x, &items);
-        std::vector<MemChrBag>::operator=(&stu.vGift, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vGift = __x;
         v2 = std::map<int,CfgBuyGift>::operator[](&this->m_cfgBuyGiftTable, &stu.nIndex);
         CfgBuyGift::operator=(v2, &stu);
-        /* CfgBuyGift::~CfgBuyGift(&stu); - auto cleanup */
+
       }
     }
   }
@@ -9039,12 +8957,12 @@ const CfgBuyGift* CfgData::GetBuyGift( int32_t nIndex ) const
 //#####################################
 void CfgData::InitCampWarContKillTable()
 {
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgCampWarContKill contKill; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  CDBCFile readFile(0);
+  CfgCampWarContKill contKill;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/CampWarContKill.txt") )
@@ -9068,7 +8986,7 @@ void CfgData::InitCampWarContKillTable()
         contKill.nBreakBroadcast = readFile.Search_Posistion( i, ++nIndex)->iValue;
         contKill.nTitle = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgCampWarTable::AddContKill(&this->m_cfgCampWarTable, &contKill);
+        m_cfgCampWarTable.AddContKill(contKill);
       }
     }
   }
@@ -9077,20 +8995,18 @@ void CfgData::InitCampWarContKillTable()
 //#####################################
 void CfgData::InitCampWarRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-150h] BYREF
-  CfgCampWarReward reward; // [rsp+A0h] [rbp-C0h] BYREF
-  std::string failItem; // [rsp+E0h] [rbp-80h] BYREF
-  std::string winItem; // [rsp+F0h] [rbp-70h] BYREF
-  char v7; // [rsp+FEh] [rbp-62h] BYREF
-  char v8; // [rsp+FFh] [rbp-61h] BYREF
-  MemChrBagVector __x; // [rsp+100h] [rbp-60h] BYREF
-  MemChrBagVector v10; // [rsp+120h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+140h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+144h] [rbp-1Ch]
-  int32_t i; // [rsp+148h] [rbp-18h]
-  int32_t nIndex; // [rsp+14Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile readFile(0);
+  CfgCampWarReward reward;
+  std::string failItem;
+  std::string winItem;
+  MemChrBagVector __x;
+  MemChrBagVector v10;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/CampWarReward.txt") )
@@ -9115,22 +9031,20 @@ void CfgData::InitCampWarRewardTable()
         reward.nFailMailId = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        winItem.assign(v1->pString);
+        winItem = v1->pString;
         
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        failItem.assign(v2->pString);
+        failItem = v2->pString;
         
         ++nIndex;
         CItemHelper::parseItemVectorString(&__x, &failItem);
-        std::vector<MemChrBag>::operator=(&reward.FailItems, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        reward.FailItems = __x;
         CItemHelper::parseItemVectorString(&v10, &winItem);
-        std::vector<MemChrBag>::operator=(&reward.WinItems, &v10);
-        std::vector<MemChrBag>::~vector(&v10);
-        CfgCampWarTable::AddReward(&this->m_cfgCampWarTable, &reward);
-        /* CfgCampWarReward::~CfgCampWarReward(&reward); - auto cleanup */
+        reward.WinItems = v10;
+        m_cfgCampWarTable.AddReward(reward);
+
       }
     }
   }
@@ -9139,18 +9053,16 @@ void CfgData::InitCampWarRewardTable()
 //#####################################
 void CfgData::InitCarrierAttrTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgCarrierAttr stu; // [rsp+A0h] [rbp-80h] BYREF
-  AttrAddonVector __x; // [rsp+C0h] [rbp-60h] BYREF
-  std::string path; // [rsp+E0h] [rbp-40h] BYREF
-  char v6; // [rsp+EFh] [rbp-31h] BYREF
-  std::string addonAttr; // [rsp+F0h] [rbp-30h] BYREF
-  char v8; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgCarrierAttr stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Carrier_attr.txt") )
@@ -9175,14 +9087,13 @@ void CfgData::InitCarrierAttrTable()
         path = "./ServerConfig/Tables/Carrier_attr.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.vAttr, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.vAttr = __x;
         
         ++nIndex;
-        CfgCarrierTable::AddCarrierAttr(&this->m_cfgCarrierTable, &stu);
-        /* CfgCarrierAttr::~CfgCarrierAttr(&stu); - auto cleanup */
+        m_cfgCarrierTable.AddCarrierAttr(stu);
+
       }
     }
   }
@@ -9191,18 +9102,16 @@ void CfgData::InitCarrierAttrTable()
 //#####################################
 void CfgData::InitCarrierTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgCarrier stu; // [rsp+A0h] [rbp-70h] BYREF
-  std::list<int> __x; // [rsp+C0h] [rbp-50h] BYREF
-  int32_t size[3]; // [rsp+D0h] [rbp-40h] BYREF
-  char v6; // [rsp+DFh] [rbp-31h] BYREF
-  std::string path; // [rsp+E0h] [rbp-30h] BYREF
-  char v8; // [rsp+EEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+F0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+F4h] [rbp-1Ch]
-  int32_t i; // [rsp+F8h] [rbp-18h]
-  int32_t nIndex; // [rsp+FCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgCarrier stu;
+  std::list<int> __x;
+  int32_t size[3];
+  std::string path;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Carrier.txt") )
@@ -9218,22 +9127,20 @@ void CfgData::InitCarrierTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         memset(&stu, 0, sizeof(stu));
-        std::list<int>::list(&stu.lSkills);
         nIndex = 0;
         stu.nId = readFile.Search_Posistion( i, 0)->iValue;
         ++nIndex;
         
-        std::string::string(size, "./ServerConfig/Tables/Carrier.txt", &v6);
+        std::string size("./ServerConfig/Tables/Carrier.txt");
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        path.assign(v1->pString);
-        CfgData::paraseInt32List((CfgData *const)&__x, (const std::string *const)this, &path, (int32_t)size);
-        std::list<int>::operator=(&stu.lSkills, &__x);
-        std::list<int>::~list(&__x);
+        path = v1->pString;
+        parseInt32List(&__x, this, &path, (int32_t)size);
+        stu.lSkills = __x;
         
         ++nIndex;
-        CfgCarrierTable::AddCarrier(&this->m_cfgCarrierTable, &stu);
-        /* CfgCarrier::~CfgCarrier(&stu); - auto cleanup */
+        m_cfgCarrierTable.AddCarrier(stu);
+
       }
     }
   }
@@ -9242,13 +9149,13 @@ void CfgData::InitCarrierTable()
 //#####################################
 void CfgData::InitChargeDungeon()
 {
-  ChargeDungeonCfg *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  ChargeDungeonCfg stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  ChargeDungeonCfg *v1;
+  CDBCFile readFile(0);
+  ChargeDungeonCfg stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/charge_dungeon.txt") )
@@ -9281,89 +9188,56 @@ void CfgData::InitChargeDungeon()
 //#####################################
 int32_t CfgData::GetChargeDungeonId(int32_t nId, int32_t Todaycharge)
 {
-  CfgData *v3; // rax
-  const std::pair<const int,ChargeDungeonCfg> *v4; // rax
-  const std::pair<const int,ChargeDungeonCfg> *v5; // rax
-  char v6; // al
-  int32_t nIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  std::_Rb_tree_const_iterator<std::pair<const int,ChargeDungeonCfg> > it; // [rsp+10h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,ChargeDungeonCfg> > __it; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,ChargeDungeonCfg> > __x; // [rsp+30h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,ChargeDungeonCfg> > v14; // [rsp+40h] [rbp-10h] BYREF
-  int32_t KaiFuDay; // [rsp+4Ch] [rbp-4h]
-
-  thisa = this;
-  nIda = nId;
-  v3 = Answer::Singleton<CfgData>::instance();
-  KaiFuDay = CfgData::getServerDiffDay(v3, SERVER_TYPE::SVT_NORMAL) + 1;
-  __it._M_node = std::map<int,ChargeDungeonCfg>::find(&this->m_ChargeDungeonCfgMap, &nIda)._M_node;
-  std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::_Rb_tree_const_iterator(&it, &__it);
-  v14._M_node = std::map<int,ChargeDungeonCfg>::end(&thisa->m_ChargeDungeonCfgMap)._M_node;
-  std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::_Rb_tree_const_iterator(&__x, &v14);
-  if ( std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::operator!=(&it, &__x)
-    && ((v4 = std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::operator->(&it),
-         v4->second.nMinKaiFuDay > KaiFuDay)
-     || (v5 = std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::operator->(&it),
-         v5->second.nMaxKaiFuDay < KaiFuDay)
-     || std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::operator->(&it)->second.nChargeValue > Todaycharge
-      ? (v6 = 0)
-      : (v6 = 1),
-        v6) )
-  {
-    return std::_Rb_tree_const_iterator<std::pair<int const,ChargeDungeonCfg>>::operator->(&it)->second.nDungeonId;
-  }
-  else
-  {
-    return 0;
-  }
+	int32_t KaiFuDay = CFG_DATA.getServerDiffDay(SVT_NORMAL) + 1;
+	auto it = m_ChargeDungeonCfgMap.find(nId);
+	if (it != m_ChargeDungeonCfgMap.end())
+	{
+		if (it->second.nMinKaiFuDay <= KaiFuDay && it->second.nMaxKaiFuDay >= KaiFuDay
+			&& it->second.nChargeValue <= Todaycharge)
+			return it->second.nDungeonId;
+	}
+	return 0;
 }
 
 //#####################################
 void CfgData::InitChouJiangTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
+  const CDBCFile::FIELD *v2;
   int v3; // ebx
   int v4; // ebx
-  const CDBCFile::FIELD *v5; // rax
-  const CDBCFile::FIELD *v6; // rax
-  const CDBCFile::FIELD *v7; // rax
-  int64_t v8; // rax
-  MemChrBag v9; // [rsp+50h] [rbp-200h] BYREF
-  CfgData *thisa; // [rsp+78h] [rbp-1D8h]
-  CDBCFile readFile(0); // [rsp+80h] [rbp-1D0h] BYREF
-  ChouJiangCfg stu; // [rsp+110h] [rbp-140h] BYREF
-  ChouJiangLuckyCfg stu_0; // [rsp+160h] [rbp-F0h]
-  std::string strItem; // [rsp+170h] [rbp-E0h] BYREF
-  char v15; // [rsp+17Fh] [rbp-D1h] BYREF
-  MemChrBagVector __x; // [rsp+180h] [rbp-D0h] BYREF
-  std::string strItems; // [rsp+1A0h] [rbp-B0h] BYREF
-  char v18; // [rsp+1AFh] [rbp-A1h] BYREF
-  ChouJiangWeekReward p_stu; // [rsp+1B0h] [rbp-A0h] BYREF
-  std::string v20; // [rsp+1D0h] [rbp-80h] BYREF
-  char v21; // [rsp+1DFh] [rbp-71h] BYREF
-  std::string v22; // [rsp+1E0h] [rbp-70h] BYREF
-  char v23; // [rsp+1F2h] [rbp-5Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+1F4h] [rbp-5Ch]
-  int32_t iBaseColumnCount; // [rsp+1F8h] [rbp-58h]
-  int32_t i; // [rsp+1FCh] [rbp-54h]
-  int32_t nIndex; // [rsp+200h] [rbp-50h]
-  int32_t iBaseTableCount_0; // [rsp+208h] [rbp-48h]
-  int32_t iBaseColumnCount_0; // [rsp+20Ch] [rbp-44h]
-  int32_t i_0; // [rsp+210h] [rbp-40h]
-  int32_t nIndex_0; // [rsp+214h] [rbp-3Ch]
-  int32_t iBaseTableCount_1; // [rsp+21Ch] [rbp-34h]
-  int32_t iBaseColumnCount_1; // [rsp+220h] [rbp-30h]
-  int32_t i_1; // [rsp+224h] [rbp-2Ch]
-  int32_t nIndex_1; // [rsp+228h] [rbp-28h]
-  int32_t iBaseTableCount_2; // [rsp+230h] [rbp-20h]
-  int32_t iBaseColumnCount_2; // [rsp+234h] [rbp-1Ch]
-  int32_t i_2; // [rsp+238h] [rbp-18h]
-  int32_t nIndex_2; // [rsp+23Ch] [rbp-14h]
+  const CDBCFile::FIELD *v5;
+  const CDBCFile::FIELD *v6;
+  const CDBCFile::FIELD *v7;
+  MemChrBag v9;
+
+  CDBCFile readFile(0);
+  ChouJiangCfg stu;
+  ChouJiangLuckyCfg stu_0;
+  std::string strItem;
+  MemChrBagVector __x;
+  std::string strItems;
+  ChouJiangWeekReward p_stu;
+  std::string v20;
+  std::string v22;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
+  int32_t iBaseTableCount_1;
+  int32_t iBaseColumnCount_1;
+  int32_t i_1;
+  int32_t nIndex_1;
+  int32_t iBaseTableCount_2;
+  int32_t iBaseColumnCount_2;
+  int32_t i_2;
+  int32_t nIndex_2;
   ItemData v44; // 0:kr00_12.12
 
-  thisa = this;
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TreasureBase.txt") )
   {
@@ -9384,7 +9258,7 @@ void CfgData::InitChouJiangTable()
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        strItem.assign(v2->pString);
+        strItem = v2->pString;
         CItemHelper::parseItemString(&v9, &strItem);
         stu.Item = v9;
         
@@ -9400,7 +9274,7 @@ void CfgData::InitChouJiangTable()
         stu.MaxDay = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.JifenDel = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        ChouJiangTable::AddChouJiangCfg(&thisa->m_ChouJiangTable, stu);
+        ChouJiangTable::AddChouJiangCfg(&m_ChouJiangTable, stu);
       }
       v1 = 1;
     }
@@ -9427,14 +9301,14 @@ void CfgData::InitChouJiangTable()
       {
         for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
         {
-          *(_QWORD *)&stu_0.MaxLucky = 0;
+          memset(&stu_0.MaxLucky, 0, sizeof(int64_t));
           stu_0.MaxQuality = 0;
           nIndex_0 = 1;
           stu_0.MaxLucky = readFile.Search_Posistion( i_0, 1)->iValue;
           stu_0.MinQuality = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           stu_0.MaxQuality = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           ++nIndex_0;
-          ChouJiangTable::AddChouJiangLuckyCfg(&thisa->m_ChouJiangTable, stu_0);
+          ChouJiangTable::AddChouJiangLuckyCfg(&m_ChouJiangTable, stu_0);
         }
         v3 = 1;
       }
@@ -9469,15 +9343,14 @@ void CfgData::InitChouJiangTable()
             ++nIndex_1;
             
             v5 = readFile.Search_Posistion( i_1, nIndex_1);
-            strItems.assign(v5->pString);
+            strItems = v5->pString;
             CItemHelper::parseItemVectorString(&__x, &strItems);
-            std::vector<MemChrBag>::operator=((std::vector<MemChrBag> *const)&stu.Item, &__x);
-            std::vector<MemChrBag>::~vector(&__x);
+            stu.Item = &__x;
             
             ++nIndex_1;
             ChouJiangWeekReward::ChouJiangWeekReward(&p_stu, (const ChouJiangWeekReward *const)&stu);
-            ChouJiangTable::AddChouJiangWeekReward(&thisa->m_ChouJiangTable, &p_stu);
-            /* ChouJiangWeekReward::~ChouJiangWeekReward(&p_stu); - auto cleanup */
+            ChouJiangTable::AddChouJiangWeekReward(&m_ChouJiangTable, &p_stu);
+
             ChouJiangWeekReward::~ChouJiangWeekReward((ChouJiangWeekReward *const)&stu);
           }
           v4 = 1;
@@ -9510,9 +9383,9 @@ void CfgData::InitChouJiangTable()
               ++nIndex_2;
               
               v6 = readFile.Search_Posistion( i_2, nIndex_2);
-              v20.assign(v6->pString);
+              v20 = v6->pString;
               v44 = CItemHelper::parseItemDataString(&v20);
-              LODWORD(v8) = v44.m_nId;
+              v8 = v44.m_nId;
               BYTE4(v8) = v44.m_nClass;
               *(_QWORD *)(&stu.Index + 1) = v8;
               *(_DWORD *)&stu.Item.itemClass = v44.m_nCount;
@@ -9521,12 +9394,12 @@ void CfgData::InitChouJiangTable()
               ++nIndex_2;
               
               v7 = readFile.Search_Posistion( i_2, nIndex_2);
-              v22.assign(v7->pString);
+              v22 = v7->pString;
               CItemHelper::parseItemString(&v9, &v22);
               *(MemChrBag *)&stu.Item.endTime = v9;
               
               ++nIndex_2;
-              ChouJiangTable::AddChouJiangCost(&thisa->m_ChouJiangTable, *(ChouJiangCost *)&stu.Index);
+              ChouJiangTable::AddChouJiangCost(&m_ChouJiangTable, *(ChouJiangCost *)&stu.Index);
             }
           }
         }
@@ -9538,27 +9411,22 @@ void CfgData::InitChouJiangTable()
 //#####################################
 void CfgData::InitChristmasDuiHuanTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  ChristmasDuiHuan *v5; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-160h] BYREF
-  ChristmasDuiHuan stu; // [rsp+A0h] [rbp-D0h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-90h] BYREF
-  std::string strItems; // [rsp+100h] [rbp-70h] BYREF
-  char v10; // [rsp+10Fh] [rbp-61h] BYREF
-  std::list<ItemData> v11; // [rsp+110h] [rbp-60h] BYREF
-  bool bCombi[15]; // [rsp+120h] [rbp-50h] BYREF
-  char v13; // [rsp+12Fh] [rbp-41h] BYREF
-  std::string p_StringTime; // [rsp+130h] [rbp-40h] BYREF
-  char v15; // [rsp+13Fh] [rbp-31h] BYREF
-  std::string v16; // [rsp+140h] [rbp-30h] BYREF
-  char v17; // [rsp+14Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+150h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+154h] [rbp-1Ch]
-  int32_t i; // [rsp+158h] [rbp-18h]
-  int32_t nIndex; // [rsp+15Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  ChristmasDuiHuan *v5;
+  CDBCFile readFile(0);
+  ChristmasDuiHuan stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  std::list<ItemData> v11;
+  std::string p_StringTime;
+  std::string v16;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Christmas.txt") )
@@ -9577,40 +9445,37 @@ void CfgData::InitChristmasDuiHuanTable()
         nIndex = 0;
         memset(&stu, 0, 60);
         /* /* /* std::vector<MemChrBag>::vector(&stu.Items); */ */ */
-        std::list<ItemData>::list(&stu.CostItems);
         stu.nIndx = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Items, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.Items = __x;
         
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v2->pString, &v13);
-        CItemHelper::parseItemDataListString((const std::string *const)&v11, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.CostItems, &v11);
-        std::list<ItemData>::~list(&v11);
+        std::string bCombi(v2->pString);
+        CItemHelper::parseItemDataListString(&v11, (bool)bCombi);
+        stu.CostItems = v11;
         
         stu.nLimitCount = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         
         v3 = readFile.Search_Posistion( i, nIndex);
-        p_StringTime.assign(v3->pString);
+        p_StringTime = v3->pString;
         stu.nStartTime = Answer::DayTime::StringToIntTime(p_StringTime);
         
         ++nIndex;
         
         v4 = readFile.Search_Posistion( i, nIndex);
-        v16.assign(v4->pString);
+        v16 = v4->pString;
         stu.nEndTime = Answer::DayTime::StringToIntTime(v16);
         
         ++nIndex;
         v5 = std::map<int,ChristmasDuiHuan>::operator[](&this->m_ChristmasDuiHuanMap, &stu.nIndx);
         ChristmasDuiHuan::operator=(v5, &stu);
-        /* ChristmasDuiHuan::~ChristmasDuiHuan(&stu); - auto cleanup */
+
       }
     }
   }
@@ -9619,34 +9484,24 @@ void CfgData::InitChristmasDuiHuanTable()
 //#####################################
 ChristmasDuiHuan *CfgData::GetChristmasDuiHuanCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,ChristmasDuiHuan> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,ChristmasDuiHuan> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,ChristmasDuiHuan>::find(&this->m_ChristmasDuiHuanMap, &nIda)._M_node;
-  __x._M_node = std::map<int,ChristmasDuiHuan>::end(&thisa->m_ChristmasDuiHuanMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,ChristmasDuiHuan>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,ChristmasDuiHuan>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_ChristmasDuiHuanMap.find(nId);
+	if (it != m_ChristmasDuiHuanMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitCityWarContRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgCityWarContReward stu; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v6; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgCityWarContReward stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GongChengZhanJiangLi.txt") )
@@ -9669,15 +9524,14 @@ void CfgData::InitCityWarContRewardTable()
         stu.id = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vBreakReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vBreakReward = __x;
         
         stu.nBreakMailId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgCityWarTable::AddContReward(&this->m_cfgCityWarTable, &stu);
-        /* CfgCityWarContReward::~CfgCityWarContReward(&stu); - auto cleanup */
+        m_cfgCityWarTable.AddContReward(stu);
+
       }
     }
   }
@@ -9686,21 +9540,19 @@ void CfgData::InitCityWarContRewardTable()
 //#####################################
 void CfgData::InitCrossTowerCfgMap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CrossTowerCfg *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-170h] BYREF
-  CrossTowerCfg stu; // [rsp+A0h] [rbp-E0h] BYREF
-  MemChrBagVector __x; // [rsp+100h] [rbp-80h] BYREF
-  std::string strItems; // [rsp+120h] [rbp-60h] BYREF
-  char v8; // [rsp+12Fh] [rbp-51h] BYREF
-  MemChrBagVector v9; // [rsp+130h] [rbp-50h] BYREF
-  std::string v10; // [rsp+150h] [rbp-30h] BYREF
-  char v11; // [rsp+15Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+160h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+164h] [rbp-1Ch]
-  int32_t i; // [rsp+168h] [rbp-18h]
-  int32_t nIndex; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CrossTowerCfg *v3;
+  CDBCFile TabFile(0);
+  CrossTowerCfg stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v9;
+  std::string v10;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/KuaFuMap.txt") )
@@ -9729,24 +9581,22 @@ void CfgData::InitCrossTowerCfgMap()
         stu.Floor = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.RewardVt, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.RewardVt = __x;
         
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        v10.assign(v2->pString);
+        v10 = v2->pString;
         CItemHelper::parseItemVectorString(&v9, &v10);
-        std::vector<MemChrBag>::operator=(&stu.TopRewardVt, &v9);
-        std::vector<MemChrBag>::~vector(&v9);
+        stu.TopRewardVt = v9;
         
         stu.MailId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         v3 = std::map<int,CrossTowerCfg>::operator[](&this->m_CrossTowerCfgMap, &stu.MapId);
         CrossTowerCfg::operator=(v3, &stu);
-        /* CrossTowerCfg::~CrossTowerCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -9755,42 +9605,31 @@ void CfgData::InitCrossTowerCfgMap()
 //#####################################
 CrossTowerCfg *CfgData::GetCrossTowerCfg(int32_t MapId)
 {
-  int32_t MapIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CrossTowerCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CrossTowerCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  MapIda = MapId;
-  it._M_node = std::map<int,CrossTowerCfg>::find(&this->m_CrossTowerCfgMap, &MapIda)._M_node;
-  __x._M_node = std::map<int,CrossTowerCfg>::end(&thisa->m_CrossTowerCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CrossTowerCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CrossTowerCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_CrossTowerCfgMap.find(MapId);
+	if (it != m_CrossTowerCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitCycleTowerTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  int64_t v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CycleTowerCost stu_0; // [rsp+A0h] [rbp-70h]
-  CycleTowerMapCfg stu; // [rsp+B0h] [rbp-60h]
-  std::string strItem; // [rsp+C0h] [rbp-50h] BYREF
-  char v8; // [rsp+D2h] [rbp-3Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+D4h] [rbp-3Ch]
-  int32_t iBaseColumnCount; // [rsp+D8h] [rbp-38h]
-  int32_t i; // [rsp+DCh] [rbp-34h]
-  int32_t nIndex; // [rsp+E0h] [rbp-30h]
-  int32_t MapId; // [rsp+E4h] [rbp-2Ch]
-  int32_t iBaseTableCount_0; // [rsp+ECh] [rbp-24h]
-  int32_t iBaseColumnCount_0; // [rsp+F0h] [rbp-20h]
-  int32_t i_0; // [rsp+F4h] [rbp-1Ch]
-  int32_t nIndex_0; // [rsp+F8h] [rbp-18h]
-  int32_t Times; // [rsp+FCh] [rbp-14h]
+  const CDBCFile::FIELD *v2;
+  CDBCFile TabFile(0);
+  CycleTowerCost stu_0;
+  CycleTowerMapCfg stu;
+  std::string strItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t MapId;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
+  int32_t Times;
   ItemData v21; // 0:kr00_12.12
 
   
@@ -9842,9 +9681,9 @@ void CfgData::InitCycleTowerTable()
           ++nIndex_0;
           
           v2 = TabFile.Search_Posistion( i_0, nIndex_0);
-          strItem.assign(v2->pString);
+          strItem = v2->pString;
           v21 = CItemHelper::parseItemDataString(&strItem);
-          LODWORD(v3) = v21.m_nId;
+          v3 = v21.m_nId;
           BYTE4(v3) = v21.m_nClass;
           *(_QWORD *)&stu_0.CostData.m_nId = v3;
           stu_0.CostData.m_nCount = v21.m_nCount;
@@ -9859,39 +9698,27 @@ void CfgData::InitCycleTowerTable()
 }
 
 //#####################################
-
-//#####################################
 DamnationCfg *CfgData::GetDamnationCfg(int32_t Level)
 {
-  int32_t Levela; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,DamnationCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,DamnationCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  Levela = Level;
-  it._M_node = std::map<int,DamnationCfg>::find(&this->m_DamnationCfgTable, &Levela)._M_node;
-  __x._M_node = std::map<int,DamnationCfg>::end(&thisa->m_DamnationCfgTable)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,DamnationCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,DamnationCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_DamnationCfgTable.find(Level);
+	if (it != m_DamnationCfgTable.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitDiligenceCfgMap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  DiligenceCfg *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-F0h] BYREF
-  DiligenceCfg stu; // [rsp+A0h] [rbp-60h] BYREF
-  std::list<RateItem> strItems; // [rsp+C0h] [rbp-40h] BYREF
-  _BYTE v6[14]; // [rsp+D0h] [rbp-30h] BYREF
-  char v7; // [rsp+DEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+E0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+E4h] [rbp-1Ch]
-  int32_t i; // [rsp+E8h] [rbp-18h]
-  int32_t nIndex; // [rsp+ECh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  DiligenceCfg *v2;
+  CDBCFile TabFile(0);
+  DiligenceCfg stu;
+  std::list<RateItem> strItems;
+  _BYTE v6[14];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/QinFen.txt") )
@@ -9908,20 +9735,18 @@ void CfgData::InitDiligenceCfgMap()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::list<RateItem>::list(&stu.lItems);
         stu.nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nValues = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v6, v1->pString, &v7);
-        CItemHelper::parseRateItemDataListString((const std::string *const)&strItems);
-        std::list<RateItem>::operator=(&stu.lItems, &strItems);
-        std::list<RateItem>::~list(&strItems);
+        std::string v6(v1->pString);
+        CItemHelper::parseRateItemDataListString(&strItems);
+        stu.lItems = strItems;
         
         ++nIndex;
         v2 = std::map<int,DiligenceCfg>::operator[](&this->m_DiligenceCfgMap, &stu.nId);
         DiligenceCfg::operator=(v2, &stu);
-        /* DiligenceCfg::~DiligenceCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -9930,31 +9755,22 @@ void CfgData::InitDiligenceCfgMap()
 //#####################################
 DiligenceCfg *CfgData::GetDiligenceCfg(int32_t nType)
 {
-  int32_t nTypea; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,DiligenceCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,DiligenceCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nTypea = nType;
-  it._M_node = std::map<int,DiligenceCfg>::find(&this->m_DiligenceCfgMap, &nTypea)._M_node;
-  __x._M_node = std::map<int,DiligenceCfg>::end(&thisa->m_DiligenceCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,DiligenceCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,DiligenceCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_DiligenceCfgMap.find(nType);
+	if (it != m_DiligenceCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitDrawTable()
 {
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgDrawReward stu; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBag item; // [rsp+D0h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  CDBCFile readFile(0);
+  CfgDrawReward stu;
+  MemChrBag item;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Draw.txt") )
@@ -9970,7 +9786,6 @@ void CfgData::InitDrawTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgDrawReward::CfgDrawReward(&stu);
         stu.nIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nType = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nRate = readFile.Search_Posistion( i, nIndex++)->iValue;
@@ -9983,7 +9798,7 @@ void CfgData::InitDrawTable()
         stu.nId = readFile.Search_Posistion( i, nIndex++)->iValue;
         std::vector<MemChrBag>::push_back(&stu.vItem, &item);
         CfgDrawTable::Add(&this->m_cfgDrawTable, &stu);
-        /* CfgDrawReward::~CfgDrawReward(&stu); - auto cleanup */
+
       }
     }
   }
@@ -9992,13 +9807,13 @@ void CfgData::InitDrawTable()
 //#####################################
 void CfgData::InitDropRecordTable()
 {
-  CfgDropRecord *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgDropRecord record; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t i; // [rsp+B8h] [rbp-18h]
-  int32_t nIndex; // [rsp+BCh] [rbp-14h]
+  CfgDropRecord *v1;
+  CDBCFile TabFile(0);
+  CfgDropRecord record;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/DropRecord.txt") )
@@ -10014,7 +9829,7 @@ void CfgData::InitDropRecordTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        *(_QWORD *)&record.nIndex = 0;
+        memset(&record.nIndex, 0, sizeof(int64_t));
         *(_DWORD *)&record.nItemClass = 0;
         record.nIndex = TabFile.Search_Posistion( i, 0)->iValue;
         record.nItemId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -10031,15 +9846,13 @@ void CfgData::InitDropRecordTable()
 //#####################################
 const CfgDropRecord *CfgData::GetDropRecord(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgDropRecord> > iter; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgDropRecord> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nIndexa = nIndex;
-  iter._M_node = std::map<int,CfgDropRecord>::find(&this->m_cfgDropRecordTable, &nIndexa)._M_node;
-  __x._M_node = std::map<int,CfgDropRecord>::end(&thisa->m_cfgDropRecordTable)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgDropRecord> > iter;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgDropRecord> > __x;
+
+  auto iter = m_cfgDropRecordTable.find(nIndexa);
+  auto __x = m_cfgDropRecordTable.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,CfgDropRecord>>::operator!=(&iter, &__x) )
     return &std::_Rb_tree_const_iterator<std::pair<int const,CfgDropRecord>>::operator->(&iter)->second;
   else
@@ -10049,14 +9862,14 @@ const CfgDropRecord *CfgData::GetDropRecord(int32_t nIndex)
 //#####################################
 void CfgData::InitDuiHuanLimitTable()
 {
-  DuiHuanLimit *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  int32_t MaxLevel; // [rsp+ACh] [rbp-44h] BYREF
-  DuiHuanLimit stu; // [rsp+B0h] [rbp-40h]
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t nIndex; // [rsp+DCh] [rbp-14h]
+  DuiHuanLimit *v1;
+  CDBCFile TabFile(0);
+  int32_t MaxLevel;
+  DuiHuanLimit stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/ExchangeShengYaoBi.txt") )
@@ -10073,8 +9886,8 @@ void CfgData::InitDuiHuanLimitTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 1;
-        *(_QWORD *)&stu.ShengYaoBi = 0;
-        *(_QWORD *)&stu.ConstCurrency = 0;
+        memset(&stu.ShengYaoBi, 0, sizeof(int64_t));
+        memset(&stu.ConstCurrency, 0, sizeof(int64_t));
         MaxLevel = TabFile.Search_Posistion( i, 1)->iValue;
         stu.ShengYaoBi = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.ConstGold = TabFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -10091,37 +9904,26 @@ void CfgData::InitDuiHuanLimitTable()
 //#####################################
 DuiHuanLimit *CfgData::GetDuiHuanLimitCount(int32_t Level)
 {
-  int32_t Levela; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,DuiHuanLimit> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,DuiHuanLimit> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  Levela = Level;
-  it._M_node = std::map<int,DuiHuanLimit>::lower_bound(&this->m_DuiHuanLimit, &Levela)._M_node;
-  __x._M_node = std::map<int,DuiHuanLimit>::end(&thisa->m_DuiHuanLimit)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,DuiHuanLimit>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,DuiHuanLimit>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_DuiHuanLimit.find(Level);
+	if (it != m_DuiHuanLimit.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitDungeonScoreTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  MemChrBag v2; // [rsp+0h] [rbp-120h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-F8h]
-  CDBCFile TabFile(0); // [rsp+30h] [rbp-F0h] BYREF
-  CfgDungeonScore score; // [rsp+C0h] [rbp-60h] BYREF
-  std::string strItem; // [rsp+F0h] [rbp-30h] BYREF
-  char v7; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  MemChrBag v2;
 
-  thisa = this;
+  CDBCFile TabFile(0);
+  CfgDungeonScore score;
+  std::string strItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/DungeonScore.txt") )
   {
@@ -10142,12 +9944,12 @@ void CfgData::InitDungeonScoreTable()
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         CItemHelper::parseItemString(&v2, &strItem);
         score.Item = v2;
         
         ++nIndex;
-        CfgDungeonScoreTable::AddDungeonScore(&thisa->m_cfgDungeonScoreTable, &score);
+        CfgDungeonScoreTable::AddDungeonScore(&m_cfgDungeonScoreTable, &score);
       }
     }
   }
@@ -10156,24 +9958,20 @@ void CfgData::InitDungeonScoreTable()
 //#####################################
 void CfgData::InitDungeonSummon()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CfgDungeonSummon *v3; // rax
-  int64_t v4; // rax
-  CDBCFile DungeonTrapFile(0); // [rsp+10h] [rbp-130h] BYREF
-  CfgDungeonSummon stu; // [rsp+A0h] [rbp-A0h] BYREF
-  std::list<int> __x; // [rsp+D0h] [rbp-70h] BYREF
-  int32_t size[3]; // [rsp+E0h] [rbp-60h] BYREF
-  char v9; // [rsp+EFh] [rbp-51h] BYREF
-  std::string path; // [rsp+F0h] [rbp-50h] BYREF
-  char v11; // [rsp+FFh] [rbp-41h] BYREF
-  std::string strItem; // [rsp+100h] [rbp-40h] BYREF
-  char v13; // [rsp+10Fh] [rbp-31h] BYREF
-  std::pair<int,int> __k; // [rsp+110h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+120h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+124h] [rbp-1Ch]
-  int32_t i; // [rsp+128h] [rbp-18h]
-  int32_t nIndex; // [rsp+12Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CfgDungeonSummon *v3;
+  CDBCFile DungeonTrapFile(0);
+  CfgDungeonSummon stu;
+  std::list<int> __x;
+  int32_t size[3];
+  std::string path;
+  std::string strItem;
+  std::pair<int,int> __k;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
   ItemData v20; // 0:kr00_12.12
 
   
@@ -10190,26 +9988,24 @@ void CfgData::InitDungeonSummon()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgDungeonSummon::CfgDungeonSummon(&stu);
         stu.nDungeon = DungeonTrapFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nIndex = DungeonTrapFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nGold = DungeonTrapFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nLimit = DungeonTrapFile.Search_Posistion( i, nIndex++)->iValue;
         
-        std::string::string(size, "./ServerConfig/Tables/cfg_dungeon_summon.txt", &v9);
+        std::string size("./ServerConfig/Tables/cfg_dungeon_summon.txt");
         
         v1 = DungeonTrapFile.Search_Posistion( i, nIndex);
-        path.assign(v1->pString);
-        CfgData::paraseInt32List((CfgData *const)&__x, (const std::string *const)this, &path, (int32_t)size);
-        std::list<int>::operator=(&stu.lMonsters, &__x);
-        std::list<int>::~list(&__x);
+        path = v1->pString;
+        parseInt32List(&__x, this, &path, (int32_t)size);
+        stu.lMonsters = __x;
         
         ++nIndex;
         
         v2 = DungeonTrapFile.Search_Posistion( i, nIndex);
-        strItem.assign(v2->pString);
+        strItem = v2->pString;
         v20 = CItemHelper::parseItemDataString(&strItem);
-        LODWORD(v4) = v20.m_nId;
+        v4 = v20.m_nId;
         BYTE4(v4) = v20.m_nClass;
         *(_QWORD *)&stu.ConstItem.m_nId = v4;
         stu.ConstItem.m_nCount = v20.m_nCount;
@@ -10219,7 +10015,7 @@ void CfgData::InitDungeonSummon()
         __k = std::make_pair<int,int>(stu.nDungeon, stu.nIndex);
         v3 = std::map<std::pair<int,int>,CfgDungeonSummon>::operator[](&this->m_cfgDungeonSummon, &__k);
         CfgDungeonSummon::operator=(v3, &stu);
-        /* CfgDungeonSummon::~CfgDungeonSummon(&stu); - auto cleanup */
+
       }
     }
   }
@@ -10228,18 +10024,10 @@ void CfgData::InitDungeonSummon()
 //#####################################
 const CfgDungeonSummon *CfgData::GetDungeonSummon(int32_t nDungeon, int32_t nIndex)
 {
-  std::_Rb_tree_const_iterator<std::pair<const std::pair<int,int>,CfgDungeonSummon> > iter; // [rsp+10h] [rbp-30h] BYREF
-  std::pair<int,int> __x; // [rsp+20h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const std::pair<int,int>,CfgDungeonSummon> > v6; // [rsp+30h] [rbp-10h] BYREF
-
-  __x = std::make_pair<int,int>(nDungeon, nIndex);
-  iter._M_node = std::map<std::pair<int,int>,CfgDungeonSummon>::find(&this->m_cfgDungeonSummon, &__x)._M_node;
-  v6._M_node = std::map<std::pair<int,int>,CfgDungeonSummon>::end(&this->m_cfgDungeonSummon)._M_node;
-  if ( std::_Rb_tree_const_iterator<std::pair<std::pair const<int,int>,CfgDungeonSummon>>::operator!=(&iter, &v6) )
-    return (const CfgDungeonSummon *)((char *)std::_Rb_tree_const_iterator<std::pair<std::pair const<int,int>,CfgDungeonSummon>>::operator->(&iter)
-                                    + 8);
-  else
-    return 0;
+	auto it = m_cfgDungeonSummon.find(std::make_pair(nDungeon, nIndex));
+	if (it != m_cfgDungeonSummon.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
@@ -10247,76 +10035,23 @@ const CfgDungeonSummon *CfgData::GetDungeonSummon(int32_t nDungeon, int32_t nInd
 //#####################################
 int32_t CfgData::GetEquipBackTaskId(int32_t PlayerLevel, int32_t Times)
 {
-  std::pair<const int,std::map<int,std::list<Param2>> > *v3; // rax
-  std::pair<const int,std::map<int,std::list<Param2>> > *v4; // rax
-  Answer::Random *v5; // rax
-  std::pair<const int,std::list<Param2> > *v6; // rax
-  Param2 *v7; // rax
-  Param2 *v9; // rax
-  std::pair<const int,std::list<Param2> > *v10; // rax
-  int32_t Timesa; // [rsp+0h] [rbp-70h] BYREF
-  int32_t PlayerLevela; // [rsp+4h] [rbp-6Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-68h]
-  std::_List_iterator<Param2> itbeg; // [rsp+10h] [rbp-60h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<Param2> > > pIt; // [rsp+20h] [rbp-50h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::map<int,std::list<Param2>> > > it; // [rsp+30h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::map<int,std::list<Param2>> > > __x; // [rsp+40h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<Param2> > > v18; // [rsp+50h] [rbp-20h] BYREF
-  std::_List_iterator<Param2> v19; // [rsp+60h] [rbp-10h] BYREF
-  int32_t TaskId; // [rsp+68h] [rbp-8h]
-  int32_t nRand; // [rsp+6Ch] [rbp-4h]
-
-  thisa = this;
-  PlayerLevela = PlayerLevel;
-  Timesa = Times;
-  TaskId = 0;
-  it._M_node = std::map<int,std::map<int,std::list<Param2>>>::lower_bound(&this->m_EquipBackTaskRate, &PlayerLevela)._M_node;
-  __x._M_node = std::map<int,std::map<int,std::list<Param2>>>::end(&thisa->m_EquipBackTaskRate)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::map<int,std::list<Param2>>>>::operator!=(&it, &__x) )
-  {
-    v3 = std::_Rb_tree_iterator<std::pair<int const,std::map<int,std::list<Param2>>>>::operator->(&it);
-    pIt._M_node = std::map<int,std::list<Param2>>::find(&v3->second, &Timesa)._M_node;
-    v4 = std::_Rb_tree_iterator<std::pair<int const,std::map<int,std::list<Param2>>>>::operator->(&it);
-    v18._M_node = std::map<int,std::list<Param2>>::end(&v4->second)._M_node;
-    if ( std::_Rb_tree_iterator<std::pair<int const,std::list<Param2>>>::operator!=(&pIt, &v18) )
-    {
-      v5 = Answer::Singleton<Answer::Random>::instance();
-      nRand = Answer::Random::generate(v5, 1, 10000);
-      v6 = std::_Rb_tree_iterator<std::pair<int const,std::list<Param2>>>::operator->(&pIt);
-      for ( itbeg._M_node = std::list<Param2>::begin(&v6->second)._M_node;
-            std::_List_iterator<Param2>::operator++(&itbeg, 0) )
-      {
-        v10 = std::_Rb_tree_iterator<std::pair<int const,std::list<Param2>>>::operator->(&pIt);
-        v19._M_node = std::list<Param2>::end(&v10->second)._M_node;
-        if ( !std::_List_iterator<Param2>::operator!=(&itbeg, &v19) )
-          break;
-        v7 = std::_List_iterator<Param2>::operator->(&itbeg);
-        if ( v7->nParam2 >= nRand )
-          return std::_List_iterator<Param2>::operator->(&itbeg)->nParam1;
-        v9 = std::_List_iterator<Param2>::operator->(&itbeg);
-        nRand -= v9->nParam2;
-      }
-    }
-  }
-  return TaskId;
+	auto it = m_EquipBackTaskRate.lower_bound(PlayerLevel);
+	if (it != m_EquipBackTaskRate.end())
+	{
+		auto pIt = it->second.find(Times);
+		if (pIt != it->second.end() && !pIt->second.empty())
+			return pIt->second.front().nValue;
+	}
+	return 0;
 }
 
 //#####################################
 BackEquipTask *CfgData::GetBackEquipTask(int32_t Index)
 {
-  int32_t Indexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,BackEquipTask> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,BackEquipTask> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  Indexa = Index;
-  it._M_node = std::map<int,BackEquipTask>::find(&this->m_EquipBackTable, &Indexa)._M_node;
-  __x._M_node = std::map<int,BackEquipTask>::end(&thisa->m_EquipBackTable)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,BackEquipTask>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,BackEquipTask>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_BackEquipTaskMap.find(Index);
+	if (it != m_BackEquipTaskMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
@@ -10326,16 +10061,15 @@ BackEquipTask *CfgData::GetBackEquipTask(int32_t Index)
 //#####################################
 void CfgData::InitEquipDecomposeTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-120h] BYREF
-  CfgEquipDecompose stu; // [rsp+A0h] [rbp-90h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+100h] [rbp-30h] BYREF
-  char v6; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgEquipDecompose stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/EquipDecompose.txt") )
@@ -10352,17 +10086,15 @@ void CfgData::InitEquipDecomposeTable()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgEquipDecompose::CfgEquipDecompose(&stu);
         nIndex = 0;
         stu.m_nClass = readFile.Search_Posistion( i, 0)->iValue;
         stu.m_nId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.m_vGiveItems, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.m_vGiveItems = __x;
         
         stu.m_nCostMoney = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.m_nLimitType = readFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -10370,8 +10102,8 @@ void CfgData::InitEquipDecomposeTable()
         ++nIndex;
         nIndex += 2;
         stu.m_NpcId = readFile.Search_Posistion( i, nIndex++)->iValue;
-        CfgEquipTable::AddEquipDecompose(&this->m_cfgEquip, &stu);
-        /* CfgEquipDecompose::~CfgEquipDecompose(&stu); - auto cleanup */
+        m_cfgEquip.AddEquipDecompose(stu);
+
       }
     }
   }
@@ -10380,18 +10112,16 @@ void CfgData::InitEquipDecomposeTable()
 //#####################################
 void CfgData::InitEquipPosSuitTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgEquipPosSuit stu; // [rsp+A0h] [rbp-80h] BYREF
-  AttrAddonVector __x; // [rsp+C0h] [rbp-60h] BYREF
-  std::string path; // [rsp+E0h] [rbp-40h] BYREF
-  char v6; // [rsp+EFh] [rbp-31h] BYREF
-  std::string addonAttr; // [rsp+F0h] [rbp-30h] BYREF
-  char v8; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgEquipPosSuit stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/EquipPosSuit.txt") )
@@ -10408,7 +10138,6 @@ void CfgData::InitEquipPosSuitTable()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgEquipPosSuit::CfgEquipPosSuit(&stu);
         nIndex = 1;
         stu.m_nLevel = readFile.Search_Posistion( i, 1)->iValue;
         ++nIndex;
@@ -10416,14 +10145,13 @@ void CfgData::InitEquipPosSuitTable()
         path = "./ServerConfig/Tables/EquipPosSuit.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.m_vAttrAddon, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.m_vAttrAddon = __x;
         
         ++nIndex;
-        CfgEquipTable::AddEquipPosSuit(&this->m_cfgEquip, &stu);
-        /* CfgEquipPosSuit::~CfgEquipPosSuit(&stu); - auto cleanup */
+        m_cfgEquip.AddEquipPosSuit(stu);
+
       }
     }
   }
@@ -10432,15 +10160,13 @@ void CfgData::InitEquipPosSuitTable()
 //#####################################
 void CfgData::InitEquipUpPhase()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-100h] BYREF
-  cfgEquipUpPhase stu; // [rsp+A0h] [rbp-70h] BYREF
-  std::list<ItemData> strItems; // [rsp+D0h] [rbp-40h] BYREF
-  bool bCombi[18]; // [rsp+E0h] [rbp-30h] BYREF
-  char v6; // [rsp+F2h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+F4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+F8h] [rbp-18h]
-  int32_t i; // [rsp+FCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile TabFile(0);
+  cfgEquipUpPhase stu;
+  std::list<ItemData> strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/EquipUpPhase.txt") )
@@ -10456,20 +10182,18 @@ void CfgData::InitEquipUpPhase()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         memset(&stu, 0, 36);
-        std::list<ItemData>::list(&stu.m_CostItems);
         stu.m_CostEquip = TabFile.Search_Posistion( i, 0)->iValue;
         
         v1 = TabFile.Search_Posistion( i, 1);
-        std::string::string(bCombi, v1->pString, &v6);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.m_CostItems, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&strItems, (bool)bCombi);
+        stu.m_CostItems = strItems;
         
         stu.m_CostMoney = TabFile.Search_Posistion( i, 2)->iValue;
         stu.m_GiveEquip = TabFile.Search_Posistion( i, 3)->iValue;
         stu.m_GongGaoId = TabFile.Search_Posistion( i, 4)->iValue;
-        cfgEquipUpPhaseTable::AddData(&this->m_cfgEquipUpPhaseTable, &stu);
-        /* cfgEquipUpPhase::~cfgEquipUpPhase(&stu); - auto cleanup */
+        m_cfgEquipUpPhaseTable.AddData(stu);
+
       }
     }
   }
@@ -10478,20 +10202,18 @@ void CfgData::InitEquipUpPhase()
 //#####################################
 void CfgData::InitExchangeTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-130h] BYREF
-  CfgExchange stu; // [rsp+A0h] [rbp-A0h] BYREF
-  std::string rewards; // [rsp+D0h] [rbp-70h] BYREF
-  std::string items; // [rsp+E0h] [rbp-60h] BYREF
-  char v7; // [rsp+EEh] [rbp-52h] BYREF
-  char v8; // [rsp+EFh] [rbp-51h] BYREF
-  std::list<ItemData> strItems; // [rsp+F0h] [rbp-50h] BYREF
-  MemChrBagVector __x; // [rsp+100h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+120h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+124h] [rbp-1Ch]
-  int32_t i; // [rsp+128h] [rbp-18h]
-  int32_t nIndex; // [rsp+12Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile readFile(0);
+  CfgExchange stu;
+  std::string rewards;
+  std::string items;
+  std::list<ItemData> strItems;
+  MemChrBagVector __x;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/JiZiDuiJiang.txt") )
@@ -10507,28 +10229,25 @@ void CfgData::InitExchangeTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgExchange::CfgExchange(&stu);
         stu.nIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nType = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        items.assign(v1->pString);
+        items = v1->pString;
         
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        rewards.assign(v2->pString);
+        rewards = v2->pString;
         
         stu.nLimit = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)&items);
-        std::list<ItemData>::operator=(&stu.vCost, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        CItemHelper::parseItemDataListString(&strItems, (bool)&items);
+        stu.vCost = strItems;
         CItemHelper::parseItemVectorString(&__x, &rewards);
-        std::vector<MemChrBag>::operator=(&stu.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vReward = __x;
         CfgExchangeTable::Add(&this->m_cfgExchangeTable, &stu);
-        /* CfgExchange::~CfgExchange(&stu); - auto cleanup */
+
       }
     }
   }
@@ -10537,13 +10256,13 @@ void CfgData::InitExchangeTable()
 //#####################################
 void CfgData::InitFamilyDonateTable()
 {
-  ContributionCfg *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  ContributionCfg stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  ContributionCfg *v1;
+  CDBCFile TabFile(0);
+  ContributionCfg stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/FamilyDonate.txt") )
@@ -10577,30 +10296,21 @@ void CfgData::InitFamilyDonateTable()
 //#####################################
 ContributionCfg *CfgData::GettFamilyDonateCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,ContributionCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,ContributionCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,ContributionCfg>::find(&this->m_ContributionCfgMap, &nIda)._M_node;
-  __x._M_node = std::map<int,ContributionCfg>::end(&thisa->m_ContributionCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,ContributionCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,ContributionCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_FamilyDonateMap.find(nId);
+	if (it != m_FamilyDonateMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitFamilyDungeonTable()
 {
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  CfgFamilyDungeon stu; // [rsp+A0h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t nIndex; // [rsp+DCh] [rbp-14h]
+  CDBCFile TabFile(0);
+  CfgFamilyDungeon stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/FamilyDungeon.txt") )
@@ -10627,806 +10337,28 @@ void CfgData::InitFamilyDungeonTable()
         stu.X = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.Y = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nTime = TabFile.Search_Posistion( i, nIndex++)->iValue;
-        CfgFamilyDungeonTable::AddDungeon(&this->m_cfgFamilyDungeonTable, &stu);
+        m_cfgFamilyDungeonTable.AddDungeon(stu);
       }
     }
   }
 }
 
-//#####################################
-void CfgData::fetchActivity()
-{
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  int64_t v6; // rax
-  int *v7; // rbx
-  std::string *v8; // rax
-  const char *v9; // rax
-  int64_t v10; // rax
-  int *v11; // rbx
-  std::string *v12; // rax
-  const char *v13; // rax
-  int64_t v14; // rax
-  std::string *v15; // rax
-  const char *v16; // rax
-  size_t v17; // rbx
-  int64_t v18; // rax
-  std::string *v19; // rax
-  const char *v20; // rax
-  std::string *v21; // rax
-  int64_t v22; // rax
-  std::string *v23; // rax
-  const char *v24; // rax
-  std::string *v25; // rax
-  const char *v26; // rax
-  std::string *v27; // rax
-  int64_t v28; // rax
-  std::string *v29; // rax
-  const char *v30; // rax
-  std::string *v31; // rax
-  int64_t v32; // rax
-  std::string *v33; // rax
-  const char *v34; // rax
-  std::string *v35; // rax
-  const char *v36; // rax
-  size_t v37; // rbx
-  CfgActivity *v38; // rax
-  const CDBCFile::FIELD *v39; // rax
-  const CDBCFile::FIELD *v40; // rax
-  int64_t v41; // rax
-  std::string *v42; // rax
-  const char *v43; // rax
-  std::map<int,std::list<CfgMapEvent>> *v44; // rax
-  std::list<CfgMapEvent> *v45; // rax
-  const CDBCFile::FIELD *v46; // rax
-  const CDBCFile::FIELD *v47; // rax
-  std::string *v48; // rax
-  std::string *v49; // rax
-  const char *v50; // rax
-  int32_t v51; // ebx
-  std::string *v52; // rax
-  const char *v53; // rax
-  int32_t v54; // eax
-  size_t v55; // rbx
-  std::string *v56; // rax
-  std::string *v57; // rax
-  const char *v58; // rax
-  int32_t v59; // ebx
-  std::string *v60; // rax
-  const char *v61; // rax
-  int32_t v62; // eax
-  size_t v63; // rbx
-  CfgActivityMonster *v64; // rax
-  const CDBCFile::FIELD *v65; // rax
-  int64_t v66; // rax
-  std::string *v67; // rax
-  const char *v68; // rax
-  CfgActivityNpc *v69; // rax
-  const CDBCFile::FIELD *v70; // rax
-  CfgActivityPlant *v71; // rax
-  CfgActivityDrop *v72; // rax
-  CfgActivityTrap *v73; // rax
-  CDBCFile ActivityTrapFile(0); // [rsp+10h] [rbp-A00h] BYREF
-  std::vector<int> v75; // [rsp+A0h] [rbp-970h] BYREF
-  int v76; // [rsp+B8h] [rbp-958h]
-  std::vector<int> v77; // [rsp+C0h] [rbp-950h] BYREF
-  std::vector<int> v78; // [rsp+D8h] [rbp-938h] BYREF
-  int iValue; // [rsp+F0h] [rbp-920h]
-  int v80; // [rsp+F4h] [rbp-91Ch]
-  int v81; // [rsp+F8h] [rbp-918h]
-  CDBCFile ActivityDropFile(0); // [rsp+100h] [rbp-910h] BYREF
-  CDBCFile ActivityPlantFile(0); // [rsp+190h] [rbp-880h] BYREF
-  CDBCFile ActivityNpcFile(0); // [rsp+220h] [rbp-7F0h] BYREF
-  CDBCFile ActivityMonsterFile(0); // [rsp+2B0h] [rbp-760h] BYREF
-  CDBCFile ActivityEventFile(0); // [rsp+340h] [rbp-6D0h] BYREF
-  CDBCFile ActivityFile(0); // [rsp+3D0h] [rbp-640h] BYREF
-  CfgActivityPlant plant; // [rsp+460h] [rbp-5B0h] BYREF
-  int v89; // [rsp+498h] [rbp-578h]
-  std::vector<Position> v90; // [rsp+4A0h] [rbp-570h] BYREF
-  int v91; // [rsp+4B8h] [rbp-558h]
-  bool v92; // [rsp+4BCh] [rbp-554h]
-  CfgActivityTrap trap; // [rsp+4C0h] [rbp-550h] BYREF
-  CfgActivityDrop drop; // [rsp+4D0h] [rbp-540h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it_0; // [rsp+4F0h] [rbp-520h] BYREF
-  StringVector strRegions; // [rsp+500h] [rbp-510h] BYREF
-  std::string regionId; // [rsp+520h] [rbp-4F0h] BYREF
-  StringVector vPos_0; // [rsp+530h] [rbp-4E0h] BYREF
-  StringVector vRandPos; // [rsp+550h] [rbp-4C0h] BYREF
-  StringVector vPos; // [rsp+570h] [rbp-4A0h] BYREF
-  StringVector vRoad; // [rsp+590h] [rbp-480h] BYREF
-  std::string randpos; // [rsp+5B0h] [rbp-460h] BYREF
-  std::string road; // [rsp+5C0h] [rbp-450h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+5D0h] [rbp-440h] BYREF
-  StringVector strParams_2; // [rsp+5E0h] [rbp-430h] BYREF
-  std::string triggerParam; // [rsp+600h] [rbp-410h] BYREF
-  int32_t tstart; // [rsp+60Ch] [rbp-404h] BYREF
-  StringVector stritemParams_0; // [rsp+610h] [rbp-400h] BYREF
-  StringVector stritemParams; // [rsp+630h] [rbp-3E0h] BYREF
-  StringVector vStartHour; // [rsp+650h] [rbp-3C0h] BYREF
-  StringVector strParams_1; // [rsp+670h] [rbp-3A0h] BYREF
-  StringVector strParams_0; // [rsp+690h] [rbp-380h] BYREF
-  StringVector strParams; // [rsp+6B0h] [rbp-360h] BYREF
-  StringVector strMaps; // [rsp+6D0h] [rbp-340h] BYREF
-  std::string daily; // [rsp+6F0h] [rbp-320h] BYREF
-  std::string awards; // [rsp+700h] [rbp-310h] BYREF
-  std::string position; // [rsp+710h] [rbp-300h] BYREF
-  std::string start_hour; // [rsp+720h] [rbp-2F0h] BYREF
-  std::string maps; // [rsp+730h] [rbp-2E0h] BYREF
-  char v120; // [rsp+747h] [rbp-2C9h] BYREF
-  char v121; // [rsp+748h] [rbp-2C8h] BYREF
-  char v122; // [rsp+749h] [rbp-2C7h] BYREF
-  char v123; // [rsp+74Ah] [rbp-2C6h] BYREF
-  char v124; // [rsp+74Bh] [rbp-2C5h] BYREF
-  int __x; // [rsp+74Ch] [rbp-2C4h] BYREF
-  std::string delims; // [rsp+750h] [rbp-2C0h] BYREF
-  char v127; // [rsp+75Fh] [rbp-2B1h] BYREF
-  std::string str; // [rsp+760h] [rbp-2B0h] BYREF
-  char v129; // [rsp+76Fh] [rbp-2A1h] BYREF
-  std::string v130; // [rsp+770h] [rbp-2A0h] BYREF
-  char v131; // [rsp+77Fh] [rbp-291h] BYREF
-  std::string v132; // [rsp+780h] [rbp-290h] BYREF
-  char v133; // [rsp+78Fh] [rbp-281h] BYREF
-  std::string v134; // [rsp+790h] [rbp-280h] BYREF
-  char v135; // [rsp+79Fh] [rbp-271h] BYREF
-  std::string v136; // [rsp+7A0h] [rbp-270h] BYREF
-  char v137; // [rsp+7ABh] [rbp-265h] BYREF
-  int v138; // [rsp+7ACh] [rbp-264h] BYREF
-  std::string v139; // [rsp+7B0h] [rbp-260h] BYREF
-  char v140; // [rsp+7BFh] [rbp-251h] BYREF
-  std::string v141; // [rsp+7C0h] [rbp-250h] BYREF
-  char v142; // [rsp+7CFh] [rbp-241h] BYREF
-  std::string v143; // [rsp+7D0h] [rbp-240h] BYREF
-  char v144; // [rsp+7DFh] [rbp-231h] BYREF
-  std::string v145; // [rsp+7E0h] [rbp-230h] BYREF
-  char v146; // [rsp+7EBh] [rbp-225h] BYREF
-  int v147; // [rsp+7ECh] [rbp-224h] BYREF
-  std::string v148; // [rsp+7F0h] [rbp-220h] BYREF
-  char v149; // [rsp+7FFh] [rbp-211h] BYREF
-  std::string v150; // [rsp+800h] [rbp-210h] BYREF
-  char v151; // [rsp+80Bh] [rbp-205h] BYREF
-  int v152; // [rsp+80Ch] [rbp-204h] BYREF
-  StringVector v153; // [rsp+810h] [rbp-200h] BYREF
-  std::string v154; // [rsp+830h] [rbp-1E0h] BYREF
-  char v155; // [rsp+83Fh] [rbp-1D1h] BYREF
-  std::string v156; // [rsp+840h] [rbp-1D0h] BYREF
-  char v157; // [rsp+84Bh] [rbp-1C5h] BYREF
-  int v158; // [rsp+84Ch] [rbp-1C4h] BYREF
-  std::string v159; // [rsp+850h] [rbp-1C0h] BYREF
-  char v160; // [rsp+85Eh] [rbp-1B2h] BYREF
-  char v161; // [rsp+85Fh] [rbp-1B1h] BYREF
-  std::string v162; // [rsp+860h] [rbp-1B0h] BYREF
-  char v163; // [rsp+86Fh] [rbp-1A1h] BYREF
-  std::string v164; // [rsp+870h] [rbp-1A0h] BYREF
-  char v165; // [rsp+87Fh] [rbp-191h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+880h] [rbp-190h] BYREF
-  int v167; // [rsp+888h] [rbp-188h] BYREF
-  char v168; // [rsp+88Eh] [rbp-182h] BYREF
-  char v169; // [rsp+88Fh] [rbp-181h] BYREF
-  std::string v170; // [rsp+890h] [rbp-180h] BYREF
-  char v171; // [rsp+89Fh] [rbp-171h] BYREF
-  std::string v172; // [rsp+8A0h] [rbp-170h] BYREF
-  char v173; // [rsp+8AFh] [rbp-161h] BYREF
-  Position v174; // [rsp+8B0h] [rbp-160h] BYREF
-  std::string v175; // [rsp+8C0h] [rbp-150h] BYREF
-  char v176; // [rsp+8CFh] [rbp-141h] BYREF
-  std::string v177; // [rsp+8D0h] [rbp-140h] BYREF
-  char v178; // [rsp+8DFh] [rbp-131h] BYREF
-  Position v179; // [rsp+8E0h] [rbp-130h] BYREF
-  char v180; // [rsp+8EFh] [rbp-121h] BYREF
-  std::string v181; // [rsp+8F0h] [rbp-120h] BYREF
-  char v182; // [rsp+8FFh] [rbp-111h] BYREF
-  std::string v183; // [rsp+900h] [rbp-110h] BYREF
-  char v184; // [rsp+90Fh] [rbp-101h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v185; // [rsp+910h] [rbp-100h] BYREF
-  int v186; // [rsp+91Ch] [rbp-F4h] BYREF
-  std::vector<Position> v187; // [rsp+920h] [rbp-F0h] BYREF
-  std::string strPos; // [rsp+940h] [rbp-D0h] BYREF
-  char v189; // [rsp+956h] [rbp-BAh] BYREF
-  int32_t iBaseTableCount; // [rsp+958h] [rbp-B8h]
-  int32_t iBaseColumnCount; // [rsp+95Ch] [rbp-B4h]
-  int32_t i; // [rsp+960h] [rbp-B0h]
-  int32_t weekday; // [rsp+964h] [rbp-ACh]
-  int16_t nsize; // [rsp+96Ah] [rbp-A6h]
-  int32_t j; // [rsp+96Ch] [rbp-A4h]
-  int16_t nsize_0; // [rsp+972h] [rbp-9Eh]
-  int32_t j_0; // [rsp+974h] [rbp-9Ch]
-  uint32_t j_1; // [rsp+978h] [rbp-98h]
-  int32_t nlenth; // [rsp+97Ch] [rbp-94h]
-  int32_t j_2; // [rsp+980h] [rbp-90h]
-  int32_t nlenth_0; // [rsp+984h] [rbp-8Ch]
-  int32_t j_3; // [rsp+988h] [rbp-88h]
-  int32_t k; // [rsp+98Ch] [rbp-84h]
-  uint32_t j_4; // [rsp+990h] [rbp-80h]
-  int32_t iBaseTableCount_Event; // [rsp+998h] [rbp-78h]
-  int32_t iBaseColumnCount_Event; // [rsp+99Ch] [rbp-74h]
-  int32_t iBaseTableCount_Monster; // [rsp+9A4h] [rbp-6Ch]
-  int32_t iBaseColumnCount_Monster; // [rsp+9A8h] [rbp-68h]
-  int32_t iBaseTableCount_Npc; // [rsp+9B0h] [rbp-60h]
-  int32_t iBaseColumnCount_Npc; // [rsp+9B4h] [rbp-5Ch]
-  int32_t iBaseTableCount_Plant; // [rsp+9BCh] [rbp-54h]
-  int32_t iBaseColumnCount_Plant; // [rsp+9C0h] [rbp-50h]
-  int32_t iBaseTableCount_Drop; // [rsp+9C8h] [rbp-48h]
-  int32_t iBaseColumnCount_Drop; // [rsp+9CCh] [rbp-44h]
-  int32_t iBaseTableCount_Trap; // [rsp+9D4h] [rbp-3Ch]
-  int32_t iBaseColumnCount_Trap; // [rsp+9D8h] [rbp-38h]
-  int32_t i_0; // [rsp+9DCh] [rbp-34h]
-  int32_t nIndex; // [rsp+9E0h] [rbp-30h]
-  int32_t i_1; // [rsp+9E4h] [rbp-2Ch]
-  uint32_t j_5; // [rsp+9E8h] [rbp-28h]
-  uint32_t j_6; // [rsp+9ECh] [rbp-24h]
-  int32_t i_2; // [rsp+9F0h] [rbp-20h]
-  int32_t i_3; // [rsp+9F4h] [rbp-1Ch]
-  int32_t i_4; // [rsp+9F8h] [rbp-18h]
-  int32_t i_5; // [rsp+9FCh] [rbp-14h]
-
-  
-  if ( !ActivityFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open cfg_activity.txt failed,please check!!");
-  }
-  else
-  {
-    iBaseTableCount = ActivityFile.GetRecordsNum();
-    iBaseColumnCount = ActivityFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        CfgActivity::CfgActivity((CfgActivity *const)&ActivityTrapFile);
-        LODWORD(ActivityTrapFile._vptr_CDBCFile) = ActivityFile.Search_Posistion( i, 0)->iValue;
-        HIDWORD(ActivityTrapFile.m_pStringBuf) = ActivityFile.Search_Posistion( i, 5)->iValue;
-        weekday = ActivityFile.Search_Posistion( i, 9)->iValue;
-        LODWORD(ActivityTrapFile.m_theType._M_impl._M_end_of_storage) = ActivityFile.Search_Posistion( i, 10)->iValue;
-        HIDWORD(ActivityTrapFile.m_theType._M_impl._M_end_of_storage) = ActivityFile.Search_Posistion( i, 11)->iValue;
-        ActivityTrapFile.m_nRecordsNum = ActivityFile.Search_Posistion( i, 12)->iValue;
-        
-        v1 = ActivityFile.Search_Posistion( i, 13);
-        maps.assign(v1->pString);
-        
-        v2 = ActivityFile.Search_Posistion( i, 14);
-        start_hour.assign(v2->pString);
-        
-        LODWORD(ActivityTrapFile.m_pStringBuf) = ActivityFile.Search_Posistion( i, 15)->iValue;
-        
-        v3 = ActivityFile.Search_Posistion( i, 17);
-        position.assign(v3->pString);
-        
-        v4 = ActivityFile.Search_Posistion( i, 18);
-        awards.assign(v4->pString);
-        
-        WORD2(ActivityTrapFile._vptr_CDBCFile) = ActivityFile.Search_Posistion( i, 21)->iValue;
-        iValue = ActivityFile.Search_Posistion( i, 23)->iValue;
-        v80 = ActivityFile.Search_Posistion( i, 24)->iValue;
-        v81 = ActivityFile.Search_Posistion( i, 25)->iValue;
-        
-        v5 = ActivityFile.Search_Posistion( i, 26);
-        daily.assign(v5->pString);
-        
-        LOBYTE(ActivityTrapFile.m_nStringBufSize) = ActivityFile.Search_Posistion( i, 30)->iValue;
-        while ( weekday > 0 )
-        {
-          __x = weekday % 10;
-          std::vector<int>::push_back((std::vector<int> *const)&ActivityTrapFile.m_ID, &__x);
-          weekday /= 10;
-        }
-        if ( *(_BYTE *)std::string::c_str(&awards) )
-        {
-          
-          delims = ":";
-          
-          v6 = std::string::c_str(&awards);
-          str.assign(v6);
-          Answer::StringUtility::split(&strParams, &str, &delims, 0);
-          
-          nsize = std::vector<std::string>::size(&strParams);
-          switch ( WORD2(ActivityTrapFile._vptr_CDBCFile) )
-          {
-            case 1:
-              nsize = 8;
-              break;
-            case 6:
-              nsize = 1;
-              break;
-            case 8:
-              nsize = 2;
-              break;
-            case 0xB:
-              nsize = 6;
-              break;
-            case 0xC:
-              nsize = 5;
-              break;
-            default:
-              break;
-          }
-          std::vector<int>::resize(&v77, nsize, 0);
-          for ( j = 0; nsize > j; ++j )
-          {
-            v7 = std::vector<int>::operator[](&v77, j);
-            v8 = std::vector<std::string>::operator[](&strParams, j);
-            v9 = (const char *)std::string::c_str(v8);
-            *v7 = atoi(v9);
-          }
-          std::vector<std::string>::~vector(&strParams);
-        }
-        if ( *(_BYTE *)std::string::c_str(&daily) )
-        {
-          
-          v130 = ":";
-          
-          v10 = std::string::c_str(&daily);
-          v132.assign(v10);
-          Answer::StringUtility::split(&strParams_0, &v132, &v130, 0);
-          
-          nsize_0 = std::vector<std::string>::size(&strParams_0);
-          std::vector<int>::resize(&v78, nsize_0, 0);
-          for ( j_0 = 0; nsize_0 > j_0; ++j_0 )
-          {
-            v11 = std::vector<int>::operator[](&v78, j_0);
-            v12 = std::vector<std::string>::operator[](&strParams_0, j_0);
-            v13 = (const char *)std::string::c_str(v12);
-            *v11 = atoi(v13);
-          }
-          std::vector<std::string>::~vector(&strParams_0);
-        }
-        
-        v134 = ":";
-        
-        v14 = std::string::c_str(&maps);
-        v136.assign(v14);
-        Answer::StringUtility::split(&strMaps, &v136, &v134, 0);
-        
-        if ( std::vector<std::string>::size(&strMaps) )
-        {
-          for ( j_1 = 0; ; ++j_1 )
-          {
-            v17 = j_1;
-            if ( v17 >= std::vector<std::string>::size(&strMaps) )
-              break;
-            v15 = std::vector<std::string>::operator[](&strMaps, j_1);
-            v16 = (const char *)std::string::c_str(v15);
-            v138 = atoi(v16);
-            std::vector<int>::push_back((std::vector<int> *const)&ActivityTrapFile.m_hashIndex, &v138);
-          }
-        }
-        
-        v139 = ":";
-        
-        v18 = std::string::c_str(&position);
-        v141.assign(v18);
-        Answer::StringUtility::split(&strParams_1, &v141, &v139, 0);
-        
-        if ( std::vector<std::string>::size(&strParams_1) == 2 )
-        {
-          v19 = std::vector<std::string>::operator[](&strParams_1, 0);
-          v20 = (const char *)std::string::c_str(v19);
-          LODWORD(ActivityTrapFile.m_hashIndex._M_ht._M_buckets._M_impl._M_end_of_storage) = atoi(v20);
-          
-          v143 = "|";
-          
-          v21 = std::vector<std::string>::operator[](&strParams_1, 1u);
-          v22 = std::string::c_str(v21);
-          v145.assign(v22);
-          Answer::StringUtility::split(&stritemParams, &v145, &v143, 0);
-          
-          nlenth = std::vector<std::string>::size(&stritemParams);
-          for ( j_2 = 0; j_2 < nlenth; ++j_2 )
-          {
-            v23 = std::vector<std::string>::operator[](&stritemParams, j_2);
-            v24 = (const char *)std::string::c_str(v23);
-            v147 = atoi(v24);
-            std::vector<int>::push_back(
-              (std::vector<int> *const)&ActivityTrapFile.m_hashIndex._M_ht._M_num_elements,
-              &v147);
-          }
-          std::vector<std::string>::~vector(&stritemParams);
-        }
-        else if ( std::vector<std::string>::size(&strParams_1) == 3 )
-        {
-          v25 = std::vector<std::string>::operator[](&strParams_1, 0);
-          v26 = (const char *)std::string::c_str(v25);
-          LODWORD(ActivityTrapFile.m_hashIndex._M_ht._M_buckets._M_impl._M_end_of_storage) = atoi(v26);
-          
-          v148 = "|";
-          
-          v27 = std::vector<std::string>::operator[](&strParams_1, 1u);
-          v28 = std::string::c_str(v27);
-          v150.assign(v28);
-          Answer::StringUtility::split(&stritemParams_0, &v150, &v148, 0);
-          
-          nlenth_0 = std::vector<std::string>::size(&stritemParams_0);
-          for ( j_3 = 0; j_3 < nlenth_0; ++j_3 )
-          {
-            v29 = std::vector<std::string>::operator[](&stritemParams_0, j_3);
-            v30 = (const char *)std::string::c_str(v29);
-            v152 = atoi(v30);
-            std::vector<int>::push_back(
-              (std::vector<int> *const)&ActivityTrapFile.m_hashIndex._M_ht._M_num_elements,
-              &v152);
-          }
-          
-          v154 = "|";
-          
-          v31 = std::vector<std::string>::operator[](&strParams_1, 2u);
-          v32 = std::string::c_str(v31);
-          v156.assign(v32);
-          Answer::StringUtility::split(&v153, &v156, &v154, 0);
-          std::vector<std::string>::operator=(&stritemParams_0, &v153);
-          std::vector<std::string>::~vector(&v153);
-          
-          nlenth_0 = std::vector<std::string>::size(&stritemParams_0);
-          for ( k = 0; k < nlenth_0; ++k )
-          {
-            v33 = std::vector<std::string>::operator[](&stritemParams_0, k);
-            v34 = (const char *)std::string::c_str(v33);
-            v158 = atoi(v34);
-            std::vector<int>::push_back(&v75, &v158);
-          }
-          std::vector<std::string>::~vector(&stritemParams_0);
-        }
-        
-        v159 = ":";
-        Answer::StringUtility::split(&vStartHour, &start_hour, &v159, 0);
-        
-        if ( std::vector<std::string>::size(&vStartHour) )
-        {
-          for ( j_4 = 0; ; ++j_4 )
-          {
-            v37 = j_4;
-            if ( v37 >= std::vector<std::string>::size(&vStartHour) )
-              break;
-            v35 = std::vector<std::string>::operator[](&vStartHour, j_4);
-            v36 = (const char *)std::string::c_str(v35);
-            tstart = atoi(v36);
-            if ( (unsigned int)tstart < 0x5A0
-              && SLODWORD(ActivityTrapFile.m_pStringBuf) >= 0
-              && LODWORD(ActivityTrapFile.m_pStringBuf) + tstart <= 1439 )
-            {
-              std::vector<int>::push_back((std::vector<int> *const)&ActivityTrapFile.m_vDataBuf, &tstart);
-            }
-            else
-            {
-              Answer::Logger::print(
-                Answer::LogLevel::LOG_LEVEL_ERROR,
-                "wrong activity data with id=%d\n",
-                LODWORD(ActivityTrapFile._vptr_CDBCFile));
-            }
-          }
-        }
-        v76 = 0;
-        v38 = std::map<int,CfgActivity>::operator[](&this->m_activities, (const int *const)&ActivityTrapFile);
-        CfgActivity::operator=(v38, (const CfgActivity *const)&ActivityTrapFile);
-        std::vector<std::string>::~vector(&vStartHour);
-        std::vector<std::string>::~vector(&strParams_1);
-        std::vector<std::string>::~vector(&strMaps);
-        CfgActivity::~CfgActivity((CfgActivity *const)&ActivityTrapFile);
-      }
-      
-      if ( !ActivityEventFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity_event.txt") )
-      {
-        Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open cfg_activity_event.txt failed,please check!!");
-      }
-      else
-      {
-        iBaseTableCount_Event = ActivityEventFile.GetRecordsNum();
-        iBaseColumnCount_Event = ActivityEventFile.GetFieldsNum();
-        if ( iBaseColumnCount_Event > 0 )
-        {
-          for ( i_0 = 0; i_0 < iBaseTableCount_Event; ++i_0 )
-          {
-            CfgMapEvent::CfgMapEvent((CfgMapEvent *const)&plant);
-            nIndex = 0;
-            plant.id = ActivityEventFile.Search_Posistion( i_0, 0)->iValue;
-            plant.activity_id = ActivityEventFile.Search_Posistion( i_0, ++nIndex)->iValue;
-            plant.plant_id = ActivityEventFile.Search_Posistion( i_0, ++nIndex)->iValue;
-            v92 = ActivityEventFile.Search_Posistion( i_0, ++nIndex)->iValue == 0;
-            plant.count = ActivityEventFile.Search_Posistion( i_0, ++nIndex)->iValue;
-            ++nIndex;
-            
-            v39 = ActivityEventFile.Search_Posistion( i_0, nIndex);
-            triggerParam.assign(v39->pString);
-            
-            LODWORD(plant.EnterPosVector._M_impl._M_finish) = CDBCFile::Search_Posistion(
-                                                                &ActivityEventFile,
-                                                                i_0,
-                                                                ++nIndex)->iValue;
-            v40 = ActivityEventFile.Search_Posistion( i_0, ++nIndex);
-            std::string::operator=(&plant.EnterPosVector._M_impl._M_end_of_storage, v40->pString);
-            ++nIndex;
-            
-            v162 = ":";
-            
-            v41 = std::string::c_str(&triggerParam);
-            v164.assign(v41);
-            Answer::StringUtility::split(&strParams_2, &v164, &v162, 0);
-            
-            for ( it._M_current = std::vector<std::string>::begin(&strParams_2)._M_current;
-                  __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&it) )
-            {
-              __rhs._M_current = std::vector<std::string>::end(&strParams_2)._M_current;
-              if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&it, &__rhs) )
-                break;
-              v42 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator->(&it);
-              v43 = (const char *)std::string::c_str(v42);
-              v167 = atoi(v43);
-              std::vector<int>::push_back((std::vector<int> *const)&plant.wave, &v167);
-            }
-            v44 = std::map<int,std::map<int,std::list<CfgMapEvent>>>::operator[](&this->m_activityEvents, &plant.id);
-            v45 = std::map<int,std::list<CfgMapEvent>>::operator[](v44, &plant.activity_id);
-            std::list<CfgMapEvent>::push_back(v45, (const CfgMapEvent *const)&plant);
-            std::vector<std::string>::~vector(&strParams_2);
-            CfgMapEvent::~CfgMapEvent((CfgMapEvent *const)&plant);
-          }
-          
-          if ( !ActivityMonsterFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity_monster.txt") )
-          {
-            Answer::Logger::print(
-              Answer::LogLevel::LOG_LEVEL_ERROR,
-              "open cfg_activity_monster.txt failed,please check!!");
-          }
-          else
-          {
-            iBaseTableCount_Monster = ActivityMonsterFile.GetRecordsNum();
-            iBaseColumnCount_Monster = ActivityMonsterFile.GetFieldsNum();
-            if ( iBaseColumnCount_Monster > 0 )
-            {
-              for ( i_1 = 0; i_1 < iBaseTableCount_Monster; ++i_1 )
-              {
-                CfgActivityMonster::CfgActivityMonster((CfgActivityMonster *const)&plant);
-                plant.id = ActivityMonsterFile.Search_Posistion( i_1, 0)->iValue;
-                plant.activity_id = ActivityMonsterFile.Search_Posistion( i_1, 1)->iValue;
-                plant.plant_id = ActivityMonsterFile.Search_Posistion( i_1, 2)->iValue;
-                plant.count = ActivityMonsterFile.Search_Posistion( i_1, 3)->iValue;
-                plant.wave = ActivityMonsterFile.Search_Posistion( i_1, 4)->iValue;
-                plant.region_id = ActivityMonsterFile.Search_Posistion( i_1, 5)->iValue;
-                plant.whoplant = ActivityMonsterFile.Search_Posistion( i_1, 6)->iValue;
-                
-                v46 = ActivityMonsterFile.Search_Posistion( i_1, 7);
-                road.assign(v46->pString);
-                
-                LODWORD(plant.EnterPosVector._M_impl._M_end_of_storage) = CDBCFile::Search_Posistion(
-                                                                            &ActivityMonsterFile,
-                                                                            i_1,
-                                                                            8)->iValue;
-                HIDWORD(plant.EnterPosVector._M_impl._M_end_of_storage) = CDBCFile::Search_Posistion(
-                                                                            &ActivityMonsterFile,
-                                                                            i_1,
-                                                                            9)->iValue;
-                v89 = ActivityMonsterFile.Search_Posistion( i_1, 10)->iValue;
-                
-                v47 = ActivityMonsterFile.Search_Posistion( i_1, 11);
-                randpos.assign(v47->pString);
-                
-                v91 = ActivityMonsterFile.Search_Posistion( i_1, 12)->iValue;
-                if ( std::string::size(&road) > 3u )
-                {
-                  
-                  v170 = ":";
-                  Answer::StringUtility::split(&vRoad, &road, &v170, 0);
-                  
-                  for ( j_5 = 0; ; ++j_5 )
-                  {
-                    v55 = j_5;
-                    if ( v55 >= std::vector<std::string>::size(&vRoad) )
-                      break;
-                    
-                    v172 = ",";
-                    v48 = std::vector<std::string>::operator[](&vRoad, j_5);
-                    Answer::StringUtility::split(&vPos, v48, &v172, 0);
-                    
-                    if ( std::vector<std::string>::size(&vPos) == 2 )
-                    {
-                      v49 = std::vector<std::string>::operator[](&vPos, 1u);
-                      v50 = (const char *)std::string::c_str(v49);
-                      v51 = atoi(v50);
-                      v52 = std::vector<std::string>::operator[](&vPos, 0);
-                      v53 = (const char *)std::string::c_str(v52);
-                      v54 = atoi(v53);
-                      Position::Position(&v174, v54, v51);
-                      std::list<Position>::push_back((std::list<Position> *const)&plant.EnterPosVector, &v174);
-                    }
-                    std::vector<std::string>::~vector(&vPos);
-                  }
-                  std::vector<std::string>::~vector(&vRoad);
-                }
-                if ( std::string::size(&randpos) > 3u )
-                {
-                  
-                  v175 = "|";
-                  Answer::StringUtility::split(&vRandPos, &randpos, &v175, 0);
-                  
-                  for ( j_6 = 0; ; ++j_6 )
-                  {
-                    v63 = j_6;
-                    if ( v63 >= std::vector<std::string>::size(&vRandPos) )
-                      break;
-                    
-                    v177 = ":";
-                    v56 = std::vector<std::string>::operator[](&vRandPos, j_6);
-                    Answer::StringUtility::split(&vPos_0, v56, &v177, 0);
-                    
-                    if ( std::vector<std::string>::size(&vPos_0) == 2 )
-                    {
-                      v57 = std::vector<std::string>::operator[](&vPos_0, 1u);
-                      v58 = (const char *)std::string::c_str(v57);
-                      v59 = atoi(v58);
-                      v60 = std::vector<std::string>::operator[](&vPos_0, 0);
-                      v61 = (const char *)std::string::c_str(v60);
-                      v62 = atoi(v61);
-                      Position::Position(&v179, v62, v59);
-                      std::vector<Position>::push_back(&v90, &v179);
-                    }
-                    std::vector<std::string>::~vector(&vPos_0);
-                  }
-                  std::vector<std::string>::~vector(&vRandPos);
-                }
-                v64 = std::map<int,CfgActivityMonster>::operator[](&this->m_activityMonsters, &plant.id);
-                CfgActivityMonster::operator=(v64, (const CfgActivityMonster *const)&plant);
-                CfgActivityMonster::~CfgActivityMonster((CfgActivityMonster *const)&plant);
-              }
-              
-              if ( !ActivityNpcFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity_npc.txt") )
-              {
-                Answer::Logger::print(
-                  Answer::LogLevel::LOG_LEVEL_ERROR,
-                  "open cfg_activity_npc.txt failed,please check!!");
-              }
-              else
-              {
-                iBaseTableCount_Npc = ActivityNpcFile.GetRecordsNum();
-                iBaseColumnCount_Npc = ActivityNpcFile.GetFieldsNum();
-                if ( iBaseColumnCount_Npc > 0 )
-                {
-                  for ( i_2 = 0; i_2 < iBaseTableCount_Npc; ++i_2 )
-                  {
-                    CfgActivityNpc::CfgActivityNpc((CfgActivityNpc *const)&plant);
-                    plant.id = ActivityNpcFile.Search_Posistion( i_2, 0)->iValue;
-                    plant.activity_id = ActivityNpcFile.Search_Posistion( i_2, 1)->iValue;
-                    plant.plant_id = ActivityNpcFile.Search_Posistion( i_2, 2)->iValue;
-                    plant.count = ActivityNpcFile.Search_Posistion( i_2, 3)->iValue;
-                    
-                    v65 = ActivityNpcFile.Search_Posistion( i_2, 4);
-                    regionId.assign(v65->pString);
-                    
-                    v181 = ":";
-                    
-                    v66 = std::string::c_str(&regionId);
-                    v183.assign(v66);
-                    Answer::StringUtility::split(&strRegions, &v183, &v181, 0);
-                    
-                    for ( it_0._M_current = std::vector<std::string>::begin(&strRegions)._M_current;
-                          __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator++(&it_0) )
-                    {
-                      v185._M_current = std::vector<std::string>::end(&strRegions)._M_current;
-                      if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&it_0, &v185) )
-                        break;
-                      v67 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator->(&it_0);
-                      v68 = (const char *)std::string::c_str(v67);
-                      v186 = atoi(v68);
-                      std::vector<int>::push_back((std::vector<int> *const)&plant.wave, &v186);
-                    }
-                    v69 = std::map<int,CfgActivityNpc>::operator[](&this->m_activityNpcs, &plant.id);
-                    CfgActivityNpc::operator=(v69, (const CfgActivityNpc *const)&plant);
-                    std::vector<std::string>::~vector(&strRegions);
-                    CfgActivityNpc::~CfgActivityNpc((CfgActivityNpc *const)&plant);
-                  }
-                  
-                  if ( !ActivityPlantFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity_plant.txt") )
-                  {
-                    Answer::Logger::print(
-                      Answer::LogLevel::LOG_LEVEL_ERROR,
-                      "open cfg_activity_plant.txt failed,please check!!");
-                  }
-                  else
-                  {
-                    iBaseTableCount_Plant = ActivityPlantFile.GetRecordsNum();
-                    iBaseColumnCount_Plant = ActivityPlantFile.GetFieldsNum();
-                    if ( iBaseColumnCount_Plant > 0 )
-                    {
-                      for ( i_3 = 0; i_3 < iBaseTableCount_Plant; ++i_3 )
-                      {
-                        CfgActivityPlant::CfgActivityPlant(&plant);
-                        plant.id = ActivityPlantFile.Search_Posistion( i_3, 0)->iValue;
-                        plant.activity_id = ActivityPlantFile.Search_Posistion( i_3, 1)->iValue;
-                        plant.plant_id = ActivityPlantFile.Search_Posistion( i_3, 2)->iValue;
-                        plant.count = ActivityPlantFile.Search_Posistion( i_3, 3)->iValue;
-                        plant.wave = ActivityPlantFile.Search_Posistion( i_3, 4)->iValue;
-                        plant.region_id = ActivityPlantFile.Search_Posistion( i_3, 5)->iValue;
-                        plant.whoplant = ActivityPlantFile.Search_Posistion( i_3, 6)->iValue;
-                        
-                        v70 = ActivityPlantFile.Search_Posistion( i_3, 7);
-                        strPos.assign(v70->pString);
-                        CfgData::paresPosition(&v187, this, &strPos);
-                        std::vector<Position>::operator=(&plant.EnterPosVector, &v187);
-                        std::vector<Position>::~vector(&v187);
-                        
-                        plant.life_time = ActivityPlantFile.Search_Posistion( i_3, 8)->iValue;
-                        v71 = std::map<int,CfgActivityPlant>::operator[](&this->m_activityPlants, &plant.id);
-                        CfgActivityPlant::operator=(v71, &plant);
-                        /* CfgActivityPlant::~CfgActivityPlant(&plant); - auto cleanup */
-                      }
-                      
-                      if ( !ActivityDropFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity_drop.txt") )
-                      {
-                        Answer::Logger::print(
-                          Answer::LogLevel::LOG_LEVEL_ERROR,
-                          "open cfg_activity_drop.txt failed,please check!!");
-                      }
-                      else
-                      {
-                        iBaseTableCount_Drop = ActivityDropFile.GetRecordsNum();
-                        iBaseColumnCount_Drop = ActivityDropFile.GetFieldsNum();
-                        if ( iBaseColumnCount_Drop > 0 )
-                        {
-                          for ( i_4 = 0; i_4 < iBaseTableCount_Drop; ++i_4 )
-                          {
-                            drop.id = ActivityDropFile.Search_Posistion( i_4, 0)->iValue;
-                            drop.activity_id = ActivityDropFile.Search_Posistion( i_4, 1)->iValue;
-                            drop.monster_min_level = ActivityDropFile.Search_Posistion( i_4, 2)->iValue;
-                            drop.drop_group_id = ActivityDropFile.Search_Posistion( i_4, 3)->iValue;
-                            drop.probability = ActivityDropFile.Search_Posistion( i_4, 4)->iValue;
-                            drop.bind_type = ActivityDropFile.Search_Posistion( i_4, 5)->iValue;
-                            v72 = std::map<int,CfgActivityDrop>::operator[](&this->m_activityDrops, &drop.id);
-                            *v72 = drop;
-                          }
-                          
-                          if ( !ActivityTrapFile.OpenFromTXT( "./ServerConfig/Tables/cfg_activity_trap.txt") )
-                          {
-                            Answer::Logger::print(
-                              Answer::LogLevel::LOG_LEVEL_ERROR,
-                              "open cfg_activity_trap.txt failed,please check!!");
-                          }
-                          else
-                          {
-                            iBaseTableCount_Trap = ActivityTrapFile.GetRecordsNum();
-                            iBaseColumnCount_Trap = ActivityTrapFile.GetFieldsNum();
-                            if ( iBaseColumnCount_Trap > 0 )
-                            {
-                              for ( i_5 = 0; i_5 < iBaseTableCount_Trap; ++i_5 )
-                              {
-                                trap.id = ActivityTrapFile.Search_Posistion( i_5, 0)->iValue;
-                                trap.tid = ActivityTrapFile.Search_Posistion( i_5, 1)->iValue;
-                                trap.x = ActivityTrapFile.Search_Posistion( i_5, 2)->iValue;
-                                trap.y = ActivityTrapFile.Search_Posistion( i_5, 3)->iValue;
-                                v73 = std::map<int,CfgActivityTrap>::operator[](&this->m_activityTraps, &trap.id);
-                                *v73 = trap;
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 //#####################################
 void CfgData::fetchBuff()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CfgBuff *v3; // rax
-  CDBCFile BuffFile(0); // [rsp+10h] [rbp-160h] BYREF
-  CfgBuff buff; // [rsp+A0h] [rbp-D0h] BYREF
-  BuffAttrVector __x; // [rsp+110h] [rbp-60h] BYREF
-  std::string str; // [rsp+130h] [rbp-40h] BYREF
-  char v8; // [rsp+13Fh] [rbp-31h] BYREF
-  std::string v9; // [rsp+140h] [rbp-30h] BYREF
-  char v10; // [rsp+14Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+150h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+154h] [rbp-1Ch]
-  int32_t i; // [rsp+158h] [rbp-18h]
-  int32_t nIndex; // [rsp+15Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CfgBuff *v3;
+  CDBCFile BuffFile(0);
+  CfgBuff buff;
+  BuffAttrVector __x;
+  std::string str;
+  std::string v9;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !BuffFile.OpenFromTXT( "./ServerConfig/Tables/cfg_buff.txt") )
@@ -11442,7 +10374,6 @@ void CfgData::fetchBuff()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgBuff::CfgBuff(&buff);
         buff.id = BuffFile.Search_Posistion( i, nIndex++)->iValue;
         buff.groupid = BuffFile.Search_Posistion( i, nIndex++)->iValue;
         buff.attack_type = BuffFile.Search_Posistion( i, nIndex++)->iValue;
@@ -11455,10 +10386,9 @@ void CfgData::fetchBuff()
         ++nIndex;
         
         v1 = BuffFile.Search_Posistion( i, nIndex);
-        str.assign(v1->pString);
+        str = v1->pString;
         CfgData::paraseBuffAttr(&__x, this, &str);
-        std::vector<BuffAttr>::operator=(&buff.buffAttr, &__x);
-        std::vector<BuffAttr>::~vector(&__x);
+        buff.buffAttr = __x;
         
         ++nIndex;
         buff.isShow = BuffFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -11480,14 +10410,14 @@ void CfgData::fetchBuff()
         ++nIndex;
         
         v2 = BuffFile.Search_Posistion( i, nIndex);
-        v9.assign(v2->pString);
+        v9 = v2->pString;
         buff.angry = CfgData::paraseParam2(this, &v9);
         
         buff.battle = BuffFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         v3 = std::map<int,CfgBuff>::operator[](&this->m_buffs, &buff.id);
         CfgBuff::operator=(v3, &buff);
-        /* CfgBuff::~CfgBuff(&buff); - auto cleanup */
+
       }
     }
   }
@@ -11496,22 +10426,20 @@ void CfgData::fetchBuff()
 //#####################################
 BuffAttrVector *CfgData::paraseBuffAttr(const std::string *const str)
 {
-  std::string *v3; // rax
-  std::string *v4; // rax
-  const char *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  BuffAttr stu; // [rsp+10h] [rbp-A0h] BYREF
-  StringVector vBuff; // [rsp+20h] [rbp-90h] BYREF
-  StringVector vstr; // [rsp+40h] [rbp-70h] BYREF
-  std::string delims; // [rsp+60h] [rbp-50h] BYREF
-  char v16; // [rsp+6Fh] [rbp-41h] BYREF
-  std::string v17; // [rsp+70h] [rbp-40h] BYREF
-  char v18; // [rsp+87h] [rbp-29h] BYREF
-  int32_t nSize; // [rsp+88h] [rbp-28h]
-  int32_t i; // [rsp+8Ch] [rbp-24h]
+  std::string *v3;
+  std::string *v4;
+  const char *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  BuffAttr stu;
+  StringVector vBuff;
+  StringVector vstr;
+  std::string delims;
+  std::string v17;
+  int32_t nSize;
+  int32_t i;
 
   std::vector<BuffAttr>::vector(retstr);
   if ( std::string::size((std::string *)str) > 4u )
@@ -11533,7 +10461,7 @@ BuffAttrVector *CfgData::paraseBuffAttr(const std::string *const str)
         
         if ( std::vector<std::string>::size(&vBuff) == 3 )
         {
-          *(_QWORD *)&stu.attr = 0;
+          memset(&stu.attr, 0, sizeof(int64_t));
           stu.addon = 0;
           v4 = std::vector<std::string>::operator[](&vBuff, 0);
           v5 = (const char *)std::string::c_str(v4);
@@ -11546,10 +10474,8 @@ BuffAttrVector *CfgData::paraseBuffAttr(const std::string *const str)
           stu.addon = atoi(v9);
           std::vector<BuffAttr>::push_back(retstr, &stu);
         }
-        std::vector<std::string>::~vector(&vBuff);
       }
     }
-    std::vector<std::string>::~vector(&vstr);
   }
   return retstr;
 }
@@ -11557,21 +10483,18 @@ BuffAttrVector *CfgData::paraseBuffAttr(const std::string *const str)
 //#####################################
 CurrencyList CfgData::paraseCurrency(const std::string *const str)
 {
-  const std::string *v2; // rdx
-  std::string *v3; // rax
-  const char *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  CurrencyList result; // rax
-  const std::string *stra; // [rsp+0h] [rbp-70h]
-  CurrencyStu stu; // [rsp+10h] [rbp-60h] BYREF
-  StringVector vstr; // [rsp+20h] [rbp-50h] BYREF
-  std::string delims; // [rsp+40h] [rbp-30h] BYREF
-  _BYTE v12[33]; // [rsp+4Fh] [rbp-21h] BYREF
+  const std::string *v2;
+  std::string *v3;
+  const char *v4;
+  std::string *v5;
+  const char *v6;
+  CurrencyList result;
+  const std::string *stra;
+  CurrencyStu stu;
+  StringVector vstr;
+  std::string delims;
+  _BYTE v12[33];
 
-  stra = v2;
-  std::list<CurrencyStu>::list((std::list<CurrencyStu> *const)this);
-  std::list<CurrencyStu>::clear((std::list<CurrencyStu> *const)this);
   
   delims.assign(":", v12);
   Answer::StringUtility::split(&vstr, stra, &delims, 0);
@@ -11584,10 +10507,8 @@ CurrencyList CfgData::paraseCurrency(const std::string *const str)
     v5 = std::vector<std::string>::operator[](&vstr, 1u);
     v6 = (const char *)std::string::c_str(v5);
     stu.Values = atoi(v6);
-    std::list<CurrencyStu>::push_back((std::list<CurrencyStu> *const)this, &stu);
+    std::list<CurrencyStu>::push_back(this, &stu);
   }
-  std::vector<std::string>::~vector(&vstr);
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -11596,18 +10517,17 @@ Int32Vector *CfgData::paraseInt32Vector2(const std::string *const str,
         const std::string *const path,
         int32_t size)
 {
-  const char *v7; // r12
-  const char *v8; // rax
-  size_t v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+20h] [rbp-80h] BYREF
-  StringVector vstr; // [rsp+30h] [rbp-70h] BYREF
-  std::string delims; // [rsp+50h] [rbp-50h] BYREF
-  char v19; // [rsp+5Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+60h] [rbp-40h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+70h] [rbp-30h] BYREF
-  int __x[9]; // [rsp+7Ch] [rbp-24h] BYREF
+  const char *v7;
+  const char *v8;
+  size_t v9;
+  std::string *v10;
+  const char *v11;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vstr;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x[9];
 
   std::vector<int>::vector(retstr);
   if ( !std::operator==<char>(str, &byte_8C33CF) && !std::operator==<char>(str, "-1") )
@@ -11647,7 +10567,6 @@ Int32Vector *CfgData::paraseInt32Vector2(const std::string *const str,
         __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
       }
     }
-    std::vector<std::string>::~vector(&vstr);
   }
   return retstr;
 }
@@ -11657,18 +10576,17 @@ Int32Vector *CfgData::paraseInt32Vector(const std::string *const str,
         const std::string *const path,
         int32_t size)
 {
-  const char *v7; // r12
-  const char *v8; // rax
-  size_t v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+20h] [rbp-80h] BYREF
-  StringVector vstr; // [rsp+30h] [rbp-70h] BYREF
-  std::string delims; // [rsp+50h] [rbp-50h] BYREF
-  char v19; // [rsp+5Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+60h] [rbp-40h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+70h] [rbp-30h] BYREF
-  int __x[9]; // [rsp+7Ch] [rbp-24h] BYREF
+  const char *v7;
+  const char *v8;
+  size_t v9;
+  std::string *v10;
+  const char *v11;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vstr;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x[9];
 
   std::vector<int>::vector(retstr);
   if ( !std::operator==<char>(str, &byte_8C33CF) && !std::operator==<char>(str, "-1") )
@@ -11708,32 +10626,27 @@ Int32Vector *CfgData::paraseInt32Vector(const std::string *const str,
         __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
       }
     }
-    std::vector<std::string>::~vector(&vstr);
   }
   return retstr;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
-Int32List CfgData::paraseInt32List(const std::string *const str, int32_t size)
+Int32List parseInt32List(const std::string *const str, int32_t size)
 {
   int32_t v3; // ecx
-  Int32List result; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  int32_t sizea; // [rsp+Ch] [rbp-94h]
-  const std::string *stra; // [rsp+10h] [rbp-90h]
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+20h] [rbp-80h] BYREF
-  StringVector vstr; // [rsp+30h] [rbp-70h] BYREF
-  std::string delims; // [rsp+50h] [rbp-50h] BYREF
-  char v14; // [rsp+5Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+60h] [rbp-40h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+70h] [rbp-30h] BYREF
-  int __x[9]; // [rsp+7Ch] [rbp-24h] BYREF
+  Int32List result;
+  std::string *v7;
+  const char *v8;
+
+  const std::string *stra;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vstr;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x[9];
 
   stra = *(const std::string **)&size;
-  sizea = v3;
-  std::list<int>::list((std::list<int> *const)this);
   if ( !std::operator==<char>(stra, &byte_8C33CF) && !std::operator==<char>(stra, "-1") )
   {
     
@@ -11754,41 +10667,35 @@ Int32List CfgData::paraseInt32List(const std::string *const str, int32_t size)
         v7 = (std::string *)__gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator->(&iter);
         v8 = (const char *)std::string::c_str(v7);
         __x[0] = atoi(v8);
-        std::list<int>::push_back((std::list<int> *const)this, __x);
+        std::list<int>::push_back(this, __x);
         __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
       }
     }
-    std::vector<std::string>::~vector(&vstr);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
-Int32List CfgData::paraseInt32List(const std::string *const str,
+Int32List parseInt32List(const std::string *const str,
         const std::string *const path,
         int32_t size)
 {
   int32_t v4; // r8d
-  Int32List result; // rax
-  const char *v8; // r12
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  int32_t sizea; // [rsp+4h] [rbp-9Ch]
-  std::string *patha; // [rsp+8h] [rbp-98h]
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+20h] [rbp-80h] BYREF
-  StringVector vstr; // [rsp+30h] [rbp-70h] BYREF
-  std::string delims; // [rsp+50h] [rbp-50h] BYREF
-  char v18; // [rsp+5Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+60h] [rbp-40h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+70h] [rbp-30h] BYREF
-  int __x[9]; // [rsp+7Ch] [rbp-24h] BYREF
+  Int32List result;
+  const char *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+
+  std::string *patha;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vstr;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x[9];
 
   patha = *(std::string **)&size;
-  sizea = v4;
-  std::list<int>::list((std::list<int> *const)this);
   if ( !std::operator==<char>(path, &byte_8C33CF) && !std::operator==<char>(path, "-1") )
   {
     
@@ -11801,7 +10708,7 @@ Int32List CfgData::paraseInt32List(const std::string *const str,
       v9 = (const char *)std::string::c_str(patha);
       Answer::Logger::print(
         Answer::LogLevel::LOG_LEVEL_ERROR,
-        "CfgData::paraseInt32List() check size err from %s, where size = %d, str = %s\n",
+        "parseInt32List() check size err from %s, where size = %d, str = %s\n",
         v9,
         sizea,
         v8);
@@ -11820,13 +10727,11 @@ Int32List CfgData::paraseInt32List(const std::string *const str,
         v10 = (std::string *)__gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator->(&iter);
         v11 = (const char *)std::string::c_str(v10);
         __x[0] = atoi(v11);
-        std::list<int>::push_back((std::list<int> *const)this, __x);
+        std::list<int>::push_back(this, __x);
         __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
       }
     }
-    std::vector<std::string>::~vector(&vstr);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -11834,25 +10739,23 @@ Int32List CfgData::paraseInt32List(const std::string *const str,
 Int32VtVector *CfgData::paraseInt32VtVector(const std::string *const str,
         const std::string *const path)
 {
-  size_t v5; // rax
-  const std::string *v6; // rax
-  size_t v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+20h] [rbp-100h] BYREF
-  StringVector vstr; // [rsp+30h] [rbp-F0h] BYREF
-  Int32Vector probability; // [rsp+50h] [rbp-D0h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin; // [rsp+70h] [rbp-B0h] BYREF
-  StringVector SplitStr; // [rsp+80h] [rbp-A0h] BYREF
-  std::string delims; // [rsp+A0h] [rbp-80h] BYREF
-  char v18; // [rsp+AFh] [rbp-71h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+B0h] [rbp-70h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v20; // [rsp+C0h] [rbp-60h] BYREF
-  std::string v21; // [rsp+D0h] [rbp-50h] BYREF
-  char v22; // [rsp+DFh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v23; // [rsp+E0h] [rbp-40h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+F0h] [rbp-30h] BYREF
-  int __x[9]; // [rsp+FCh] [rbp-24h] BYREF
+  size_t v5;
+  const std::string *v6;
+  size_t v7;
+  std::string *v8;
+  const char *v9;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vstr;
+  Int32Vector probability;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin;
+  StringVector SplitStr;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v20;
+  std::string v21;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v23;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x[9];
 
   std::vector<std::vector<int>>::vector(retstr);
   if ( !std::operator==<char>(str, &byte_8C33CF) && !std::operator==<char>(str, "-1") )
@@ -11897,11 +10800,8 @@ Int32VtVector *CfgData::paraseInt32VtVector(const std::string *const str,
         __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
       }
       std::vector<std::vector<int>>::push_back(retstr, &probability);
-      std::vector<std::string>::~vector(&vstr);
-      std::vector<int>::~vector(&probability);
       __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iterBegin);
     }
-    std::vector<std::string>::~vector(&SplitStr);
   }
   return retstr;
 }
@@ -11909,19 +10809,18 @@ Int32VtVector *CfgData::paraseInt32VtVector(const std::string *const str,
 //#####################################
 Param2 CfgData::paraseParam2(const std::string *const str)
 {
-  Param2 v3; // rbx
-  std::string *v4; // rax
-  const char *v5; // rax
+  Param2 v3;
+  std::string *v4;
+  const char *v5;
   int32_t v6; // ebx
-  std::string *v7; // rax
-  const char *v8; // rax
+  std::string *v7;
+  const char *v8;
   int32_t v9; // eax
-  StringVector vParam; // [rsp+10h] [rbp-70h] BYREF
-  Param2 v11; // [rsp+30h] [rbp-50h] BYREF
-  std::string delims; // [rsp+40h] [rbp-40h] BYREF
-  char v13; // [rsp+4Fh] [rbp-31h] BYREF
-  Param2 v14; // [rsp+50h] [rbp-30h] BYREF
-  Param2 v15; // [rsp+60h] [rbp-20h] BYREF
+  StringVector vParam;
+  Param2 v11;
+  std::string delims;
+  Param2 v14;
+  Param2 v15;
 
   if ( std::operator==<char>(str, &byte_8C33CF) || std::operator==<char>(str, "-1") )
   {
@@ -11950,45 +10849,39 @@ Param2 CfgData::paraseParam2(const std::string *const str)
       Param2::Param2(&v15, 0, 0);
       v3 = v15;
     }
-    std::vector<std::string>::~vector(&vParam);
   }
   return v3;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 Param2List CfgData::paraseParam2List(const std::string *const str,
         int32_t nIndex,
         const std::string *const path)
 {
-  std::string *v4; // r8
-  Param2List result; // rax
-  std::string *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
+  std::string *v4;
+  Param2List result;
+  std::string *v7;
+  std::string *v8;
+  const char *v9;
   int32_t v10; // r12d
-  std::string *v11; // rax
-  const char *v12; // rax
+  std::string *v11;
+  const char *v12;
   int32_t v13; // eax
-  const char *v14; // r12
-  const char *v15; // rax
-  std::string *patha; // [rsp+0h] [rbp-D0h]
-  int32_t nIndexa; // [rsp+Ch] [rbp-C4h]
-  std::string *stra; // [rsp+10h] [rbp-C0h]
-  StringVector vParam; // [rsp+20h] [rbp-B0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter; // [rsp+40h] [rbp-90h] BYREF
-  StringVector strParams; // [rsp+50h] [rbp-80h] BYREF
-  std::string delims; // [rsp+70h] [rbp-60h] BYREF
-  char v23; // [rsp+7Fh] [rbp-51h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+80h] [rbp-50h] BYREF
-  std::string v25; // [rsp+90h] [rbp-40h] BYREF
-  char v26; // [rsp+9Fh] [rbp-31h] BYREF
-  Param2 __x; // [rsp+A0h] [rbp-30h] BYREF
+  const char *v14;
+  const char *v15;
+  std::string *patha;
+
+  std::string *stra;
+  StringVector vParam;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter;
+  StringVector strParams;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v25;
+  Param2 __x;
 
   stra = *(std::string **)&nIndex;
   nIndexa = (int)path;
-  patha = v4;
-  std::list<Param2>::list((std::list<Param2> *const)this);
   if ( !std::operator==<char>(stra, &byte_8C33CF) && !std::operator==<char>(stra, "-1") )
   {
     
@@ -12015,7 +10908,7 @@ Param2List CfgData::paraseParam2List(const std::string *const str,
         v12 = (const char *)std::string::c_str(v11);
         v13 = atoi(v12);
         Param2::Param2(&__x, v13, v10);
-        std::list<Param2>::push_back((std::list<Param2> *const)this, &__x);
+        std::list<Param2>::push_back(this, &__x);
       }
       else
       {
@@ -12028,68 +10921,56 @@ Param2List CfgData::paraseParam2List(const std::string *const str,
           nIndexa,
           v14);
       }
-      std::vector<std::string>::~vector(&vParam);
     }
-    std::vector<std::string>::~vector(&strParams);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
 //#####################################
 void CfgData::fetchDungeon()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  const CDBCFile::FIELD *v6; // rax
-  const CDBCFile::FIELD *v7; // rax
-  CfgDungeon *v8; // rax
-  CfgDungeon *v9; // rax
-  CfgDungeonReward *v10; // rax
-  CfgDungeonDropGroup *v11; // rax
-  int64_t v12; // rax
-  CfgDungeon dungeon; // [rsp+10h] [rbp-480h] BYREF
-  CDBCFile DungeonDropFile(0); // [rsp+130h] [rbp-360h] BYREF
-  CDBCFile DungeonRewardFile(0); // [rsp+1C0h] [rbp-2D0h] BYREF
-  CDBCFile DungeonFile(0); // [rsp+250h] [rbp-240h] BYREF
-  int32_t id; // [rsp+2ECh] [rbp-1A4h] BYREF
-  CfgDungeonDrop group; // [rsp+2F0h] [rbp-1A0h] BYREF
-  CfgDungeonReward reward; // [rsp+310h] [rbp-180h] BYREF
-  std::string strItem; // [rsp+330h] [rbp-160h] BYREF
-  char v21; // [rsp+33Fh] [rbp-151h] BYREF
-  MemChrBagVector __x; // [rsp+340h] [rbp-150h] BYREF
-  std::string strItems; // [rsp+360h] [rbp-130h] BYREF
-  char v24; // [rsp+36Fh] [rbp-121h] BYREF
-  MemChrBagVector v25; // [rsp+370h] [rbp-120h] BYREF
-  std::string v26; // [rsp+390h] [rbp-100h] BYREF
-  char v27; // [rsp+39Fh] [rbp-F1h] BYREF
-  Int32Vector v28; // [rsp+3A0h] [rbp-F0h] BYREF
-  std::string path; // [rsp+3C0h] [rbp-D0h] BYREF
-  char v30; // [rsp+3CFh] [rbp-C1h] BYREF
-  std::string str; // [rsp+3D0h] [rbp-C0h] BYREF
-  char v32; // [rsp+3DFh] [rbp-B1h] BYREF
-  MemChrBagVector v33; // [rsp+3E0h] [rbp-B0h] BYREF
-  std::string v34; // [rsp+400h] [rbp-90h] BYREF
-  char v35; // [rsp+40Fh] [rbp-81h] BYREF
-  Int32Vector v36; // [rsp+410h] [rbp-80h] BYREF
-  std::string v37; // [rsp+430h] [rbp-60h] BYREF
-  char v38; // [rsp+43Fh] [rbp-51h] BYREF
-  std::string v39; // [rsp+440h] [rbp-50h] BYREF
-  char v40; // [rsp+44Ah] [rbp-46h] BYREF
-  int32_t iBaseTableCount; // [rsp+44Ch] [rbp-44h]
-  int32_t iBaseColumnCount; // [rsp+450h] [rbp-40h]
-  int32_t nIndex; // [rsp+454h] [rbp-3Ch]
-  int32_t iBaseTableCount_Reward; // [rsp+45Ch] [rbp-34h]
-  int32_t iBaseColumnCount_Reward; // [rsp+460h] [rbp-30h]
-  int32_t iBaseTableCount_Drop; // [rsp+468h] [rbp-28h]
-  int32_t iBaseColumnCount_Drop; // [rsp+46Ch] [rbp-24h]
-  int32_t i; // [rsp+470h] [rbp-20h]
-  int32_t weekday; // [rsp+474h] [rbp-1Ch]
-  int32_t i_0; // [rsp+478h] [rbp-18h]
-  int32_t i_1; // [rsp+47Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  const CDBCFile::FIELD *v5;
+  const CDBCFile::FIELD *v6;
+  const CDBCFile::FIELD *v7;
+  CfgDungeon *v8;
+  CfgDungeon *v9;
+  CfgDungeonReward *v10;
+  CfgDungeonDropGroup *v11;
+  CfgDungeon dungeon;
+  CDBCFile DungeonDropFile(0);
+  CDBCFile DungeonRewardFile(0);
+  CDBCFile DungeonFile(0);
+  int32_t id;
+  CfgDungeonDrop group;
+  CfgDungeonReward reward;
+  std::string strItem;
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v25;
+  std::string v26;
+  Int32Vector v28;
+  std::string path;
+  std::string str;
+  MemChrBagVector v33;
+  std::string v34;
+  Int32Vector v36;
+  std::string v37;
+  std::string v39;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t nIndex;
+  int32_t iBaseTableCount_Reward;
+  int32_t iBaseColumnCount_Reward;
+  int32_t iBaseTableCount_Drop;
+  int32_t iBaseColumnCount_Drop;
+  int32_t i;
+  int32_t weekday;
+  int32_t i_0;
+  int32_t i_1;
   ItemData v55; // 0:kr00_12.12
 
   
@@ -12149,9 +11030,9 @@ void CfgData::fetchDungeon()
         ++nIndex;
         
         v2 = DungeonFile.Search_Posistion( i, nIndex);
-        strItem.assign(v2->pString);
+        strItem = v2->pString;
         v55 = CItemHelper::parseItemDataString(&strItem);
-        LODWORD(v12) = v55.m_nId;
+        v12 = v55.m_nId;
         BYTE4(v12) = v55.m_nClass;
         *(_QWORD *)&dungeon.costItem.m_nId = v12;
         dungeon.costItem.m_nCount = v55.m_nCount;
@@ -12159,18 +11040,16 @@ void CfgData::fetchDungeon()
         ++nIndex;
         
         v3 = DungeonFile.Search_Posistion( i, nIndex);
-        strItems.assign(v3->pString);
+        strItems = v3->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&dungeon.rewardItem, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        dungeon.rewardItem = __x;
         
         ++nIndex;
         
         v4 = DungeonFile.Search_Posistion( i, nIndex);
-        v26.assign(v4->pString);
+        v26 = v4->pString;
         CItemHelper::parseItemVectorString(&v25, &v26);
-        std::vector<MemChrBag>::operator=(&dungeon.rewardOnce, &v25);
-        std::vector<MemChrBag>::~vector(&v25);
+        dungeon.rewardOnce = v25;
         
         ++nIndex;
         dungeon.Battle = DungeonFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -12200,28 +11079,25 @@ void CfgData::fetchDungeon()
         path = "./ServerConfig/Tables/cfg_dungeon.txt";
         
         v5 = DungeonFile.Search_Posistion( i, nIndex);
-        str.assign(v5->pString);
+        str = v5->pString;
         CfgData::paraseInt32Vector(&v28, this, &str, &path, 0);
-        std::vector<int>::operator=(&dungeon.win_star, &v28);
-        std::vector<int>::~vector(&v28);
+        dungeon.win_star = v28;
         
         ++nIndex;
         
         v6 = DungeonFile.Search_Posistion( i, nIndex);
-        v34.assign(v6->pString);
+        v34 = v6->pString;
         CItemHelper::parseItemVectorString(&v33, &v34);
-        std::vector<MemChrBag>::operator=(&dungeon.star_reward, &v33);
-        std::vector<MemChrBag>::~vector(&v33);
+        dungeon.star_reward = v33;
         
         ++nIndex;
         
         v37 = "./ServerConfig/Tables/cfg_dungeon.txt";
         
         v7 = DungeonFile.Search_Posistion( i, nIndex);
-        v39.assign(v7->pString);
+        v39 = v7->pString;
         CfgData::paraseInt32Vector(&v36, this, &v39, &v37, 0);
-        std::vector<int>::operator=(&dungeon.star_ratio, &v36);
-        std::vector<int>::~vector(&v36);
+        dungeon.star_ratio = v36;
         
         ++nIndex;
         dungeon.TeQuan = DungeonFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -12244,7 +11120,7 @@ void CfgData::fetchDungeon()
           v9 = std::map<int,CfgDungeon>::operator[](&this->m_mUpTowerDungeon, &dungeon.star);
           CfgDungeon::operator=(v9, &dungeon);
         }
-        /* CfgDungeon::~CfgDungeon(&dungeon); - auto cleanup */
+
       }
       
       if ( !DungeonRewardFile.OpenFromTXT( "./ServerConfig/Tables/cfg_dungeon_reward.txt") )
@@ -12304,27 +11180,23 @@ void CfgData::fetchDungeon()
 //#####################################
 void CfgData::fetchDungeonEvent()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  int64_t v3; // rax
-  std::string *v4; // rax
-  const char *v5; // rax
-  std::list<CfgMapEvent> *v6; // rax
-  CDBCFile DungeonEventFile(0); // [rsp+10h] [rbp-180h] BYREF
-  CfgMapEvent dungeonEvent; // [rsp+A0h] [rbp-F0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+100h] [rbp-90h] BYREF
-  StringVector strTriggerParam; // [rsp+110h] [rbp-80h] BYREF
-  std::string triggerParam; // [rsp+130h] [rbp-60h] BYREF
-  char v12; // [rsp+13Fh] [rbp-51h] BYREF
-  std::string delims; // [rsp+140h] [rbp-50h] BYREF
-  char v14; // [rsp+14Fh] [rbp-41h] BYREF
-  std::string str; // [rsp+150h] [rbp-40h] BYREF
-  char v16; // [rsp+15Fh] [rbp-31h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+160h] [rbp-30h] BYREF
-  int __x; // [rsp+16Ch] [rbp-24h] BYREF
-  int32_t iBaseTableCount; // [rsp+174h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+178h] [rbp-18h]
-  int32_t i; // [rsp+17Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  std::string *v4;
+  const char *v5;
+  std::list<CfgMapEvent> *v6;
+  CDBCFile DungeonEventFile(0);
+  CfgMapEvent dungeonEvent;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector strTriggerParam;
+  std::string triggerParam;
+  std::string delims;
+  std::string str;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !DungeonEventFile.OpenFromTXT( "./ServerConfig/Tables/cfg_dungeon_event.txt") )
@@ -12339,14 +11211,13 @@ void CfgData::fetchDungeonEvent()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgMapEvent::CfgMapEvent(&dungeonEvent);
         dungeonEvent.id = DungeonEventFile.Search_Posistion( i, 0)->iValue;
         dungeonEvent.trigger_id = DungeonEventFile.Search_Posistion( i, 1)->iValue;
         dungeonEvent.bInitOpen = DungeonEventFile.Search_Posistion( i, 2)->iValue == 0;
         dungeonEvent.trigger_type = DungeonEventFile.Search_Posistion( i, 3)->iValue;
         
         v1 = DungeonEventFile.Search_Posistion( i, 4);
-        triggerParam.assign(v1->pString);
+        triggerParam = v1->pString;
         
         dungeonEvent.event_type = DungeonEventFile.Search_Posistion( i, 5)->iValue;
         v2 = DungeonEventFile.Search_Posistion( i, 6);
@@ -12375,8 +11246,7 @@ void CfgData::fetchDungeonEvent()
           v6 = std::map<int,std::list<CfgMapEvent>>::operator[](&this->m_dungeonEvents, &dungeonEvent.id);
           std::list<CfgMapEvent>::push_back(v6, &dungeonEvent);
         }
-        std::vector<std::string>::~vector(&strTriggerParam);
-        /* CfgMapEvent::~CfgMapEvent(&dungeonEvent); - auto cleanup */
+
       }
     }
   }
@@ -12386,56 +11256,48 @@ void CfgData::fetchDungeonEvent()
 void CfgData::fetchDungeonMonster()
 {
   unsigned int id; // r12d
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
   int32_t v8; // ebx
-  std::string *v9; // rax
-  const char *v10; // rax
+  std::string *v9;
+  const char *v10;
   int32_t v11; // eax
-  size_t v12; // rbx
-  std::string *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
+  size_t v12;
+  std::string *v13;
+  std::string *v14;
+  const char *v15;
   int32_t v16; // ebx
-  std::string *v17; // rax
-  const char *v18; // rax
+  std::string *v17;
+  const char *v18;
   int32_t v19; // eax
-  size_t v20; // rbx
-  CfgDungeonMonster *v21; // rax
-  CDBCFile DungeonMonsterFile(0); // [rsp+10h] [rbp-250h] BYREF
-  CfgDungeonMonster monster; // [rsp+A0h] [rbp-1C0h] BYREF
-  StringVector vPos_0; // [rsp+110h] [rbp-150h] BYREF
-  StringVector vRandPos; // [rsp+130h] [rbp-130h] BYREF
-  StringVector vPos; // [rsp+150h] [rbp-110h] BYREF
-  StringVector vRoad; // [rsp+170h] [rbp-F0h] BYREF
-  std::string randpos; // [rsp+190h] [rbp-D0h] BYREF
-  std::string road; // [rsp+1A0h] [rbp-C0h] BYREF
-  std::list<Param2> __x; // [rsp+1B0h] [rbp-B0h] BYREF
-  _BYTE v31[15]; // [rsp+1C0h] [rbp-A0h] BYREF
-  char v32; // [rsp+1CFh] [rbp-91h] BYREF
-  int32_t nIndex[3]; // [rsp+1D0h] [rbp-90h] BYREF
-  char v34; // [rsp+1DDh] [rbp-83h] BYREF
-  char v35; // [rsp+1DEh] [rbp-82h] BYREF
-  char v36; // [rsp+1DFh] [rbp-81h] BYREF
-  std::string delims; // [rsp+1E0h] [rbp-80h] BYREF
-  char v38; // [rsp+1EFh] [rbp-71h] BYREF
-  std::string v39; // [rsp+1F0h] [rbp-70h] BYREF
-  char v40; // [rsp+1FFh] [rbp-61h] BYREF
-  Position v41; // [rsp+200h] [rbp-60h] BYREF
-  std::string v42; // [rsp+210h] [rbp-50h] BYREF
-  char v43; // [rsp+21Fh] [rbp-41h] BYREF
-  std::string v44; // [rsp+220h] [rbp-40h] BYREF
-  char v45; // [rsp+22Fh] [rbp-31h] BYREF
-  Position v46; // [rsp+230h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+23Ch] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+240h] [rbp-20h]
-  int32_t i; // [rsp+244h] [rbp-1Ch]
-  uint32_t j; // [rsp+248h] [rbp-18h]
-  uint32_t j_0; // [rsp+24Ch] [rbp-14h]
+  size_t v20;
+  CfgDungeonMonster *v21;
+  CDBCFile DungeonMonsterFile(0);
+  CfgDungeonMonster monster;
+  StringVector vPos_0;
+  StringVector vRandPos;
+  StringVector vPos;
+  StringVector vRoad;
+  std::string randpos;
+  std::string road;
+  std::list<Param2> __x;
+  _BYTE v31[15];
+  int32_t nIndex[3];
+  std::string delims;
+  std::string v39;
+  Position v41;
+  std::string v42;
+  std::string v44;
+  Position v46;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  uint32_t j;
+  uint32_t j_0;
 
   
   if ( !DungeonMonsterFile.OpenFromTXT( "./ServerConfig/Tables/cfg_dungeon_monster.txt") )
@@ -12450,22 +11312,20 @@ void CfgData::fetchDungeonMonster()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgDungeonMonster::CfgDungeonMonster(&monster);
         monster.id = DungeonMonsterFile.Search_Posistion( i, 0)->iValue;
         monster.wave = DungeonMonsterFile.Search_Posistion( i, 1)->iValue;
         
-        std::string::string(v31, "./ServerConfig/Tables/cfg_dungeon_monster.txt", &v32);
+        std::string v31("./ServerConfig/Tables/cfg_dungeon_monster.txt");
         id = monster.id;
         
         v2 = DungeonMonsterFile.Search_Posistion( i, 2);
-        std::string::string(nIndex, v2->pString, &v34);
+        std::string nIndex(v2->pString);
         CfgData::paraseParam2List(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)nIndex,
-          (const std::string *const)id);
-        std::list<Param2>::operator=(&monster.mids, &__x);
-        std::list<Param2>::~list(&__x);
+          id);
+        monster.mids = __x;
         
         monster.x = DungeonMonsterFile.Search_Posistion( i, 3)->iValue;
         monster.y = DungeonMonsterFile.Search_Posistion( i, 4)->iValue;
@@ -12473,7 +11333,7 @@ void CfgData::fetchDungeonMonster()
         monster.side = DungeonMonsterFile.Search_Posistion( i, 6)->iValue;
         
         v3 = DungeonMonsterFile.Search_Posistion( i, 7);
-        road.assign(v3->pString);
+        road = v3->pString;
         
         monster.delay = DungeonMonsterFile.Search_Posistion( i, 8)->iValue;
         monster.times = DungeonMonsterFile.Search_Posistion( i, 9)->iValue;
@@ -12481,7 +11341,7 @@ void CfgData::fetchDungeonMonster()
         monster.life = DungeonMonsterFile.Search_Posistion( i, 11)->iValue;
         
         v4 = DungeonMonsterFile.Search_Posistion( i, 12);
-        randpos.assign(v4->pString);
+        randpos = v4->pString;
         
         monster.wait = DungeonMonsterFile.Search_Posistion( i, 13)->iValue;
         if ( std::string::size(&road) > 3u )
@@ -12509,11 +11369,9 @@ void CfgData::fetchDungeonMonster()
               v10 = (const char *)std::string::c_str(v9);
               v11 = atoi(v10);
               Position::Position(&v41, v11, v8);
-              std::list<Position>::push_back(&monster.road, &v41);
+              &monster.road.push_back(&v41);
             }
-            std::vector<std::string>::~vector(&vPos);
           }
-          std::vector<std::string>::~vector(&vRoad);
         }
         if ( std::string::size(&randpos) > 3u )
         {
@@ -12542,13 +11400,11 @@ void CfgData::fetchDungeonMonster()
               Position::Position(&v46, v19, v16);
               std::vector<Position>::push_back(&monster.randpos, &v46);
             }
-            std::vector<std::string>::~vector(&vPos_0);
           }
-          std::vector<std::string>::~vector(&vRandPos);
         }
         v21 = std::map<int,CfgDungeonMonster>::operator[](&this->m_dungeonMonsters, &monster.id);
         CfgDungeonMonster::operator=(v21, &monster);
-        /* CfgDungeonMonster::~CfgDungeonMonster(&monster); - auto cleanup */
+
       }
     }
   }
@@ -12557,12 +11413,12 @@ void CfgData::fetchDungeonMonster()
 //#####################################
 void CfgData::fetchDungeonPlant()
 {
-  CfgDungeonPlant *v1; // rax
-  CDBCFile DungeonPlantFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgDungeonPlant dungeonPlant; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+B8h] [rbp-18h]
-  int32_t i; // [rsp+BCh] [rbp-14h]
+  CfgDungeonPlant *v1;
+  CDBCFile DungeonPlantFile(0);
+  CfgDungeonPlant dungeonPlant;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !DungeonPlantFile.OpenFromTXT( "./ServerConfig/Tables/cfg_dungeon_plant.txt") )
@@ -12591,12 +11447,12 @@ void CfgData::fetchDungeonPlant()
 //#####################################
 void CfgData::fetchDungeonTrap()
 {
-  CfgDungeonTrap *v1; // rax
-  CDBCFile DungeonTrapFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgDungeonTrap dungeonTrap; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+B8h] [rbp-18h]
-  int32_t i; // [rsp+BCh] [rbp-14h]
+  CfgDungeonTrap *v1;
+  CDBCFile DungeonTrapFile(0);
+  CfgDungeonTrap dungeonTrap;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !DungeonTrapFile.OpenFromTXT( "./ServerConfig/Tables/cfg_dungeon_trap.txt") )
@@ -12625,12 +11481,12 @@ void CfgData::fetchDungeonTrap()
 //#####################################
 void CfgData::fetchDungeonNpc()
 {
-  CfgDungeonNpc *v1; // rax
-  CDBCFile DungeonTrapFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgDungeonNpc dungeonNpc; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+B8h] [rbp-18h]
-  int32_t i; // [rsp+BCh] [rbp-14h]
+  CfgDungeonNpc *v1;
+  CDBCFile DungeonTrapFile(0);
+  CfgDungeonNpc dungeonNpc;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !DungeonTrapFile.OpenFromTXT( "./ServerConfig/Tables/cfg_dungeon_npc.txt") )
@@ -12659,12 +11515,12 @@ void CfgData::fetchDungeonNpc()
 //#####################################
 void CfgData::fetchChrShop()
 {
-  CfgChrShop *v1; // rax
-  CDBCFile ChrShopFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgChrShop chrShop; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  CfgChrShop *v1;
+  CDBCFile ChrShopFile(0);
+  CfgChrShop chrShop;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !ChrShopFile.OpenFromTXT( "./ServerConfig/Tables/cfg_chr_shop.txt") )
@@ -12698,28 +11554,24 @@ void CfgData::fetchChrShop()
 void CfgData::InitFamilyMedalTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-150h] BYREF
-  FamilyMedal Medal; // [rsp+A0h] [rbp-C0h] BYREF
-  std::list<AddAttribute> __x; // [rsp+D0h] [rbp-90h] BYREF
-  _BYTE v7[15]; // [rsp+E0h] [rbp-80h] BYREF
-  char v8; // [rsp+EFh] [rbp-71h] BYREF
-  int32_t v9[3]; // [rsp+F0h] [rbp-70h] BYREF
-  char v10; // [rsp+FFh] [rbp-61h] BYREF
-  std::list<AddAttribute> v11; // [rsp+100h] [rbp-60h] BYREF
-  _BYTE v12[15]; // [rsp+110h] [rbp-50h] BYREF
-  char v13; // [rsp+11Fh] [rbp-41h] BYREF
-  int32_t v14[2]; // [rsp+120h] [rbp-40h] BYREF
-  char v15; // [rsp+12Ah] [rbp-36h] BYREF
-  int32_t iBaseTableCount; // [rsp+12Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+130h] [rbp-30h]
-  int32_t i; // [rsp+134h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+138h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+140h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+144h] [rbp-1Ch]
-  int32_t i_0; // [rsp+148h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+14Ch] [rbp-14h]
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  CDBCFile readFile(0);
+  FamilyMedal Medal;
+  std::list<AddAttribute> __x;
+  _BYTE v7[15];
+  int32_t v9[3];
+  std::list<AddAttribute> v11;
+  _BYTE v12[15];
+  int32_t v14[2];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/FamilyBadge.txt") )
@@ -12737,28 +11589,26 @@ void CfgData::InitFamilyMedalTable()
       {
         nIndex = 0;
         memset(&Medal, 0, sizeof(Medal));
-        std::list<AddAttribute>::list(&Medal.lAttrList);
         Medal.nLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
         Medal.nNeedFamilyLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
         Medal.nNeedFamilyExp = readFile.Search_Posistion( i, nIndex++)->iValue;
         
-        std::string::string(v7, "./ServerConfig/Tables/FamilyBadge.txt", &v8);
+        std::string v7("./ServerConfig/Tables/FamilyBadge.txt");
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v9, v2->pString, &v10);
+        std::string v9(v2->pString);
         CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)v9,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&Medal.lAttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
+          (unsigned int)nIndex);
+        Medal.lAttrList = __x;
         
         Medal.nGongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         Medal.DefRdc = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgFamilyTable::AddFamilyMedal(&this->m_cfgFamilyTable, &Medal);
-        /* FamilyMedal::~FamilyMedal(&Medal); - auto cleanup */
+        m_cfgFamilyTable.AddFamilyMedal(Medal);
+
       }
       v1 = 1;
     }
@@ -12784,23 +11634,21 @@ void CfgData::InitFamilyMedalTable()
         {
           nIndex_0 = 0;
           memset(&Medal, 0, 32);
-          std::list<AddAttribute>::list(&Medal.lAttrList);
           Medal.nLevel = readFile.Search_Posistion( i_0, nIndex_0++)->iValue;
           Medal.nNeedFamilyLevel = readFile.Search_Posistion( i_0, nIndex_0++)->iValue;
           Medal.nNeedFamilyExp = readFile.Search_Posistion( i_0, nIndex_0++)->iValue;
           nIndex_0 += 2;
           
-          std::string::string(v12, "./ServerConfig/Tables/FamilyBadge.txt", &v13);
+          std::string v12("./ServerConfig/Tables/FamilyBadge.txt");
           
           v3 = readFile.Search_Posistion( i_0, nIndex_0);
-          std::string::string(v14, v3->pString, &v15);
+          std::string v14(v3->pString);
           CfgData::parseAddAttribues(
-            (CfgData *const)&v11,
-            (const std::string *const)this,
+            &v11,
+            this,
             (int32_t)v14,
-            (const std::string *const)(unsigned int)nIndex_0);
-          std::list<AddAttribute>::operator=(&Medal.lAttrList, &v11);
-          std::list<AddAttribute>::~list(&v11);
+            (unsigned int)nIndex_0);
+          Medal.lAttrList = v11;
           
           ++nIndex_0;
           CfgFamilyTable::AddFamilySelfMedal(&this->m_cfgFamilyTable, (const FamilySelfMedal *const)&Medal);
@@ -12814,18 +11662,16 @@ void CfgData::InitFamilyMedalTable()
 //#####################################
 void CfgData::InitFamilySkillTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-120h] BYREF
-  CfgFamilySkill stu; // [rsp+A0h] [rbp-90h] BYREF
-  AttrAddonVector __x; // [rsp+D0h] [rbp-60h] BYREF
-  std::string path; // [rsp+F0h] [rbp-40h] BYREF
-  char v6; // [rsp+FFh] [rbp-31h] BYREF
-  std::string addonAttr; // [rsp+100h] [rbp-30h] BYREF
-  char v8; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgFamilySkill stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/FamilySkill.txt") )
@@ -12841,7 +11687,6 @@ void CfgData::InitFamilySkillTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgFamilySkill::CfgFamilySkill(&stu);
         stu.nId = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nFamilyLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
@@ -12850,16 +11695,15 @@ void CfgData::InitFamilySkillTable()
         path = "./ServerConfig/Tables/FamilySkill.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.vAttrAddon, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.vAttrAddon = __x;
         
         stu.nCostMoney = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.PlayerLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgSkillTable::AddFamilySkill(&this->m_cfgSkillTable, &stu);
-        /* CfgFamilySkill::~CfgFamilySkill(&stu); - auto cleanup */
+        m_cfgSkillTable.AddFamilySkill(stu);
+
       }
     }
   }
@@ -12868,20 +11712,18 @@ void CfgData::InitFamilySkillTable()
 //#####################################
 void CfgData::InitFlopTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  FlopDrawCfg *v2; // rax
-  MemChrBag v3; // [rsp+0h] [rbp-120h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-F8h]
-  CDBCFile readFile(0); // [rsp+30h] [rbp-F0h] BYREF
-  FlopDrawCfg stu; // [rsp+C0h] [rbp-60h] BYREF
-  std::string strItem; // [rsp+F0h] [rbp-30h] BYREF
-  char v8; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  FlopDrawCfg *v2;
+  MemChrBag v3;
 
-  thisa = this;
+  CDBCFile readFile(0);
+  FlopDrawCfg stu;
+  std::string strItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/FlopActivity.txt") )
   {
@@ -12902,14 +11744,14 @@ void CfgData::InitFlopTable()
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         CItemHelper::parseItemString(&v3, &strItem);
         stu.m_Item = v3;
         
         stu.m_nRate = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.m_GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        v2 = std::map<int,FlopDrawCfg>::operator[](&thisa->m_FlopDrawCfgMap, &stu.m_nId);
+        v2 = std::map<int,FlopDrawCfg>::operator[](&m_FlopDrawCfgMap, &stu.m_nId);
         *v2 = stu;
       }
     }
@@ -12919,14 +11761,14 @@ void CfgData::InitFlopTable()
 //#####################################
 void CfgData::InitFunctionOpenMailMap()
 {
-  FunctionOpenMail *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  int32_t nId; // [rsp+ACh] [rbp-44h] BYREF
-  FunctionOpenMail stu; // [rsp+B0h] [rbp-40h]
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t nIndex; // [rsp+DCh] [rbp-14h]
+  FunctionOpenMail *v1;
+  CDBCFile readFile(0);
+  int32_t nId;
+  FunctionOpenMail stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MailGuide.txt") )
@@ -12960,34 +11802,23 @@ void CfgData::InitFunctionOpenMailMap()
 //#####################################
 FunctionOpenMail *CfgData::GetOpenFunctionMailnCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,FunctionOpenMail> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,FunctionOpenMail> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,FunctionOpenMail>::find(&this->m_FunctionOpenMailMap, &nIda)._M_node;
-  __x._M_node = std::map<int,FunctionOpenMail>::end(&thisa->m_FunctionOpenMailMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,FunctionOpenMail>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,FunctionOpenMail>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_FunctionOpenMailMap.find(nId);
+	if (it != m_FunctionOpenMailMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitGemOpenHoleTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-F0h] BYREF
-  CfgGemOpenHole stu; // [rsp+A0h] [rbp-60h] BYREF
-  std::list<ItemData> strItems; // [rsp+C0h] [rbp-40h] BYREF
-  bool bCombi[14]; // [rsp+D0h] [rbp-30h] BYREF
-  char v6; // [rsp+DEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+E0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+E4h] [rbp-1Ch]
-  int32_t i; // [rsp+E8h] [rbp-18h]
-  int32_t nIndex; // [rsp+ECh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgGemOpenHole stu;
+  std::list<ItemData> strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GemOpenHole.txt") )
@@ -13004,19 +11835,17 @@ void CfgData::InitGemOpenHoleTable()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::list<ItemData>::list(&stu.m_lCostItem);
         stu.m_nSlot = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.m_nCostMoney = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v6);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.m_lCostItem, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&strItems, (bool)bCombi);
+        stu.m_lCostItem = strItems;
         
         ++nIndex;
-        CfgItemGemTable::AddGemOpenHole(&this->m_cfgItemGem, &stu);
-        /* CfgGemOpenHole::~CfgGemOpenHole(&stu); - auto cleanup */
+        m_cfgItemGem.AddGemOpenHole(stu);
+
       }
     }
   }
@@ -13025,18 +11854,16 @@ void CfgData::InitGemOpenHoleTable()
 //#####################################
 void CfgData::InitGemSuitTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgGemSuit stu; // [rsp+A0h] [rbp-80h] BYREF
-  AttrAddonVector __x; // [rsp+C0h] [rbp-60h] BYREF
-  std::string path; // [rsp+E0h] [rbp-40h] BYREF
-  char v6; // [rsp+EFh] [rbp-31h] BYREF
-  std::string addonAttr; // [rsp+F0h] [rbp-30h] BYREF
-  char v8; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgGemSuit stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GemSuit.txt") )
@@ -13059,14 +11886,13 @@ void CfgData::InitGemSuitTable()
         path = "./ServerConfig/Tables/GemSuit.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.m_vAttrAddon, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.m_vAttrAddon = __x;
         
         ++nIndex;
-        CfgItemGemTable::AddGemSuit(&this->m_cfgItemGem, &stu);
-        /* CfgGemSuit::~CfgGemSuit(&stu); - auto cleanup */
+        m_cfgItemGem.AddGemSuit(stu);
+
       }
     }
   }
@@ -13075,20 +11901,17 @@ void CfgData::InitGemSuitTable()
 //#####################################
 void CfgData::InitGoblinData()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-140h] BYREF
-  cfgGoblinData stu; // [rsp+A0h] [rbp-B0h] BYREF
-  std::string path; // [rsp+E0h] [rbp-70h] BYREF
-  char v6; // [rsp+EFh] [rbp-61h] BYREF
-  std::string str; // [rsp+F0h] [rbp-60h] BYREF
-  char v8; // [rsp+FFh] [rbp-51h] BYREF
-  std::vector<Position> __x; // [rsp+100h] [rbp-50h] BYREF
-  std::string strPos; // [rsp+120h] [rbp-30h] BYREF
-  char v11; // [rsp+132h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+134h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+138h] [rbp-18h]
-  int32_t i; // [rsp+13Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile TabFile(0);
+  cfgGoblinData stu;
+  std::string path;
+  std::string str;
+  std::vector<Position> __x;
+  std::string strPos;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/Goblin.txt") )
@@ -13112,19 +11935,18 @@ void CfgData::InitGoblinData()
         path = "./ServerConfig/Tables/Goblin.txt";
         
         v1 = TabFile.Search_Posistion( i, 2);
-        str.assign(v1->pString);
+        str = v1->pString;
         CfgData::parseCurrentDatas(this, &stu.m_RefreshMonsters, &str, i, &path);
         
         stu.m_mapId = TabFile.Search_Posistion( i, 3)->iValue;
         
         v2 = TabFile.Search_Posistion( i, 4);
-        strPos.assign(v2->pString);
+        strPos = v2->pString;
         CfgData::paresPosition(&__x, this, &strPos);
-        std::vector<Position>::operator=(&stu.m_RevivePosVector, &__x);
-        std::vector<Position>::~vector(&__x);
+        stu.m_RevivePosVector = __x;
         
         cfgGoblinTableData::Add(&this->m_cfgGoblinTableData, &stu);
-        /* cfgGoblinData::~cfgGoblinData(&stu); - auto cleanup */
+
       }
     }
   }
@@ -13136,13 +11958,12 @@ void CfgData::parseCurrentDatas(CurrentDatas *const currentDatas,
         int32_t nIndex,
         const std::string *const path)
 {
-  std::string *v6; // rdx
-  CurrentData current; // [rsp+30h] [rbp-70h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+40h] [rbp-60h] BYREF
-  StringVector strMonsters; // [rsp+50h] [rbp-50h] BYREF
-  std::string delims; // [rsp+70h] [rbp-30h] BYREF
-  char v14; // [rsp+7Fh] [rbp-21h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+80h] [rbp-20h] BYREF
+  std::string *v6;
+  CurrentData current;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector strMonsters;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
 
   if ( !(unsigned __int8)std::string::empty((std::string *)str)
     && !std::operator==<char>(str, "-1")
@@ -13162,7 +11983,6 @@ void CfgData::parseCurrentDatas(CurrentDatas *const currentDatas,
       CfgData::parseCurrentData(this, &current, v6, nIndex, path);
       std::vector<CurrentData>::push_back(currentDatas, &current);
     }
-    std::vector<std::string>::~vector(&strMonsters);
   }
 }
 
@@ -13172,15 +11992,15 @@ void CfgData::parseCurrentData(CurrentData *const current,
         int32_t nIndex,
         const std::string *const path)
 {
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  const char *v10; // rbx
-  const char *v11; // rax
-  StringVector strCurrent; // [rsp+30h] [rbp-40h] BYREF
-  std::string delims; // [rsp+50h] [rbp-20h] BYREF
-  _BYTE v17[17]; // [rsp+5Fh] [rbp-11h] BYREF
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  const char *v10;
+  const char *v11;
+  StringVector strCurrent;
+  std::string delims;
+  _BYTE v17[17];
 
   if ( !(unsigned __int8)std::string::empty((std::string *)str)
     && !std::operator==<char>(str, "-1")
@@ -13210,7 +12030,6 @@ void CfgData::parseCurrentData(CurrentData *const current,
         nIndex,
         v10);
     }
-    std::vector<std::string>::~vector(&strCurrent);
   }
 }
 
@@ -13218,29 +12037,27 @@ void CfgData::parseCurrentData(CurrentData *const current,
 void CfgData::InitGoblinTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  std::list<AddAttribute> *v3; // rax
-  CDBCFile TabFile(0); // [rsp+20h] [rbp-160h] BYREF
-  AddAttrList AddAttrs; // [rsp+B0h] [rbp-D0h] BYREF
-  int32_t nId; // [rsp+CCh] [rbp-B4h] BYREF
-  GoblinCfg stu; // [rsp+D0h] [rbp-B0h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,GoblinCfg> >,bool> v8; // [rsp+E0h] [rbp-A0h]
-  _BYTE v9[32]; // [rsp+F0h] [rbp-90h] BYREF
-  std::pair<int,int> __a; // [rsp+110h] [rbp-70h] BYREF
-  _BYTE v11[15]; // [rsp+120h] [rbp-60h] BYREF
-  char v12; // [rsp+12Fh] [rbp-51h] BYREF
-  int32_t v13[4]; // [rsp+130h] [rbp-50h] BYREF
-  char v14; // [rsp+142h] [rbp-3Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+144h] [rbp-3Ch]
-  int32_t iBaseColumnCount; // [rsp+148h] [rbp-38h]
-  int32_t i; // [rsp+14Ch] [rbp-34h]
-  int32_t nIndex; // [rsp+150h] [rbp-30h]
-  int32_t nType; // [rsp+154h] [rbp-2Ch]
-  int32_t nLevel; // [rsp+158h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+160h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+164h] [rbp-1Ch]
-  int32_t i_0; // [rsp+168h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v2;
+  std::list<AddAttribute> *v3;
+  CDBCFile TabFile(0);
+  AddAttrList AddAttrs;
+  int32_t nId;
+  GoblinCfg stu;
+  auto v8
+  _BYTE v9[32];
+
+  _BYTE v11[15];
+  int32_t v13[4];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nType;
+  int32_t nLevel;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/GoblinUp.txt") )
@@ -13258,7 +12075,7 @@ void CfgData::InitGoblinTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        *(_QWORD *)&stu.UpAttr = 0;
+        memset(&stu.UpAttr, 0, sizeof(int64_t));
         stu.ConstCurr = 0;
         nType = TabFile.Search_Posistion( i, 0)->iValue;
         nLevel = TabFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -13303,20 +12120,19 @@ void CfgData::InitGoblinTable()
           nId = TabFile.Search_Posistion( i_0, 0)->iValue;
           ++nIndex_0;
           
-          std::string::string(v11, "./ServerConfig/Tables/GoblinSuit.txt", &v12);
+          std::string v11("./ServerConfig/Tables/GoblinSuit.txt");
           
           v2 = TabFile.Search_Posistion( i_0, nIndex_0);
-          std::string::string(v13, v2->pString, &v14);
+          std::string v13(v2->pString);
           CfgData::parseAddAttribues(
-            (CfgData *const)&AddAttrs,
-            (const std::string *const)this,
+            &AddAttrs,
+            this,
             (int32_t)v13,
-            (const std::string *const)(unsigned int)nIndex_0);
+            (unsigned int)nIndex_0);
           
           ++nIndex_0;
           v3 = std::map<int,std::list<AddAttribute>>::operator[](&this->m_GoblinSuitMap, &nId);
           std::list<AddAttribute>::operator=(v3, &AddAttrs);
-          std::list<AddAttribute>::~list(&AddAttrs);
         }
       }
     }
@@ -13327,54 +12143,21 @@ void CfgData::InitGoblinTable()
 #if 0 // replaced by hand-written version at end of file
 GoblinCfg *CfgData::GetGoblinCfg(int32_t nType, int32_t nLevel)
 {
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,GoblinCfg> > it; // [rsp+10h] [rbp-30h] BYREF
-  std::pair<int,int> __x; // [rsp+20h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,GoblinCfg> > v6; // [rsp+30h] [rbp-10h] BYREF
-
-  __x = std::make_pair<int,int>(nType, nLevel);
-  it._M_node = std::map<std::pair<int,int>,GoblinCfg>::find(&this->m_GoblinCfgMap, &__x)._M_node;
-  v6._M_node = std::map<std::pair<int,int>,GoblinCfg>::end(&this->m_GoblinCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,GoblinCfg>>::operator!=(&it, &v6) )
-    return (GoblinCfg *)((char *)std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,GoblinCfg>>::operator->(&it)
-                       + 8);
-  else
-    return 0;
+	auto it = m_GoblinCfgMap.find(std::make_pair(nType, nLevel));
+	if (it != m_GoblinCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 #endif
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 AddAttrList CfgData::GetGoblinSuitAttr(int32_t nId)
 {
-  int32_t v2; // edx
-  std::pair<const int,std::list<AddAttribute> > *v3; // rax
-  AddAttrList result; // rax
-  int32_t nIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  std::_Rb_tree_iterator<std::pair<const int,std::list<AddAttribute> > > it; // [rsp+10h] [rbp-40h] BYREF
-  AddAttrList Attrs; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<AddAttribute> > > __x; // [rsp+30h] [rbp-20h] BYREF
-
-  thisa = *(CfgData **)&nId;
-  nIda = v2;
-  std::list<AddAttribute>::list(&Attrs);
-  std::list<AddAttribute>::clear(&Attrs);
-  it._M_node = std::map<int,std::list<AddAttribute>>::find(
-                 (std::map<int,std::list<AddAttribute>> *const)(*(_QWORD *)&nId + 11208LL),
-                 &nIda)._M_node;
-  __x._M_node = std::map<int,std::list<AddAttribute>>::end(&thisa->m_GoblinSuitMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<AddAttribute>>>::operator!=(&it, &__x) )
-  {
-    v3 = std::_Rb_tree_iterator<std::pair<int const,std::list<AddAttribute>>>::operator->(&it);
-    std::list<AddAttribute>::list((std::list<AddAttribute> *const)this, &v3->second);
-  }
-  else
-  {
-    std::list<AddAttribute>::list((std::list<AddAttribute> *const)this, &Attrs);
-  }
-  std::list<AddAttribute>::~list(&Attrs);
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	AddAttrList result;
+	auto it = m_GoblinSuitMap.find(nId);
+	if (it != m_GoblinSuitMap.end())
+		result = it->second;
+	return result;
 }
 
 //#####################################
@@ -13382,19 +12165,17 @@ AddAttrList CfgData::GetGoblinSuitAttr(int32_t nId)
 //#####################################
 void CfgData::InitGongMinTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  GongMingCfg *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  GongMingCfg stu; // [rsp+A0h] [rbp-80h] BYREF
-  std::list<AddAttribute> __x; // [rsp+D0h] [rbp-50h] BYREF
-  _BYTE v6[15]; // [rsp+E0h] [rbp-40h] BYREF
-  char v7; // [rsp+EFh] [rbp-31h] BYREF
-  int32_t v8[3]; // [rsp+F0h] [rbp-30h] BYREF
-  char v9; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  GongMingCfg *v2;
+  CDBCFile readFile(0);
+  GongMingCfg stu;
+  std::list<AddAttribute> __x;
+  _BYTE v6[15];
+  int32_t v8[3];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GongMing.txt") )
@@ -13416,23 +12197,22 @@ void CfgData::InitGongMinTable()
         stu.nIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.NeedGongMingZhi = readFile.Search_Posistion( i, nIndex++)->iValue;
         
-        std::string::string(v6, "./ServerConfig/Tables/GongMing.txt", &v7);
+        std::string v6("./ServerConfig/Tables/GongMing.txt");
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v8, v1->pString, &v9);
+        std::string v8(v1->pString);
         CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)v8,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.lAttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
+          (unsigned int)nIndex);
+        stu.lAttrList = __x;
         
         stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         v2 = std::map<int,GongMingCfg>::operator[](&this->m_GongMingCfgMap, &stu.nIndex);
         GongMingCfg::operator=(v2, &stu);
-        /* GongMingCfg::~GongMingCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -13441,31 +12221,22 @@ void CfgData::InitGongMinTable()
 //#####################################
 GongMingCfg *CfgData::GetGongMingCfg(int32_t GongMinLevel)
 {
-  int32_t GongMinLevela; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,GongMingCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,GongMingCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  GongMinLevela = GongMinLevel;
-  it._M_node = std::map<int,GongMingCfg>::find(&this->m_GongMingCfgMap, &GongMinLevela)._M_node;
-  __x._M_node = std::map<int,GongMingCfg>::end(&thisa->m_GongMingCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,GongMingCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,GongMingCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_GongMingMap.find(GongMinLevel);
+	if (it != m_GongMingMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitGroupIconTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgGroupIcon *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgGroupIcon icon; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+B8h] [rbp-18h]
-  int32_t i; // [rsp+BCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgGroupIcon *v2;
+  CDBCFile readFile(0);
+  CfgGroupIcon icon;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GroupIcon.txt") )
@@ -13480,7 +12251,7 @@ void CfgData::InitGroupIconTable()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        *(_QWORD *)&icon.nId = 0;
+        memset(&icon.nId, 0, sizeof(int64_t));
         icon.platfrom._M_dataplus._M_p = 0;
         std::string::string(&icon.platfrom);
         icon.nId = readFile.Search_Posistion( i, 0)->iValue;
@@ -13489,7 +12260,7 @@ void CfgData::InitGroupIconTable()
         std::string::operator=(&icon.platfrom, v1->pString);
         v2 = std::map<int,CfgGroupIcon>::operator[](&this->m_cfgGroupIcons, &icon.nId);
         CfgGroupIcon::operator=(v2, &icon);
-        /* CfgGroupIcon::~CfgGroupIcon(&icon); - auto cleanup */
+
       }
     }
   }
@@ -13498,21 +12269,18 @@ void CfgData::InitGroupIconTable()
 //#####################################
 bool CfgData::IsShowIcon(int32_t nIconId, const std::string *const platform)
 {
-  GameService *v4; // rax
+  GameService *v4;
   bool v6; // al
-  int32_t nIconIda; // [rsp+14h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+18h] [rbp-48h]
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgGroupIcon> > iter; // [rsp+20h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgGroupIcon> > __it; // [rsp+30h] [rbp-30h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgGroupIcon> > __x; // [rsp+40h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgGroupIcon> > v13; // [rsp+50h] [rbp-10h] BYREF
-  const CfgGroupIcon *icon; // [rsp+58h] [rbp-8h]
 
-  thisa = this;
-  nIconIda = nIconId;
-  __it._M_node = std::map<int,CfgGroupIcon>::find(&this->m_cfgGroupIcons, &nIconIda)._M_node;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgGroupIcon> > iter;
+  std::map<int, CfgGroupIcon>::iterator __it;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgGroupIcon> > __x;
+  std::map<int, CfgGroupIcon>::iterator v13;
+  const CfgGroupIcon *icon;
+
+  auto __it = m_cfgGroupIcons.find(nIconIda);
   std::_Rb_tree_const_iterator<std::pair<int const,CfgGroupIcon>>::_Rb_tree_const_iterator(&iter, &__it);
-  v13._M_node = std::map<int,CfgGroupIcon>::end(&thisa->m_cfgGroupIcons)._M_node;
+  auto v13 = m_cfgGroupIcons.end();
   std::_Rb_tree_const_iterator<std::pair<int const,CfgGroupIcon>>::_Rb_tree_const_iterator(&__x, &v13);
   if ( std::_Rb_tree_const_iterator<std::pair<int const,CfgGroupIcon>>::operator==(&iter, &__x) )
     return 0;
@@ -13527,17 +12295,16 @@ bool CfgData::IsShowIcon(int32_t nIconId, const std::string *const platform)
 //#####################################
 void CfgData::InitGroupMonster()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::vector<GroupMonster> *v2; // rax
-  CDBCFile InitBossFile(0); // [rsp+10h] [rbp-110h] BYREF
-  GroupMonster stu; // [rsp+A0h] [rbp-80h] BYREF
-  int32_t MapId; // [rsp+CCh] [rbp-54h] BYREF
-  std::vector<Position> __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strPos; // [rsp+F0h] [rbp-30h] BYREF
-  char v8; // [rsp+102h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+104h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+108h] [rbp-18h]
-  int32_t i; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::vector<GroupMonster> *v2;
+  CDBCFile InitBossFile(0);
+  GroupMonster stu;
+  int32_t MapId;
+  std::vector<Position> __x;
+  std::string strPos;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !InitBossFile.OpenFromTXT( "./ServerConfig/Tables/RegionRefresh.txt") )
@@ -13562,14 +12329,13 @@ void CfgData::InitGroupMonster()
         stu.IsSpecial = InitBossFile.Search_Posistion( i, 4)->iValue;
         
         v1 = InitBossFile.Search_Posistion( i, 5);
-        strPos.assign(v1->pString);
+        strPos = v1->pString;
         CfgData::paresPosition(&__x, this, &strPos);
-        std::vector<Position>::operator=(&stu.RevivePos, &__x);
-        std::vector<Position>::~vector(&__x);
+        stu.RevivePos = __x;
         
         v2 = std::map<int,std::vector<GroupMonster>>::operator[](&this->m_GroupMonsterMap, &MapId);
         std::vector<GroupMonster>::push_back(v2, &stu);
-        /* GroupMonster::~GroupMonster(&stu); - auto cleanup */
+
       }
     }
   }
@@ -13578,41 +12344,22 @@ void CfgData::InitGroupMonster()
 //#####################################
 GroupMonsterVector *CfgData::GetGroupMonsterVector(int32_t MapId)
 {
-  std::pair<const int,std::vector<GroupMonster> > *v3; // rax
-  int32_t MapIda; // [rsp+4h] [rbp-5Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-58h]
-  std::_Rb_tree_iterator<std::pair<const int,std::vector<GroupMonster> > > it; // [rsp+10h] [rbp-50h] BYREF
-  GroupMonsterVector GroupMonsterVectorStu; // [rsp+20h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::vector<GroupMonster> > > __x; // [rsp+40h] [rbp-20h] BYREF
-
-  thisa = this;
-  MapIda = MapId;
-  /* std::vector<GroupMonster>::vector(&GroupMonsterVectorStu); */
-  it._M_node = std::map<int,std::vector<GroupMonster>>::find(&this->m_GroupMonsterMap, &MapIda)._M_node;
-  __x._M_node = std::map<int,std::vector<GroupMonster>>::end(&thisa->m_GroupMonsterMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::vector<GroupMonster>>>::operator!=(&it, &__x) )
-  {
-    v3 = std::_Rb_tree_iterator<std::pair<int const,std::vector<GroupMonster>>>::operator->(&it);
-    std::vector<GroupMonster>::vector(retstr, &v3->second);
-  }
-  else
-  {
-    std::vector<GroupMonster>::vector(retstr, &GroupMonsterVectorStu);
-  }
-  std::vector<GroupMonster>::~vector(&GroupMonsterVectorStu);
-  return retstr;
+	auto it = m_GroupMonsterMap.find(MapId);
+	if (it != m_GroupMonsterMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitGuWuCfgMap()
 {
-  GuWuCfg *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  GuWuCfg stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  GuWuCfg *v1;
+  CDBCFile readFile(0);
+  GuWuCfg stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/GuWu.txt") )
@@ -13646,51 +12393,31 @@ void CfgData::InitGuWuCfgMap()
 //#####################################
 GuWuCfg *CfgData::GetGuWuCfg(int32_t Level)
 {
-  int32_t Levela; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,GuWuCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,GuWuCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  Levela = Level;
-  it._M_node = std::map<int,GuWuCfg>::find(&this->m_GuWuCfgMap, &Levela)._M_node;
-  __x._M_node = std::map<int,GuWuCfg>::end(&thisa->m_GuWuCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,GuWuCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,GuWuCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_GuWuCfgMap.find(Level);
+	if (it != m_GuWuCfgMap.end())
+		return &it->second;
+	return NULL;
 }
-
-//#####################################
 
 //#####################################
 GuiGuDaoRenCfg *CfgData::GetGuiGuDaoRenCfg(int32_t NpcId)
 {
-  int32_t NpcIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,GuiGuDaoRenCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,GuiGuDaoRenCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  NpcIda = NpcId;
-  it._M_node = std::map<int,GuiGuDaoRenCfg>::find(&this->m_GuiGuDaoRenCfgMap, &NpcIda)._M_node;
-  __x._M_node = std::map<int,GuiGuDaoRenCfg>::end(&thisa->m_GuiGuDaoRenCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,GuiGuDaoRenCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,GuiGuDaoRenCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_GuiGuDaoRenCfgMap.find(NpcId);
+	if (it != m_GuiGuDaoRenCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitHoeTable()
 {
-  HoeCfg *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  HoeCfg Stu; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t i; // [rsp+B8h] [rbp-18h]
-  int32_t nIndex; // [rsp+BCh] [rbp-14h]
+  HoeCfg *v1;
+  CDBCFile readFile(0);
+  HoeCfg Stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/Hoe.txt") )
@@ -13706,7 +12433,7 @@ void CfgData::InitHoeTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        *(_QWORD *)&Stu.nId = 0;
+        memset(&Stu.nId, 0, sizeof(int64_t));
         Stu.nDouble = 0;
         Stu.nId = readFile.Search_Posistion( i, 0)->iValue;
         Stu.nNextId = readFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -13723,42 +12450,32 @@ void CfgData::InitHoeTable()
 //#####################################
 HoeCfg *CfgData::GetHoeCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,HoeCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,HoeCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,HoeCfg>::find(&this->m_HoeCfgMap, &nIda)._M_node;
-  __x._M_node = std::map<int,HoeCfg>::end(&thisa->m_HoeCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,HoeCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,HoeCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_HoeMap.find(nId);
+	if (it != m_HoeMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
-AttrAddonVector *CfgData::paraseAttrAddon(const std::string *const addonAttr,
+AttrAddonVector *CfgData::parseAttrAddon(const std::string *const addonAttr,
         int32_t nIndex,
         const std::string *const path)
 {
-  std::string *v6; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  std::string *v9; // rax
-  const char *v10; // rax
-  const char *v11; // r12
-  const char *v12; // rax
-  AttrAddon attrAddon; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector strAttrAddon; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector strAttrAddons; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v22; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v24; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v25[33]; // [rsp+AFh] [rbp-21h] BYREF
+  std::string *v6;
+  std::string *v7;
+  const char *v8;
+  std::string *v9;
+  const char *v10;
+  const char *v11;
+  const char *v12;
+  AttrAddon attrAddon;
+  StringVector strAttrAddon;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector strAttrAddons;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v24;
+  _BYTE v25[33];
 
   std::vector<AttrAddon>::vector(retstr);
   if ( !(unsigned __int8)std::string::empty((std::string *)addonAttr)
@@ -13798,55 +12515,49 @@ AttrAddonVector *CfgData::paraseAttrAddon(const std::string *const addonAttr,
         v12 = (const char *)std::string::c_str((std::string *)path);
         Answer::Logger::print(
           Answer::LogLevel::LOG_LEVEL_ERROR,
-          "CfgData::paraseAttrAddon() wrong data from %s, where index = %d, str = %s\n",
+          "CfgData::parseAttrAddon() wrong data from %s, where index = %d, str = %s\n",
           v12,
           nIndex,
           v11);
       }
-      std::vector<std::string>::~vector(&strAttrAddon);
     }
-    std::vector<std::string>::~vector(&strAttrAddons);
   }
   return retstr;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 TalentAddonList CfgData::paraseTalentAddon(const std::string *const str,
         int32_t nIndex,
         const std::string *const path)
 {
-  std::string *v4; // r8
-  TalentAddonList result; // rax
-  std::string *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  const char *v14; // r12
-  const char *v15; // rax
+  std::string *v4;
+  TalentAddonList result;
+  std::string *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  const char *v14;
+  const char *v15;
   int v16; // r12d
-  const char *v17; // r12
-  const char *v18; // rax
-  std::string *patha; // [rsp+0h] [rbp-D0h]
-  int32_t nIndexa; // [rsp+Ch] [rbp-C4h]
-  std::string *stra; // [rsp+10h] [rbp-C0h]
-  TalentAddon addon; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector strAddon; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector strAddons; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v27; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v29; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v30[33]; // [rsp+AFh] [rbp-21h] BYREF
+  const char *v17;
+  const char *v18;
+  std::string *patha;
+
+  std::string *stra;
+  TalentAddon addon;
+  StringVector strAddon;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector strAddons;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v29;
+  _BYTE v30[33];
 
   stra = *(std::string **)&nIndex;
   nIndexa = (int)path;
-  patha = v4;
-  std::list<TalentAddon>::list((std::list<TalentAddon> *const)this);
   if ( !(unsigned __int8)std::string::empty(stra) && !std::operator==<char>(stra, "-1") )
   {
     
@@ -13860,7 +12571,6 @@ TalentAddonList CfgData::paraseTalentAddon(const std::string *const str,
       if ( !__gnu_cxx::operator!=<std::string *,std::vector<std::string>>(&it, &__rhs) )
       {
 LABEL_16:
-        std::vector<std::string>::~vector(&strAddons);
         break;
       }
       
@@ -13870,7 +12580,7 @@ LABEL_16:
       
       if ( std::vector<std::string>::size(&strAddon) == 3 )
       {
-        *(_QWORD *)&addon.id = 0;
+        memset(&addon.id, 0, sizeof(int64_t));
         addon.addon = 0;
         v8 = std::vector<std::string>::operator[](&strAddon, 0);
         v9 = (const char *)std::string::c_str(v8);
@@ -13894,7 +12604,7 @@ LABEL_16:
           v16 = 0;
           goto LABEL_13;
         }
-        std::list<TalentAddon>::push_back((std::list<TalentAddon> *const)this, &addon);
+        std::list<TalentAddon>::push_back(this, &addon);
       }
       else
       {
@@ -13909,12 +12619,10 @@ LABEL_16:
       }
       v16 = 1;
 LABEL_13:
-      std::vector<std::string>::~vector(&strAddon);
       if ( !v16 )
         goto LABEL_16;
     }
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -13923,17 +12631,17 @@ AddAttribute CfgData::parseAddAttribue(const std::string *const addonAttr,
         int32_t nIndex,
         const std::string *const path)
 {
-  AddAttribute v5; // rbx
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  const char *v10; // rbx
-  const char *v11; // rax
-  StringVector strAttrAddon; // [rsp+20h] [rbp-50h] BYREF
-  AddAttribute attribute; // [rsp+40h] [rbp-30h] BYREF
-  std::string delims; // [rsp+50h] [rbp-20h] BYREF
-  _BYTE v17[17]; // [rsp+5Fh] [rbp-11h] BYREF
+  AddAttribute v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  const char *v10;
+  const char *v11;
+  StringVector strAttrAddon;
+  AddAttribute attribute;
+  std::string delims;
+  _BYTE v17[17];
 
   AddAttribute::AddAttribute(&attribute);
   if ( (unsigned __int8)std::string::empty((std::string *)addonAttr) || std::operator==<char>(addonAttr, "-1") )
@@ -13957,48 +12665,43 @@ AddAttribute CfgData::parseAddAttribue(const std::string *const addonAttr,
     v11 = (const char *)std::string::c_str((std::string *)path);
     Answer::Logger::print(
       Answer::LogLevel::LOG_LEVEL_ERROR,
-      "CfgData::paraseAttrAddon() wrong data from %s, where index = %d, str = %s\n",
+      "CfgData::parseAttrAddon() wrong data from %s, where index = %d, str = %s\n",
       v11,
       nIndex,
       v10);
   }
   v5 = attribute;
-  std::vector<std::string>::~vector(&strAttrAddon);
   return v5;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 AddAttrList CfgData::parseAddAttribues(const std::string *const addonAttr,
         int32_t nIndex,
         const std::string *const path)
 {
-  std::string *v4; // r8
-  AddAttrList result; // rax
-  std::string *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  const char *v12; // r12
-  const char *v13; // rax
-  std::string *patha; // [rsp+0h] [rbp-D0h]
-  int32_t nIndexa; // [rsp+Ch] [rbp-C4h]
-  std::string *addonAttra; // [rsp+10h] [rbp-C0h]
-  AddAttribute attr; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector strAttrAddon; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector strAttrAddons; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v22; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v24; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v25[33]; // [rsp+AFh] [rbp-21h] BYREF
+  std::string *v4;
+  AddAttrList result;
+  std::string *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  const char *v12;
+  const char *v13;
+  std::string *patha;
+
+  std::string *addonAttra;
+  AddAttribute attr;
+  StringVector strAttrAddon;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector strAttrAddons;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v24;
+  _BYTE v25[33];
 
   addonAttra = *(std::string **)&nIndex;
   nIndexa = (int)path;
-  patha = v4;
-  std::list<AddAttribute>::list((std::list<AddAttribute> *const)this);
   if ( !(unsigned __int8)std::string::empty(addonAttra)
     && !std::operator==<char>(addonAttra, "-1")
     && !std::operator==<char>(addonAttra, "0") )
@@ -14028,7 +12731,7 @@ AddAttrList CfgData::parseAddAttribues(const std::string *const addonAttr,
         v11 = (const char *)std::string::c_str(v10);
         attr.m_nAddAttrValue = atoi(v11);
         if ( attr.m_nAddAttrType && attr.m_nAddAttrValue > 0 )
-          std::list<AddAttribute>::push_back((std::list<AddAttribute> *const)this, &attr);
+          std::list<AddAttribute>::push_back(this, &attr);
       }
       else
       {
@@ -14036,40 +12739,35 @@ AddAttrList CfgData::parseAddAttribues(const std::string *const addonAttr,
         v13 = (const char *)std::string::c_str(patha);
         Answer::Logger::print(
           Answer::LogLevel::LOG_LEVEL_ERROR,
-          "CfgData::paraseAttrAddon() wrong data from %s, where index = %d, str = %s\n",
+          "CfgData::parseAttrAddon() wrong data from %s, where index = %d, str = %s\n",
           v13,
           nIndexa,
           v12);
       }
-      std::vector<std::string>::~vector(&strAttrAddon);
     }
-    std::vector<std::string>::~vector(&strAttrAddons);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
 //#####################################
 void CfgData::InitJewelPavilionTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,JewelPavilionCfg> >,bool> v2; // rax
-  MemChrBag v3; // [rsp+0h] [rbp-180h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-158h]
-  CDBCFile TabFile(0); // [rsp+30h] [rbp-150h] BYREF
-  JewelPavilionCfg stu; // [rsp+C0h] [rbp-C0h] BYREF
-  std::string strItem; // [rsp+F0h] [rbp-90h] BYREF
-  char v8; // [rsp+FFh] [rbp-81h] BYREF
-  std::_Rb_tree_node_base::_Base_ptr M_node; // [rsp+100h] [rbp-80h]
-  bool second; // [rsp+108h] [rbp-78h]
-  _BYTE v11[64]; // [rsp+110h] [rbp-70h] BYREF
-  std::pair<int,int> __a; // [rsp+150h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+160h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+164h] [rbp-1Ch]
-  int32_t i; // [rsp+168h] [rbp-18h]
-  int32_t nIndex; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  auto v2
+  MemChrBag v3;
 
-  thisa = this;
+  CDBCFile TabFile(0);
+  JewelPavilionCfg stu;
+  std::string strItem;
+  std::_Rb_tree_node_base::_Base_ptr M_node;
+  bool second;
+  _BYTE v11[64];
+
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/TreasureShop.txt") )
   {
@@ -14081,7 +12779,7 @@ void CfgData::InitJewelPavilionTable()
     iBaseColumnCount = TabFile.GetFieldsNum();
     if ( iBaseColumnCount > 0 )
     {
-      std::map<std::pair<int,int>,JewelPavilionCfg>::clear(&thisa->m_JewelPavilionCfgMap);
+      std::map<std::pair<int,int>,JewelPavilionCfg>::clear(&m_JewelPavilionCfgMap);
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
@@ -14091,7 +12789,7 @@ void CfgData::InitJewelPavilionTable()
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         CItemHelper::parseItemString(&v3, &strItem);
         stu.Item = v3;
         
@@ -14103,11 +12801,11 @@ void CfgData::InitJewelPavilionTable()
           &__a,
           &stu);
         v2 = std::map<std::pair<int,int>,JewelPavilionCfg>::insert(
-               &thisa->m_JewelPavilionCfgMap,
+               &m_JewelPavilionCfgMap,
                (const std::pair<const std::pair<int,int>,JewelPavilionCfg> *const)v11);
-        *(_QWORD *)&v3.itemId = v2.first._M_node;
+
         v3.itemCount = *(_DWORD *)&v2.second;
-        M_node = v2.first._M_node;
+
         second = v2.second;
       }
     }
@@ -14117,35 +12815,25 @@ void CfgData::InitJewelPavilionTable()
 //#####################################
 JewelPavilionCfg *CfgData::GetJewelPavilionCfg(int32_t nDay, int32_t nIndex)
 {
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,JewelPavilionCfg> > it; // [rsp+10h] [rbp-30h] BYREF
-  std::pair<int,int> __x; // [rsp+20h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,JewelPavilionCfg> > v6; // [rsp+30h] [rbp-10h] BYREF
-
-  __x = std::make_pair<int,int>(nDay, nIndex);
-  it._M_node = std::map<std::pair<int,int>,JewelPavilionCfg>::find(&this->m_JewelPavilionCfgMap, &__x)._M_node;
-  v6._M_node = std::map<std::pair<int,int>,JewelPavilionCfg>::end(&this->m_JewelPavilionCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,JewelPavilionCfg>>::operator!=(&it, &v6) )
-    return (JewelPavilionCfg *)((char *)std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,JewelPavilionCfg>>::operator->(&it)
-                              + 8);
-  else
-    return 0;
+	auto it = m_JewelPavilionCfgMap.find(std::make_pair(nDay, nIndex));
+	if (it != m_JewelPavilionCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitJueWeiTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-120h] BYREF
-  CfgJueWei stu; // [rsp+A0h] [rbp-90h] BYREF
-  AttrAddonVector __x; // [rsp+D0h] [rbp-60h] BYREF
-  std::string path; // [rsp+F0h] [rbp-40h] BYREF
-  char v6; // [rsp+FFh] [rbp-31h] BYREF
-  std::string addonAttr; // [rsp+100h] [rbp-30h] BYREF
-  char v8; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgJueWei stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/JueWei.txt") )
@@ -14161,7 +12849,6 @@ void CfgData::InitJueWeiTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         memset(&stu, 0, sizeof(stu));
-        std::vector<AttrAddon>::vector(&stu.vAttr);
         nIndex = 0;
         stu.nId = readFile.Search_Posistion( i, 0)->iValue;
         stu.nNeedLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -14171,14 +12858,13 @@ void CfgData::InitJueWeiTable()
         path = "./ServerConfig/Tables/JueWei.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.vAttr, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.vAttr = __x;
         
         ++nIndex;
-        CfgJueWeiTable::AddJueWei(&this->m_cfgJueWeiTable, &stu);
-        /* CfgJueWei::~CfgJueWei(&stu); - auto cleanup */
+        m_cfgJueWeiTable.AddJueWei(stu);
+
       }
     }
   }
@@ -14187,16 +12873,15 @@ void CfgData::InitJueWeiTable()
 //#####################################
 void CfgData::InitLaDaShiHuiYuan()
 {
-  const CDBCFile::FIELD *v1; // rax
-  LuDaShiVip *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-110h] BYREF
-  LuDaShiVip stu; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v7; // [rsp+102h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+104h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+108h] [rbp-18h]
-  int32_t i; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  LuDaShiVip *v2;
+  CDBCFile TabFile(0);
+  LuDaShiVip stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/LuDaShiHuiYuan.txt") )
@@ -14217,17 +12902,16 @@ void CfgData::InitLaDaShiHuiYuan()
         stu.nType = TabFile.Search_Posistion( i, 1)->iValue;
         
         v1 = TabFile.Search_Posistion( i, 3);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Rewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.Rewards = __x;
         
         stu.nCondition = TabFile.Search_Posistion( i, 4)->iValue;
         stu.nVipType = TabFile.Search_Posistion( i, 8)->iValue;
         stu.nMaxCondition = TabFile.Search_Posistion( i, 11)->iValue;
         v2 = std::map<int,LuDaShiVip>::operator[](&this->m_LuDaShiVipMap, &stu.nIndex);
         LuDaShiVip::operator=(v2, &stu);
-        /* LuDaShiVip::~LuDaShiVip(&stu); - auto cleanup */
+
       }
     }
   }
@@ -14236,32 +12920,23 @@ void CfgData::InitLaDaShiHuiYuan()
 //#####################################
 LuDaShiVip *CfgData::GetLaDaShiHuiYuan(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,LuDaShiVip> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,LuDaShiVip> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIndexa = nIndex;
-  it._M_node = std::map<int,LuDaShiVip>::find(&this->m_LuDaShiVipMap, &nIndexa)._M_node;
-  __x._M_node = std::map<int,LuDaShiVip>::end(&thisa->m_LuDaShiVipMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,LuDaShiVip>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,LuDaShiVip>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_LaDaShiVipMap.find(nIndex);
+	if (it != m_LaDaShiVipMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitLevelChatTimesTable()
 {
-  int *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  int32_t nLevel; // [rsp+A4h] [rbp-2Ch] BYREF
-  int32_t iBaseTableCount; // [rsp+ACh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+B0h] [rbp-20h]
-  int32_t i; // [rsp+B4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+B8h] [rbp-18h]
-  int32_t nTimes; // [rsp+BCh] [rbp-14h]
+  int *v1;
+  CDBCFile readFile(0);
+  int32_t nLevel;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nTimes;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/PublicChatTimes.txt") )
@@ -14292,15 +12967,13 @@ void CfgData::InitLevelChatTimesTable()
 //#####################################
 int32_t CfgData::GetChatTimes(int32_t nLevel)
 {
-  int32_t nLevela; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,int> > iter; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,int> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nLevela = nLevel;
-  iter._M_node = std::map<int,int>::find(&this->m_cfgLevelChatTable, &nLevela)._M_node;
-  __x._M_node = std::map<int,int>::end(&thisa->m_cfgLevelChatTable)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,int> > iter;
+  std::_Rb_tree_const_iterator<std::pair<const int,int> > __x;
+
+  auto iter = m_cfgLevelChatTable.find(nLevela);
+  auto __x = m_cfgLevelChatTable.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,int>>::operator!=(&iter, &__x) )
     return std::_Rb_tree_const_iterator<std::pair<int const,int>>::operator->(&iter)->second;
   else
@@ -14311,35 +12984,31 @@ int32_t CfgData::GetChatTimes(int32_t nLevel)
 void CfgData::InitLibraryTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
+  const CDBCFile::FIELD *v2;
   int v3; // ebx
-  const CDBCFile::FIELD *v4; // rax
-  int64_t v5; // rax
-  MemChrBag v6; // [rsp+30h] [rbp-190h] BYREF
-  CfgData *thisa; // [rsp+58h] [rbp-168h]
-  CDBCFile readFile(0); // [rsp+60h] [rbp-160h] BYREF
-  CfgLibraryItem stu; // [rsp+F0h] [rbp-D0h] BYREF
-  CfgLibraryCost stu_1; // [rsp+120h] [rbp-A0h] BYREF
-  CfgLibraryQuality stu_0; // [rsp+140h] [rbp-80h]
-  std::string strItem; // [rsp+150h] [rbp-70h] BYREF
-  char v13; // [rsp+15Fh] [rbp-61h] BYREF
-  std::string v14; // [rsp+160h] [rbp-60h] BYREF
-  char v15; // [rsp+176h] [rbp-4Ah] BYREF
-  int32_t iBaseTableCount; // [rsp+178h] [rbp-48h]
-  int32_t iBaseColumnCount; // [rsp+17Ch] [rbp-44h]
-  int32_t i; // [rsp+180h] [rbp-40h]
-  int32_t nIndex; // [rsp+184h] [rbp-3Ch]
-  int32_t iBaseTableCount_0; // [rsp+18Ch] [rbp-34h]
-  int32_t iBaseColumnCount_0; // [rsp+190h] [rbp-30h]
-  int32_t i_0; // [rsp+194h] [rbp-2Ch]
-  int32_t nIndex_0; // [rsp+198h] [rbp-28h]
-  int32_t iBaseTableCount_1; // [rsp+1A0h] [rbp-20h]
-  int32_t iBaseColumnCount_1; // [rsp+1A4h] [rbp-1Ch]
-  int32_t i_1; // [rsp+1A8h] [rbp-18h]
-  int32_t nIndex_1; // [rsp+1ACh] [rbp-14h]
+  const CDBCFile::FIELD *v4;
+  MemChrBag v6;
+
+  CDBCFile readFile(0);
+  CfgLibraryItem stu;
+  CfgLibraryCost stu_1;
+  CfgLibraryQuality stu_0;
+  std::string strItem;
+  std::string v14;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
+  int32_t iBaseTableCount_1;
+  int32_t iBaseColumnCount_1;
+  int32_t i_1;
+  int32_t nIndex_1;
   ItemData v31; // 0:kr00_12.12
 
-  thisa = this;
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ChestItemRandom.txt") )
   {
@@ -14361,14 +13030,14 @@ void CfgData::InitLibraryTable()
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        strItem.assign(v2->pString);
+        strItem = v2->pString;
         CItemHelper::parseItemString(&v6, &strItem);
         stu.Item = v6;
         
         stu.Probability = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.nDunGeonId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CLibraryTable::AddCfgLibraryItem(&thisa->m_CLibraryTable, stu);
+        CLibraryTable::AddCfgLibraryItem(&m_CLibraryTable, stu);
       }
       v1 = 1;
     }
@@ -14395,15 +13064,15 @@ void CfgData::InitLibraryTable()
       {
         for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
         {
-          *(_QWORD *)&stu_0.nIndex = 0;
-          *(_QWORD *)&stu_0.nCount = 0;
+          memset(&stu_0.nIndex, 0, sizeof(int64_t));
+          memset(&stu_0.nCount, 0, sizeof(int64_t));
           nIndex_0 = 0;
           stu_0.nIndex = readFile.Search_Posistion( i_0, 0)->iValue;
           stu_0.nQuality = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           stu_0.nCount = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           stu_0.nProbability = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           ++nIndex_0;
-          CLibraryTable::AddCfgLibraryQuality(&thisa->m_CLibraryTable, stu_0);
+          CLibraryTable::AddCfgLibraryQuality(&m_CLibraryTable, stu_0);
         }
         v3 = 1;
       }
@@ -14436,15 +13105,15 @@ void CfgData::InitLibraryTable()
             ++nIndex_1;
             
             v4 = readFile.Search_Posistion( i_1, nIndex_1);
-            v14.assign(v4->pString);
+            v14 = v4->pString;
             v31 = CItemHelper::parseItemDataString(&v14);
-            LODWORD(v5) = v31.m_nId;
+            v5 = v31.m_nId;
             BYTE4(v5) = v31.m_nClass;
             *(_QWORD *)&stu_1.Item.m_nId = v5;
             stu_1.Item.m_nCount = v31.m_nCount;
             
             ++nIndex_1;
-            CLibraryTable::AddCfgLibraryCost(&thisa->m_CLibraryTable, stu_1);
+            CLibraryTable::AddCfgLibraryCost(&m_CLibraryTable, stu_1);
           }
         }
       }
@@ -14458,34 +13127,31 @@ void CfgData::InitLibraryTable()
 void CfgData::InitLittleHelperCfg()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  LittleHelperCfg *v3; // rax
+  const CDBCFile::FIELD *v2;
+  LittleHelperCfg *v3;
   int v4; // ebx
-  ShiQuCfg *v5; // rax
-  const CDBCFile::FIELD *v6; // rax
-  CDBCFile FileTable(0); // [rsp+10h] [rbp-190h] BYREF
-  LittleHelperCfg stu; // [rsp+A0h] [rbp-100h] BYREF
-  ShiQuCfg stu_0; // [rsp+D0h] [rbp-D0h] BYREF
-  std::list<AddAttribute> __x; // [rsp+F0h] [rbp-B0h] BYREF
-  _BYTE v11[15]; // [rsp+100h] [rbp-A0h] BYREF
-  char v12; // [rsp+10Fh] [rbp-91h] BYREF
-  int32_t v13[3]; // [rsp+110h] [rbp-90h] BYREF
-  char v14; // [rsp+11Fh] [rbp-81h] BYREF
-  MemChrBagVector v15; // [rsp+120h] [rbp-80h] BYREF
-  std::string strItems; // [rsp+140h] [rbp-60h] BYREF
-  char v17; // [rsp+156h] [rbp-4Ah] BYREF
-  int32_t iBaseTableCount; // [rsp+158h] [rbp-48h]
-  int32_t iBaseColumnCount; // [rsp+15Ch] [rbp-44h]
-  int32_t i; // [rsp+160h] [rbp-40h]
-  int32_t nIndex; // [rsp+164h] [rbp-3Ch]
-  int32_t iBaseTableCount_0; // [rsp+16Ch] [rbp-34h]
-  int32_t iBaseColumnCount_0; // [rsp+170h] [rbp-30h]
-  int32_t i_0; // [rsp+174h] [rbp-2Ch]
-  int32_t nIndex_0; // [rsp+178h] [rbp-28h]
-  int32_t iBaseTableCount_1; // [rsp+180h] [rbp-20h]
-  int32_t iBaseColumnCount_1; // [rsp+184h] [rbp-1Ch]
-  int32_t i_1; // [rsp+188h] [rbp-18h]
-  int32_t nIndex_1; // [rsp+18Ch] [rbp-14h]
+  ShiQuCfg *v5;
+  const CDBCFile::FIELD *v6;
+  CDBCFile FileTable(0);
+  LittleHelperCfg stu;
+  ShiQuCfg stu_0;
+  std::list<AddAttribute> __x;
+  _BYTE v11[15];
+  int32_t v13[3];
+  MemChrBagVector v15;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
+  int32_t iBaseTableCount_1;
+  int32_t iBaseColumnCount_1;
+  int32_t i_1;
+  int32_t nIndex_1;
 
   
   if ( !FileTable.OpenFromTXT( "./ServerConfig/Tables/LittleHelper.txt") )
@@ -14510,17 +13176,16 @@ void CfgData::InitLittleHelperCfg()
         stu.nSpeed = FileTable.Search_Posistion( i, nIndex++)->iValue;
         nIndex += 2;
         
-        std::string::string(v11, "./ServerConfig/Tables/LittleHelper.txt", &v12);
+        std::string v11("./ServerConfig/Tables/LittleHelper.txt");
         
         v2 = FileTable.Search_Posistion( i, nIndex);
-        std::string::string(v13, v2->pString, &v14);
+        std::string v13(v2->pString);
         CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)v13,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.lAttr, &__x);
-        std::list<AddAttribute>::~list(&__x);
+          (unsigned int)nIndex);
+        stu.lAttr = __x;
         
         stu.nGold = FileTable.Search_Posistion( i, ++nIndex)->iValue;
         stu.nReGold = FileTable.Search_Posistion( i, ++nIndex)->iValue;
@@ -14530,7 +13195,7 @@ void CfgData::InitLittleHelperCfg()
         stu.nGongGaoId = FileTable.Search_Posistion( i, nIndex++)->iValue;
         v3 = std::map<int,LittleHelperCfg>::operator[](&this->m_LittleHelperCfgMap, &stu.nId);
         LittleHelperCfg::operator=(v3, &stu);
-        /* LittleHelperCfg::~LittleHelperCfg(&stu); - auto cleanup */
+
       }
       v1 = 1;
     }
@@ -14595,10 +13260,9 @@ void CfgData::InitLittleHelperCfg()
             ++nIndex_1;
             
             v6 = FileTable.Search_Posistion( i_1, nIndex_1);
-            strItems.assign(v6->pString);
+            strItems = v6->pString;
             CItemHelper::parseItemVectorString(&v15, &strItems);
             std::vector<MemChrBag>::operator=(&this->m_ZeroBuyPetCfg.cItems, &v15);
-            std::vector<MemChrBag>::~vector(&v15);
             
             this->m_ZeroBuyPetCfg.nGold = FileTable.Search_Posistion( i_1, ++nIndex_1)->iValue;
             this->m_ZeroBuyPetCfg.nMailId = FileTable.Search_Posistion( i_1, ++nIndex_1)->iValue;
@@ -14622,15 +13286,14 @@ const ZeroBuyPetCfg *CfgData::GetZeroBuyPetCfg()
 //#####################################
 const ShiQuCfg *CfgData::GetShiQuCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,ShiQuCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,ShiQuCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,ShiQuCfg>::find(&this->m_ShiQuCfgMap, &nIda)._M_node;
-  __x._M_node = std::map<int,ShiQuCfg>::end(&thisa->m_ShiQuCfgMap)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,ShiQuCfg> > it;
+  std::_Rb_tree_const_iterator<std::pair<const int,ShiQuCfg> > __x;
+
+  
+  auto it = m_ShiQuCfgMap.find(nIda);
+  auto __x = m_ShiQuCfgMap.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,ShiQuCfg>>::operator!=(&it, &__x) )
     return &std::_Rb_tree_const_iterator<std::pair<int const,ShiQuCfg>>::operator->(&it)->second;
   else
@@ -14640,15 +13303,14 @@ const ShiQuCfg *CfgData::GetShiQuCfg(int32_t nId)
 //#####################################
 const LittleHelperCfg *CfgData::GetLittleHelperCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,LittleHelperCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,LittleHelperCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,LittleHelperCfg>::find(&this->m_LittleHelperCfgMap, &nIda)._M_node;
-  __x._M_node = std::map<int,LittleHelperCfg>::end(&thisa->m_LittleHelperCfgMap)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,LittleHelperCfg> > it;
+  std::_Rb_tree_const_iterator<std::pair<const int,LittleHelperCfg> > __x;
+
+  
+  auto it = m_LittleHelperCfgMap.find(nIda);
+  auto __x = m_LittleHelperCfgMap.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,LittleHelperCfg>>::operator!=(&it, &__x) )
     return &std::_Rb_tree_const_iterator<std::pair<int const,LittleHelperCfg>>::operator->(&it)->second;
   else
@@ -14658,36 +13320,33 @@ const LittleHelperCfg *CfgData::GetLittleHelperCfg(int32_t nId)
 //#####################################
 void CfgData::InitLuckDropTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::string *v2; // rax
-  std::string *v3; // rax
-  const char *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  std::string *v9; // rax
-  const char *v10; // rax
-  std::string *v11; // rax
-  const char *v12; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-1C0h] BYREF
-  SpecialItemDrop SpecialItem; // [rsp+A0h] [rbp-130h] BYREF
-  LuckDrop stu; // [rsp+D0h] [rbp-100h] BYREF
-  StringVector vstack; // [rsp+F0h] [rbp-E0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+110h] [rbp-C0h] BYREF
-  StringVector ItemVetcor; // [rsp+120h] [rbp-B0h] BYREF
-  std::string ItemString; // [rsp+140h] [rbp-90h] BYREF
-  char v20; // [rsp+14Fh] [rbp-81h] BYREF
-  std::string delims; // [rsp+150h] [rbp-80h] BYREF
-  char v22; // [rsp+15Fh] [rbp-71h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+160h] [rbp-70h] BYREF
-  std::string v24; // [rsp+170h] [rbp-60h] BYREF
-  char v25; // [rsp+17Fh] [rbp-51h] BYREF
-  LuckDrop p_stu; // [rsp+180h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+1B0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+1B4h] [rbp-1Ch]
-  int32_t i; // [rsp+1B8h] [rbp-18h]
-  int32_t nIndex; // [rsp+1BCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::string *v2;
+  std::string *v3;
+  const char *v4;
+  std::string *v5;
+  const char *v6;
+  std::string *v7;
+  const char *v8;
+  std::string *v9;
+  const char *v10;
+  std::string *v11;
+  const char *v12;
+  CDBCFile readFile(0);
+  SpecialItemDrop SpecialItem;
+  LuckDrop stu;
+  StringVector vstack;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector ItemVetcor;
+  std::string ItemString;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v24;
+  LuckDrop p_stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/LuckyRate.txt") )
@@ -14704,12 +13363,11 @@ void CfgData::InitLuckDropTable()
       {
         nIndex = 0;
         memset(&stu, 0, 28);
-        std::list<SpecialItemDrop>::list(&stu.ItemList);
         stu.Type = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.VipLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        ItemString.assign(v1->pString);
+        ItemString = v1->pString;
         
         stu.Rate = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
@@ -14746,15 +13404,13 @@ void CfgData::InitLuckDropTable()
             v11 = std::vector<std::string>::operator[](&vstack, 4u);
             v12 = (const char *)std::string::c_str(v11);
             SpecialItem.Rate = atoi(v12);
-            std::list<SpecialItemDrop>::push_back(&stu.ItemList, &SpecialItem);
+            &stu.ItemList.push_back(&SpecialItem);
           }
-          std::vector<std::string>::~vector(&vstack);
         }
-        LuckDrop::LuckDrop(&p_stu, &stu);
-        LuckDropTable::AddLuckDrop(&this->m_LuckDropTable, &p_stu);
-        /* LuckDrop::~LuckDrop(&p_stu); - auto cleanup */
-        std::vector<std::string>::~vector(&ItemVetcor);
-        /* LuckDrop::~LuckDrop(&stu); - auto cleanup */
+        p_stu = stu;
+        m_LuckDropTable.AddLuckDrop(p_stu);
+
+
       }
     }
   }
@@ -14763,19 +13419,19 @@ void CfgData::InitLuckDropTable()
 //#####################################
 void CfgData::InitMYSJRewardTable()
 {
-  CCardGroupBoxManager *v1; // rax
-  CCardGroupBoxManager *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgMYSJReward stu; // [rsp+A0h] [rbp-80h] BYREF
-  CardGroup card; // [rsp+D0h] [rbp-50h] BYREF
-  CardGroupList cardList; // [rsp+E0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+F4h] [rbp-2Ch]
-  int32_t iBaseColumnCount; // [rsp+F8h] [rbp-28h]
-  int32_t nGroupId; // [rsp+FCh] [rbp-24h]
-  int32_t nGroupIndex; // [rsp+100h] [rbp-20h]
-  int32_t i; // [rsp+104h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+108h] [rbp-18h]
-  int32_t nId; // [rsp+10Ch] [rbp-14h]
+  CCardGroupBoxManager *v1;
+  CCardGroupBoxManager *v2;
+  CDBCFile readFile(0);
+  CfgMYSJReward stu;
+  CardGroup card;
+  CardGroupList cardList;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t nGroupId;
+  int32_t nGroupIndex;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MoYuShiJieReward.txt") )
@@ -14790,7 +13446,6 @@ void CfgData::InitMYSJRewardTable()
     {
       nGroupId = 0;
       nGroupIndex = 0;
-      std::list<CardGroup>::list(&cardList);
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
@@ -14830,7 +13485,7 @@ void CfgData::InitMYSJRewardTable()
           card.count = stu.nWeight;
           card.min = stu.nMin;
           card.max = stu.nMax;
-          std::list<CardGroup>::push_back(&cardList, &card);
+          &cardList.push_back(&card);
         }
         CfgMYSJRewardTable::Add(&this->m_cfgMYSJRewardTable, nId, &stu);
       }
@@ -14839,7 +13494,6 @@ void CfgData::InitMYSJRewardTable()
         v2 = Answer::Singleton<CCardGroupBoxManager>::instance();
         CCardGroupBoxManager::Add(v2, nGroupId, &cardList);
       }
-      std::list<CardGroup>::~list(&cardList);
     }
   }
 }
@@ -14847,19 +13501,17 @@ void CfgData::InitMYSJRewardTable()
 //#####################################
 void CfgData::InitMaintainCompensateTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgMaintainCompensate stu; // [rsp+A0h] [rbp-80h] BYREF
-  std::string p_StringTime; // [rsp+C0h] [rbp-60h] BYREF
-  char v6; // [rsp+CFh] [rbp-51h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v9; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile readFile(0);
+  CfgMaintainCompensate stu;
+  std::string p_StringTime;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MaintainCompensate.txt") )
@@ -14877,24 +13529,22 @@ void CfgData::InitMaintainCompensateTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgMaintainCompensate::CfgMaintainCompensate(&stu);
         stu.nIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        p_StringTime.assign(v1->pString);
+        p_StringTime = v1->pString;
         stu.nTime = Answer::DayTime::StringToIntTime(p_StringTime);
         
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vItems, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vItems = __x;
         
         ++nIndex;
         CfgMaintainCompensateTable::Add(&this->m_cfgMaintainCompensateTable, &stu);
-        /* CfgMaintainCompensate::~CfgMaintainCompensate(&stu); - auto cleanup */
+
       }
     }
   }
@@ -14903,31 +13553,28 @@ void CfgData::InitMaintainCompensateTable()
 //#####################################
 void CfgData::InitMapRoadTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::string *v2; // rax
-  std::string *v3; // rax
-  const char *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-180h] BYREF
-  CfgMapRoad stu; // [rsp+A0h] [rbp-F0h] BYREF
-  StringVector vPos; // [rsp+C0h] [rbp-D0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter; // [rsp+E0h] [rbp-B0h] BYREF
-  StringVector vRoad; // [rsp+F0h] [rbp-A0h] BYREF
-  std::string strRoad; // [rsp+110h] [rbp-80h] BYREF
-  char v13; // [rsp+11Fh] [rbp-71h] BYREF
-  std::string delims; // [rsp+120h] [rbp-70h] BYREF
-  char v15; // [rsp+12Fh] [rbp-61h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+130h] [rbp-60h] BYREF
-  std::string v17; // [rsp+140h] [rbp-50h] BYREF
-  char v18; // [rsp+14Fh] [rbp-41h] BYREF
-  Position __x; // [rsp+150h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+168h] [rbp-28h]
-  int32_t iBaseColumnCount; // [rsp+16Ch] [rbp-24h]
-  int32_t i; // [rsp+170h] [rbp-20h]
-  int32_t nIndex; // [rsp+174h] [rbp-1Ch]
-  int32_t x; // [rsp+178h] [rbp-18h]
-  int32_t y; // [rsp+17Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::string *v2;
+  std::string *v3;
+  const char *v4;
+  std::string *v5;
+  const char *v6;
+  CDBCFile readFile(0);
+  CfgMapRoad stu;
+  StringVector vPos;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter;
+  StringVector vRoad;
+  std::string strRoad;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v17;
+  Position __x;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t x;
+  int32_t y;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MapRoad.txt") )
@@ -14943,13 +13590,12 @@ void CfgData::InitMapRoadTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgMapRoad::CfgMapRoad(&stu);
         stu.nIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nNextIndex = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nMapId = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strRoad.assign(v1->pString);
+        strRoad = v1->pString;
         
         ++nIndex;
         
@@ -14976,13 +13622,11 @@ void CfgData::InitMapRoadTable()
             v6 = (const char *)std::string::c_str(v5);
             y = atoi(v6);
             Position::Position(&__x, x, y);
-            std::list<Position>::push_back(&stu.road, &__x);
+            &stu.road.push_back(&__x);
           }
-          std::vector<std::string>::~vector(&vPos);
         }
         CfgMapRoadTable::Add(&this->m_cfgMapRoadTable, &stu);
-        std::vector<std::string>::~vector(&vRoad);
-        /* CfgMapRoad::~CfgMapRoad(&stu); - auto cleanup */
+
       }
     }
   }
@@ -14994,7 +13638,7 @@ void CfgData::InitMapRoadTable()
 int32_t CfgData::GetMonsterReviveTime(int32_t Time, int32_t BossId)
 {
   int32_t result; // eax
-  CfgData *v4; // rax
+  CfgData *v4;
 
   if ( BossId != 1 )
     return Time;
@@ -15032,21 +13676,20 @@ int32_t CfgData::GetMonsterReviveTime(int32_t Time, int32_t BossId)
 //#####################################
 void CfgData::InitMiniClientMap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile TabFile(0); // [rsp+20h] [rbp-1A0h] BYREF
-  MiniClientCfg stu; // [rsp+B0h] [rbp-110h] BYREF
-  MemChrBagVector __x; // [rsp+F0h] [rbp-D0h] BYREF
-  std::string strItems; // [rsp+110h] [rbp-B0h] BYREF
-  char v7; // [rsp+11Fh] [rbp-A1h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<std::string,int>,MiniClientCfg> >,bool> v8; // [rsp+120h] [rbp-A0h]
-  _BYTE v9[80]; // [rsp+130h] [rbp-90h] BYREF
-  std::pair<std::string,int> p___x; // [rsp+180h] [rbp-40h] BYREF
-  std::string __y; // [rsp+190h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+1A0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+1A4h] [rbp-1Ch]
-  int32_t i; // [rsp+1A8h] [rbp-18h]
-  int32_t nIndex; // [rsp+1ACh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile TabFile(0);
+  MiniClientCfg stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  auto v8
+  _BYTE v9[80];
+  std::pair<std::string,int> p___x;
+  std::string __y;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WeiDuanDaTing.txt") )
@@ -15075,10 +13718,9 @@ void CfgData::InitMiniClientMap()
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vItems, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vItems = __x;
         
         stu.nIcon = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.nParam2 = TabFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -15094,7 +13736,7 @@ void CfgData::InitMiniClientMap()
                (const std::pair<const std::pair<std::string,int>,MiniClientCfg> *const)v9);
         std::pair<std::pair const<std::string,int>,MiniClientCfg>::~pair((std::pair<const std::pair<std::string,int>,MiniClientCfg> *const)v9);
         std::pair<std::string,int>::~pair(&p___x);
-        /* MiniClientCfg::~MiniClientCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -15103,38 +13745,26 @@ void CfgData::InitMiniClientMap()
 //#####################################
 MiniClientCfg *CfgData::GetMiniClientCfg(std::string *p_Platform, int32_t nId)
 {
-  std::_Rb_tree_iterator<std::pair<const std::pair<std::string,int>,MiniClientCfg> > it; // [rsp+20h] [rbp-50h] BYREF
-  std::pair<std::string,int> p___x; // [rsp+30h] [rbp-40h] BYREF
-  std::string __y[2]; // [rsp+40h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const std::pair<std::string,int>,MiniClientCfg> > __x; // [rsp+50h] [rbp-20h] BYREF
-
-  std::string::string(__y, p_Platform);
-  std::make_pair<std::string,int>(&p___x.first, (int)__y);
-  it._M_node = std::map<std::pair<std::string,int>,MiniClientCfg>::find(&this->m_GetMiniClientMap, &p___x)._M_node;
-  std::pair<std::string,int>::~pair(&p___x);
-  __x._M_node = std::map<std::pair<std::string,int>,MiniClientCfg>::end(&this->m_GetMiniClientMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<std::pair const<std::string,int>,MiniClientCfg>>::operator!=(&it, &__x) )
-    return (MiniClientCfg *)((char *)std::_Rb_tree_iterator<std::pair<std::pair const<std::string,int>,MiniClientCfg>>::operator->(&it)
-                           + 16);
-  else
-    return 0;
+	auto it = m_GetMiniClientMap.find(std::make_pair(*p_Platform, nId));
+	if (it != m_GetMiniClientMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitMiniClientTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CfgMiniClient *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgMiniClient stu; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v8; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CfgMiniClient *v3;
+  CDBCFile TabFile(0);
+  CfgMiniClient stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WeiDuan.txt") )
@@ -15160,15 +13790,14 @@ void CfgData::InitMiniClientTable()
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vReward = __x;
         
         ++nIndex;
         v3 = std::map<std::string,CfgMiniClient>::operator[](&this->m_CfgMiniClient, &stu.strPlatfrom);
         CfgMiniClient::operator=(v3, &stu);
-        /* CfgMiniClient::~CfgMiniClient(&stu); - auto cleanup */
+
       }
     }
   }
@@ -15177,29 +13806,24 @@ void CfgData::InitMiniClientTable()
 //#####################################
 const CfgMiniClient *CfgData::GetMiniClient(const std::string *const platform)
 {
-  std::_Rb_tree_const_iterator<std::pair<const std::string,CfgMiniClient> > iter; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const std::string,CfgMiniClient> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  iter._M_node = std::map<std::string,CfgMiniClient>::find(&this->m_CfgMiniClient, platform)._M_node;
-  __x._M_node = std::map<std::string,CfgMiniClient>::end(&this->m_CfgMiniClient)._M_node;
-  if ( std::_Rb_tree_const_iterator<std::pair<std::string const,CfgMiniClient>>::operator!=(&iter, &__x) )
-    return &std::_Rb_tree_const_iterator<std::pair<std::string const,CfgMiniClient>>::operator->(&iter)->second;
-  else
-    return 0;
+	auto it = m_CfgMiniClient.find(*platform);
+	if (it != m_CfgMiniClient.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitMonsterAddAttrTable()
 {
-  std::list<CfgMonsterAddAttr> *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  CfgMonsterAddAttr AddAttrs; // [rsp+A0h] [rbp-50h] BYREF
-  AttrAddon stu; // [rsp+C0h] [rbp-30h] BYREF
-  int32_t Mid; // [rsp+C8h] [rbp-28h] BYREF
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t j; // [rsp+DCh] [rbp-14h]
+  std::list<CfgMonsterAddAttr> *v1;
+  CDBCFile TabFile(0);
+  CfgMonsterAddAttr AddAttrs;
+  AttrAddon stu;
+  int32_t Mid;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t j;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/MonstAddAttr.txt") )
@@ -15228,7 +13852,7 @@ void CfgData::InitMonsterAddAttrTable()
         }
         v1 = std::map<int,std::list<CfgMonsterAddAttr>>::operator[](&this->m_MonstAddAttrMap, &Mid);
         std::list<CfgMonsterAddAttr>::push_back(v1, &AddAttrs);
-        /* CfgMonsterAddAttr::~CfgMonsterAddAttr(&AddAttrs); - auto cleanup */
+
       }
     }
   }
@@ -15238,67 +13862,29 @@ void CfgData::InitMonsterAddAttrTable()
 AttrAddonVector *CfgData::GetAddMonsterAttrs(int32_t Mid,
         int32_t WorldLevel)
 {
-  std::pair<const int,std::list<CfgMonsterAddAttr> > *v4; // rax
-  CfgMonsterAddAttr *v6; // rax
-  std::pair<const int,std::list<CfgMonsterAddAttr> > *v7; // rax
-  int32_t Mida; // [rsp+4h] [rbp-7Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-78h]
-  std::_List_iterator<CfgMonsterAddAttr> iter; // [rsp+10h] [rbp-70h] BYREF
-  AttrAddonVector AttrVector; // [rsp+20h] [rbp-60h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<CfgMonsterAddAttr> > > it; // [rsp+40h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<CfgMonsterAddAttr> > > __x; // [rsp+50h] [rbp-30h] BYREF
-  std::_List_iterator<CfgMonsterAddAttr> v16; // [rsp+60h] [rbp-20h] BYREF
-
-  thisa = this;
-  Mida = Mid;
-  it._M_node = std::map<int,std::list<CfgMonsterAddAttr>>::find(&this->m_MonstAddAttrMap, &Mida)._M_node;
-  __x._M_node = std::map<int,std::list<CfgMonsterAddAttr>>::end(&thisa->m_MonstAddAttrMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<CfgMonsterAddAttr>>>::operator!=(&it, &__x) )
-  {
-    v4 = std::_Rb_tree_iterator<std::pair<int const,std::list<CfgMonsterAddAttr>>>::operator->(&it);
-    for ( iter._M_node = std::list<CfgMonsterAddAttr>::begin(&v4->second)._M_node;
-          std::_List_iterator<CfgMonsterAddAttr>::operator++(&iter) )
-    {
-      v7 = std::_Rb_tree_iterator<std::pair<int const,std::list<CfgMonsterAddAttr>>>::operator->(&it);
-      v16._M_node = std::list<CfgMonsterAddAttr>::end(&v7->second)._M_node;
-      if ( !std::_List_iterator<CfgMonsterAddAttr>::operator!=(&iter, &v16) )
-        break;
-      if ( std::_List_iterator<CfgMonsterAddAttr>::operator->(&iter)->WorldBossLevelMin <= WorldLevel
-        && std::_List_iterator<CfgMonsterAddAttr>::operator->(&iter)->WorldBossLevelMax >= WorldLevel )
-      {
-        v6 = std::_List_iterator<CfgMonsterAddAttr>::operator->(&iter);
-        std::vector<AttrAddon>::vector(retstr, &v6->AttrVector);
-        return retstr;
-      }
-    }
-  }
-  /* std::vector<AttrAddon>::vector(&AttrVector); */
-  std::vector<AttrAddon>::vector(retstr, &AttrVector);
-  std::vector<AttrAddon>::~vector(&AttrVector);
-  return retstr;
+	auto it = m_MonstAddAttrMap.find(Mid);
+	if (it != m_MonstAddAttrMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitMonsterRandTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-170h] BYREF
-  CfgMonsterRand stu; // [rsp+A0h] [rbp-E0h] BYREF
-  AttrAddonVector __x; // [rsp+E0h] [rbp-A0h] BYREF
-  std::string path; // [rsp+100h] [rbp-80h] BYREF
-  char v7; // [rsp+10Fh] [rbp-71h] BYREF
-  std::string addonAttr; // [rsp+110h] [rbp-70h] BYREF
-  char v9; // [rsp+11Fh] [rbp-61h] BYREF
-  AttrAddonVector v10; // [rsp+120h] [rbp-60h] BYREF
-  std::string v11; // [rsp+140h] [rbp-40h] BYREF
-  char v12; // [rsp+14Fh] [rbp-31h] BYREF
-  std::string v13; // [rsp+150h] [rbp-30h] BYREF
-  char v14; // [rsp+15Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+160h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+164h] [rbp-1Ch]
-  int32_t i; // [rsp+168h] [rbp-18h]
-  int32_t nIndex; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile readFile(0);
+  CfgMonsterRand stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  AttrAddonVector v10;
+  std::string v11;
+  std::string v13;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MonsterRand.txt") )
@@ -15313,7 +13899,6 @@ void CfgData::InitMonsterRandTable()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgMonsterRand::CfgMonsterRand(&stu);
         nIndex = 0;
         stu.nId = readFile.Search_Posistion( i, 0)->iValue;
         ++nIndex;
@@ -15321,25 +13906,23 @@ void CfgData::InitMonsterRandTable()
         path = "./ServerConfig/Tables/MonsterRand.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.vAttrValue, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.vAttrValue = __x;
         
         ++nIndex;
         
         v11 = "./ServerConfig/Tables/MonsterRand.txt";
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        v13.assign(v2->pString);
-        paraseAttrAddon(v10, v13, v11);
-        std::vector<AttrAddon>::operator=(&stu.vAttrRatio, &v10);
-        std::vector<AttrAddon>::~vector(&v10);
+        v13 = v2->pString;
+        parseAttrAddon(v10, v13, v11);
+        stu.vAttrRatio = v10;
         
         stu.nSkill = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgMonsterRandTable::AddMonsterRand(&this->m_cfgMonsterRandTable, &stu);
-        /* CfgMonsterRand::~CfgMonsterRand(&stu); - auto cleanup */
+        m_cfgMonsterRandTable.AddMonsterRand(stu);
+
       }
     }
   }
@@ -15405,449 +13988,222 @@ int32_t CfgFamilyWarTable::GetJoinReward(int32_t nLevel) const
 
 void CfgData::InitGameTable()
 {
-  int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  int v4; // ebx
-  const CDBCFile::FIELD *v5; // rax
-  int v6; // ebx
-  int v7; // ebx
-  const CDBCFile::FIELD *v8; // rax
-  CVipClubLuckyDrop *v9; // rax
-  int v10; // ebx
-  const CDBCFile::FIELD *v11; // rax
-  ZhanHunCfg *v12; // rax
-  int v13; // ebx
-  const CDBCFile::FIELD *v14; // rax
-  const CDBCFile::FIELD *v15; // rax
-  SunAndMoonCfg *v16; // rax
-  const CDBCFile::FIELD *v17; // rax
-  TreasureHunterCfg *v18; // rax
-  CDBCFile readFile(0); // [rsp+20h] [rbp-330h] BYREF
-  SunAndMoonCfg stu; // [rsp+B0h] [rbp-2A0h] OVERLAPPED BYREF
-  ClbAimCfg stu_0; // [rsp+F0h] [rbp-260h] BYREF
-  std::list<AddAttribute> __x; // [rsp+100h] [rbp-250h] BYREF
-  _BYTE v23[15]; // [rsp+110h] [rbp-240h] BYREF
-  char v24; // [rsp+11Fh] [rbp-231h] BYREF
-  int32_t v25[3]; // [rsp+120h] [rbp-230h] BYREF
-  char v26; // [rsp+12Fh] [rbp-221h] BYREF
-  std::list<ItemData> strItems; // [rsp+130h] [rbp-220h] BYREF
-  bool bCombi[15]; // [rsp+140h] [rbp-210h] BYREF
-  char v29; // [rsp+14Fh] [rbp-201h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,VipEquipPosLevelUp> >,bool> v30; // [rsp+150h] [rbp-200h]
-  _BYTE v31[64]; // [rsp+160h] [rbp-1F0h] BYREF
-  std::pair<int,int> __a; // [rsp+1A0h] [rbp-1B0h] BYREF
-  std::list<AddAttribute> v33; // [rsp+1B0h] [rbp-1A0h] BYREF
-  _BYTE v34[15]; // [rsp+1C0h] [rbp-190h] BYREF
-  char v35; // [rsp+1CFh] [rbp-181h] BYREF
-  int32_t v36[3]; // [rsp+1D0h] [rbp-180h] BYREF
-  char v37; // [rsp+1DFh] [rbp-171h] BYREF
-  std::list<RateItem> v38; // [rsp+1E0h] [rbp-170h] BYREF
-  _BYTE v39[15]; // [rsp+1F0h] [rbp-160h] BYREF
-  char v40; // [rsp+1FFh] [rbp-151h] BYREF
-  std::list<AddAttribute> v41; // [rsp+200h] [rbp-150h] BYREF
-  _BYTE v42[15]; // [rsp+210h] [rbp-140h] BYREF
-  char v43; // [rsp+21Fh] [rbp-131h] BYREF
-  int32_t v44[3]; // [rsp+220h] [rbp-130h] BYREF
-  char v45; // [rsp+22Fh] [rbp-121h] BYREF
-  std::list<ItemData> v46; // [rsp+230h] [rbp-120h] BYREF
-  bool v47[15]; // [rsp+240h] [rbp-110h] BYREF
-  char v48; // [rsp+24Fh] [rbp-101h] BYREF
-  std::list<AddAttribute> v49; // [rsp+250h] [rbp-100h] BYREF
-  _BYTE v50[15]; // [rsp+260h] [rbp-F0h] BYREF
-  char v51; // [rsp+26Fh] [rbp-E1h] BYREF
-  int32_t v52[3]; // [rsp+270h] [rbp-E0h] BYREF
-  char v53; // [rsp+27Fh] [rbp-D1h] BYREF
-  MemChrBagVector v54; // [rsp+280h] [rbp-D0h] BYREF
-  std::string v55; // [rsp+2A0h] [rbp-B0h] BYREF
-  char v56; // [rsp+2B6h] [rbp-9Ah] BYREF
-  int32_t iBaseTableCount; // [rsp+2B8h] [rbp-98h]
-  int32_t iBaseColumnCount; // [rsp+2BCh] [rbp-94h]
-  int32_t i; // [rsp+2C0h] [rbp-90h]
-  int32_t nIndex; // [rsp+2C4h] [rbp-8Ch]
-  int32_t iBaseTableCount_0; // [rsp+2CCh] [rbp-84h]
-  int32_t iBaseColumnCount_0; // [rsp+2D0h] [rbp-80h]
-  int32_t i_0; // [rsp+2D4h] [rbp-7Ch]
-  int32_t nIndex_0; // [rsp+2D8h] [rbp-78h]
-  int32_t iBaseTableCount_1; // [rsp+2E0h] [rbp-70h]
-  int32_t iBaseColumnCount_1; // [rsp+2E4h] [rbp-6Ch]
-  int32_t i_1; // [rsp+2E8h] [rbp-68h]
-  int32_t nIndex_1; // [rsp+2ECh] [rbp-64h]
-  int32_t iBaseTableCount_2; // [rsp+2F4h] [rbp-5Ch]
-  int32_t iBaseColumnCount_2; // [rsp+2F8h] [rbp-58h]
-  int32_t i_2; // [rsp+2FCh] [rbp-54h]
-  int32_t nIndex_2; // [rsp+300h] [rbp-50h]
-  int32_t iBaseTableCount_3; // [rsp+308h] [rbp-48h]
-  int32_t iBaseColumnCount_3; // [rsp+30Ch] [rbp-44h]
-  int32_t i_3; // [rsp+310h] [rbp-40h]
-  int32_t nIndex_3; // [rsp+314h] [rbp-3Ch]
-  int32_t iBaseTableCount_4; // [rsp+31Ch] [rbp-34h]
-  int32_t iBaseColumnCount_4; // [rsp+320h] [rbp-30h]
-  int32_t i_4; // [rsp+324h] [rbp-2Ch]
-  int32_t nIndex_4; // [rsp+328h] [rbp-28h]
-  int32_t iBaseTableCount_5; // [rsp+330h] [rbp-20h]
-  int32_t iBaseColumnCount_5; // [rsp+334h] [rbp-1Ch]
-  int32_t i_5; // [rsp+338h] [rbp-18h]
-  int32_t nIndex_5; // [rsp+33Ch] [rbp-14h]
+	CDBCFile readFile(0);
 
-  
-  if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/VipClubEquipPos.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileVipEqu);
-    v1 = 0;
-  }
-  else
-  {
-    iBaseTableCount = readFile.GetRecordsNum();
-    iBaseColumnCount = readFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i = 0; i < iBaseTableCount; ++i )
-      {
-        nIndex = 0;
-        memset(&stu, 0, 52);
-        std::list<AddAttribute>::list((std::list<AddAttribute> *const)&stu.lConstItems._M_impl._M_node._M_prev);
-        std::list<ItemData>::list((std::list<ItemData> *const)&stu.lAttr._M_impl._M_node._M_prev);
-        stu.nLevel = readFile.Search_Posistion( i, nIndex++)->iValue;
-        *(&stu.nLevel + 1) = readFile.Search_Posistion( i, nIndex++)->iValue;
-        LODWORD(stu.lConstItems._M_impl._M_node._M_next) = readFile.Search_Posistion( i, nIndex++)->iValue;
-        
-        std::string::string(v23, "./ServerConfig/Tables/VipClubEquipPos.txt", &v24);
-        
-        v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v25, v2->pString, &v26);
-        CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
-          (int32_t)v25,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(
-          (std::list<AddAttribute> *const)&stu.lConstItems._M_impl._M_node._M_prev,
-          &__x);
-        std::list<AddAttribute>::~list(&__x);
-        
-        ++nIndex;
-        
-        v3 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v3->pString, &v29);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=((std::list<ItemData> *const)&stu.lAttr._M_impl._M_node._M_prev, &strItems);
-        std::list<ItemData>::~list(&strItems);
-        
-        stu.nSunTelentLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
-        ++nIndex;
-        __a = std::make_pair<int,int>(stu.nLevel, *(&stu.nLevel + 1));
-        std::pair<std::pair const<int,int>,VipEquipPosLevelUp>::pair(
-          (std::pair<const std::pair<int,int>,VipEquipPosLevelUp> *const)v31,
-          &__a,
-          (const VipEquipPosLevelUp *const)&stu);
-        v30 = std::map<std::pair<int,int>,VipEquipPosLevelUp>::insert(
-                &this->m_VipEquipPosLevelUpMap,
-                (const std::pair<const std::pair<int,int>,VipEquipPosLevelUp> *const)v31);
-        std::pair<std::pair const<int,int>,VipEquipPosLevelUp>::~pair((std::pair<const std::pair<int,int>,VipEquipPosLevelUp> *const)v31);
-        VipEquipPosLevelUp::~VipEquipPosLevelUp((VipEquipPosLevelUp *const)&stu);
-      }
-      v1 = 1;
-    }
-    else
-    {
-      v1 = 0;
-    }
-  }
-  if ( v1 )
-  {
-    
-    if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/VipClubEquipPosSuit.txt") )
-    {
-      Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileVipEqu_0);
-      v4 = 0;
-    }
-    else
-    {
-      iBaseTableCount_0 = readFile.GetRecordsNum();
-      iBaseColumnCount_0 = readFile.GetFieldsNum();
-      if ( iBaseColumnCount_0 > 0 )
-      {
-        for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
-        {
-          nIndex_0 = 0;
-          memset(&stu, 0, 32);
-          std::list<AddAttribute>::list((std::list<AddAttribute> *const)&stu.lConstItems);
-          stu.nLevel = readFile.Search_Posistion( i_0, nIndex_0++)->iValue;
-          *(&stu.nLevel + 1) = readFile.Search_Posistion( i_0, nIndex_0++)->iValue;
-          
-          std::string::string(v34, "./ServerConfig/Tables/VipClubEquipPosSuit.txt", &v35);
-          
-          v5 = readFile.Search_Posistion( i_0, nIndex_0);
-          std::string::string(v36, v5->pString, &v37);
-          CfgData::parseAddAttribues(
-            (CfgData *const)&v33,
-            (const std::string *const)this,
-            (int32_t)v36,
-            (const std::string *const)(unsigned int)nIndex_0);
-          std::list<AddAttribute>::operator=((std::list<AddAttribute> *const)&stu.lConstItems, &v33);
-          std::list<AddAttribute>::~list(&v33);
-          
-          LODWORD(stu.lAttr._M_impl._M_node._M_next) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          HIDWORD(stu.lAttr._M_impl._M_node._M_next) = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
-          ++nIndex_0;
-          std::list<VipEQuipPosSuit>::push_back(&this->m_VipEQuipPosSuitList, (const VipEQuipPosSuit *const)&stu);
-          VipEQuipPosSuit::~VipEQuipPosSuit((VipEQuipPosSuit *const)&stu);
-        }
-        v4 = 1;
-      }
-      else
-      {
-        v4 = 0;
-      }
-    }
-    if ( v4 )
-    {
-      
-      if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ClubAim.txt") )
-      {
-        Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileVipClu);
-        v6 = 0;
-      }
-      else
-      {
-        iBaseTableCount_1 = readFile.GetRecordsNum();
-        iBaseColumnCount_1 = readFile.GetFieldsNum();
-        if ( iBaseColumnCount_1 > 0 )
-        {
-          for ( i_1 = 0; i_1 < iBaseTableCount_1; ++i_1 )
-          {
-            nIndex_1 = 0;
-            *(_QWORD *)&stu_0.nId = 0;
-            *(_QWORD *)&stu_0.nNeedCount = 0;
-            stu_0.nId = readFile.Search_Posistion( i_1, 0)->iValue;
-            stu_0.nNeedVipLevel = readFile.Search_Posistion( i_1, ++nIndex_1)->iValue;
-            stu_0.nNeedCount = readFile.Search_Posistion( i_1, ++nIndex_1)->iValue;
-            stu_0.nAddDropTimes = readFile.Search_Posistion( i_1, ++nIndex_1)->iValue;
-            ++nIndex_1;
-            std::list<ClbAimCfg>::push_back(&this->m_ClbAimCfgList, &stu_0);
-          }
-          v6 = 1;
-        }
-        else
-        {
-          v6 = 0;
-        }
-      }
-      if ( v6 )
-      {
-        
-        if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/VipClubLuckyDrop.txt") )
-        {
-          Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileVipClu_0);
-          v7 = 0;
-        }
-        else
-        {
-          iBaseTableCount_2 = readFile.GetRecordsNum();
-          iBaseColumnCount_2 = readFile.GetFieldsNum();
-          if ( iBaseColumnCount_2 > 0 )
-          {
-            for ( i_2 = 0; i_2 < iBaseTableCount_2; ++i_2 )
-            {
-              nIndex_2 = 0;
-              memset(&stu, 0, 28);
-              std::list<RateItem>::list((std::list<RateItem> *const)&stu.lConstItems);
-              *(&stu.nLevel + 1) = readFile.Search_Posistion( i_2, nIndex_2++)->iValue;
-              stu.nLevel = readFile.Search_Posistion( i_2, nIndex_2++)->iValue;
-              
-              v8 = readFile.Search_Posistion( i_2, nIndex_2);
-              std::string::string(v39, v8->pString, &v40);
-              CItemHelper::parseRateItemDataListString((const std::string *const)&v38);
-              std::list<RateItem>::operator=((std::list<RateItem> *const)&stu.lConstItems, &v38);
-              std::list<RateItem>::~list(&v38);
-              
-              LODWORD(stu.lAttr._M_impl._M_node._M_next) = readFile.Search_Posistion( i_2, ++nIndex_2)->iValue;
-              ++nIndex_2;
-              v9 = std::map<int,CVipClubLuckyDrop>::operator[](&this->m_CVipClubLuckyDropMap, &stu.nLevel);
-              CVipClubLuckyDrop::operator=(v9, (const CVipClubLuckyDrop *const)&stu);
-              CVipClubLuckyDrop::~CVipClubLuckyDrop((CVipClubLuckyDrop *const)&stu);
-            }
-            v7 = 1;
-          }
-          else
-          {
-            v7 = 0;
-          }
-        }
-        if ( v7 )
-        {
-          
-          if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ZhanHun.txt") )
-          {
-            Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileVipClu_0);
-            v10 = 0;
-          }
-          else
-          {
-            iBaseTableCount_3 = readFile.GetRecordsNum();
-            iBaseColumnCount_3 = readFile.GetFieldsNum();
-            if ( iBaseColumnCount_3 > 0 )
-            {
-              for ( i_3 = 0; i_3 < iBaseTableCount_3; ++i_3 )
-              {
-                nIndex_3 = 0;
-                memset(&stu, 0, 36);
-                std::list<AddAttribute>::list((std::list<AddAttribute> *const)&stu.lConstItems._M_impl._M_node._M_prev);
-                stu.nLevel = readFile.Search_Posistion( i_3, nIndex_3++)->iValue;
-                *(&stu.nLevel + 1) = readFile.Search_Posistion( i_3, nIndex_3++)->iValue;
-                LODWORD(stu.lConstItems._M_impl._M_node._M_next) = CDBCFile::Search_Posistion(
-                                                                     &readFile,
-                                                                     i_3,
-                                                                     nIndex_3++)->iValue;
-                
-                std::string::string(v42, "./ServerConfig/Tables/ZhanHun.txt", &v43);
-                
-                v11 = readFile.Search_Posistion( i_3, nIndex_3);
-                std::string::string(v44, v11->pString, &v45);
-                CfgData::parseAddAttribues(
-                  (CfgData *const)&v41,
-                  (const std::string *const)this,
-                  (int32_t)v44,
-                  (const std::string *const)(unsigned int)nIndex_3);
-                std::list<AddAttribute>::operator=(
-                  (std::list<AddAttribute> *const)&stu.lConstItems._M_impl._M_node._M_prev,
-                  &v41);
-                std::list<AddAttribute>::~list(&v41);
-                
-                ++nIndex_3;
-                nIndex_3 += 3;
-                LODWORD(stu.lAttr._M_impl._M_node._M_prev) = readFile.Search_Posistion( i_3, nIndex_3++)->iValue;
-                v12 = std::map<int,ZhanHunCfg>::operator[](&this->m_ZhanHunCfgMap, &stu.nLevel);
-                ZhanHunCfg::operator=(v12, (const ZhanHunCfg *const)&stu);
-                ZhanHunCfg::~ZhanHunCfg((ZhanHunCfg *const)&stu);
-              }
-              v10 = 1;
-            }
-            else
-            {
-              v10 = 0;
-            }
-          }
-          if ( v10 )
-          {
-            
-            if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/SunAndMoon.txt") )
-            {
-              Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileVipClu_0);
-              v13 = 0;
-            }
-            else
-            {
-              iBaseTableCount_4 = readFile.GetRecordsNum();
-              iBaseColumnCount_4 = readFile.GetFieldsNum();
-              if ( iBaseColumnCount_4 > 0 )
-              {
-                for ( i_4 = 0; i_4 < iBaseTableCount_4; ++i_4 )
-                {
-                  nIndex_4 = 0;
-                  memset(&stu, 0, sizeof(stu));
-                  std::list<ItemData>::list(&stu.lConstItems);
-                  std::list<AddAttribute>::list(&stu.lAttr);
-                  stu.nLevel = readFile.Search_Posistion( i_4, nIndex_4++)->iValue;
-                  
-                  v14 = readFile.Search_Posistion( i_4, nIndex_4);
-                  std::string::string(v47, v14->pString, &v48);
-                  CItemHelper::parseItemDataListString((const std::string *const)&v46, (bool)v47);
-                  std::list<ItemData>::operator=(&stu.lConstItems, &v46);
-                  std::list<ItemData>::~list(&v46);
-                  
-                  ++nIndex_4;
-                  
-                  std::string::string(v50, "./ServerConfig/Tables/SunAndMoon.txt", &v51);
-                  
-                  v15 = readFile.Search_Posistion( i_4, nIndex_4);
-                  std::string::string(v52, v15->pString, &v53);
-                  CfgData::parseAddAttribues(
-                    (CfgData *const)&v49,
-                    (const std::string *const)this,
-                    (int32_t)v52,
-                    (const std::string *const)(unsigned int)nIndex_4);
-                  std::list<AddAttribute>::operator=(&stu.lAttr, &v49);
-                  std::list<AddAttribute>::~list(&v49);
-                  
-                  stu.nGetItemTimes = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  stu.nSunTelentId = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  stu.nSunTelentLevel = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  stu.nMoonTelentId = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  stu.nMoonTelentLevel = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  ++nIndex_4;
-                  stu.nGongGaoId = readFile.Search_Posistion( i_4, ++nIndex_4)->iValue;
-                  ++nIndex_4;
-                  v16 = std::map<int,SunAndMoonCfg>::operator[](&this->m_SunAndMoonCfgMap, &stu.nLevel);
-                  SunAndMoonCfg::operator=(v16, &stu);
-                  /* SunAndMoonCfg::~SunAndMoonCfg(&stu); - auto cleanup */
-                }
-                v13 = 1;
-              }
-              else
-              {
-                v13 = 0;
-              }
-            }
-            if ( v13 )
-            {
-              
-              if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TreasureHunter.txt") )
-              {
-                Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, aOpenFileTreasu_2);
-              }
-              else
-              {
-                iBaseTableCount_5 = readFile.GetRecordsNum();
-                iBaseColumnCount_5 = readFile.GetFieldsNum();
-                if ( iBaseColumnCount_5 > 0 )
-                {
-                  for ( i_5 = 0; i_5 < iBaseTableCount_5; ++i_5 )
-                  {
-                    nIndex_5 = 0;
-                    memset(&stu, 0, 44);
-                    std::vector<MemChrBag>::vector((std::vector<MemChrBag> *const)&stu.lConstItems);
-                    stu.nLevel = readFile.Search_Posistion( i_5, nIndex_5++)->iValue;
-                    
-                    v17 = readFile.Search_Posistion( i_5, nIndex_5);
-                    v55.assign(v17->pString);
-                    CItemHelper::parseItemVectorString(&v54, &v55);
-                    std::vector<MemChrBag>::operator=((std::vector<MemChrBag> *const)&stu.lConstItems, &v54);
-                    std::vector<MemChrBag>::~vector(&v54);
-                    
-                    LODWORD(stu.lAttr._M_impl._M_node._M_prev) = readFile.Search_Posistion( i_5, ++nIndex_5)->iValue;
-                    ++nIndex_5;
-                    ++nIndex_5;
-                    HIDWORD(stu.lAttr._M_impl._M_node._M_prev) = readFile.Search_Posistion( i_5, ++nIndex_5)->iValue;
-                    stu.nGetItemTimes = readFile.Search_Posistion( i_5, ++nIndex_5)->iValue;
-                    ++nIndex_5;
-                    v18 = std::map<int,TreasureHunterCfg>::operator[](&this->m_TreasureHunterCfgMap, &stu.nLevel);
-                    TreasureHunterCfg::operator=(v18, (const TreasureHunterCfg *const)&stu);
-                    TreasureHunterCfg::~TreasureHunterCfg((TreasureHunterCfg *const)&stu);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+	// ===== VipClubEquipPos.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/VipClubEquipPos.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/VipClubEquipPos.txt failed, please check!!!");
+		return;
+	}
+
+	int32_t iBaseTableCount = readFile.GetRecordsNum();
+	int32_t iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		VipEquipPosLevelUp stu;
+		int32_t nIndex = 0;
+		stu.nPos = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nLevel = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nNeedVip = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCostGold = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_VipEquipPosLevelUpMap[std::make_pair(stu.nPos, stu.nLevel)] = stu;
+	}
+
+	// ===== VipClubEquipPosSuit.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/VipClubEquipPosSuit.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/VipClubEquipPosSuit.txt failed, please check!!!");
+		return;
+	}
+
+	iBaseTableCount = readFile.GetRecordsNum();
+	iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		VipEQuipPosSuit stu;
+		int32_t nIndex = 0;
+		stu.nSuitId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nCount = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		std::string attrStr = readFile.Search_Posistion(i, nIndex)->pString;
+		std::list<AddAttribute> attrs;
+		parseAttrAddon(attrs, attrStr, "./ServerConfig/Tables/VipClubEquipPosSuit.txt");
+		stu.nAttrRate = 0; // parsed from attr if needed
+		nIndex++;
+
+		stu.nTalentId = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		stu.TalentLevel = readFile.Search_Posistion(i, ++nIndex)->iValue;
+
+		m_VipEQuipPosSuitList.push_back(stu);
+	}
+
+	// ===== ClubAim.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/ClubAim.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/ClubAim.txt failed, please check!!!");
+		return;
+	}
+
+	iBaseTableCount = readFile.GetRecordsNum();
+	iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		ClbAimCfg stu;
+		stu.nId = readFile.Search_Posistion(i, 0)->iValue;
+		stu.nNeedVipLevel = readFile.Search_Posistion(i, 1)->iValue;
+		stu.nNeedCount = readFile.Search_Posistion(i, 2)->iValue;
+		stu.nAddDropTimes = readFile.Search_Posistion(i, 3)->iValue;
+		m_ClbAimCfgList.push_back(stu);
+	}
+
+	// ===== VipClubLuckyDrop.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/VipClubLuckyDrop.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/VipClubLuckyDrop.txt failed, please check!!!");
+		return;
+	}
+
+	iBaseTableCount = readFile.GetRecordsNum();
+	iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		CVipClubLuckyDrop stu;
+		int32_t nIndex = 0;
+		stu.nIndex = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nRate = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		std::string rateStr = readFile.Search_Posistion(i, nIndex)->pString;
+		CItemHelper::parseRateItemDataListString(stu.lRateItemList);
+		nIndex++;
+
+		stu.nTotalRate = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		m_CVipClubLuckyDropMap[stu.nIndex] = stu;
+	}
+
+	// ===== ZhanHun.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/ZhanHun.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/ZhanHun.txt failed, please check!!!");
+		return;
+	}
+
+	iBaseTableCount = readFile.GetRecordsNum();
+	iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		ZhanHunCfg stu;
+		int32_t nIndex = 0;
+		stu.nMoney = readFile.Search_Posistion(i, nIndex++)->iValue;
+		stu.nSyb = readFile.Search_Posistion(i, nIndex++)->iValue;
+		// skip a column
+		nIndex++;
+
+		std::string attrStr = readFile.Search_Posistion(i, nIndex)->pString;
+		parseAttrAddon(stu.lAddAttrs, attrStr, "./ServerConfig/Tables/ZhanHun.txt");
+		nIndex++;
+
+		// skip 3 columns + nGongGaoId
+		nIndex += 3;
+		stu.nGongGaoId = readFile.Search_Posistion(i, nIndex++)->iValue;
+		m_ZhanHunCfgMap[stu.nMoney] = stu;
+	}
+
+	// ===== SunAndMoon.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/SunAndMoon.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/SunAndMoon.txt failed, please check!!!");
+		return;
+	}
+
+	iBaseTableCount = readFile.GetRecordsNum();
+	iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		SunAndMoonCfg stu;
+		int32_t nIndex = 0;
+		stu.nLevel = 0; // key field - not in struct, map key is read from col 0
+
+		std::string itemStr = readFile.Search_Posistion(i, nIndex)->pString;
+		CItemHelper::parseItemDataListString(stu.lConstItems, false);
+		nIndex++;
+
+		std::string attrStr = readFile.Search_Posistion(i, nIndex)->pString;
+		parseAttrAddon(stu.lAttr, attrStr, "./ServerConfig/Tables/SunAndMoon.txt");
+		nIndex++;
+
+		stu.nGetItemTimes = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		stu.nSunTelentId = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		stu.nSunTelentLevel = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		stu.nMoonTelentId = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		stu.nMoonTelentLevel = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		nIndex++;
+		stu.nGongGaoId = readFile.Search_Posistion(i, ++nIndex)->iValue;
+
+		int32_t nKey = readFile.Search_Posistion(i, 0)->iValue;
+		m_SunAndMoonCfgMap[nKey] = stu;
+	}
+
+	// ===== TreasureHunter.txt =====
+	if (!readFile.OpenFromTXT("./ServerConfig/Tables/TreasureHunter.txt"))
+	{
+		LOG_ERROR("open ./ServerConfig/Tables/TreasureHunter.txt failed, please check!!!");
+		return;
+	}
+
+	iBaseTableCount = readFile.GetRecordsNum();
+	iBaseColumnCount = readFile.GetFieldsNum();
+	if (iBaseColumnCount <= 0)
+		return;
+
+	for (int32_t i = 0; i < iBaseTableCount; ++i)
+	{
+		TreasureHunterCfg stu;
+		int32_t nIndex = 0;
+		stu.nId = readFile.Search_Posistion(i, nIndex++)->iValue;
+
+		std::string itemStr = readFile.Search_Posistion(i, nIndex)->pString;
+		CItemHelper::parseItemVectorString(stu.Items, &itemStr);
+		nIndex++;
+
+		stu.nRequire = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		nIndex++;
+		stu.GongGaoId = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		stu.nType = readFile.Search_Posistion(i, ++nIndex)->iValue;
+		nIndex++;
+		m_TreasureHunterCfgMap[stu.nId] = stu;
+	}
 }
 
 //#####################################
 const TreasureHunterCfg *CfgData::GetTreasureHunterCfg(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,TreasureHunterCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,TreasureHunterCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,TreasureHunterCfg>::find(&this->m_TreasureHunterCfgMap, &nIda)._M_node;
-  __x._M_node = std::map<int,TreasureHunterCfg>::end(&thisa->m_TreasureHunterCfgMap)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,TreasureHunterCfg> > it;
+  std::_Rb_tree_const_iterator<std::pair<const int,TreasureHunterCfg> > __x;
+
+  
+  auto it = m_TreasureHunterCfgMap.find(nIda);
+  auto __x = m_TreasureHunterCfgMap.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,TreasureHunterCfg>>::operator!=(&it, &__x) )
     return &std::_Rb_tree_const_iterator<std::pair<int const,TreasureHunterCfg>>::operator->(&it)->second;
   else
@@ -15857,15 +14213,13 @@ const TreasureHunterCfg *CfgData::GetTreasureHunterCfg(int32_t nId)
 //#####################################
 const SunAndMoonCfg *CfgData::GetSunAndMoonCfg(int32_t nLevel)
 {
-  int32_t nLevela; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,SunAndMoonCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,SunAndMoonCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nLevela = nLevel;
-  it._M_node = std::map<int,SunAndMoonCfg>::find(&this->m_SunAndMoonCfgMap, &nLevela)._M_node;
-  __x._M_node = std::map<int,SunAndMoonCfg>::end(&thisa->m_SunAndMoonCfgMap)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,SunAndMoonCfg> > it;
+  std::_Rb_tree_const_iterator<std::pair<const int,SunAndMoonCfg> > __x;
+
+  auto it = m_SunAndMoonCfgMap.find(nLevela);
+  auto __x = m_SunAndMoonCfgMap.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,SunAndMoonCfg>>::operator!=(&it, &__x) )
     return &std::_Rb_tree_const_iterator<std::pair<int const,SunAndMoonCfg>>::operator->(&it)->second;
   else
@@ -15875,15 +14229,13 @@ const SunAndMoonCfg *CfgData::GetSunAndMoonCfg(int32_t nLevel)
 //#####################################
 const ZhanHunCfg *CfgData::GetZhanHunCfg(int32_t nLevel)
 {
-  int32_t nLevela; // [rsp+4h] [rbp-2Ch] BYREF
-  const CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_const_iterator<std::pair<const int,ZhanHunCfg> > iter; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,ZhanHunCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
 
-  thisa = this;
-  nLevela = nLevel;
-  iter._M_node = std::map<int,ZhanHunCfg>::find(&this->m_ZhanHunCfgMap, &nLevela)._M_node;
-  __x._M_node = std::map<int,ZhanHunCfg>::end(&thisa->m_ZhanHunCfgMap)._M_node;
+  const CfgData *thisa;
+  std::_Rb_tree_const_iterator<std::pair<const int,ZhanHunCfg> > iter;
+  std::_Rb_tree_const_iterator<std::pair<const int,ZhanHunCfg> > __x;
+
+  auto iter = m_ZhanHunCfgMap.find(nLevela);
+  auto __x = m_ZhanHunCfgMap.end();
   if ( std::_Rb_tree_const_iterator<std::pair<int const,ZhanHunCfg>>::operator!=(&iter, &__x) )
     return &std::_Rb_tree_const_iterator<std::pair<int const,ZhanHunCfg>>::operator->(&iter)->second;
   else
@@ -15894,33 +14246,23 @@ const ZhanHunCfg *CfgData::GetZhanHunCfg(int32_t nLevel)
 const VipEquipPosLevelUp *CfgData::GetVipEquipPosLevelUp(int32_t nSlot,
         int32_t nLevel)
 {
-  std::_Rb_tree_const_iterator<std::pair<const std::pair<int,int>,VipEquipPosLevelUp> > iter; // [rsp+10h] [rbp-30h] BYREF
-  std::pair<int,int> __x; // [rsp+20h] [rbp-20h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const std::pair<int,int>,VipEquipPosLevelUp> > v6; // [rsp+30h] [rbp-10h] BYREF
-
-  __x = std::make_pair<int,int>(nSlot, nLevel);
-  iter._M_node = std::map<std::pair<int,int>,VipEquipPosLevelUp>::find(&this->m_VipEquipPosLevelUpMap, &__x)._M_node;
-  v6._M_node = std::map<std::pair<int,int>,VipEquipPosLevelUp>::end(&this->m_VipEquipPosLevelUpMap)._M_node;
-  if ( std::_Rb_tree_const_iterator<std::pair<std::pair const<int,int>,VipEquipPosLevelUp>>::operator!=(&iter, &v6) )
-    return (const VipEquipPosLevelUp *)((char *)std::_Rb_tree_const_iterator<std::pair<std::pair const<int,int>,VipEquipPosLevelUp>>::operator->(&iter)
-                                      + 8);
-  else
-    return 0;
+	auto it = m_VipEquipPosLevelUpMap.find(std::make_pair(nSlot, nLevel));
+	if (it != m_VipEquipPosLevelUpMap.end())
+		return &it->second;
+	return NULL;
 }
 
 #if 0 // replaced by hand-written version at end of file
 //#####################################
 const VipEQuipPosSuit *CfgData::GetVipEQuipPosSuit(int32_t nLevel)
 {
-  const VipEQuipPosSuit *v2; // rax
-  std::reverse_iterator<std::_List_const_iterator<VipEQuipPosSuit> > v4; // [rsp+0h] [rbp-40h] BYREF
-  int32_t nLevela; // [rsp+14h] [rbp-2Ch]
-  const CfgData *thisa; // [rsp+18h] [rbp-28h]
-  std::reverse_iterator<std::_List_const_iterator<VipEQuipPosSuit> > it; // [rsp+20h] [rbp-20h] BYREF
-  std::list<VipEQuipPosSuit> v8; // [rsp+30h] [rbp-10h] BYREF
+  const VipEQuipPosSuit *v2;
+  std::reverse_iterator<std::_List_const_iterator<VipEQuipPosSuit> > v4;
 
-  thisa = this;
-  nLevela = nLevel;
+  const CfgData *thisa;
+  std::reverse_iterator<std::_List_const_iterator<VipEQuipPosSuit> > it;
+  std::list<VipEQuipPosSuit> v8;
+
   std::list<VipEQuipPosSuit>::rbegin((const std::list<VipEQuipPosSuit> *const)&it);
   while ( 1 )
   {
@@ -15941,42 +14283,29 @@ const VipEQuipPosSuit *CfgData::GetVipEQuipPosSuit(int32_t nLevel)
 //#####################################
 const CVipClubLuckyDrop *CfgData::GetCVipClubLuckyDrop(int32_t nCondition)
 {
-  int32_t nConditiona; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CVipClubLuckyDrop> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CVipClubLuckyDrop> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nConditiona = nCondition;
-  it._M_node = std::map<int,CVipClubLuckyDrop>::find(&this->m_CVipClubLuckyDropMap, &nConditiona)._M_node;
-  __x._M_node = std::map<int,CVipClubLuckyDrop>::end(&thisa->m_CVipClubLuckyDropMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CVipClubLuckyDrop>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CVipClubLuckyDrop>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_CVipClubLuckyDropMap.find(nCondition);
+	if (it != m_CVipClubLuckyDropMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitMysteryShopTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  int64_t v3; // rax
-  MemChrBag v4; // [rsp+0h] [rbp-150h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-128h]
-  CDBCFile readFile(0); // [rsp+30h] [rbp-120h] BYREF
-  CfgMysteryShop stu; // [rsp+C0h] [rbp-90h] BYREF
-  std::string strItem; // [rsp+110h] [rbp-40h] BYREF
-  char v9; // [rsp+11Fh] [rbp-31h] BYREF
-  std::string v10; // [rsp+120h] [rbp-30h] BYREF
-  char v11; // [rsp+12Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+130h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+134h] [rbp-1Ch]
-  int32_t i; // [rsp+138h] [rbp-18h]
-  int32_t nIndex; // [rsp+13Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  MemChrBag v4;
+
+  CDBCFile readFile(0);
+  CfgMysteryShop stu;
+  std::string strItem;
+  std::string v10;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
   ItemData v17; // 0:kr00_12.12
 
-  thisa = this;
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/MysteriousShop.txt") )
   {
@@ -15997,7 +14326,7 @@ void CfgData::InitMysteryShopTable()
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         CItemHelper::parseItemString(&v4, &strItem);
         stu.item = v4;
         
@@ -16011,15 +14340,15 @@ void CfgData::InitMysteryShopTable()
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        v10.assign(v2->pString);
+        v10 = v2->pString;
         v17 = CItemHelper::parseItemDataString(&v10);
-        LODWORD(v3) = v17.m_nId;
+        v3 = v17.m_nId;
         BYTE4(v3) = v17.m_nClass;
         *(_QWORD *)&stu.exchange.m_nId = v3;
         stu.exchange.m_nCount = v17.m_nCount;
         
         ++nIndex;
-        CfgMysteryShopTable::Add(&thisa->m_cfgMysteryShopTable, &stu);
+        CfgMysteryShopTable::Add(&m_cfgMysteryShopTable, &stu);
       }
     }
   }
@@ -16028,16 +14357,15 @@ void CfgData::InitMysteryShopTable()
 //#####################################
 void CfgData::InitQQZoneRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgQQGift gift; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v6; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile TabFile(0);
+  CfgQQGift gift;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/QQZone.txt") )
@@ -16053,21 +14381,19 @@ void CfgData::InitQQZoneRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgQQGift::CfgQQGift(&gift);
         gift.nIndex = TabFile.Search_Posistion( i, nIndex++)->iValue;
         gift.nType = TabFile.Search_Posistion( i, nIndex++)->iValue;
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&gift.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        gift.vReward = __x;
         
         gift.nCondition = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgTencentTable::AddQQZoneGift(&this->m_cfgTencentTable, &gift);
-        /* CfgQQGift::~CfgQQGift(&gift); - auto cleanup */
+        m_cfgTencentTable.AddQQZoneGift(gift);
+
       }
     }
   }
@@ -16076,18 +14402,17 @@ void CfgData::InitQQZoneRewardTable()
 //#####################################
 void CfgData::InitRefreshMonsterCfgListMap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::list<RefreshMonsterCfg> *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-120h] BYREF
-  RefreshMonsterCfg stu; // [rsp+A0h] [rbp-90h] BYREF
-  int32_t nActId; // [rsp+DCh] [rbp-54h] BYREF
-  std::vector<Position> __x; // [rsp+E0h] [rbp-50h] BYREF
-  std::string strPos; // [rsp+100h] [rbp-30h] BYREF
-  char v8; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::list<RefreshMonsterCfg> *v2;
+  CDBCFile readFile(0);
+  RefreshMonsterCfg stu;
+  int32_t nActId;
+  std::vector<Position> __x;
+  std::string strPos;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ActivityServer.txt") )
@@ -16115,326 +14440,189 @@ void CfgData::InitRefreshMonsterCfgListMap()
         ++nIndex;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strPos.assign(v1->pString);
+        strPos = v1->pString;
         CfgData::paresPosition(&__x, this, &strPos);
-        std::vector<Position>::operator=(&stu.vRevivePosVector, &__x);
-        std::vector<Position>::~vector(&__x);
+        stu.vRevivePosVector = __x;
         
         stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         v2 = std::map<int,std::list<RefreshMonsterCfg>>::operator[](&this->m_RefreshMonsterCfgListMap, &nActId);
         std::list<RefreshMonsterCfg>::push_back(v2, &stu);
-        /* RefreshMonsterCfg::~RefreshMonsterCfg(&stu); - auto cleanup */
+
       }
     }
   }
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 #if 0 // replaced by hand-written version at end of file
 RefreshMonsterCfgList CfgData::GetRefreshMonsterCfgList(int32_t nActId)
 {
-  int32_t v2; // edx
-  std::pair<const int,std::list<RefreshMonsterCfg> > *v3; // rax
-  RefreshMonsterCfgList result; // rax
-  int32_t nActIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  RefreshMonsterCfgList stu; // [rsp+10h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<RefreshMonsterCfg> > > it; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<RefreshMonsterCfg> > > __x; // [rsp+30h] [rbp-20h] BYREF
-
-  thisa = *(CfgData **)&nActId;
-  nActIda = v2;
-  it._M_node = std::map<int,std::list<RefreshMonsterCfg>>::find(
-                 (std::map<int,std::list<RefreshMonsterCfg>> *const)(*(_QWORD *)&nActId + 14168LL),
-                 &nActIda)._M_node;
-  __x._M_node = std::map<int,std::list<RefreshMonsterCfg>>::end(&thisa->m_RefreshMonsterCfgListMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<RefreshMonsterCfg>>>::operator!=(&it, &__x) )
-  {
-    v3 = std::_Rb_tree_iterator<std::pair<int const,std::list<RefreshMonsterCfg>>>::operator->(&it);
-    std::list<RefreshMonsterCfg>::list((std::list<RefreshMonsterCfg> *const)this, &v3->second);
-  }
-  else
-  {
-    std::list<RefreshMonsterCfg>::list(&stu);
-    std::list<RefreshMonsterCfg>::list((std::list<RefreshMonsterCfg> *const)this, &stu);
-    std::list<RefreshMonsterCfg>::~list(&stu);
-  }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	RefreshMonsterCfgList result;
+	auto it = m_RefreshMonsterCfgMap.find(nActId);
+	if (it != m_RefreshMonsterCfgMap.end())
+		result = it->second;
+	return result;
 }
 #endif // replaced by hand-written version
 
 //#####################################
 void CfgData::fetchItem(bool bSend)
 {
-  CfgItem *v2; // rbx
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  CfgItem *v5; // rbx
-  CfgItem *v6; // rbx
-  CfgItem *v7; // rbx
-  CfgItem *v8; // rbx
-  CfgItem *v9; // rbx
-  CfgItem *v10; // rbx
-  CfgItem *v11; // rbx
-  CfgItem *v12; // rbx
-  CfgItem *v13; // rbx
-  const CDBCFile::FIELD *v14; // rax
-  const CDBCFile::FIELD *v15; // rax
-  const CDBCFile::FIELD *v16; // rax
-  const CDBCFile::FIELD *v17; // rax
-  CfgItem *v18; // rbx
-  CfgItem *v19; // rbx
-  CfgItem *v20; // rbx
-  CfgItem *v21; // rbx
-  CfgItem *v22; // rbx
-  CfgItem *v23; // rbx
-  CfgItem *v24; // rbx
-  CfgItem *v25; // rbx
-  CfgItem *v26; // rbx
-  CfgItem *v27; // rbx
-  CfgItem *v28; // rbx
-  CfgItem *v29; // rbx
-  CfgItem *v30; // rbx
-  CfgItem *v31; // rbx
-  CfgItem *v32; // rbx
-  const CDBCFile::FIELD *v33; // rax
-  CfgItem **v34; // rax
-  CfgItemGiftVector *v36; // rbx
-  CfgItemGiftVector **v37; // rax
-  CfgItemGiftRandomVector *v38; // rbx
-  CfgItemGiftRandomVector **v39; // rax
-  CDBCFile ItemGiftRandFile(0); // [rsp+20h] [rbp-310h] BYREF
-  CDBCFile ItemGiftFile(0); // [rsp+B0h] [rbp-280h] BYREF
-  CDBCFile ItemFile(0); // [rsp+140h] [rbp-1F0h] BYREF
-  CfgItemTable newItems; // [rsp+1D0h] [rbp-160h] BYREF
-  CfgItemGiftRandom itemGiftRandom; // [rsp+200h] [rbp-130h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgItemGiftRandomVector*> > it; // [rsp+230h] [rbp-100h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgItemGiftVector*> > it_0; // [rsp+240h] [rbp-F0h] BYREF
-  CfgItemGift itemGift; // [rsp+250h] [rbp-E0h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgItem*> > it_1; // [rsp+270h] [rbp-C0h] BYREF
-  CfgItem *pItem; // [rsp+278h] [rbp-B8h] BYREF
-  std::string str; // [rsp+280h] [rbp-B0h] BYREF
-  char v51; // [rsp+28Fh] [rbp-A1h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgItem*> > __x; // [rsp+290h] [rbp-A0h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const int,CfgItem*> >,bool> v53; // [rsp+2A0h] [rbp-90h]
-  std::pair<const int,CfgItem*> v54; // [rsp+2B0h] [rbp-80h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgItemGiftVector*> > v55; // [rsp+2C0h] [rbp-70h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgItemGiftRandomVector*> > v56; // [rsp+2D0h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+2E4h] [rbp-4Ch]
-  int32_t iBaseColumnCount; // [rsp+2E8h] [rbp-48h]
-  int32_t iBaseTableCount_Gift; // [rsp+2F0h] [rbp-40h]
-  int32_t iBaseColumnCount_Gift; // [rsp+2F4h] [rbp-3Ch]
-  int32_t iBaseTableCount_GiftRand; // [rsp+2FCh] [rbp-34h]
-  int32_t iBaseColumnCount_GiftRand; // [rsp+300h] [rbp-30h]
-  int32_t i_1; // [rsp+304h] [rbp-2Ch]
-  int32_t i_0; // [rsp+308h] [rbp-28h]
-  int32_t i; // [rsp+30Ch] [rbp-24h]
+	CfgItemTable newItems;
+	Answer::RwLock::wrlock(&this->m_itemsLock);
 
-  std::map<int,CfgItem *>::map(&newItems);
-  Answer::RwLock::wrlock(&this->m_itemsLock);
-  
-  if ( !ItemFile.OpenFromTXT( "./ServerConfig/Tables/cfg_item.txt") )
-  {
-    Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open cfg_item.txt failed,please check!!");
-  }
-  else
-  {
-    iBaseTableCount = ItemFile.GetRecordsNum();
-    iBaseColumnCount = ItemFile.GetFieldsNum();
-    if ( iBaseColumnCount > 0 )
-    {
-      for ( i_1 = 0; i_1 < iBaseTableCount; ++i_1 )
-      {
-        v2 = (CfgItem *)operator new(0xA0u);
-        CfgItem::CfgItem(v2);
-        pItem = v2;
-        v2->id = ItemFile.Search_Posistion( i_1, 0)->iValue;
-        v3 = ItemFile.Search_Posistion( i_1, 1);
-        std::string::operator=(&pItem->name, v3->pString);
-        v4 = ItemFile.Search_Posistion( i_1, 3);
-        std::string::operator=(&pItem->desc, v4->pString);
-        v5 = pItem;
-        v5->type = ItemFile.Search_Posistion( i_1, 4)->iValue;
-        v6 = pItem;
-        v6->level = ItemFile.Search_Posistion( i_1, 5)->iValue;
-        v7 = pItem;
-        v7->grade = ItemFile.Search_Posistion( i_1, 6)->iValue;
-        v8 = pItem;
-        v8->job = ItemFile.Search_Posistion( i_1, 7)->iValue;
-        v9 = pItem;
-        v9->in_value = ItemFile.Search_Posistion( i_1, 8)->iValue;
-        v10 = pItem;
-        v10->out_value = ItemFile.Search_Posistion( i_1, 9)->iValue;
-        v11 = pItem;
-        v11->bind = ItemFile.Search_Posistion( i_1, 10)->iValue;
-        v12 = pItem;
-        v12->combine = ItemFile.Search_Posistion( i_1, 11)->iValue;
-        v13 = pItem;
-        v13->quality = ItemFile.Search_Posistion( i_1, 12)->iValue;
-        v14 = ItemFile.Search_Posistion( i_1, 13);
-        std::string::operator=(&pItem->url, v14->pString);
-        v15 = ItemFile.Search_Posistion( i_1, 14);
-        std::string::operator=(&pItem->drop_url, v15->pString);
-        v16 = ItemFile.Search_Posistion( i_1, 15);
-        std::string::operator=(&pItem->effect, v16->pString);
-        v17 = ItemFile.Search_Posistion( i_1, 16);
-        std::string::operator=(&pItem->use_method, v17->pString);
-        v18 = pItem;
-        v18->downgrade = ItemFile.Search_Posistion( i_1, 19)->iValue;
-        v19 = pItem;
-        v19->group_id = ItemFile.Search_Posistion( i_1, 20)->iValue;
-        v20 = pItem;
-        v20->cd_group = ItemFile.Search_Posistion( i_1, 21)->iValue;
-        v21 = pItem;
-        v21->overlay = ItemFile.Search_Posistion( i_1, 22)->iValue;
-        v22 = pItem;
-        v22->can_sell = ItemFile.Search_Posistion( i_1, 23)->iValue;
-        v23 = pItem;
-        v23->broadcast = ItemFile.Search_Posistion( i_1, 24)->iValue;
-        v24 = pItem;
-        v24->valid_time = ItemFile.Search_Posistion( i_1, 25)->iValue;
-        v25 = pItem;
-        v25->item_Grade = ItemFile.Search_Posistion( i_1, 26)->iValue;
-        v26 = pItem;
-        v26->CanDrop = ItemFile.Search_Posistion( i_1, 32)->iValue;
-        v27 = pItem;
-        v27->useBroadcast = ItemFile.Search_Posistion( i_1, 33)->iValue;
-        v28 = pItem;
-        v28->useInCarrier = ItemFile.Search_Posistion( i_1, 35)->iValue;
-        v29 = pItem;
-        v29->GongGaoId = ItemFile.Search_Posistion( i_1, 40)->iValue;
-        v30 = pItem;
-        v30->KunLingJingHua = ItemFile.Search_Posistion( i_1, 42)->iValue;
-        v31 = pItem;
-        v31->XinMoBag = ItemFile.Search_Posistion( i_1, 43)->iValue;
-        v32 = pItem;
-        
-        v33 = ItemFile.Search_Posistion( i_1, 44);
-        str.assign(v33->pString);
-        v32->RongHeReceovery = CfgData::paraseParam2(this, &str);
-        
-        it_1._M_node = std::map<int,CfgItem *>::find(&this->m_items, &pItem->id)._M_node;
-        __x._M_node = std::map<int,CfgItem *>::end(&this->m_items)._M_node;
-        if ( std::_Rb_tree_iterator<std::pair<int const,CfgItem *>>::operator==(&it_1, &__x) )
-        {
-          std::pair<int const,CfgItem *>::pair(&v54, &pItem->id, &pItem);
-          v53 = std::map<int,CfgItem *>::insert(&newItems, &v54);
-        }
-        v34 = std::map<int,CfgItem *>::operator[](&this->m_items, &pItem->id);
-        *v34 = pItem;
-      }
-      Answer::RwLock::unlock(&this->m_itemsLock);
-      if ( !std::map<int,CfgItem *>::empty(&newItems) && bSend )
-        CfgData::sendNewItems(this, &newItems);
-      Answer::RwLock::wrlock(&this->m_itemGiftsLock);
-      std::map<int,std::vector<CfgItemGift> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGift> *>>>::clear(&this->m_itemGifts);
-      
-      if ( !ItemGiftFile.OpenFromTXT( "./ServerConfig/Tables/cfg_item_gift.txt") )
-      {
-        Answer::Logger::print(Answer::LogLevel::LOG_LEVEL_ERROR, "open cfg_item_gift.txt failed,please check!!");
-      }
-      else
-      {
-        iBaseTableCount_Gift = ItemGiftFile.GetRecordsNum();
-        iBaseColumnCount_Gift = ItemGiftFile.GetFieldsNum();
-        if ( iBaseColumnCount_Gift > 0 )
-        {
-          for ( i_0 = 0; i_0 < iBaseTableCount_Gift; ++i_0 )
-          {
-            memset(&itemGift, 0, sizeof(itemGift));
-            itemGift.id = ItemGiftFile.Search_Posistion( i_0, 0)->iValue;
-            itemGift.item = ItemGiftFile.Search_Posistion( i_0, 2)->iValue;
-            itemGift.type = ItemGiftFile.Search_Posistion( i_0, 3)->iValue;
-            itemGift.count = ItemGiftFile.Search_Posistion( i_0, 4)->iValue;
-            itemGift.bind = ItemGiftFile.Search_Posistion( i_0, 5)->iValue;
-            itemGift.job = ItemGiftFile.Search_Posistion( i_0, 6)->iValue;
-            itemGift.time = ItemGiftFile.Search_Posistion( i_0, 7)->iValue;
-            it_0._M_node = std::map<int,std::vector<CfgItemGift> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGift> *>>>::find(
-                             &this->m_itemGifts,
-                             &itemGift.id)._M_node;
-            v55._M_node = std::map<int,std::vector<CfgItemGift> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGift> *>>>::end(&this->m_itemGifts)._M_node;
-            if ( std::_Rb_tree_iterator<std::pair<int const,std::vector<CfgItemGift> *>>::operator==(&it_0, &v55) )
-            {
-              v36 = (CfgItemGiftVector *)operator new(0x18u);
-              std::vector<CfgItemGift>::vector(v36);
-              *std::map<int,std::vector<CfgItemGift> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGift> *>>>::operator[](
-                 &this->m_itemGifts,
-                 &itemGift.id) = v36;
-            }
-            v37 = std::map<int,std::vector<CfgItemGift> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGift> *>>>::operator[](
-                    &this->m_itemGifts,
-                    &itemGift.id);
-            std::vector<CfgItemGift>::push_back(*v37, &itemGift);
-          }
-          Answer::RwLock::unlock(&this->m_itemGiftsLock);
-          Answer::RwLock::wrlock(&this->m_itemGiftRandomsLock);
-          std::map<int,std::vector<CfgItemGiftRandom> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGiftRandom> *>>>::clear(&this->m_itemGiftRandoms);
-          
-          if ( !ItemGiftRandFile.OpenFromTXT( "./ServerConfig/Tables/cfg_item_gift_random.txt") )
-          {
-            Answer::Logger::print(
-              Answer::LogLevel::LOG_LEVEL_ERROR,
-              "open cfg_item_gift_random.txt failed,please check!!");
-          }
-          else
-          {
-            iBaseTableCount_GiftRand = ItemGiftRandFile.GetRecordsNum();
-            iBaseColumnCount_GiftRand = ItemGiftRandFile.GetFieldsNum();
-            if ( iBaseColumnCount_GiftRand > 0 )
-            {
-              for ( i = 0; i < iBaseTableCount_GiftRand; ++i )
-              {
-                itemGiftRandom.id = ItemGiftRandFile.Search_Posistion( i, 0)->iValue;
-                itemGiftRandom.item = ItemGiftRandFile.Search_Posistion( i, 1)->iValue;
-                itemGiftRandom.type = ItemGiftRandFile.Search_Posistion( i, 2)->iValue;
-                itemGiftRandom.count = ItemGiftRandFile.Search_Posistion( i, 3)->iValue;
-                itemGiftRandom.bind = ItemGiftRandFile.Search_Posistion( i, 4)->iValue;
-                itemGiftRandom.static_probability = ItemGiftRandFile.Search_Posistion( i, 5)->iValue;
-                itemGiftRandom.sum_probability = ItemGiftRandFile.Search_Posistion( i, 6)->iValue;
-                itemGiftRandom.job = ItemGiftRandFile.Search_Posistion( i, 7)->iValue;
-                itemGiftRandom.MinLevel = ItemGiftRandFile.Search_Posistion( i, 8)->iValue;
-                itemGiftRandom.MaxLevel = ItemGiftRandFile.Search_Posistion( i, 9)->iValue;
-                it._M_node = std::map<int,std::vector<CfgItemGiftRandom> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGiftRandom> *>>>::find(
-                               &this->m_itemGiftRandoms,
-                               &itemGiftRandom.id)._M_node;
-                v56._M_node = std::map<int,std::vector<CfgItemGiftRandom> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGiftRandom> *>>>::end(&this->m_itemGiftRandoms)._M_node;
-                if ( std::_Rb_tree_iterator<std::pair<int const,std::vector<CfgItemGiftRandom> *>>::operator==(
-                       &it,
-                       &v56) )
-                {
-                  v38 = (CfgItemGiftRandomVector *)operator new(0x18u);
-                  std::vector<CfgItemGiftRandom>::vector(v38);
-                  *std::map<int,std::vector<CfgItemGiftRandom> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGiftRandom> *>>>::operator[](
-                     &this->m_itemGiftRandoms,
-                     &itemGiftRandom.id) = v38;
-                }
-                v39 = std::map<int,std::vector<CfgItemGiftRandom> *,std::less<int>,std::allocator<std::pair<int const,std::vector<CfgItemGiftRandom> *>>>::operator[](
-                        &this->m_itemGiftRandoms,
-                        &itemGiftRandom.id);
-                std::vector<CfgItemGiftRandom>::push_back(*v39, &itemGiftRandom);
-              }
-              Answer::RwLock::unlock(&this->m_itemGiftRandomsLock);
-            }
-          }
-        }
-      }
-    }
-  }
-  std::map<int,CfgItem *>::~map(&newItems);
+	CDBCFile ItemFile(0);
+	if (!ItemFile.OpenFromTXT("./ServerConfig/Tables/cfg_item.txt"))
+	{
+		LOG_ERROR("open cfg_item.txt failed,please check!!");
+	}
+	else
+	{
+		int32_t iBaseTableCount = ItemFile.GetRecordsNum();
+		int32_t iBaseColumnCount = ItemFile.GetFieldsNum();
+		if (iBaseColumnCount > 0)
+		{
+			for (int32_t i = 0; i < iBaseTableCount; ++i)
+			{
+				CfgItem* pItem = new CfgItem();
+				pItem->id = ItemFile.Search_Posistion(i, 0)->iValue;
+				pItem->name = ItemFile.Search_Posistion(i, 1)->pString;
+				pItem->desc = ItemFile.Search_Posistion(i, 3)->pString;
+				pItem->type = ItemFile.Search_Posistion(i, 4)->iValue;
+				pItem->level = ItemFile.Search_Posistion(i, 5)->iValue;
+				pItem->grade = ItemFile.Search_Posistion(i, 6)->iValue;
+				pItem->job = ItemFile.Search_Posistion(i, 7)->iValue;
+				pItem->in_value = ItemFile.Search_Posistion(i, 8)->iValue;
+				pItem->out_value = ItemFile.Search_Posistion(i, 9)->iValue;
+				pItem->bind = ItemFile.Search_Posistion(i, 10)->iValue;
+				pItem->combine = ItemFile.Search_Posistion(i, 11)->iValue;
+				pItem->quality = ItemFile.Search_Posistion(i, 12)->iValue;
+				pItem->url = ItemFile.Search_Posistion(i, 13)->pString;
+				pItem->drop_url = ItemFile.Search_Posistion(i, 14)->pString;
+				pItem->effect = ItemFile.Search_Posistion(i, 15)->pString;
+				pItem->use_method = ItemFile.Search_Posistion(i, 16)->pString;
+				pItem->downgrade = ItemFile.Search_Posistion(i, 19)->iValue;
+				pItem->group_id = ItemFile.Search_Posistion(i, 20)->iValue;
+				pItem->cd_group = ItemFile.Search_Posistion(i, 21)->iValue;
+				pItem->overlay = ItemFile.Search_Posistion(i, 22)->iValue;
+				pItem->can_sell = ItemFile.Search_Posistion(i, 23)->iValue;
+				pItem->broadcast = ItemFile.Search_Posistion(i, 24)->iValue;
+				pItem->valid_time = ItemFile.Search_Posistion(i, 25)->iValue;
+				pItem->item_Grade = ItemFile.Search_Posistion(i, 26)->iValue;
+				pItem->CanDrop = ItemFile.Search_Posistion(i, 32)->iValue;
+				pItem->useBroadcast = ItemFile.Search_Posistion(i, 33)->iValue;
+				pItem->useInCarrier = ItemFile.Search_Posistion(i, 35)->iValue;
+				pItem->GongGaoId = ItemFile.Search_Posistion(i, 40)->iValue;
+				pItem->KunLingJingHua = ItemFile.Search_Posistion(i, 42)->iValue;
+				pItem->XinMoBag = ItemFile.Search_Posistion(i, 43)->iValue;
+
+				std::string str = ItemFile.Search_Posistion(i, 44)->pString;
+				pItem->RongHeReceovery = parseInt32List(str);
+
+				auto it = m_items.find(pItem->id);
+				if (it == m_items.end())
+				{
+					newItems.insert(std::make_pair(pItem->id, pItem));
+				}
+				m_items[pItem->id] = pItem;
+			}
+			Answer::RwLock::unlock(&this->m_itemsLock);
+			if (!newItems.empty() && bSend)
+				sendNewItems(newItems);
+
+			// ===== Item Gift =====
+			Answer::RwLock::wrlock(&this->m_itemGiftsLock);
+			m_itemGifts.clear();
+
+			CDBCFile ItemGiftFile(0);
+			if (!ItemGiftFile.OpenFromTXT("./ServerConfig/Tables/cfg_item_gift.txt"))
+			{
+				LOG_ERROR("open cfg_item_gift.txt failed,please check!!");
+			}
+			else
+			{
+				int32_t iBaseTableCount_Gift = ItemGiftFile.GetRecordsNum();
+				int32_t iBaseColumnCount_Gift = ItemGiftFile.GetFieldsNum();
+				if (iBaseColumnCount_Gift > 0)
+				{
+					for (int32_t i = 0; i < iBaseTableCount_Gift; ++i)
+					{
+						CfgItemGift itemGift;
+						memset(&itemGift, 0, sizeof(itemGift));
+						itemGift.id = ItemGiftFile.Search_Posistion(i, 0)->iValue;
+						itemGift.item = ItemGiftFile.Search_Posistion(i, 2)->iValue;
+						itemGift.type = ItemGiftFile.Search_Posistion(i, 3)->iValue;
+						itemGift.count = ItemGiftFile.Search_Posistion(i, 4)->iValue;
+						itemGift.bind = ItemGiftFile.Search_Posistion(i, 5)->iValue;
+						itemGift.job = ItemGiftFile.Search_Posistion(i, 6)->iValue;
+						itemGift.time = ItemGiftFile.Search_Posistion(i, 7)->iValue;
+
+						auto it = m_itemGifts.find(itemGift.id);
+						if (it == m_itemGifts.end())
+						{
+							CfgItemGiftVector* vec = new CfgItemGiftVector();
+							m_itemGifts[itemGift.id] = vec;
+						}
+						m_itemGifts[itemGift.id]->push_back(itemGift);
+					}
+
+					// ===== Item Gift Random =====
+					Answer::RwLock::unlock(&this->m_itemGiftsLock);
+					Answer::RwLock::wrlock(&this->m_itemGiftRandomsLock);
+					m_itemGiftRandoms.clear();
+
+					CDBCFile ItemGiftRandFile(0);
+					if (!ItemGiftRandFile.OpenFromTXT("./ServerConfig/Tables/cfg_item_gift_random.txt"))
+					{
+						LOG_ERROR("open cfg_item_gift_random.txt failed,please check!!");
+					}
+					else
+					{
+						int32_t iBaseTableCount_GiftRand = ItemGiftRandFile.GetRecordsNum();
+						int32_t iBaseColumnCount_GiftRand = ItemGiftRandFile.GetFieldsNum();
+						if (iBaseColumnCount_GiftRand > 0)
+						{
+							for (int32_t i = 0; i < iBaseTableCount_GiftRand; ++i)
+							{
+								CfgItemGiftRandom itemGiftRandom;
+								itemGiftRandom.id = ItemGiftRandFile.Search_Posistion(i, 0)->iValue;
+								itemGiftRandom.item = ItemGiftRandFile.Search_Posistion(i, 1)->iValue;
+								itemGiftRandom.type = ItemGiftRandFile.Search_Posistion(i, 2)->iValue;
+								itemGiftRandom.count = ItemGiftRandFile.Search_Posistion(i, 3)->iValue;
+								itemGiftRandom.bind = ItemGiftRandFile.Search_Posistion(i, 4)->iValue;
+								itemGiftRandom.static_probability = ItemGiftRandFile.Search_Posistion(i, 5)->iValue;
+								itemGiftRandom.sum_probability = ItemGiftRandFile.Search_Posistion(i, 6)->iValue;
+								itemGiftRandom.job = ItemGiftRandFile.Search_Posistion(i, 7)->iValue;
+								itemGiftRandom.MinLevel = ItemGiftRandFile.Search_Posistion(i, 8)->iValue;
+								itemGiftRandom.MaxLevel = ItemGiftRandFile.Search_Posistion(i, 9)->iValue;
+
+								auto it = m_itemGiftRandoms.find(itemGiftRandom.id);
+								if (it == m_itemGiftRandoms.end())
+								{
+									CfgItemGiftRandomVector* vec = new CfgItemGiftRandomVector();
+									m_itemGiftRandoms[itemGiftRandom.id] = vec;
+								}
+								m_itemGiftRandoms[itemGiftRandom.id]->push_back(itemGiftRandom);
+							}
+							Answer::RwLock::unlock(&this->m_itemGiftRandomsLock);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 //#####################################
 void CfgData::fetchJob()
 {
-  CfgJob *v1; // rax
-  CDBCFile JobFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgJob job; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+B8h] [rbp-18h]
-  int32_t i; // [rsp+BCh] [rbp-14h]
+  CfgJob *v1;
+  CDBCFile JobFile(0);
+  CfgJob job;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !JobFile.OpenFromTXT( "./ServerConfig/Tables/cfg_job.txt") )
@@ -16463,13 +14651,13 @@ void CfgData::fetchJob()
 //#####################################
 void CfgData::fetchMovie()
 {
-  CfgMovie *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgMovie movie; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t i; // [rsp+B8h] [rbp-18h]
-  int32_t MoveId; // [rsp+BCh] [rbp-14h]
+  CfgMovie *v1;
+  CDBCFile TabFile(0);
+  CfgMovie movie;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t MoveId;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_movie.txt") )
@@ -16499,14 +14687,14 @@ void CfgData::fetchMovie()
 //#####################################
 void CfgData::fetchLevelExp()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CfgLevelExp *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  CfgLevelExp levelExp; // [rsp+A0h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+D8h] [rbp-18h]
-  int32_t i; // [rsp+DCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CfgLevelExp *v3;
+  CDBCFile TabFile(0);
+  CfgLevelExp levelExp;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_level_exp.txt") )
@@ -16541,25 +14729,21 @@ void CfgData::fetchLevelExp()
 //#####################################
 void CfgData::fetchLevelAttr()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CfgLevelAttr *v3; // rax
-  CDBCFile LevelAttrFile(0); // [rsp+10h] [rbp-170h] BYREF
-  CfgLevelAttr levelAttr; // [rsp+A0h] [rbp-E0h] BYREF
-  AttrAddonVector __x; // [rsp+E0h] [rbp-A0h] BYREF
-  std::string path; // [rsp+100h] [rbp-80h] BYREF
-  char v8; // [rsp+10Fh] [rbp-71h] BYREF
-  std::string addonAttr; // [rsp+110h] [rbp-70h] BYREF
-  char v10; // [rsp+11Fh] [rbp-61h] BYREF
-  AttrAddonVector v11; // [rsp+120h] [rbp-60h] BYREF
-  std::string v12; // [rsp+140h] [rbp-40h] BYREF
-  char v13; // [rsp+14Fh] [rbp-31h] BYREF
-  std::string v14; // [rsp+150h] [rbp-30h] BYREF
-  char v15; // [rsp+15Bh] [rbp-25h] BYREF
-  int __k; // [rsp+15Ch] [rbp-24h] BYREF
-  int32_t iBaseTableCount; // [rsp+164h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+168h] [rbp-18h]
-  int32_t i; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CfgLevelAttr *v3;
+  CDBCFile LevelAttrFile(0);
+  CfgLevelAttr levelAttr;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  AttrAddonVector v11;
+  std::string v12;
+  std::string v14;
+  int __k;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !LevelAttrFile.OpenFromTXT( "./ServerConfig/Tables/cfg_level_attr.txt") )
@@ -16574,30 +14758,27 @@ void CfgData::fetchLevelAttr()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgLevelAttr::CfgLevelAttr(&levelAttr);
         levelAttr.level = LevelAttrFile.Search_Posistion( i, 0)->iValue;
         levelAttr.job = LevelAttrFile.Search_Posistion( i, 1)->iValue;
         
         path = "./ServerConfig/Tables/cfg_level_attr.txt";
         
         v1 = LevelAttrFile.Search_Posistion( i, 2);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&levelAttr.addonattr, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        levelAttr.addonattr = __x;
         
         v12 = "./ServerConfig/Tables/cfg_level_attr.txt";
         
         v2 = LevelAttrFile.Search_Posistion( i, 3);
-        v14.assign(v2->pString);
-        paraseAttrAddon(v11, v14, v12);
-        std::vector<AttrAddon>::operator=(&levelAttr.addonPoint, &v11);
-        std::vector<AttrAddon>::~vector(&v11);
+        v14 = v2->pString;
+        parseAttrAddon(v11, v14, v12);
+        levelAttr.addonPoint = v11;
         
         __k = (levelAttr.job << 16) | levelAttr.level;
         v3 = std::map<int,CfgLevelAttr>::operator[](&this->m_levelAttrs, &__k);
         CfgLevelAttr::operator=(v3, &levelAttr);
-        /* CfgLevelAttr::~CfgLevelAttr(&levelAttr); - auto cleanup */
+
       }
     }
   }
@@ -16606,13 +14787,13 @@ void CfgData::fetchLevelAttr()
 //#####################################
 void CfgData::fetchMap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgMap *v2; // rax
-  CfgMap map; // [rsp+10h] [rbp-140h] BYREF
-  CDBCFile MapFile(0); // [rsp+A0h] [rbp-B0h] BYREF
-  int32_t iBaseTableCount; // [rsp+134h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+138h] [rbp-18h]
-  int32_t i; // [rsp+13Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgMap *v2;
+  CfgMap map;
+  CDBCFile MapFile(0);
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !MapFile.OpenFromTXT( "./ServerConfig/Tables/cfg_map.txt") )
@@ -16627,7 +14808,6 @@ void CfgData::fetchMap()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgMap::CfgMap(&map);
         map.id = MapFile.Search_Posistion( i, 0)->iValue;
         v1 = MapFile.Search_Posistion( i, 1);
         std::string::operator=(&map.name, v1->pString);
@@ -16668,7 +14848,7 @@ void CfgData::fetchMap()
         map.XinMoAct = MapFile.Search_Posistion( i, 63)->iValue;
         v2 = std::map<int,CfgMap>::operator[](&this->m_maps, &map.id);
         CfgMap::operator=(v2, &map);
-        /* CfgMap::~CfgMap(&map); - auto cleanup */
+
       }
     }
   }
@@ -16677,13 +14857,13 @@ void CfgData::fetchMap()
 //#####################################
 void CfgData::fetchMapMonster()
 {
-  std::vector<CfgMapMonster> *v1; // rax
-  CfgMapMonster *v2; // rax
-  CDBCFile MapMonsterFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgMapMonster mapmonster; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  std::vector<CfgMapMonster> *v1;
+  CfgMapMonster *v2;
+  CDBCFile MapMonsterFile(0);
+  CfgMapMonster mapmonster;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !MapMonsterFile.OpenFromTXT( "./ServerConfig/Tables/cfg_map_monster.txt") )
@@ -16720,14 +14900,14 @@ void CfgData::fetchMapMonster()
 //#####################################
 void CfgData::fetchMapPlant()
 {
-  std::vector<CfgMapPlant> *v1; // rax
-  CfgMapPlant *v2; // rax
-  CDBCFile MapPlantFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  int32_t id; // [rsp+ACh] [rbp-34h] BYREF
-  CfgMapPlant mapPlant; // [rsp+B0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  std::vector<CfgMapPlant> *v1;
+  CfgMapPlant *v2;
+  CDBCFile MapPlantFile(0);
+  int32_t id;
+  CfgMapPlant mapPlant;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !MapPlantFile.OpenFromTXT( "./ServerConfig/Tables/cfg_map_plant.txt") )
@@ -16759,13 +14939,13 @@ void CfgData::fetchMapPlant()
 //#####################################
 void CfgData::fetchMapRegion()
 {
-  CfgMapRegion *v1; // rax
-  std::vector<CfgMapRegion> *v2; // rax
-  CDBCFile MapRegionFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgMapRegion mapRegion; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  CfgMapRegion *v1;
+  std::vector<CfgMapRegion> *v2;
+  CDBCFile MapRegionFile(0);
+  CfgMapRegion mapRegion;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !MapRegionFile.OpenFromTXT( "./ServerConfig/Tables/cfg_map_region.txt") )
@@ -16800,43 +14980,37 @@ void CfgData::fetchMapRegion()
 //#####################################
 void CfgData::fetchMonster()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  CfgMonster *v9; // rax
-  const CDBCFile::FIELD *v10; // rax
-  MemChrBag v11; // [rsp+0h] [rbp-4B0h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-488h]
-  CfgMonster monster; // [rsp+30h] [rbp-480h] BYREF
-  CDBCFile MonsterBroadcastFile(0); // [rsp+2D0h] [rbp-1E0h] BYREF
-  CDBCFile MonsterFile(0); // [rsp+360h] [rbp-150h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter; // [rsp+3F0h] [rbp-C0h] BYREF
-  StringVector vRand; // [rsp+400h] [rbp-B0h] BYREF
-  std::string randtypes; // [rsp+420h] [rbp-90h] BYREF
-  char v19; // [rsp+42Fh] [rbp-81h] BYREF
-  std::string strSkill; // [rsp+430h] [rbp-80h] BYREF
-  char v21; // [rsp+43Fh] [rbp-71h] BYREF
-  std::string v22; // [rsp+440h] [rbp-70h] BYREF
-  char v23; // [rsp+44Fh] [rbp-61h] BYREF
-  std::string strItem; // [rsp+450h] [rbp-60h] BYREF
-  char v25; // [rsp+45Fh] [rbp-51h] BYREF
-  std::string delims; // [rsp+460h] [rbp-50h] BYREF
-  char v27; // [rsp+46Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+470h] [rbp-40h] BYREF
-  int __x; // [rsp+478h] [rbp-38h] BYREF
-  int32_t iBaseTableCount; // [rsp+480h] [rbp-30h]
-  int32_t iBaseColumnCount; // [rsp+484h] [rbp-2Ch]
-  int32_t iBaseTableCountBroadcast; // [rsp+48Ch] [rbp-24h]
-  int32_t iBaseColumnCountBroadcast; // [rsp+490h] [rbp-20h]
-  int32_t i; // [rsp+494h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+498h] [rbp-18h]
-  int32_t i_0; // [rsp+49Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  const CDBCFile::FIELD *v5;
+  std::string *v7;
+  const char *v8;
+  CfgMonster *v9;
+  const CDBCFile::FIELD *v10;
+  MemChrBag v11;
 
-  thisa = this;
+  CfgMonster monster;
+  CDBCFile MonsterBroadcastFile(0);
+  CDBCFile MonsterFile(0);
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter;
+  StringVector vRand;
+  std::string randtypes;
+  std::string strSkill;
+  std::string v22;
+  std::string strItem;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t iBaseTableCountBroadcast;
+  int32_t iBaseColumnCountBroadcast;
+  int32_t i;
+  int32_t nIndex;
+  int32_t i_0;
+
   
   if ( !MonsterFile.OpenFromTXT( "./ServerConfig/Tables/Monster.txt") )
   {
@@ -16889,7 +15063,7 @@ void CfgData::fetchMonster()
         ++nIndex;
         
         v1 = MonsterFile.Search_Posistion( i, nIndex);
-        randtypes.assign(v1->pString);
+        randtypes = v1->pString;
         
         monster.exp = MonsterFile.Search_Posistion( i, ++nIndex)->iValue;
         monster.type = MonsterFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -16898,13 +15072,13 @@ void CfgData::fetchMonster()
         ++nIndex;
         
         v2 = MonsterFile.Search_Posistion( i, nIndex);
-        strSkill.assign(v2->pString);
+        strSkill = v2->pString;
         CfgData::parseMonsterSkill(thisa, monster.mid, (MonsterSkill (*const)[10])monster.unique_skill, &strSkill);
         
         ++nIndex;
         
         v3 = MonsterFile.Search_Posistion( i, nIndex);
-        v22.assign(v3->pString);
+        v22 = v3->pString;
         CfgData::parseMonsterSkill(thisa, monster.mid, (MonsterSkill (*const)[10])monster.random_skill, &v22);
         
         monster.hpPercent = MonsterFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -16958,7 +15132,7 @@ void CfgData::fetchMonster()
         ++nIndex;
         
         v5 = MonsterFile.Search_Posistion( i, nIndex);
-        strItem.assign(v5->pString);
+        strItem = v5->pString;
         CItemHelper::parseItemString(&v11, &strItem);
         monster.cItem = v11;
         
@@ -16982,11 +15156,10 @@ void CfgData::fetchMonster()
             __x = atoi(v8);
             std::vector<int>::push_back(&monster.rand_types, &__x);
           }
-          std::vector<std::string>::~vector(&vRand);
         }
-        v9 = std::map<int,CfgMonster>::operator[](&thisa->m_monsters, &monster.mid);
+        v9 = std::map<int,CfgMonster>::operator[](&m_monsters, &monster.mid);
         CfgMonster::operator=(v9, &monster);
-        /* CfgMonster::~CfgMonster(&monster); - auto cleanup */
+
       }
       
       if ( !MonsterBroadcastFile.OpenFromTXT( "./ServerConfig/Tables/cfg_monster_broadcast.txt") )
@@ -17002,7 +15175,7 @@ void CfgData::fetchMonster()
           for ( i_0 = 0; i_0 < iBaseTableCountBroadcast; ++i_0 )
           {
             v10 = MonsterBroadcastFile.Search_Posistion( i_0, 1);
-            std::vector<int>::push_back(&thisa->m_monsterBroadcasts, (const int *const)v10);
+            std::vector<int>::push_back(&m_monsterBroadcasts, (const int *const)v10);
           }
         }
       }
@@ -17013,13 +15186,13 @@ void CfgData::fetchMonster()
 //#####################################
 void CfgData::fetchMonsterAI()
 {
-  CfgMonsterAI *v1; // rax
-  CDBCFile MonsterFile(0); // [rsp+10h] [rbp-F0h] BYREF
-  CfgMonsterAI ai; // [rsp+A0h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+E0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+E4h] [rbp-1Ch]
-  int32_t i; // [rsp+E8h] [rbp-18h]
-  int32_t nIndex; // [rsp+ECh] [rbp-14h]
+  CfgMonsterAI *v1;
+  CDBCFile MonsterFile(0);
+  CfgMonsterAI ai;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !MonsterFile.OpenFromTXT( "./ServerConfig/Tables/MonsterAi.txt") )
@@ -17062,22 +15235,22 @@ void CfgData::fetchMonsterAI()
 void CfgData::fetchMonsterAdjustTable()
 {
   int v1; // ebx
-  CfgMonsterAdjust monster; // [rsp+20h] [rbp-3A0h] BYREF
-  CDBCFile MonsterFile(0); // [rsp+100h] [rbp-2C0h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,CfgMonsterAdjust> >,bool> v4; // [rsp+190h] [rbp-230h]
-  _BYTE v5[224]; // [rsp+1A0h] [rbp-220h] BYREF
-  std::pair<int,int> __a; // [rsp+280h] [rbp-140h] BYREF
-  std::pair<std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,CfgMonsterAdjust> >,bool> v7; // [rsp+290h] [rbp-130h]
-  _BYTE v8[224]; // [rsp+2A0h] [rbp-120h] BYREF
-  std::pair<int,int> v9; // [rsp+380h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+38Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+390h] [rbp-30h]
-  int32_t i; // [rsp+394h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+398h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+3A0h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+3A4h] [rbp-1Ch]
-  int32_t i_0; // [rsp+3A8h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+3ACh] [rbp-14h]
+  CfgMonsterAdjust monster;
+  CDBCFile MonsterFile(0);
+  auto v4
+  _BYTE v5[224];
+
+  auto v7
+  _BYTE v8[224];
+  std::pair<int,int> v9;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
 
   
   if ( !MonsterFile.OpenFromTXT( "./ServerConfig/Tables/MonsterAdjust.txt") )
@@ -17218,19 +15391,17 @@ void CfgData::fetchMonsterAdjustTable()
 //#####################################
 void CfgData::fetchMonsterDropGroup()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  std::vector<CfgMonsterDropGroup> *v3; // rax
-  CDBCFile MonsterDropFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgMonsterDropGroup monsterDropGroup; // [rsp+A0h] [rbp-80h] BYREF
-  std::string p_StringTime; // [rsp+E0h] [rbp-40h] BYREF
-  char v7; // [rsp+EFh] [rbp-31h] BYREF
-  std::string v8; // [rsp+F0h] [rbp-30h] BYREF
-  char v9; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  std::vector<CfgMonsterDropGroup> *v3;
+  CDBCFile MonsterDropFile(0);
+  CfgMonsterDropGroup monsterDropGroup;
+  std::string p_StringTime;
+  std::string v8;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !MonsterDropFile.OpenFromTXT( "./ServerConfig/Tables/cfg_monster_drop_group.txt") )
@@ -17261,13 +15432,13 @@ void CfgData::fetchMonsterDropGroup()
         ++nIndex;
         
         v1 = MonsterDropFile.Search_Posistion( i, nIndex);
-        p_StringTime.assign(v1->pString);
+        p_StringTime = v1->pString;
         monsterDropGroup.start_date = Answer::DayTime::StringToIntTime(p_StringTime);
         
         ++nIndex;
         
         v2 = MonsterDropFile.Search_Posistion( i, nIndex);
-        v8.assign(v2->pString);
+        v8 = v2->pString;
         monsterDropGroup.end_date = Answer::DayTime::StringToIntTime(v8);
         
         monsterDropGroup.record = MonsterDropFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -17285,13 +15456,13 @@ void CfgData::fetchMonsterDropGroup()
 //#####################################
 void CfgData::fetchMonsterGroupDrop()
 {
-  std::vector<CfgMonsterGroupDrop> *v1; // rax
-  CDBCFile MonsterGroupFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  CfgMonsterGroupDrop monsterGroupDrop; // [rsp+A0h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t nIndex; // [rsp+DCh] [rbp-14h]
+  std::vector<CfgMonsterGroupDrop> *v1;
+  CDBCFile MonsterGroupFile(0);
+  CfgMonsterGroupDrop monsterGroupDrop;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !MonsterGroupFile.OpenFromTXT( "./ServerConfig/Tables/cfg_monster_group_drop.txt") )
@@ -17346,12 +15517,12 @@ void CfgData::fetchMonsterGroupDrop()
 //#####################################
 void CfgData::fetchMonsterTaskDrop()
 {
-  std::vector<CfgMonsterTaskDrop> *v1; // rax
-  CDBCFile MonsterTaskFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  CfgMonsterTaskDrop monsterTaskDrop; // [rsp+A0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+B4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+B8h] [rbp-18h]
-  int32_t i; // [rsp+BCh] [rbp-14h]
+  std::vector<CfgMonsterTaskDrop> *v1;
+  CDBCFile MonsterTaskFile(0);
+  CfgMonsterTaskDrop monsterTaskDrop;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !MonsterTaskFile.OpenFromTXT( "./ServerConfig/Tables/cfg_monster_task_drop.txt") )
@@ -17366,8 +15537,8 @@ void CfgData::fetchMonsterTaskDrop()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        *(_QWORD *)&monsterTaskDrop.mid = 0;
-        *(_QWORD *)&monsterTaskDrop.item = 0;
+        memset(&monsterTaskDrop.mid, 0, sizeof(int64_t));
+        memset(&monsterTaskDrop.item, 0, sizeof(int64_t));
         monsterTaskDrop.mid = MonsterTaskFile.Search_Posistion( i, 0)->iValue;
         monsterTaskDrop.tid = MonsterTaskFile.Search_Posistion( i, 1)->iValue;
         monsterTaskDrop.item = MonsterTaskFile.Search_Posistion( i, 2)->iValue;
@@ -17382,74 +15553,60 @@ void CfgData::fetchMonsterTaskDrop()
 //#####################################
 void CfgData::fetchNpc()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::string *v2; // rax
-  const char *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  size_t v7; // rbx
-  const CDBCFile::FIELD *v8; // rax
-  std::string *v9; // rax
-  size_t v10; // rbx
-  const CDBCFile::FIELD *v11; // rax
-  std::string *v12; // rbx
-  std::string *v13; // rax
-  const char *v14; // rax
-  std::string *v15; // rax
-  const char *v16; // rax
-  std::string *v17; // rax
-  const char *v18; // rax
-  CfgNpc *v19; // rax
-  CfgNpcAirport *v20; // rax
-  CDBCFile TabFileAir(0); // [rsp+10h] [rbp-360h] BYREF
-  CDBCFile TabFile(0); // [rsp+A0h] [rbp-2D0h] BYREF
-  CfgNpcAirport airport; // [rsp+130h] [rbp-240h] BYREF
-  int iValue; // [rsp+150h] [rbp-220h]
-  int v25; // [rsp+154h] [rbp-21Ch]
-  int v26; // [rsp+158h] [rbp-218h]
-  int v27; // [rsp+15Ch] [rbp-214h]
-  std::vector<int> v28; // [rsp+160h] [rbp-210h] BYREF
-  char v29; // [rsp+178h] [rbp-1F8h]
-  std::vector<std::string> v30; // [rsp+180h] [rbp-1F0h] BYREF
-  std::vector<CfgDungeonNpcCost> v31; // [rsp+198h] [rbp-1D8h] BYREF
-  CfgDungeonNpcCost NpcCost; // [rsp+1B0h] [rbp-1C0h] BYREF
-  StringVector CostItem; // [rsp+1C0h] [rbp-1B0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter; // [rsp+1E0h] [rbp-190h] BYREF
-  StringVector vpf; // [rsp+1F0h] [rbp-180h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+210h] [rbp-160h] BYREF
-  StringVector CostVector; // [rsp+220h] [rbp-150h] BYREF
-  std::string platform; // [rsp+240h] [rbp-130h] BYREF
-  StringVector vparam; // [rsp+250h] [rbp-120h] BYREF
-  std::string param; // [rsp+270h] [rbp-100h] BYREF
-  StringVector mapids; // [rsp+280h] [rbp-F0h] BYREF
-  std::string delims; // [rsp+2A0h] [rbp-D0h] BYREF
-  char v43; // [rsp+2AFh] [rbp-C1h] BYREF
-  std::string str; // [rsp+2B0h] [rbp-C0h] BYREF
-  char v45; // [rsp+2BFh] [rbp-B1h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+2C0h] [rbp-B0h] BYREF
-  int __x; // [rsp+2C8h] [rbp-A8h] BYREF
-  char v48; // [rsp+2CFh] [rbp-A1h] BYREF
-  std::string v49; // [rsp+2D0h] [rbp-A0h] BYREF
-  char v50; // [rsp+2E7h] [rbp-89h] BYREF
-  int v51; // [rsp+2E8h] [rbp-88h] BYREF
-  char v52; // [rsp+2EFh] [rbp-81h] BYREF
-  std::string v53; // [rsp+2F0h] [rbp-80h] BYREF
-  char v54; // [rsp+2FFh] [rbp-71h] BYREF
-  std::string v55; // [rsp+300h] [rbp-70h] BYREF
-  char v56; // [rsp+30Fh] [rbp-61h] BYREF
-  std::string v57; // [rsp+310h] [rbp-60h] BYREF
-  char v58; // [rsp+31Fh] [rbp-51h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v59; // [rsp+320h] [rbp-50h] BYREF
-  std::string v60; // [rsp+330h] [rbp-40h] BYREF
-  char v61; // [rsp+346h] [rbp-2Ah] BYREF
-  bool ret; // [rsp+347h] [rbp-29h]
-  int32_t iBaseTableCount; // [rsp+348h] [rbp-28h]
-  int32_t iBaseColumnCount; // [rsp+34Ch] [rbp-24h]
-  int32_t i; // [rsp+350h] [rbp-20h]
-  uint32_t j; // [rsp+354h] [rbp-1Ch]
-  uint32_t j_0; // [rsp+358h] [rbp-18h]
-  int32_t i_0; // [rsp+35Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::string *v2;
+  const char *v3;
+  const CDBCFile::FIELD *v4;
+  std::string *v5;
+  const char *v6;
+  size_t v7;
+  const CDBCFile::FIELD *v8;
+  std::string *v9;
+  size_t v10;
+  const CDBCFile::FIELD *v11;
+  std::string *v12;
+  std::string *v13;
+  const char *v14;
+  std::string *v15;
+  const char *v16;
+  std::string *v17;
+  const char *v18;
+  CfgNpc *v19;
+  CfgNpcAirport *v20;
+  CDBCFile TabFileAir(0);
+  CDBCFile TabFile(0);
+  CfgNpcAirport airport;
+  int iValue;
+  std::vector<int> v28;
+  std::vector<std::string> v30;
+  std::vector<CfgDungeonNpcCost> v31;
+  CfgDungeonNpcCost NpcCost;
+  StringVector CostItem;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > iter;
+  StringVector vpf;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector CostVector;
+  std::string platform;
+  StringVector vparam;
+  std::string param;
+  StringVector mapids;
+  std::string delims;
+  std::string str;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  int __x;
+  std::string v49;
+  std::string v53;
+  std::string v55;
+  std::string v57;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v59;
+  std::string v60;
+  bool ret;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  uint32_t j;
+  uint32_t j_0;
+  int32_t i_0;
 
   
   ret = TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_npc.txt");
@@ -17472,7 +15629,7 @@ void CfgData::fetchNpc()
         delims = "|";
         
         v1 = TabFile.Search_Posistion( i, 6);
-        str.assign(v1->pString);
+        str = v1->pString;
         Answer::StringUtility::split(&mapids, &str, &delims, 0);
         
         for ( it._M_current = std::vector<std::string>::begin(&mapids)._M_current;
@@ -17492,7 +15649,7 @@ void CfgData::fetchNpc()
         v27 = TabFile.Search_Posistion( i, 10)->iValue;
         
         v4 = TabFile.Search_Posistion( i, 21);
-        param.assign(v4->pString);
+        param = v4->pString;
         
         v49 = ":";
         Answer::StringUtility::split(&vparam, &param, &v49, 0);
@@ -17510,7 +15667,7 @@ void CfgData::fetchNpc()
         v29 = TabFile.Search_Posistion( i, 23)->iValue;
         
         v8 = TabFile.Search_Posistion( i, 25);
-        platform.assign(v8->pString);
+        platform = v8->pString;
         
         if ( std::operator!=<char>(&platform, "0") )
         {
@@ -17526,13 +15683,12 @@ void CfgData::fetchNpc()
             v9 = std::vector<std::string>::operator[](&vpf, j_0);
             std::vector<std::string>::push_back(&v30, v9);
           }
-          std::vector<std::string>::~vector(&vpf);
         }
         
         v55 = "|";
         
         v11 = TabFile.Search_Posistion( i, 27);
-        v57.assign(v11->pString);
+        v57 = v11->pString;
         Answer::StringUtility::split(&CostVector, &v57, &v55, 0);
         
         for ( iter._M_current = std::vector<std::string>::begin(&CostVector)._M_current;
@@ -17546,7 +15702,7 @@ void CfgData::fetchNpc()
           v12 = __gnu_cxx::__normal_iterator<std::string *,std::vector<std::string>>::operator*(&iter);
           Answer::StringUtility::split(&CostItem, v12, &v60, 0);
           
-          *(_QWORD *)&NpcCost.ItemType = 0;
+          memset(&NpcCost.ItemType, 0, sizeof(int64_t));
           NpcCost.ItemCount = 0;
           if ( std::vector<std::string>::size(&CostItem) == 3 )
           {
@@ -17561,13 +15717,9 @@ void CfgData::fetchNpc()
             NpcCost.ItemCount = atoi(v18);
           }
           std::vector<CfgDungeonNpcCost>::push_back(&v31, &NpcCost);
-          std::vector<std::string>::~vector(&CostItem);
         }
         v19 = std::map<int,CfgNpc>::operator[](&this->m_npcs, &airport.id);
         CfgNpc::operator=(v19, (const CfgNpc *const)&airport);
-        std::vector<std::string>::~vector(&CostVector);
-        std::vector<std::string>::~vector(&vparam);
-        std::vector<std::string>::~vector(&mapids);
         CfgNpc::~CfgNpc((CfgNpc *const)&airport);
       }
       
@@ -17604,44 +15756,38 @@ void CfgData::fetchNpc()
 //#####################################
 void CfgData::fetchPlant()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::string *v2; // rax
-  std::string *v3; // rax
-  const char *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  const CDBCFile::FIELD *v7; // rax
-  std::string *v8; // rax
-  std::string *v9; // rax
-  const char *v10; // rax
-  CfgPlant *v11; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-250h] BYREF
-  CfgPlant plant; // [rsp+A0h] [rbp-1C0h] BYREF
-  StringVector RateVt; // [rsp+110h] [rbp-150h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it_0; // [rsp+130h] [rbp-130h] BYREF
-  CfgPlantEvent Event; // [rsp+140h] [rbp-120h] BYREF
-  StringVector EventVt; // [rsp+150h] [rbp-110h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+170h] [rbp-F0h] BYREF
-  StringVector ItemString; // [rsp+180h] [rbp-E0h] BYREF
-  StringVector strItems; // [rsp+1A0h] [rbp-C0h] BYREF
-  std::string delims; // [rsp+1C0h] [rbp-A0h] BYREF
-  char v22; // [rsp+1CFh] [rbp-91h] BYREF
-  std::string str; // [rsp+1D0h] [rbp-90h] BYREF
-  char v24; // [rsp+1DFh] [rbp-81h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+1E0h] [rbp-80h] BYREF
-  std::string v26; // [rsp+1F0h] [rbp-70h] BYREF
-  char v27; // [rsp+1FFh] [rbp-61h] BYREF
-  std::string v28; // [rsp+200h] [rbp-60h] BYREF
-  char v29; // [rsp+20Fh] [rbp-51h] BYREF
-  std::string v30; // [rsp+210h] [rbp-50h] BYREF
-  char v31; // [rsp+21Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v32; // [rsp+220h] [rbp-40h] BYREF
-  std::string v33; // [rsp+230h] [rbp-30h] BYREF
-  char v34; // [rsp+23Bh] [rbp-25h] BYREF
-  int __x; // [rsp+23Ch] [rbp-24h] BYREF
-  int32_t iBaseTableCount; // [rsp+244h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+248h] [rbp-18h]
-  int32_t i; // [rsp+24Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::string *v2;
+  std::string *v3;
+  const char *v4;
+  std::string *v5;
+  const char *v6;
+  const CDBCFile::FIELD *v7;
+  std::string *v8;
+  std::string *v9;
+  const char *v10;
+  CfgPlant *v11;
+  CDBCFile TabFile(0);
+  CfgPlant plant;
+  StringVector RateVt;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it_0;
+  CfgPlantEvent Event;
+  StringVector EventVt;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector ItemString;
+  StringVector strItems;
+  std::string delims;
+  std::string str;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v26;
+  std::string v28;
+  std::string v30;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v32;
+  std::string v33;
+  int __x;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_plant.txt") )
@@ -17666,7 +15812,7 @@ void CfgData::fetchPlant()
         delims = "|";
         
         v1 = TabFile.Search_Posistion( i, 5);
-        str.assign(v1->pString);
+        str = v1->pString;
         Answer::StringUtility::split(&strItems, &str, &delims, 0);
         
         for ( it._M_current = std::vector<std::string>::begin(&strItems)._M_current;
@@ -17691,7 +15837,6 @@ void CfgData::fetchPlant()
             plant.EventMaxRate += Event.Probability;
             std::vector<CfgPlantEvent>::push_back(&plant.Events, &Event);
           }
-          std::vector<std::string>::~vector(&EventVt);
         }
         plant.item_cost = TabFile.Search_Posistion( i, 6)->iValue;
         plant.start_hour = TabFile.Search_Posistion( i, 7)->iValue;
@@ -17708,7 +15853,7 @@ void CfgData::fetchPlant()
         v28 = "|";
         
         v7 = TabFile.Search_Posistion( i, 23);
-        v30.assign(v7->pString);
+        v30 = v7->pString;
         Answer::StringUtility::split(&ItemString, &v30, &v28, 0);
         
         for ( it_0._M_current = std::vector<std::string>::begin(&ItemString)._M_current;
@@ -17729,13 +15874,10 @@ void CfgData::fetchPlant()
             __x = atoi(v10);
             std::vector<int>::push_back(&plant.ItemVt, &__x);
           }
-          std::vector<std::string>::~vector(&RateVt);
         }
         v11 = std::map<int,CfgPlant>::operator[](&this->m_plants, &plant.id);
         CfgPlant::operator=(v11, &plant);
-        std::vector<std::string>::~vector(&ItemString);
-        std::vector<std::string>::~vector(&strItems);
-        /* CfgPlant::~CfgPlant(&plant); - auto cleanup */
+
       }
     }
   }
@@ -17744,19 +15886,17 @@ void CfgData::fetchPlant()
 //#####################################
 void CfgData::InitShenYaoPosSuitTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-140h] BYREF
-  ShenYaoPosSuit stu; // [rsp+A0h] [rbp-B0h] BYREF
-  AttrAddonVector __x; // [rsp+C0h] [rbp-90h] BYREF
-  std::string path; // [rsp+E0h] [rbp-70h] BYREF
-  char v6; // [rsp+EFh] [rbp-61h] BYREF
-  std::string addonAttr; // [rsp+F0h] [rbp-60h] BYREF
-  char v8; // [rsp+FFh] [rbp-51h] BYREF
-  ShenYaoPosSuit p_stu; // [rsp+100h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+130h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+134h] [rbp-1Ch]
-  int32_t i; // [rsp+138h] [rbp-18h]
-  int32_t nIndex; // [rsp+13Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  ShenYaoPosSuit stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  ShenYaoPosSuit p_stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ShengZhuangSuit.txt") )
@@ -17781,16 +15921,15 @@ void CfgData::InitShenYaoPosSuitTable()
         path = "./ServerConfig/Tables/EquipPosSuit.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.vAttrAddon, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.vAttrAddon = __x;
         
         ++nIndex;
-        ShenYaoPosSuit::ShenYaoPosSuit(&p_stu, &stu);
-        CfgEquipTable::AddShenYaoPosSuit(&this->m_cfgEquip, &p_stu);
-        /* ShenYaoPosSuit::~ShenYaoPosSuit(&p_stu); - auto cleanup */
-        /* ShenYaoPosSuit::~ShenYaoPosSuit(&stu); - auto cleanup */
+        p_stu = stu;
+        m_cfgEquip.AddShenYaoPosSuit(p_stu);
+
+
       }
     }
   }
@@ -17799,23 +15938,19 @@ void CfgData::InitShenYaoPosSuitTable()
 //#####################################
 void CfgData::InitShenYaoPosTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-190h] BYREF
-  ShenYaoPos stu; // [rsp+A0h] [rbp-100h] BYREF
-  AttrAddonVector __x; // [rsp+E0h] [rbp-C0h] BYREF
-  std::string path; // [rsp+100h] [rbp-A0h] BYREF
-  char v7; // [rsp+10Fh] [rbp-91h] BYREF
-  std::string addonAttr; // [rsp+110h] [rbp-90h] BYREF
-  char v9; // [rsp+11Fh] [rbp-81h] BYREF
-  std::list<ItemData> strItems; // [rsp+120h] [rbp-80h] BYREF
-  bool bCombi[15]; // [rsp+130h] [rbp-70h] BYREF
-  char v12; // [rsp+13Fh] [rbp-61h] BYREF
-  ShenYaoPos p_stu; // [rsp+140h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+180h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+184h] [rbp-1Ch]
-  int32_t i; // [rsp+188h] [rbp-18h]
-  int32_t nIndex; // [rsp+18Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile readFile(0);
+  ShenYaoPos stu;
+  AttrAddonVector __x;
+  std::string path;
+  std::string addonAttr;
+  std::list<ItemData> strItems;
+  ShenYaoPos p_stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ShengZhuangAttr.txt") )
@@ -17841,25 +15976,23 @@ void CfgData::InitShenYaoPosTable()
         path = "./ServerConfig/Tables/ShengZhuangAttr.txt";
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        addonAttr.assign(v1->pString);
-        paraseAttrAddon(__x, addonAttr, path);
-        std::vector<AttrAddon>::operator=(&stu.vAttrAddon, &__x);
-        std::vector<AttrAddon>::~vector(&__x);
+        addonAttr = v1->pString;
+        parseAttrAddon(__x, addonAttr, path);
+        stu.vAttrAddon = __x;
         
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v2->pString, &v12);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.nCost, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        std::string bCombi(v2->pString);
+        CItemHelper::parseItemDataListString(&strItems, (bool)bCombi);
+        stu.nCost = strItems;
         
         stu.nGongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        ShenYaoPos::ShenYaoPos(&p_stu, &stu);
-        CfgEquipTable::AddShenYaoPosCfg(&this->m_cfgEquip, &p_stu);
-        /* ShenYaoPos::~ShenYaoPos(&p_stu); - auto cleanup */
-        /* ShenYaoPos::~ShenYaoPos(&stu); - auto cleanup */
+        p_stu = stu;
+        m_cfgEquip.AddShenYaoPosCfg(p_stu);
+
+
       }
     }
   }
@@ -17868,14 +16001,14 @@ void CfgData::InitShenYaoPosTable()
 //#####################################
 void CfgData::InitShiZhuangLevelTable()
 {
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgShiZhuangLevel stu; // [rsp+A0h] [rbp-70h] BYREF
-  AddAttribute AddAttr; // [rsp+E0h] [rbp-30h] BYREF
-  int32_t iBaseTableCount; // [rsp+ECh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+F0h] [rbp-20h]
-  int32_t i; // [rsp+F4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+F8h] [rbp-18h]
-  int32_t j; // [rsp+FCh] [rbp-14h]
+  CDBCFile readFile(0);
+  CfgShiZhuangLevel stu;
+  AddAttribute AddAttr;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t j;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/ShiZhuangLevel.txt") )
@@ -17890,7 +16023,6 @@ void CfgData::InitShiZhuangLevelTable()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgShiZhuangLevel::CfgShiZhuangLevel(&stu);
         nIndex = 0;
         stu.nType = readFile.Search_Posistion( i, 0)->iValue;
         stu.nLevel = readFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -17908,10 +16040,10 @@ void CfgData::InitShiZhuangLevelTable()
           AddAttr.m_nAddAttrType = readFile.Search_Posistion( i, nIndex++)->iValue;
           AddAttr.m_nAddAttrValue = readFile.Search_Posistion( i, nIndex++)->iValue;
           if ( AddAttr.m_nAddAttrValue > 0 )
-            std::list<AddAttribute>::push_back(&stu.vAttr, &AddAttr);
+            &stu.vAttr.push_back(&AddAttr);
         }
-        CfgShiZhuangTable::AddShiZhuangLevel(&this->m_cfgShiZhuangTable, &stu);
-        /* CfgShiZhuangLevel::~CfgShiZhuangLevel(&stu); - auto cleanup */
+        m_cfgShiZhuangTable.AddShiZhuangLevel(stu);
+
       }
     }
   }
@@ -17920,17 +16052,15 @@ void CfgData::InitShiZhuangLevelTable()
 //#####################################
 void CfgData::InitSpecialBossMapCfgMap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  SpecialBossMapCfg *v2; // rax
-  int64_t v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  SpecialBossMapCfg stu; // [rsp+A0h] [rbp-50h] BYREF
-  std::string strItem; // [rsp+C0h] [rbp-30h] BYREF
-  char v7; // [rsp+CEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+D0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+D4h] [rbp-1Ch]
-  int32_t i; // [rsp+D8h] [rbp-18h]
-  int32_t nIndex; // [rsp+DCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  SpecialBossMapCfg *v2;
+  CDBCFile TabFile(0);
+  SpecialBossMapCfg stu;
+  std::string strItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
   ItemData v13; // 0:kr00_12.12
 
   
@@ -17952,9 +16082,9 @@ void CfgData::InitSpecialBossMapCfgMap()
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         v13 = CItemHelper::parseItemDataString(&strItem);
-        LODWORD(v3) = v13.m_nId;
+        v3 = v13.m_nId;
         BYTE4(v3) = v13.m_nClass;
         *(_QWORD *)&stu.ConstItem.m_nId = v3;
         stu.ConstItem.m_nCount = v13.m_nCount;
@@ -17972,29 +16102,20 @@ void CfgData::InitSpecialBossMapCfgMap()
 //#####################################
 SpecialBossMapCfg *CfgData::GetSpecialBossMapCfg(int32_t MapId)
 {
-  int32_t MapIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,SpecialBossMapCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,SpecialBossMapCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  MapIda = MapId;
-  it._M_node = std::map<int,SpecialBossMapCfg>::find(&this->m_SpecialBossMapCfgMap, &MapIda)._M_node;
-  __x._M_node = std::map<int,SpecialBossMapCfg>::end(&thisa->m_SpecialBossMapCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,SpecialBossMapCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,SpecialBossMapCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_SpecialBossMapCfgMap.find(MapId);
+	if (it != m_SpecialBossMapCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitSpecialMonster()
 {
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  cfgSpecialMonster stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  CDBCFile TabFile(0);
+  cfgSpecialMonster stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/SpecialMonster.txt") )
@@ -18026,17 +16147,16 @@ void CfgData::InitSpecialMonster()
 //#####################################
 void CfgData::InitTGPRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgTGPGift gift; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v7; // [rsp+FEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+100h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+104h] [rbp-1Ch]
-  int32_t i; // [rsp+108h] [rbp-18h]
-  int32_t nIndex; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile TabFile(0);
+  CfgTGPGift gift;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/TGPReward.txt") )
@@ -18060,14 +16180,13 @@ void CfgData::InitTGPRewardTable()
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&gift.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        gift.vReward = __x;
         
         ++nIndex;
-        CfgTencentTable::AddTGPNewerGift(&this->m_cfgTencentTable, &gift);
-        /* CfgTGPGift::~CfgTGPGift(&gift); - auto cleanup */
+        m_cfgTencentTable.AddTGPNewerGift(gift);
+
       }
     }
   }
@@ -18078,34 +16197,28 @@ void CfgData::InitTGPRewardTable()
 //#####################################
 void CfgData::fetchTask()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  const CDBCFile::FIELD *v6; // rax
-  CfgTask *v7; // rax
-  CfgTask task; // [rsp+10h] [rbp-2A0h] BYREF
-  CDBCFile TabFile(0); // [rsp+130h] [rbp-180h] BYREF
-  MemChrBagVector __x; // [rsp+1C0h] [rbp-F0h] BYREF
-  std::string strItems; // [rsp+1E0h] [rbp-D0h] BYREF
-  char v12; // [rsp+1EFh] [rbp-C1h] BYREF
-  MemChrBagVector v13; // [rsp+1F0h] [rbp-C0h] BYREF
-  std::string v14; // [rsp+210h] [rbp-A0h] BYREF
-  char v15; // [rsp+21Fh] [rbp-91h] BYREF
-  MemChrJobBagVector v16; // [rsp+220h] [rbp-90h] BYREF
-  std::string v17; // [rsp+240h] [rbp-70h] BYREF
-  char v18; // [rsp+24Fh] [rbp-61h] BYREF
-  std::string strRequest; // [rsp+250h] [rbp-60h] BYREF
-  char v20; // [rsp+25Fh] [rbp-51h] BYREF
-  std::list<TaskDrop> v21; // [rsp+260h] [rbp-50h] BYREF
-  _BYTE v22[15]; // [rsp+270h] [rbp-40h] BYREF
-  char v23; // [rsp+27Fh] [rbp-31h] BYREF
-  std::string path; // [rsp+280h] [rbp-30h] BYREF
-  char v25; // [rsp+292h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+294h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+298h] [rbp-18h]
-  int32_t i; // [rsp+29Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  const CDBCFile::FIELD *v5;
+  const CDBCFile::FIELD *v6;
+  CfgTask *v7;
+  CfgTask task;
+  CDBCFile TabFile(0);
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v13;
+  std::string v14;
+  MemChrJobBagVector v16;
+  std::string v17;
+  std::string strRequest;
+  std::list<TaskDrop> v21;
+  _BYTE v22[15];
+  std::string path;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_task.txt") )
@@ -18120,7 +16233,6 @@ void CfgData::fetchTask()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgTask::CfgTask(&task);
         task.id = TabFile.Search_Posistion( i, 0)->iValue;
         v1 = TabFile.Search_Posistion( i, 1);
         snprintf(task.name, 0x1Eu, v1->pString);
@@ -18139,10 +16251,9 @@ void CfgData::fetchTask()
         task.dungeon = TabFile.Search_Posistion( i, 14)->iValue;
         
         v2 = TabFile.Search_Posistion( i, 15);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&task.items_receive, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        task.items_receive = __x;
         
         task.award_exp = TabFile.Search_Posistion( i, 16)->iValue;
         task.award_money = TabFile.Search_Posistion( i, 17)->iValue;
@@ -18153,21 +16264,19 @@ void CfgData::fetchTask()
         task.BossScore = TabFile.Search_Posistion( i, 22)->iValue;
         
         v3 = TabFile.Search_Posistion( i, 23);
-        v14.assign(v3->pString);
+        v14 = v3->pString;
         CItemHelper::parseItemVectorString(&v13, &v14);
-        std::vector<MemChrBag>::operator=(&task.award_item, &v13);
-        std::vector<MemChrBag>::~vector(&v13);
+        task.award_item = v13;
         
         v4 = TabFile.Search_Posistion( i, 24);
-        v17.assign(v4->pString);
+        v17 = v4->pString;
         CfgData::parseTaskItemJobString(&v16, this, task.id, &v17);
-        std::vector<MemChrJobBag>::operator=(&task.award_optional, &v16);
-        std::vector<MemChrJobBag>::~vector(&v16);
+        task.award_optional = v16;
         
         task.condition = TabFile.Search_Posistion( i, 35)->iValue;
         
         v5 = TabFile.Search_Posistion( i, 36);
-        strRequest.assign(v5->pString);
+        strRequest = v5->pString;
         task.request = CfgData::parseTaskCondition(this, task.id, task.condition, &strRequest);
         
         task.GongXian = TabFile.Search_Posistion( i, 50)->iValue;
@@ -18181,17 +16290,16 @@ void CfgData::fetchTask()
         task.activity_score = TabFile.Search_Posistion( i, 65)->iValue;
         task.talent_point = TabFile.Search_Posistion( i, 67)->iValue;
         
-        std::string::string(v22, "./ServerConfig/Tables/cfg_task.txt", &v23);
+        std::string v22("./ServerConfig/Tables/cfg_task.txt");
         
         v6 = TabFile.Search_Posistion( i, 68);
-        path.assign(v6->pString);
+        path = v6->pString;
         CfgData::parseTaskDrop(
-          (CfgData *const)&v21,
+          &v21,
           (int32_t)this,
-          (const std::string *const)(unsigned int)task.id,
+          (unsigned int)task.id,
           &path);
-        std::list<TaskDrop>::operator=(&task.drop_list, &v21);
-        std::list<TaskDrop>::~list(&v21);
+        task.drop_list = v21;
         
         task.DoubleGold = TabFile.Search_Posistion( i, 69)->iValue;
         task.BuffId = TabFile.Search_Posistion( i, 70)->iValue;
@@ -18203,7 +16311,7 @@ void CfgData::fetchTask()
           CfgFamilyTask::AddFamilyTask(&this->m_FamilyTaskTable, task.id, task.level, task.max_level);
         if ( task.type == 41 )
           CfgActivityTaskTable::AddTask(&this->m_cfgActivityTaskTable, task.id, task.level, task.max_level, task.ratio);
-        /* /* CfgTask::~CfgTask(&task); - auto cleanup */ - auto cleanup */
+
       }
     }
   }
@@ -18212,13 +16320,13 @@ void CfgData::fetchTask()
 //#####################################
 void CfgData::fetchTrap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgTrap *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgTrap trap; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgTrap *v2;
+  CDBCFile TabFile(0);
+  CfgTrap trap;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_trap.txt") )
@@ -18233,7 +16341,6 @@ void CfgData::fetchTrap()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgTrap::CfgTrap(&trap);
         trap.id = TabFile.Search_Posistion( i, 0)->iValue;
         trap.cd = TabFile.Search_Posistion( i, 2)->iValue;
         trap.delay = TabFile.Search_Posistion( i, 3)->iValue;
@@ -18244,7 +16351,7 @@ void CfgData::fetchTrap()
         trap.life = TabFile.Search_Posistion( i, 12)->iValue;
         v2 = std::map<int,CfgTrap>::operator[](&this->m_traps, &trap.id);
         CfgTrap::operator=(v2, &trap);
-        /* /* CfgTrap::~CfgTrap(&trap); - auto cleanup */ - auto cleanup */
+
       }
     }
   }
@@ -18254,20 +16361,19 @@ void CfgData::fetchTrap()
 std::vector<Position> *CfgData::paresPosition(
         std::vector<Position> *const std::string *const strPos)
 {
-  std::string *v3; // rax
-  std::string *v4; // rax
-  const char *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  Position stu; // [rsp+10h] [rbp-B0h] BYREF
-  StringVector Pos; // [rsp+20h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+40h] [rbp-80h] BYREF
-  StringVector PosString; // [rsp+50h] [rbp-70h] BYREF
-  std::string delims; // [rsp+70h] [rbp-50h] BYREF
-  char v15; // [rsp+7Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+80h] [rbp-40h] BYREF
-  std::string v17; // [rsp+90h] [rbp-30h] BYREF
-  _BYTE v18[33]; // [rsp+9Fh] [rbp-21h] BYREF
+  std::string *v3;
+  std::string *v4;
+  const char *v5;
+  std::string *v6;
+  const char *v7;
+  Position stu;
+  StringVector Pos;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector PosString;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v17;
+  _BYTE v18[33];
 
   std::vector<Position>::vector(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strPos) != 1 )
@@ -18298,9 +16404,7 @@ std::vector<Position> *CfgData::paresPosition(
         stu.y = atoi(v7);
         std::vector<Position>::push_back(retstr, &stu);
       }
-      std::vector<std::string>::~vector(&Pos);
     }
-    std::vector<std::string>::~vector(&PosString);
   }
   return retstr;
 }
@@ -18311,32 +16415,31 @@ void CfgData::parseItemStringWithJob(int32_t id,
         MemChrBagVector *const items,
         MemChrJobBagVector *const jobItems)
 {
-  std::string *v5; // rbx
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  std::string *v16; // rax
-  const char *v17; // rax
-  std::string *v18; // rax
-  const char *v19; // rax
-  const char *v20; // rax
-  MemChrBag itemData; // [rsp+30h] [rbp-D0h] BYREF
-  MemChrJobBag job; // [rsp+50h] [rbp-B0h] BYREF
-  StringVector item; // [rsp+70h] [rbp-90h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+90h] [rbp-70h] BYREF
-  StringVector items_receive; // [rsp+A0h] [rbp-60h] BYREF
-  std::string delims; // [rsp+C0h] [rbp-40h] BYREF
-  char v30; // [rsp+CFh] [rbp-31h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+D0h] [rbp-30h] BYREF
-  std::string v32; // [rsp+E0h] [rbp-20h] BYREF
-  _BYTE v33[17]; // [rsp+EFh] [rbp-11h] BYREF
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  std::string *v16;
+  const char *v17;
+  std::string *v18;
+  const char *v19;
+  const char *v20;
+  MemChrBag itemData;
+  MemChrJobBag job;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v32;
+  _BYTE v33[17];
 
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1 )
   {
@@ -18395,35 +16498,30 @@ void CfgData::parseItemStringWithJob(int32_t id,
           id,
           v20);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
 }
 
 //#####################################
 GongGaoList CfgData::parseGongGaoString(int32_t id, const std::string *const strItems)
 {
-  std::string *v3; // rcx
-  GongGaoList result; // rax
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *strItemsa; // [rsp+8h] [rbp-C8h]
-  CfgGongGao stu; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector item; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v16; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v18; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v19[33]; // [rsp+AFh] [rbp-21h] BYREF
+  std::string *v3;
+  GongGaoList result;
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *strItemsa;
+  CfgGongGao stu;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v18;
+  _BYTE v19[33];
 
-  strItemsa = v3;
-  std::list<CfgGongGao>::list((std::list<CfgGongGao> *const)this);
   if ( (unsigned __int8)std::string::empty(strItemsa) != 1 )
   {
     
@@ -18450,13 +16548,10 @@ GongGaoList CfgData::parseGongGaoString(int32_t id, const std::string *const str
         v8 = std::vector<std::string>::operator[](&item, 1u);
         v9 = (const char *)std::string::c_str(v8);
         stu.GongGaoId = atoi(v9);
-        std::list<CfgGongGao>::push_back((std::list<CfgGongGao> *const)this, &stu);
+        std::list<CfgGongGao>::push_back(this, &stu);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -18464,55 +16559,54 @@ GongGaoList CfgData::parseGongGaoString(int32_t id, const std::string *const str
 MemChrEquipBagVector *CfgData::parseEquipItemString(int32_t id,
         const std::string *const strItems)
 {
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  std::string *v16; // rax
-  const char *v17; // rax
-  std::string *v18; // rax
-  const char *v19; // rax
-  std::string *v20; // rax
-  const char *v21; // rax
-  std::string *v22; // rax
-  const char *v23; // rax
-  std::string *v24; // rax
-  const char *v25; // rax
-  std::string *v26; // rax
-  const char *v27; // rax
-  std::string *v28; // rax
-  const char *v29; // rax
-  std::string *v30; // rax
-  const char *v31; // rax
-  std::string *v32; // rax
-  const char *v33; // rax
-  std::string *v34; // rax
-  const char *v35; // rax
-  std::string *v36; // rax
-  const char *v37; // rax
-  std::string *v38; // rax
-  const char *v39; // rax
-  std::string *v40; // rax
-  const char *v41; // rax
-  const char *v42; // rax
-  CfgEquipItem itemData_1; // [rsp+20h] [rbp-100h] BYREF
-  CfgEquipItem itemData_0; // [rsp+40h] [rbp-E0h] BYREF
-  CfgEquipItem itemData; // [rsp+60h] [rbp-C0h] BYREF
-  StringVector item; // [rsp+80h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+A0h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+B0h] [rbp-70h] BYREF
-  std::string delims; // [rsp+D0h] [rbp-50h] BYREF
-  char v53; // [rsp+DFh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+E0h] [rbp-40h] BYREF
-  std::string v55; // [rsp+F0h] [rbp-30h] BYREF
-  _BYTE v56[33]; // [rsp+FFh] [rbp-21h] BYREF
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  std::string *v16;
+  const char *v17;
+  std::string *v18;
+  const char *v19;
+  std::string *v20;
+  const char *v21;
+  std::string *v22;
+  const char *v23;
+  std::string *v24;
+  const char *v25;
+  std::string *v26;
+  const char *v27;
+  std::string *v28;
+  const char *v29;
+  std::string *v30;
+  const char *v31;
+  std::string *v32;
+  const char *v33;
+  std::string *v34;
+  const char *v35;
+  std::string *v36;
+  const char *v37;
+  std::string *v38;
+  const char *v39;
+  std::string *v40;
+  const char *v41;
+  const char *v42;
+  CfgEquipItem itemData_1;
+  CfgEquipItem itemData_0;
+  CfgEquipItem itemData;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v55;
+  _BYTE v56[33];
 
   std::vector<CfgEquipItem>::vector(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1
@@ -18611,9 +16705,7 @@ MemChrEquipBagVector *CfgData::parseEquipItemString(int32_t id,
         itemData_1.weight = atoi(v41);
         std::vector<CfgEquipItem>::push_back(retstr, &itemData_1);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
   return retstr;
 }
@@ -18622,49 +16714,48 @@ MemChrEquipBagVector *CfgData::parseEquipItemString(int32_t id,
 MemChrJobBagVector *CfgData::parseTaskItemJobString(int32_t id,
         const std::string *const strItems)
 {
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  std::string *v16; // rax
-  const char *v17; // rax
-  std::string *v18; // rax
-  const char *v19; // rax
-  std::string *v20; // rax
-  const char *v21; // rax
-  std::string *v22; // rax
-  const char *v23; // rax
-  std::string *v24; // rax
-  const char *v25; // rax
-  std::string *v26; // rax
-  const char *v27; // rax
-  std::string *v28; // rax
-  const char *v29; // rax
-  std::string *v30; // rax
-  const char *v31; // rax
-  std::string *v32; // rax
-  const char *v33; // rax
-  std::string *v34; // rax
-  const char *v35; // rax
-  const char *v36; // rax
-  MemChrJobBag itemData_1; // [rsp+20h] [rbp-100h] BYREF
-  MemChrJobBag itemData_0; // [rsp+40h] [rbp-E0h] BYREF
-  MemChrJobBag itemData; // [rsp+60h] [rbp-C0h] BYREF
-  StringVector item; // [rsp+80h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+A0h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+B0h] [rbp-70h] BYREF
-  std::string delims; // [rsp+D0h] [rbp-50h] BYREF
-  char v47; // [rsp+DFh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+E0h] [rbp-40h] BYREF
-  std::string v49; // [rsp+F0h] [rbp-30h] BYREF
-  _BYTE v50[33]; // [rsp+FFh] [rbp-21h] BYREF
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  std::string *v16;
+  const char *v17;
+  std::string *v18;
+  const char *v19;
+  std::string *v20;
+  const char *v21;
+  std::string *v22;
+  const char *v23;
+  std::string *v24;
+  const char *v25;
+  std::string *v26;
+  const char *v27;
+  std::string *v28;
+  const char *v29;
+  std::string *v30;
+  const char *v31;
+  std::string *v32;
+  const char *v33;
+  std::string *v34;
+  const char *v35;
+  const char *v36;
+  MemChrJobBag itemData_1;
+  MemChrJobBag itemData_0;
+  MemChrJobBag itemData;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v49;
+  _BYTE v50[33];
 
   std::vector<MemChrJobBag>::vector(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1
@@ -18754,9 +16845,7 @@ MemChrJobBagVector *CfgData::parseTaskItemJobString(int32_t id,
           id,
           v36);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
   return retstr;
 }
@@ -18767,25 +16856,23 @@ void CfgData::parseMonsterSkill(int32_t id,
         const std::string *const strSkill)
 {
   int32_t v5; // eax
-  std::string *v6; // rbx
+  std::string *v6;
   int32_t v7; // r12d
-  std::string *v8; // rax
-  const char *v9; // rax
+  std::string *v8;
+  const char *v9;
   int32_t v10; // r12d
-  std::string *v11; // rax
-  const char *v12; // rax
+  std::string *v11;
+  const char *v12;
   int32_t v13; // r12d
-  std::string *v14; // rax
-  const char *v15; // rax
-  const char *v16; // rax
-  StringVector skill; // [rsp+20h] [rbp-80h] BYREF
-  StringVector skills; // [rsp+40h] [rbp-60h] BYREF
-  std::string delims; // [rsp+60h] [rbp-40h] BYREF
-  char v22; // [rsp+6Fh] [rbp-31h] BYREF
-  std::string v23; // [rsp+70h] [rbp-30h] BYREF
-  char v24; // [rsp+87h] [rbp-19h] BYREF
-  int32_t isize; // [rsp+88h] [rbp-18h]
-  int32_t i; // [rsp+8Ch] [rbp-14h]
+  std::string *v14;
+  const char *v15;
+  const char *v16;
+  StringVector skill;
+  StringVector skills;
+  std::string delims;
+  std::string v23;
+  int32_t isize;
+  int32_t i;
 
   if ( (unsigned __int8)std::string::empty((std::string *)strSkill) != 1
     && std::string::size((std::string *)strSkill) > 3u )
@@ -18830,9 +16917,7 @@ void CfgData::parseMonsterSkill(int32_t id,
           id,
           v16);
       }
-      std::vector<std::string>::~vector(&skill);
     }
-    std::vector<std::string>::~vector(&skills);
   }
 }
 
@@ -18840,22 +16925,21 @@ void CfgData::parseMonsterSkill(int32_t id,
 MemJobItemTable *CfgData::parseGambleEquip(int32_t id,
         const std::string *const strItems)
 {
-  std::string *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  MemJobItem *v9; // rax
-  const char *v10; // rax
-  MemJobItem itemData; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector item; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v19; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v21; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v22[33]; // [rsp+AFh] [rbp-21h] BYREF
+  std::string *v4;
+  std::string *v5;
+  const char *v6;
+  std::string *v7;
+  const char *v8;
+  MemJobItem *v9;
+  const char *v10;
+  MemJobItem itemData;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v21;
+  _BYTE v22[33];
 
   std::map<int,MemJobItem>::map(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1 )
@@ -18877,7 +16961,7 @@ MemJobItemTable *CfgData::parseGambleEquip(int32_t id,
       
       if ( std::vector<std::string>::size(&item) == 2 )
       {
-        itemData = 0;
+
         v5 = std::vector<std::string>::operator[](&item, 0);
         v6 = (const char *)std::string::c_str(v5);
         itemData.job = atoi(v6);
@@ -18896,9 +16980,7 @@ MemJobItemTable *CfgData::parseGambleEquip(int32_t id,
           id,
           v10);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
   return retstr;
 }
@@ -18908,27 +16990,26 @@ TaskRequest CfgData::parseTaskCondition(int32_t id,
         int32_t condition,
         const std::string *const strRequest)
 {
-  std::string *v4; // rax
-  const char *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  const char *v16; // rax
-  StringVector requests; // [rsp+30h] [rbp-60h] BYREF
-  TaskRequest request; // [rsp+50h] [rbp-40h]
-  std::string delims; // [rsp+60h] [rbp-30h] BYREF
-  char v21; // [rsp+6Fh] [rbp-21h] BYREF
-  TaskRequest v22; // [rsp+70h] [rbp-20h]
-  int32_t nSize; // [rsp+7Ch] [rbp-14h]
+  std::string *v4;
+  const char *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  const char *v16;
+  StringVector requests;
+  TaskRequest request;
+  std::string delims;
+  TaskRequest v22;
+  int32_t nSize;
 
-  *(_QWORD *)&request.param1 = 0;
+  memset(&request.param1, 0, sizeof(int64_t));
   request.param3 = 0;
   
   delims = ":";
@@ -18971,37 +17052,33 @@ TaskRequest CfgData::parseTaskCondition(int32_t id,
       break;
   }
   v22 = request;
-  std::vector<std::string>::~vector(&requests);
   return v22;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 TaskDropList CfgData::parseTaskDrop(int32_t id,
         const std::string *const str,
         const std::string *const path)
 {
-  TaskDropList result; // rax
-  std::string *v6; // rax
-  const std::string *v7; // rax
-  unsigned int64_t v8; // r12
-  const std::string *v9; // rax
-  const char *v10; // rax
-  unsigned int ida; // [rsp+14h] [rbp-ECh]
-  TaskDrop stu; // [rsp+20h] [rbp-E0h] BYREF
-  std::string strParam; // [rsp+40h] [rbp-C0h] BYREF
-  std::string strCount; // [rsp+50h] [rbp-B0h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+60h] [rbp-A0h] BYREF
-  StringVector vDrop; // [rsp+70h] [rbp-90h] BYREF
-  std::string delims; // [rsp+90h] [rbp-70h] BYREF
-  char v19; // [rsp+9Fh] [rbp-61h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+A0h] [rbp-60h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+B0h] [rbp-50h] BYREF
-  std::list<Param2> __x; // [rsp+C0h] [rbp-40h] BYREF
-  int e; // [rsp+DCh] [rbp-24h]
+  TaskDropList result;
+  std::string *v6;
+  const std::string *v7;
+  unsigned int64_t v8;
+  const std::string *v9;
+  const char *v10;
+  unsigned int ida;
+  TaskDrop stu;
+  std::string strParam;
+  std::string strCount;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vDrop;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::list<Param2> __x;
+  int e;
 
   ida = (unsigned int)str;
-  std::list<TaskDrop>::list((std::list<TaskDrop> *const)this);
   if ( !(unsigned __int8)std::string::empty((std::string *)path) && !std::operator==<char>(path, "-1") )
   {
     
@@ -19025,23 +17102,19 @@ TaskDropList CfgData::parseTaskDrop(int32_t id,
       v9 = __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator->(&iter);
       std::string::substr(&strParam, (unsigned int64_t)v9, v8);
       memset(&stu, 0, sizeof(stu));
-      std::list<Param2>::list(&stu.lstJobGroup);
       v10 = (const char *)std::string::c_str(&strCount);
       stu.nCount = atoi(v10);
       CfgData::paraseParam2List(
-        (CfgData *const)&__x,
+        &__x,
         *(const std::string *const *)&id,
-        (int32_t)&strParam,
-        (const std::string *const)ida);
-      std::list<Param2>::operator=(&stu.lstJobGroup, &__x);
-      std::list<Param2>::~list(&__x);
-      std::list<TaskDrop>::push_back((std::list<TaskDrop> *const)this, &stu);
-      /* /* TaskDrop::~TaskDrop(&stu); - auto cleanup */ - auto cleanup */
+        &strParam,
+        ida);
+      stu.lstJobGroup = __x;
+      std::list<TaskDrop>::push_back(this, &stu);
+
       __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
     }
-    std::vector<std::string>::~vector(&vDrop);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -19075,7 +17148,7 @@ int32_t CfgData::getServerDiffDay(SERVER_TYPE nType)
 //#####################################
 void CfgData::updateServerStartTime(int32_t kaiFuTime)
 {
-  COpenBeta *v2; // rax
+  COpenBeta *v2;
 
   if ( !CfgData::getServerType(this) )
   {
@@ -19088,14 +17161,14 @@ void CfgData::updateServerStartTime(int32_t kaiFuTime)
 //#####################################
 void CfgData::sendNewItems(const CfgItemTable *const items)
 {
-  GameService *v2; // rax
+  GameService *v2;
   int32_t v3; // eax
   uint32_t WOffset; // eax
-  GameService *v5; // rax
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > it; // [rsp+10h] [rbp-30h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > __x; // [rsp+20h] [rbp-20h] BYREF
-  Answer::NetPacket *packet; // [rsp+30h] [rbp-10h]
-  CfgItem *pCfgItem; // [rsp+38h] [rbp-8h]
+  GameService *v5;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > it;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > __x;
+  Answer::NetPacket *packet;
+  CfgItem *pCfgItem;
 
   v2 = Answer::Singleton<GameService>::instance();
   packet = GameService::popNetpacket(v2, 0, Answer::PackType::PACK_DISPATCH, 0x2752u);
@@ -19103,10 +17176,10 @@ void CfgData::sendNewItems(const CfgItemTable *const items)
   {
     v3 = std::map<int,CfgItem *>::size(items);
     Answer::NetPacket::writeInt32(packet, v3);
-    for ( it._M_node = std::map<int,CfgItem *>::begin(items)._M_node;
+    for (it = items.begin();
           std::_Rb_tree_const_iterator<std::pair<int const,CfgItem *>>::operator++(&it) )
     {
-      __x._M_node = std::map<int,CfgItem *>::end(items)._M_node;
+      __x = items.end();
       if ( !std::_Rb_tree_const_iterator<std::pair<int const,CfgItem *>>::operator!=(&it, &__x) )
         break;
       pCfgItem = std::_Rb_tree_const_iterator<std::pair<int const,CfgItem *>>::operator->(&it)->second;
@@ -19145,26 +17218,24 @@ void CfgData::sendNewItems(const CfgItemTable *const items)
 void CfgData::InitTouZiTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-1B0h] BYREF
-  SevenTouZi stu; // [rsp+A0h] [rbp-120h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-F0h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-D0h] BYREF
-  char v8; // [rsp+FFh] [rbp-C1h] BYREF
-  SevenTouZi p_stu; // [rsp+100h] [rbp-C0h] BYREF
-  MemChrBagVector v10; // [rsp+130h] [rbp-90h] BYREF
-  std::string v11; // [rsp+150h] [rbp-70h] BYREF
-  char v12; // [rsp+15Fh] [rbp-61h] BYREF
-  MonthTouZi v13; // [rsp+160h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+18Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+190h] [rbp-30h]
-  int32_t i; // [rsp+194h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+198h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+1A0h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+1A4h] [rbp-1Ch]
-  int32_t i_0; // [rsp+1A8h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+1ACh] [rbp-14h]
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  CDBCFile TabFile(0);
+  SevenTouZi stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  SevenTouZi p_stu;
+  MemChrBagVector v10;
+  std::string v11;
+  MonthTouZi v13;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/QiRiTouZi.txt") )
@@ -19182,22 +17253,20 @@ void CfgData::InitTouZiTable()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::vector<MemChrBag>::vector(&stu.vItem);
         stu.nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nType = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nCondition = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vItem, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vItem = __x;
         
         ++nIndex;
-        SevenTouZi::SevenTouZi(&p_stu, &stu);
-        CfgTouZiTable::AddSevenTouZi(&this->m_cfgTouZiTable, &p_stu);
-        /* /* SevenTouZi::~SevenTouZi(&p_stu); - auto cleanup */ - auto cleanup */
-        /* /* SevenTouZi::~SevenTouZi(&stu); - auto cleanup */ - auto cleanup */
+        p_stu = stu;
+        m_cfgTouZiTable.AddSevenTouZi(p_stu);
+
+
       }
       v1 = 1;
     }
@@ -19228,16 +17297,15 @@ void CfgData::InitTouZiTable()
           ++nIndex_0;
           
           v3 = TabFile.Search_Posistion( i_0, nIndex_0);
-          v11.assign(v3->pString);
+          v11 = v3->pString;
           CItemHelper::parseItemVectorString(&v10, &v11);
-          std::vector<MemChrBag>::operator=((std::vector<MemChrBag> *const)&stu.nCondition, &v10);
-          std::vector<MemChrBag>::~vector(&v10);
+          stu.nCondition = &v10;
           
-          LODWORD(stu.vItem._M_impl._M_end_of_storage) = TabFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
+          stu.nNoticeId = TabFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           ++nIndex_0;
           MonthTouZi::MonthTouZi(&v13, (const MonthTouZi *const)&stu);
-          CfgTouZiTable::AddMonthTouZi(&this->m_cfgTouZiTable, &v13);
-          /* /* MonthTouZi::~MonthTouZi(&v13); - auto cleanup */ - auto cleanup */
+          m_cfgTouZiTable.AddMonthTouZi(v13);
+
           MonthTouZi::~MonthTouZi((MonthTouZi *const)&stu);
         }
       }
@@ -19249,62 +17317,56 @@ void CfgData::InitTouZiTable()
 void CfgData::InitTreasureMapTabale()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  int *v8; // rbx
-  std::string *v9; // rax
-  const char *v10; // rax
-  std::string *v11; // rax
-  const char *v12; // rax
-  const std::string *v14; // rax
-  std::string *v15; // rax
-  const char *v16; // rax
-  std::string *v17; // rax
-  const char *v18; // rax
-  std::string *v19; // rax
-  const char *v20; // rax
-  const CDBCFile::FIELD *v21; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-320h] BYREF
-  TreasureMapCfg stu; // [rsp+A0h] [rbp-290h] BYREF
-  TreasureMapEventCfg stu_0; // [rsp+100h] [rbp-230h] BYREF
-  MapPos stuPos; // [rsp+120h] [rbp-210h] BYREF
-  StringVector vstr_0; // [rsp+130h] [rbp-200h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin_0; // [rsp+150h] [rbp-1E0h] BYREF
-  StringVector SplitStr_0; // [rsp+160h] [rbp-1D0h] BYREF
-  StringVector vstr; // [rsp+180h] [rbp-1B0h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin; // [rsp+1A0h] [rbp-190h] BYREF
-  StringVector SplitStr; // [rsp+1B0h] [rbp-180h] BYREF
-  std::string MapPosString; // [rsp+1D0h] [rbp-160h] BYREF
-  std::string RateString; // [rsp+1E0h] [rbp-150h] BYREF
-  char v34; // [rsp+1EEh] [rbp-142h] BYREF
-  char v35; // [rsp+1EFh] [rbp-141h] BYREF
-  std::string delims; // [rsp+1F0h] [rbp-140h] BYREF
-  char v37; // [rsp+1FFh] [rbp-131h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+200h] [rbp-130h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+210h] [rbp-120h] BYREF
-  std::string v40; // [rsp+220h] [rbp-110h] BYREF
-  char v41; // [rsp+22Bh] [rbp-105h] BYREF
-  int __k; // [rsp+22Ch] [rbp-104h] BYREF
-  std::string v43; // [rsp+230h] [rbp-100h] BYREF
-  char v44; // [rsp+23Fh] [rbp-F1h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v45; // [rsp+240h] [rbp-F0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v46; // [rsp+250h] [rbp-E0h] BYREF
-  std::string v47; // [rsp+260h] [rbp-D0h] BYREF
-  char v48; // [rsp+26Fh] [rbp-C1h] BYREF
-  Position v49; // [rsp+270h] [rbp-C0h] BYREF
-  TreasureMapCfg p_stu; // [rsp+280h] [rbp-B0h] BYREF
-  TreasureMapEventCfg v51; // [rsp+2E0h] [rbp-50h] BYREF
-  int32_t iBaseTableCount; // [rsp+2FCh] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+300h] [rbp-30h]
-  int32_t i; // [rsp+304h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+308h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+310h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+314h] [rbp-1Ch]
-  int32_t i_0; // [rsp+318h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+31Ch] [rbp-14h]
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const std::string *v5;
+  std::string *v6;
+  const char *v7;
+  int *v8;
+  std::string *v9;
+  const char *v10;
+  std::string *v11;
+  const char *v12;
+  const std::string *v14;
+  std::string *v15;
+  const char *v16;
+  std::string *v17;
+  const char *v18;
+  std::string *v19;
+  const char *v20;
+  const CDBCFile::FIELD *v21;
+  CDBCFile readFile(0);
+  TreasureMapCfg stu;
+  TreasureMapEventCfg stu_0;
+  MapPos stuPos;
+  StringVector vstr_0;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin_0;
+  StringVector SplitStr_0;
+  StringVector vstr;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iterBegin;
+  StringVector SplitStr;
+  std::string MapPosString;
+  std::string RateString;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v40;
+  int __k;
+  std::string v43;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v45;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > v46;
+  std::string v47;
+  Position v49;
+  TreasureMapCfg p_stu;
+  TreasureMapEventCfg v51;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TreasureMapBase.txt") )
@@ -19330,12 +17392,12 @@ void CfgData::InitTreasureMapTabale()
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        RateString.assign(v2->pString);
+        RateString = v2->pString;
         
         ++nIndex;
         
         v3 = readFile.Search_Posistion( i, nIndex);
-        MapPosString.assign(v3->pString);
+        MapPosString = v3->pString;
         
         ++nIndex;
         if ( std::operator!=<char>(&RateString, &byte_8C33CF) && std::operator!=<char>(&RateString, "-1") )
@@ -19363,19 +17425,17 @@ void CfgData::InitTreasureMapTabale()
               v6 = std::vector<std::string>::operator[](&vstr, 0);
               v7 = (const char *)std::string::c_str(v6);
               __k = atoi(v7);
-              v8 = std::map<int,int>::operator[](&stu.m_EventRate, &__k);
+              v8 = stu.m_EventRate[__k];
               v9 = std::vector<std::string>::operator[](&vstr, 1u);
               v10 = (const char *)std::string::c_str(v9);
               *v8 = atoi(v10);
-              LODWORD(v8) = stu.m_MaxProbability;
+              v8 = stu.m_MaxProbability;
               v11 = std::vector<std::string>::operator[](&vstr, 1u);
               v12 = (const char *)std::string::c_str(v11);
               stu.m_MaxProbability = (_DWORD)v8 + atoi(v12);
             }
-            std::vector<std::string>::~vector(&vstr);
             __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iterBegin);
           }
-          std::vector<std::string>::~vector(&SplitStr);
         }
         if ( std::operator!=<char>(&MapPosString, &byte_8C33CF) && std::operator!=<char>(&MapPosString, "-1") )
         {
@@ -19413,15 +17473,13 @@ void CfgData::InitTreasureMapTabale()
               stuPos.m_Pos.y = atoi(v20);
               std::vector<MapPos>::push_back(&stu.m_MaxPosVector, &stuPos);
             }
-            std::vector<std::string>::~vector(&vstr_0);
             __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iterBegin_0);
           }
-          std::vector<std::string>::~vector(&SplitStr_0);
         }
-        TreasureMapCfg::TreasureMapCfg(&p_stu, &stu);
-        TreasureMapTabale::AddTreasureMapCfg(&this->m_TreasureMapTabale, &p_stu);
-        /* /* TreasureMapCfg::~TreasureMapCfg(&p_stu); - auto cleanup */ - auto cleanup */
-        /* /* TreasureMapCfg::~TreasureMapCfg(&stu); - auto cleanup */ - auto cleanup */
+        p_stu = stu;
+        m_TreasureMapTabale.AddTreasureMapCfg(p_stu);
+
+
       }
       v1 = 1;
     }
@@ -19456,10 +17514,10 @@ void CfgData::InitTreasureMapTabale()
           std::string::operator=(&stu_0.m_EventParam, v21->pString);
           stu_0.m_GongGaoId = readFile.Search_Posistion( i_0, ++nIndex_0)->iValue;
           ++nIndex_0;
-          TreasureMapEventCfg::TreasureMapEventCfg(&v51, &stu_0);
-          TreasureMapTabale::AddTreasureMapEventCfg(&this->m_TreasureMapTabale, &v51);
-          /* /* TreasureMapEventCfg::~TreasureMapEventCfg(&v51); - auto cleanup */ - auto cleanup */
-          /* /* TreasureMapEventCfg::~TreasureMapEventCfg(&stu_0); - auto cleanup */ - auto cleanup */
+          v51 = stu_0;
+          m_TreasureMapTabale.AddTreasureMapEventCfg(v51);
+
+
         }
       }
     }
@@ -19469,17 +17527,16 @@ void CfgData::InitTreasureMapTabale()
 //#####################################
 void CfgData::InitWishRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgWishReward stu; // [rsp+A0h] [rbp-70h] BYREF
-  MemChrBagVector __x; // [rsp+C0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+E0h] [rbp-30h] BYREF
-  char v6; // [rsp+EAh] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+ECh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+F0h] [rbp-20h]
-  int32_t i; // [rsp+F4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+F8h] [rbp-18h]
-  int32_t nId; // [rsp+FCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgWishReward stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/WishReward.txt") )
@@ -19495,19 +17552,17 @@ void CfgData::InitWishRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgWishReward::CfgWishReward(&stu);
         nId = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nTime = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vReward = __x;
         
         ++nIndex;
         CfgWishRewardTable::Add(&this->m_cfgWishRewardTable, nId, &stu);
-        /* /* CfgWishReward::~CfgWishReward(&stu); - auto cleanup */ - auto cleanup */
+
       }
     }
   }
@@ -19516,19 +17571,17 @@ void CfgData::InitWishRewardTable()
 //#####################################
 void CfgData::InitWuHunItemTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  WuHunItem *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-120h] BYREF
-  WuHunItem stu; // [rsp+A0h] [rbp-90h] BYREF
-  std::list<AddAttribute> __x; // [rsp+E0h] [rbp-50h] BYREF
-  _BYTE v6[15]; // [rsp+F0h] [rbp-40h] BYREF
-  char v7; // [rsp+FFh] [rbp-31h] BYREF
-  int32_t v8[3]; // [rsp+100h] [rbp-30h] BYREF
-  char v9; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  WuHunItem *v2;
+  CDBCFile TabFile(0);
+  WuHunItem stu;
+  std::list<AddAttribute> __x;
+  _BYTE v6[15];
+  int32_t v8[3];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/WuHun.txt") )
@@ -19545,24 +17598,22 @@ void CfgData::InitWuHunItemTable()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::list<AddAttribute>::list(&stu.lAttrList);
         stu.nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nType = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nQuality = TabFile.Search_Posistion( i, nIndex++)->iValue;
         stu.nNeedQuality = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
-        std::string::string(v6, "./ServerConfig/Tables/WuHun.txt", &v7);
+        std::string v6("./ServerConfig/Tables/WuHun.txt");
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v8, v1->pString, &v9);
+        std::string v8(v1->pString);
         CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)v8,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.lAttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
+          (unsigned int)nIndex);
+        stu.lAttrList = __x;
         
         stu.nTalentId = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.nTalentLevel = TabFile.Search_Posistion( i, ++nIndex)->iValue;
@@ -19573,7 +17624,7 @@ void CfgData::InitWuHunItemTable()
         stu.nDressLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         v2 = std::map<int,WuHunItem>::operator[](&this->m_WuHunItemMap, &stu.nId);
         WuHunItem::operator=(v2, &stu);
-        /* /* WuHunItem::~WuHunItem(&stu); - auto cleanup */ - auto cleanup */
+
       }
     }
   }
@@ -19582,40 +17633,29 @@ void CfgData::InitWuHunItemTable()
 //#####################################
 WuHunItem *CfgData::GetWuHunItem(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,WuHunItem> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,WuHunItem> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,WuHunItem>::find(&this->m_WuHunItemMap, &nIda)._M_node;
-  __x._M_node = std::map<int,WuHunItem>::end(&thisa->m_WuHunItemMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,WuHunItem>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,WuHunItem>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_WuHunItemMap.find(nId);
+	if (it != m_WuHunItemMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitWuHunShopTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  std::list<CfgWuHunShop> *v2; // rax
-  CfgWuHunShop *v3; // rax
-  MemChrBag v4; // [rsp+0h] [rbp-130h] BYREF
-  CfgData *thisa; // [rsp+28h] [rbp-108h]
-  CDBCFile TabFile(0); // [rsp+30h] [rbp-100h] BYREF
-  CfgWuHunShop stu; // [rsp+C0h] [rbp-70h] BYREF
-  int32_t ShopId; // [rsp+FCh] [rbp-34h] BYREF
-  std::string strItem; // [rsp+100h] [rbp-30h] BYREF
-  char v10; // [rsp+10Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+110h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+114h] [rbp-1Ch]
-  int32_t i; // [rsp+118h] [rbp-18h]
-  int32_t nIndex; // [rsp+11Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  std::list<CfgWuHunShop> *v2;
+  CfgWuHunShop *v3;
+  MemChrBag v4;
 
-  thisa = this;
+  CDBCFile TabFile(0);
+  CfgWuHunShop stu;
+  int32_t ShopId;
+  std::string strItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/MysterShop.txt") )
   {
@@ -19636,7 +17676,7 @@ void CfgData::InitWuHunShopTable()
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         CItemHelper::parseItemString(&v4, &strItem);
         stu.Item = v4;
         
@@ -19644,9 +17684,9 @@ void CfgData::InitWuHunShopTable()
         ++nIndex;
         stu.Const = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        v2 = std::map<int,std::list<CfgWuHunShop>>::operator[](&thisa->m_CfgWuHunShopMap, &ShopId);
+        v2 = std::map<int,std::list<CfgWuHunShop>>::operator[](&m_CfgWuHunShopMap, &ShopId);
         std::list<CfgWuHunShop>::push_back(v2, &stu);
-        v3 = std::map<int,CfgWuHunShop>::operator[](&thisa->m_CfgWuHunShopItemMap, &stu.Index);
+        v3 = std::map<int,CfgWuHunShop>::operator[](&m_CfgWuHunShopItemMap, &stu.Index);
         *v3 = stu;
       }
     }
@@ -19654,38 +17694,14 @@ void CfgData::InitWuHunShopTable()
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 #if 0 // replaced by hand-written version at end of file
 CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
 {
-  int32_t v2; // edx
-  CfgWuHunShopList result; // rax
-  std::pair<const int,std::list<CfgWuHunShop> > *v4; // rax
-  int32_t ShopIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  CfgWuHunShopList list; // [rsp+10h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<CfgWuHunShop> > > it; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<CfgWuHunShop> > > __x; // [rsp+30h] [rbp-20h] BYREF
-
-  thisa = *(CfgData **)&ShopId;
-  ShopIda = v2;
-  it._M_node = std::map<int,std::list<CfgWuHunShop>>::find(
-                 (std::map<int,std::list<CfgWuHunShop>> *const)(*(_QWORD *)&ShopId + 10680LL),
-                 &ShopIda)._M_node;
-  __x._M_node = std::map<int,std::list<CfgWuHunShop>>::end(&thisa->m_CfgWuHunShopMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<CfgWuHunShop>>>::operator==(&it, &__x) )
-  {
-    std::list<CfgWuHunShop>::list(&list);
-    std::list<CfgWuHunShop>::list((std::list<CfgWuHunShop> *const)this, &list);
-    std::list<CfgWuHunShop>::~list(&list);
-  }
-  else
-  {
-    v4 = std::_Rb_tree_iterator<std::pair<int const,std::list<CfgWuHunShop>>>::operator->(&it);
-    std::list<CfgWuHunShop>::list((std::list<CfgWuHunShop> *const)this, &v4->second);
-  }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	CfgWuHunShopList result;
+	auto it = m_WuHunShopListMap.find(ShopId);
+	if (it != m_WuHunShopListMap.end())
+		result = it->second;
+	return result;
 }
 #endif // replaced by hand-written version
 
@@ -19693,40 +17709,29 @@ CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
 //#####################################
 CfgWuHunShop *CfgData::GetWuHunShopItem(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CfgWuHunShop> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgWuHunShop> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIndexa = nIndex;
-  it._M_node = std::map<int,CfgWuHunShop>::find(&this->m_CfgWuHunShopItemMap, &nIndexa)._M_node;
-  __x._M_node = std::map<int,CfgWuHunShop>::end(&thisa->m_CfgWuHunShopItemMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CfgWuHunShop>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CfgWuHunShop>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_WuHunShopMap.find(nIndex);
+	if (it != m_WuHunShopMap.end())
+		return &it->second;
+	return NULL;
 }
 #endif // replaced by hand-written version
 
 //#####################################
 void CfgData::InitYellowLevelRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-150h] BYREF
-  CfgTencentGift gift; // [rsp+A0h] [rbp-C0h] BYREF
-  MemChrBagVector __x; // [rsp+E0h] [rbp-80h] BYREF
-  std::string strItems; // [rsp+100h] [rbp-60h] BYREF
-  char v7; // [rsp+10Fh] [rbp-51h] BYREF
-  MemChrBagVector v8; // [rsp+110h] [rbp-50h] BYREF
-  std::string v9; // [rsp+130h] [rbp-30h] BYREF
-  char v10; // [rsp+13Ah] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+13Ch] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+140h] [rbp-20h]
-  int32_t i; // [rsp+144h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+148h] [rbp-18h]
-  int32_t nId; // [rsp+14Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile TabFile(0);
+  CfgTencentGift gift;
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v8;
+  std::string v9;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/YellowLevelReward.txt") )
@@ -19744,26 +17749,23 @@ void CfgData::InitYellowLevelRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTencentGift::CfgTencentGift(&gift);
         nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         gift.nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&gift.vRewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        gift.vRewards = __x;
         
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        v9.assign(v2->pString);
+        v9 = v2->pString;
         CItemHelper::parseItemVectorString(&v8, &v9);
-        std::vector<MemChrBag>::operator=(&gift.vVipRewards, &v8);
-        std::vector<MemChrBag>::~vector(&v8);
+        gift.vVipRewards = v8;
         
         ++nIndex;
-        CfgTencentTable::AddYellowLevelGift(&this->m_cfgTencentTable, nId, &gift);
+        m_cfgTencentTable.AddYellowLevelGift(nId, gift);
         CfgTencentGift::~CfgTencentGift(&gift);
       }
     }
@@ -19820,16 +17822,14 @@ void CfgData::InitYellowLevelRewardTable()
     }
 }
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-F0h] BYREF
-  CfgTalentActive stu; // [rsp+A0h] [rbp-60h] BYREF
-  std::list<ItemData> strItems; // [rsp+C0h] [rbp-40h] BYREF
-  bool bCombi[14]; // [rsp+D0h] [rbp-30h] BYREF
-  char v6; // [rsp+DEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+E0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+E4h] [rbp-1Ch]
-  int32_t i; // [rsp+E8h] [rbp-18h]
-  int32_t nIndex; // [rsp+ECh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgTalentActive stu;
+  std::list<ItemData> strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/SkillActive.txt") )
@@ -19845,18 +17845,16 @@ void CfgData::InitYellowLevelRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTalentActive::CfgTalentActive(&stu);
         stu.nId = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v6);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.lItems, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&strItems, (bool)bCombi);
+        stu.lItems = strItems;
         
         ++nIndex;
-        CfgSkillTable::AddTalentActive(&this->m_cfgSkillTable, &stu);
-        /* CfgTalentActive::~CfgTalentActive(&stu); - auto cleanup */
+        m_cfgSkillTable.AddTalentActive(stu);
+
       }
     }
   }
@@ -19867,34 +17865,28 @@ void CfgData::InitYellowLevelRewardTable()
 //#####################################
 void CfgData::fetchTask()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  const CDBCFile::FIELD *v6; // rax
-  CfgTask *v7; // rax
-  CfgTask task; // [rsp+10h] [rbp-2A0h] BYREF
-  CDBCFile TabFile(0); // [rsp+130h] [rbp-180h] BYREF
-  MemChrBagVector __x; // [rsp+1C0h] [rbp-F0h] BYREF
-  std::string strItems; // [rsp+1E0h] [rbp-D0h] BYREF
-  char v12; // [rsp+1EFh] [rbp-C1h] BYREF
-  MemChrBagVector v13; // [rsp+1F0h] [rbp-C0h] BYREF
-  std::string v14; // [rsp+210h] [rbp-A0h] BYREF
-  char v15; // [rsp+21Fh] [rbp-91h] BYREF
-  MemChrJobBagVector v16; // [rsp+220h] [rbp-90h] BYREF
-  std::string v17; // [rsp+240h] [rbp-70h] BYREF
-  char v18; // [rsp+24Fh] [rbp-61h] BYREF
-  std::string strRequest; // [rsp+250h] [rbp-60h] BYREF
-  char v20; // [rsp+25Fh] [rbp-51h] BYREF
-  std::list<TaskDrop> v21; // [rsp+260h] [rbp-50h] BYREF
-  _BYTE v22[15]; // [rsp+270h] [rbp-40h] BYREF
-  char v23; // [rsp+27Fh] [rbp-31h] BYREF
-  std::string path; // [rsp+280h] [rbp-30h] BYREF
-  char v25; // [rsp+292h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+294h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+298h] [rbp-18h]
-  int32_t i; // [rsp+29Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  const CDBCFile::FIELD *v5;
+  const CDBCFile::FIELD *v6;
+  CfgTask *v7;
+  CfgTask task;
+  CDBCFile TabFile(0);
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v13;
+  std::string v14;
+  MemChrJobBagVector v16;
+  std::string v17;
+  std::string strRequest;
+  std::list<TaskDrop> v21;
+  _BYTE v22[15];
+  std::string path;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_task.txt") )
@@ -19909,7 +17901,6 @@ void CfgData::fetchTask()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgTask::CfgTask(&task);
         task.id = TabFile.Search_Posistion( i, 0)->iValue;
         v1 = TabFile.Search_Posistion( i, 1);
         snprintf(task.name, 0x1Eu, v1->pString);
@@ -19928,10 +17919,9 @@ void CfgData::fetchTask()
         task.dungeon = TabFile.Search_Posistion( i, 14)->iValue;
         
         v2 = TabFile.Search_Posistion( i, 15);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&task.items_receive, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        task.items_receive = __x;
         
         task.award_exp = TabFile.Search_Posistion( i, 16)->iValue;
         task.award_money = TabFile.Search_Posistion( i, 17)->iValue;
@@ -19942,21 +17932,19 @@ void CfgData::fetchTask()
         task.BossScore = TabFile.Search_Posistion( i, 22)->iValue;
         
         v3 = TabFile.Search_Posistion( i, 23);
-        v14.assign(v3->pString);
+        v14 = v3->pString;
         CItemHelper::parseItemVectorString(&v13, &v14);
-        std::vector<MemChrBag>::operator=(&task.award_item, &v13);
-        std::vector<MemChrBag>::~vector(&v13);
+        task.award_item = v13;
         
         v4 = TabFile.Search_Posistion( i, 24);
-        v17.assign(v4->pString);
+        v17 = v4->pString;
         CfgData::parseTaskItemJobString(&v16, this, task.id, &v17);
-        std::vector<MemChrJobBag>::operator=(&task.award_optional, &v16);
-        std::vector<MemChrJobBag>::~vector(&v16);
+        task.award_optional = v16;
         
         task.condition = TabFile.Search_Posistion( i, 35)->iValue;
         
         v5 = TabFile.Search_Posistion( i, 36);
-        strRequest.assign(v5->pString);
+        strRequest = v5->pString;
         task.request = CfgData::parseTaskCondition(this, task.id, task.condition, &strRequest);
         
         task.GongXian = TabFile.Search_Posistion( i, 50)->iValue;
@@ -19970,17 +17958,16 @@ void CfgData::fetchTask()
         task.activity_score = TabFile.Search_Posistion( i, 65)->iValue;
         task.talent_point = TabFile.Search_Posistion( i, 67)->iValue;
         
-        std::string::string(v22, "./ServerConfig/Tables/cfg_task.txt", &v23);
+        std::string v22("./ServerConfig/Tables/cfg_task.txt");
         
         v6 = TabFile.Search_Posistion( i, 68);
-        path.assign(v6->pString);
+        path = v6->pString;
         CfgData::parseTaskDrop(
-          (CfgData *const)&v21,
+          &v21,
           (int32_t)this,
-          (const std::string *const)(unsigned int)task.id,
+          (unsigned int)task.id,
           &path);
-        std::list<TaskDrop>::operator=(&task.drop_list, &v21);
-        std::list<TaskDrop>::~list(&v21);
+        task.drop_list = v21;
         
         task.DoubleGold = TabFile.Search_Posistion( i, 69)->iValue;
         task.BuffId = TabFile.Search_Posistion( i, 70)->iValue;
@@ -20001,13 +17988,13 @@ void CfgData::fetchTask()
 //#####################################
 void CfgData::fetchTrap()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgTrap *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  CfgTrap trap; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+C8h] [rbp-18h]
-  int32_t i; // [rsp+CCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgTrap *v2;
+  CDBCFile TabFile(0);
+  CfgTrap trap;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/cfg_trap.txt") )
@@ -20022,7 +18009,6 @@ void CfgData::fetchTrap()
     {
       for ( i = 0; i < iBaseTableCount; ++i )
       {
-        CfgTrap::CfgTrap(&trap);
         trap.id = TabFile.Search_Posistion( i, 0)->iValue;
         trap.cd = TabFile.Search_Posistion( i, 2)->iValue;
         trap.delay = TabFile.Search_Posistion( i, 3)->iValue;
@@ -20043,20 +18029,19 @@ void CfgData::fetchTrap()
 std::vector<Position> *CfgData::paresPosition(
         std::vector<Position> *const std::string *const strPos)
 {
-  std::string *v3; // rax
-  std::string *v4; // rax
-  const char *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  Position stu; // [rsp+10h] [rbp-B0h] BYREF
-  StringVector Pos; // [rsp+20h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+40h] [rbp-80h] BYREF
-  StringVector PosString; // [rsp+50h] [rbp-70h] BYREF
-  std::string delims; // [rsp+70h] [rbp-50h] BYREF
-  char v15; // [rsp+7Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+80h] [rbp-40h] BYREF
-  std::string v17; // [rsp+90h] [rbp-30h] BYREF
-  _BYTE v18[33]; // [rsp+9Fh] [rbp-21h] BYREF
+  std::string *v3;
+  std::string *v4;
+  const char *v5;
+  std::string *v6;
+  const char *v7;
+  Position stu;
+  StringVector Pos;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector PosString;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v17;
+  _BYTE v18[33];
 
   std::vector<Position>::vector(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strPos) != 1 )
@@ -20087,9 +18072,7 @@ std::vector<Position> *CfgData::paresPosition(
         stu.y = atoi(v7);
         std::vector<Position>::push_back(retstr, &stu);
       }
-      std::vector<std::string>::~vector(&Pos);
     }
-    std::vector<std::string>::~vector(&PosString);
   }
   return retstr;
 }
@@ -20100,32 +18083,31 @@ void CfgData::parseItemStringWithJob(int32_t id,
         MemChrBagVector *const items,
         MemChrJobBagVector *const jobItems)
 {
-  std::string *v5; // rbx
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  std::string *v16; // rax
-  const char *v17; // rax
-  std::string *v18; // rax
-  const char *v19; // rax
-  const char *v20; // rax
-  MemChrBag itemData; // [rsp+30h] [rbp-D0h] BYREF
-  MemChrJobBag job; // [rsp+50h] [rbp-B0h] BYREF
-  StringVector item; // [rsp+70h] [rbp-90h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+90h] [rbp-70h] BYREF
-  StringVector items_receive; // [rsp+A0h] [rbp-60h] BYREF
-  std::string delims; // [rsp+C0h] [rbp-40h] BYREF
-  char v30; // [rsp+CFh] [rbp-31h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+D0h] [rbp-30h] BYREF
-  std::string v32; // [rsp+E0h] [rbp-20h] BYREF
-  _BYTE v33[17]; // [rsp+EFh] [rbp-11h] BYREF
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  std::string *v16;
+  const char *v17;
+  std::string *v18;
+  const char *v19;
+  const char *v20;
+  MemChrBag itemData;
+  MemChrJobBag job;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v32;
+  _BYTE v33[17];
 
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1 )
   {
@@ -20184,35 +18166,30 @@ void CfgData::parseItemStringWithJob(int32_t id,
           id,
           v20);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
 }
 
 //#####################################
 GongGaoList CfgData::parseGongGaoString(int32_t id, const std::string *const strItems)
 {
-  std::string *v3; // rcx
-  GongGaoList result; // rax
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *strItemsa; // [rsp+8h] [rbp-C8h]
-  CfgGongGao stu; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector item; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v16; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v18; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v19[33]; // [rsp+AFh] [rbp-21h] BYREF
+  std::string *v3;
+  GongGaoList result;
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *strItemsa;
+  CfgGongGao stu;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v18;
+  _BYTE v19[33];
 
-  strItemsa = v3;
-  std::list<CfgGongGao>::list((std::list<CfgGongGao> *const)this);
   if ( (unsigned __int8)std::string::empty(strItemsa) != 1 )
   {
     
@@ -20239,13 +18216,10 @@ GongGaoList CfgData::parseGongGaoString(int32_t id, const std::string *const str
         v8 = std::vector<std::string>::operator[](&item, 1u);
         v9 = (const char *)std::string::c_str(v8);
         stu.GongGaoId = atoi(v9);
-        std::list<CfgGongGao>::push_back((std::list<CfgGongGao> *const)this, &stu);
+        std::list<CfgGongGao>::push_back(this, &stu);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -20253,55 +18227,54 @@ GongGaoList CfgData::parseGongGaoString(int32_t id, const std::string *const str
 MemChrEquipBagVector *CfgData::parseEquipItemString(int32_t id,
         const std::string *const strItems)
 {
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  std::string *v16; // rax
-  const char *v17; // rax
-  std::string *v18; // rax
-  const char *v19; // rax
-  std::string *v20; // rax
-  const char *v21; // rax
-  std::string *v22; // rax
-  const char *v23; // rax
-  std::string *v24; // rax
-  const char *v25; // rax
-  std::string *v26; // rax
-  const char *v27; // rax
-  std::string *v28; // rax
-  const char *v29; // rax
-  std::string *v30; // rax
-  const char *v31; // rax
-  std::string *v32; // rax
-  const char *v33; // rax
-  std::string *v34; // rax
-  const char *v35; // rax
-  std::string *v36; // rax
-  const char *v37; // rax
-  std::string *v38; // rax
-  const char *v39; // rax
-  std::string *v40; // rax
-  const char *v41; // rax
-  const char *v42; // rax
-  CfgEquipItem itemData_1; // [rsp+20h] [rbp-100h] BYREF
-  CfgEquipItem itemData_0; // [rsp+40h] [rbp-E0h] BYREF
-  CfgEquipItem itemData; // [rsp+60h] [rbp-C0h] BYREF
-  StringVector item; // [rsp+80h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+A0h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+B0h] [rbp-70h] BYREF
-  std::string delims; // [rsp+D0h] [rbp-50h] BYREF
-  char v53; // [rsp+DFh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+E0h] [rbp-40h] BYREF
-  std::string v55; // [rsp+F0h] [rbp-30h] BYREF
-  _BYTE v56[33]; // [rsp+FFh] [rbp-21h] BYREF
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  std::string *v16;
+  const char *v17;
+  std::string *v18;
+  const char *v19;
+  std::string *v20;
+  const char *v21;
+  std::string *v22;
+  const char *v23;
+  std::string *v24;
+  const char *v25;
+  std::string *v26;
+  const char *v27;
+  std::string *v28;
+  const char *v29;
+  std::string *v30;
+  const char *v31;
+  std::string *v32;
+  const char *v33;
+  std::string *v34;
+  const char *v35;
+  std::string *v36;
+  const char *v37;
+  std::string *v38;
+  const char *v39;
+  std::string *v40;
+  const char *v41;
+  const char *v42;
+  CfgEquipItem itemData_1;
+  CfgEquipItem itemData_0;
+  CfgEquipItem itemData;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v55;
+  _BYTE v56[33];
 
   std::vector<CfgEquipItem>::vector(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1
@@ -20400,9 +18373,7 @@ MemChrEquipBagVector *CfgData::parseEquipItemString(int32_t id,
         itemData_1.weight = atoi(v41);
         std::vector<CfgEquipItem>::push_back(retstr, &itemData_1);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
   return retstr;
 }
@@ -20411,49 +18382,48 @@ MemChrEquipBagVector *CfgData::parseEquipItemString(int32_t id,
 MemChrJobBagVector *CfgData::parseTaskItemJobString(int32_t id,
         const std::string *const strItems)
 {
-  std::string *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  std::string *v16; // rax
-  const char *v17; // rax
-  std::string *v18; // rax
-  const char *v19; // rax
-  std::string *v20; // rax
-  const char *v21; // rax
-  std::string *v22; // rax
-  const char *v23; // rax
-  std::string *v24; // rax
-  const char *v25; // rax
-  std::string *v26; // rax
-  const char *v27; // rax
-  std::string *v28; // rax
-  const char *v29; // rax
-  std::string *v30; // rax
-  const char *v31; // rax
-  std::string *v32; // rax
-  const char *v33; // rax
-  std::string *v34; // rax
-  const char *v35; // rax
-  const char *v36; // rax
-  MemChrJobBag itemData_1; // [rsp+20h] [rbp-100h] BYREF
-  MemChrJobBag itemData_0; // [rsp+40h] [rbp-E0h] BYREF
-  MemChrJobBag itemData; // [rsp+60h] [rbp-C0h] BYREF
-  StringVector item; // [rsp+80h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+A0h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+B0h] [rbp-70h] BYREF
-  std::string delims; // [rsp+D0h] [rbp-50h] BYREF
-  char v47; // [rsp+DFh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+E0h] [rbp-40h] BYREF
-  std::string v49; // [rsp+F0h] [rbp-30h] BYREF
-  _BYTE v50[33]; // [rsp+FFh] [rbp-21h] BYREF
+  std::string *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  std::string *v16;
+  const char *v17;
+  std::string *v18;
+  const char *v19;
+  std::string *v20;
+  const char *v21;
+  std::string *v22;
+  const char *v23;
+  std::string *v24;
+  const char *v25;
+  std::string *v26;
+  const char *v27;
+  std::string *v28;
+  const char *v29;
+  std::string *v30;
+  const char *v31;
+  std::string *v32;
+  const char *v33;
+  std::string *v34;
+  const char *v35;
+  const char *v36;
+  MemChrJobBag itemData_1;
+  MemChrJobBag itemData_0;
+  MemChrJobBag itemData;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v49;
+  _BYTE v50[33];
 
   std::vector<MemChrJobBag>::vector(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1
@@ -20543,9 +18513,7 @@ MemChrJobBagVector *CfgData::parseTaskItemJobString(int32_t id,
           id,
           v36);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
   return retstr;
 }
@@ -20556,25 +18524,23 @@ void CfgData::parseMonsterSkill(int32_t id,
         const std::string *const strSkill)
 {
   int32_t v5; // eax
-  std::string *v6; // rbx
+  std::string *v6;
   int32_t v7; // r12d
-  std::string *v8; // rax
-  const char *v9; // rax
+  std::string *v8;
+  const char *v9;
   int32_t v10; // r12d
-  std::string *v11; // rax
-  const char *v12; // rax
+  std::string *v11;
+  const char *v12;
   int32_t v13; // r12d
-  std::string *v14; // rax
-  const char *v15; // rax
-  const char *v16; // rax
-  StringVector skill; // [rsp+20h] [rbp-80h] BYREF
-  StringVector skills; // [rsp+40h] [rbp-60h] BYREF
-  std::string delims; // [rsp+60h] [rbp-40h] BYREF
-  char v22; // [rsp+6Fh] [rbp-31h] BYREF
-  std::string v23; // [rsp+70h] [rbp-30h] BYREF
-  char v24; // [rsp+87h] [rbp-19h] BYREF
-  int32_t isize; // [rsp+88h] [rbp-18h]
-  int32_t i; // [rsp+8Ch] [rbp-14h]
+  std::string *v14;
+  const char *v15;
+  const char *v16;
+  StringVector skill;
+  StringVector skills;
+  std::string delims;
+  std::string v23;
+  int32_t isize;
+  int32_t i;
 
   if ( (unsigned __int8)std::string::empty((std::string *)strSkill) != 1
     && std::string::size((std::string *)strSkill) > 3u )
@@ -20619,9 +18585,7 @@ void CfgData::parseMonsterSkill(int32_t id,
           id,
           v16);
       }
-      std::vector<std::string>::~vector(&skill);
     }
-    std::vector<std::string>::~vector(&skills);
   }
 }
 
@@ -20629,22 +18593,21 @@ void CfgData::parseMonsterSkill(int32_t id,
 MemJobItemTable *CfgData::parseGambleEquip(int32_t id,
         const std::string *const strItems)
 {
-  std::string *v4; // rax
-  std::string *v5; // rax
-  const char *v6; // rax
-  std::string *v7; // rax
-  const char *v8; // rax
-  MemJobItem *v9; // rax
-  const char *v10; // rax
-  MemJobItem itemData; // [rsp+20h] [rbp-B0h] BYREF
-  StringVector item; // [rsp+30h] [rbp-A0h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it; // [rsp+50h] [rbp-80h] BYREF
-  StringVector items_receive; // [rsp+60h] [rbp-70h] BYREF
-  std::string delims; // [rsp+80h] [rbp-50h] BYREF
-  char v19; // [rsp+8Fh] [rbp-41h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+90h] [rbp-40h] BYREF
-  std::string v21; // [rsp+A0h] [rbp-30h] BYREF
-  _BYTE v22[33]; // [rsp+AFh] [rbp-21h] BYREF
+  std::string *v4;
+  std::string *v5;
+  const char *v6;
+  std::string *v7;
+  const char *v8;
+  MemJobItem *v9;
+  const char *v10;
+  MemJobItem itemData;
+  StringVector item;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > it;
+  StringVector items_receive;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::string v21;
+  _BYTE v22[33];
 
   std::map<int,MemJobItem>::map(retstr);
   if ( (unsigned __int8)std::string::empty((std::string *)strItems) != 1 )
@@ -20666,7 +18629,7 @@ MemJobItemTable *CfgData::parseGambleEquip(int32_t id,
       
       if ( std::vector<std::string>::size(&item) == 2 )
       {
-        itemData = 0;
+
         v5 = std::vector<std::string>::operator[](&item, 0);
         v6 = (const char *)std::string::c_str(v5);
         itemData.job = atoi(v6);
@@ -20685,9 +18648,7 @@ MemJobItemTable *CfgData::parseGambleEquip(int32_t id,
           id,
           v10);
       }
-      std::vector<std::string>::~vector(&item);
     }
-    std::vector<std::string>::~vector(&items_receive);
   }
   return retstr;
 }
@@ -20697,27 +18658,26 @@ TaskRequest CfgData::parseTaskCondition(int32_t id,
         int32_t condition,
         const std::string *const strRequest)
 {
-  std::string *v4; // rax
-  const char *v5; // rax
-  std::string *v6; // rax
-  const char *v7; // rax
-  std::string *v8; // rax
-  const char *v9; // rax
-  std::string *v10; // rax
-  const char *v11; // rax
-  std::string *v12; // rax
-  const char *v13; // rax
-  std::string *v14; // rax
-  const char *v15; // rax
-  const char *v16; // rax
-  StringVector requests; // [rsp+30h] [rbp-60h] BYREF
-  TaskRequest request; // [rsp+50h] [rbp-40h]
-  std::string delims; // [rsp+60h] [rbp-30h] BYREF
-  char v21; // [rsp+6Fh] [rbp-21h] BYREF
-  TaskRequest v22; // [rsp+70h] [rbp-20h]
-  int32_t nSize; // [rsp+7Ch] [rbp-14h]
+  std::string *v4;
+  const char *v5;
+  std::string *v6;
+  const char *v7;
+  std::string *v8;
+  const char *v9;
+  std::string *v10;
+  const char *v11;
+  std::string *v12;
+  const char *v13;
+  std::string *v14;
+  const char *v15;
+  const char *v16;
+  StringVector requests;
+  TaskRequest request;
+  std::string delims;
+  TaskRequest v22;
+  int32_t nSize;
 
-  *(_QWORD *)&request.param1 = 0;
+  memset(&request.param1, 0, sizeof(int64_t));
   request.param3 = 0;
   
   delims = ":";
@@ -20760,37 +18720,33 @@ TaskRequest CfgData::parseTaskCondition(int32_t id,
       break;
   }
   v22 = request;
-  std::vector<std::string>::~vector(&requests);
   return v22;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 TaskDropList CfgData::parseTaskDrop(int32_t id,
         const std::string *const str,
         const std::string *const path)
 {
-  TaskDropList result; // rax
-  std::string *v6; // rax
-  const std::string *v7; // rax
-  unsigned int64_t v8; // r12
-  const std::string *v9; // rax
-  const char *v10; // rax
-  unsigned int ida; // [rsp+14h] [rbp-ECh]
-  TaskDrop stu; // [rsp+20h] [rbp-E0h] BYREF
-  std::string strParam; // [rsp+40h] [rbp-C0h] BYREF
-  std::string strCount; // [rsp+50h] [rbp-B0h] BYREF
-  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter; // [rsp+60h] [rbp-A0h] BYREF
-  StringVector vDrop; // [rsp+70h] [rbp-90h] BYREF
-  std::string delims; // [rsp+90h] [rbp-70h] BYREF
-  char v19; // [rsp+9Fh] [rbp-61h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i; // [rsp+A0h] [rbp-60h] BYREF
-  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs; // [rsp+B0h] [rbp-50h] BYREF
-  std::list<Param2> __x; // [rsp+C0h] [rbp-40h] BYREF
-  int e; // [rsp+DCh] [rbp-24h]
+  TaskDropList result;
+  std::string *v6;
+  const std::string *v7;
+  unsigned int64_t v8;
+  const std::string *v9;
+  const char *v10;
+  unsigned int ida;
+  TaskDrop stu;
+  std::string strParam;
+  std::string strCount;
+  __gnu_cxx::__normal_iterator<const std::string*,std::vector<std::string> > iter;
+  StringVector vDrop;
+  std::string delims;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __i;
+  __gnu_cxx::__normal_iterator<std::string*,std::vector<std::string> > __rhs;
+  std::list<Param2> __x;
+  int e;
 
   ida = (unsigned int)str;
-  std::list<TaskDrop>::list((std::list<TaskDrop> *const)this);
   if ( !(unsigned __int8)std::string::empty((std::string *)path) && !std::operator==<char>(path, "-1") )
   {
     
@@ -20814,23 +18770,19 @@ TaskDropList CfgData::parseTaskDrop(int32_t id,
       v9 = __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator->(&iter);
       std::string::substr(&strParam, (unsigned int64_t)v9, v8);
       memset(&stu, 0, sizeof(stu));
-      std::list<Param2>::list(&stu.lstJobGroup);
       v10 = (const char *)std::string::c_str(&strCount);
       stu.nCount = atoi(v10);
       CfgData::paraseParam2List(
-        (CfgData *const)&__x,
+        &__x,
         *(const std::string *const *)&id,
-        (int32_t)&strParam,
-        (const std::string *const)ida);
-      std::list<Param2>::operator=(&stu.lstJobGroup, &__x);
-      std::list<Param2>::~list(&__x);
-      std::list<TaskDrop>::push_back((std::list<TaskDrop> *const)this, &stu);
+        &strParam,
+        ida);
+      stu.lstJobGroup = __x;
+      std::list<TaskDrop>::push_back(this, &stu);
       TaskDrop::~TaskDrop(&stu);
       __gnu_cxx::__normal_iterator<std::string const*,std::vector<std::string>>::operator++(&iter);
     }
-    std::vector<std::string>::~vector(&vDrop);
   }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
   return result;
 }
 
@@ -20864,7 +18816,7 @@ int32_t CfgData::getServerDiffDay(SERVER_TYPE nType)
 //#####################################
 void CfgData::updateServerStartTime(int32_t kaiFuTime)
 {
-  COpenBeta *v2; // rax
+  COpenBeta *v2;
 
   if ( !CfgData::getServerType(this) )
   {
@@ -20877,14 +18829,14 @@ void CfgData::updateServerStartTime(int32_t kaiFuTime)
 //#####################################
 void CfgData::sendNewItems(const CfgItemTable *const items)
 {
-  GameService *v2; // rax
+  GameService *v2;
   int32_t v3; // eax
   uint32_t WOffset; // eax
-  GameService *v5; // rax
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > it; // [rsp+10h] [rbp-30h] BYREF
-  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > __x; // [rsp+20h] [rbp-20h] BYREF
-  Answer::NetPacket *packet; // [rsp+30h] [rbp-10h]
-  CfgItem *pCfgItem; // [rsp+38h] [rbp-8h]
+  GameService *v5;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > it;
+  std::_Rb_tree_const_iterator<std::pair<const int,CfgItem*> > __x;
+  Answer::NetPacket *packet;
+  CfgItem *pCfgItem;
 
   v2 = Answer::Singleton<GameService>::instance();
   packet = GameService::popNetpacket(v2, 0, Answer::PackType::PACK_DISPATCH, 0x2752u);
@@ -20892,10 +18844,10 @@ void CfgData::sendNewItems(const CfgItemTable *const items)
   {
     v3 = std::map<int,CfgItem *>::size(items);
     Answer::NetPacket::writeInt32(packet, v3);
-    for ( it._M_node = std::map<int,CfgItem *>::begin(items)._M_node;
+    for (it = items.begin();
           std::_Rb_tree_const_iterator<std::pair<int const,CfgItem *>>::operator++(&it) )
     {
-      __x._M_node = std::map<int,CfgItem *>::end(items)._M_node;
+      __x = items.end();
       if ( !std::_Rb_tree_const_iterator<std::pair<int const,CfgItem *>>::operator!=(&it, &__x) )
         break;
       pCfgItem = std::_Rb_tree_const_iterator<std::pair<int const,CfgItem *>>::operator->(&it)->second;
@@ -20935,12 +18887,12 @@ void CfgData::sendNewItems(const CfgItemTable *const items)
 //#####################################
 void CfgData::InitTaskCycleRewardTable()
 {
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  TaskCycleReward stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  CDBCFile readFile(0);
+  TaskCycleReward stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TaskCycleReward.txt") )
@@ -20965,7 +18917,7 @@ void CfgData::InitTaskCycleRewardTable()
         stu.nBind = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.nRate = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgTaskCycleTable::AddTaskReward(&this->m_cfgTaskCycleTable, &stu);
+        m_cfgTaskCycleTable.AddTaskReward(stu);
       }
     }
   }
@@ -20974,8 +18926,8 @@ void CfgData::InitTaskCycleRewardTable()
 //#####################################
 QuestionsVector *CfgData::GetAllQuestions(int8_t nType)
 {
-  std::vector<CfgQuestions> *v3; // rax
-  int __k[5]; // [rsp+1Ch] [rbp-14h] BYREF
+  std::vector<CfgQuestions> *v3;
+  int __k[5];
 
   __k[0] = nType;
   v3 = std::map<int,std::vector<CfgQuestions>>::operator[](&this->m_mQuestions, __k);
@@ -20986,16 +18938,15 @@ QuestionsVector *CfgData::GetAllQuestions(int8_t nType)
 //#####################################
 void CfgData::InitTencentSevenDayLoginTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-100h] BYREF
-  CfgTencentSevenDayLogin stu; // [rsp+A0h] [rbp-70h] BYREF
-  MemChrBagVector __x; // [rsp+C0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+E0h] [rbp-30h] BYREF
-  char v6; // [rsp+EEh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+F0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+F4h] [rbp-1Ch]
-  int32_t i; // [rsp+F8h] [rbp-18h]
-  int32_t nIndex; // [rsp+FCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile TabFile(0);
+  CfgTencentSevenDayLogin stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/TencentSevenDayLogin.txt") )
@@ -21013,18 +18964,16 @@ void CfgData::InitTencentSevenDayLoginTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTencentSevenDayLogin::CfgTencentSevenDayLogin(&stu);
         stu.nDays = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vReward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vReward = __x;
         
         ++nIndex;
-        CfgTencentTable::AddSevenDayLogin(&this->m_cfgTencentTable, &stu);
-        /* CfgTencentSevenDayLogin::~CfgTencentSevenDayLogin(&stu); - auto cleanup */
+        m_cfgTencentTable.AddSevenDayLogin(stu);
+
       }
     }
   }
@@ -21033,23 +18982,19 @@ void CfgData::InitTencentSevenDayLoginTable()
 //#####################################
 void CfgData::InitTianLingTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  TianLingCfg *v3; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-130h] BYREF
-  TianLingCfg stu; // [rsp+A0h] [rbp-A0h] BYREF
-  std::list<ItemData> strItems; // [rsp+D0h] [rbp-70h] BYREF
-  bool bCombi[15]; // [rsp+E0h] [rbp-60h] BYREF
-  char v8; // [rsp+EFh] [rbp-51h] BYREF
-  std::list<AddAttribute> __x; // [rsp+F0h] [rbp-50h] BYREF
-  _BYTE v10[15]; // [rsp+100h] [rbp-40h] BYREF
-  char v11; // [rsp+10Fh] [rbp-31h] BYREF
-  int32_t v12[3]; // [rsp+110h] [rbp-30h] BYREF
-  char v13; // [rsp+11Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+120h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+124h] [rbp-1Ch]
-  int32_t i; // [rsp+128h] [rbp-18h]
-  int32_t nIndex; // [rsp+12Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  TianLingCfg *v3;
+  CDBCFile readFile(0);
+  TianLingCfg stu;
+  std::list<ItemData> strItems;
+  std::list<AddAttribute> __x;
+  _BYTE v10[15];
+  int32_t v12[3];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/TianLing.txt") )
@@ -21070,24 +19015,22 @@ void CfgData::InitTianLingTable()
         stu.CostMoney = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v8);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.CostItems, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&strItems, (bool)bCombi);
+        stu.CostItems = strItems;
         
         ++nIndex;
         
-        std::string::string(v10, "./ServerConfig/Tables/TianLing.txt", &v11);
+        std::string v10("./ServerConfig/Tables/TianLing.txt");
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v12, v2->pString, &v13);
+        std::string v12(v2->pString);
         CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)v12,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=(&stu.AttrList, &__x);
-        std::list<AddAttribute>::~list(&__x);
+          (unsigned int)nIndex);
+        stu.AttrList = __x;
         
         stu.GongGaoId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
@@ -21095,7 +19038,7 @@ void CfgData::InitTianLingTable()
         stu.CostCoin = readFile.Search_Posistion( i, nIndex++)->iValue;
         v3 = std::map<int,TianLingCfg>::operator[](&this->m_TianLingCfgTable, &stu.Level);
         TianLingCfg::operator=(v3, &stu);
-        /* TianLingCfg::~TianLingCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -21104,19 +19047,10 @@ void CfgData::InitTianLingTable()
 //#####################################
 TianLingCfg *CfgData::GetTianLingCfg(int32_t TianLingLevel)
 {
-  int32_t TianLingLevela; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,TianLingCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,TianLingCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  TianLingLevela = TianLingLevel;
-  it._M_node = std::map<int,TianLingCfg>::find(&this->m_TianLingCfgTable, &TianLingLevela)._M_node;
-  __x._M_node = std::map<int,TianLingCfg>::end(&thisa->m_TianLingCfgTable)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,TianLingCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,TianLingCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_TianLingMap.find(TianLingLevel);
+	if (it != m_TianLingMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
@@ -21124,14 +19058,14 @@ TianLingCfg *CfgData::GetTianLingCfg(int32_t TianLingLevel)
 //#####################################
 void CfgData::InitTongTianChiRanTable()
 {
-  int *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-C0h] BYREF
-  int32_t nId; // [rsp+A4h] [rbp-2Ch] BYREF
-  int32_t iBaseTableCount; // [rsp+ACh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+B0h] [rbp-20h]
-  int32_t i; // [rsp+B4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+B8h] [rbp-18h]
-  int32_t nTitleId; // [rsp+BCh] [rbp-14h]
+  int *v1;
+  CDBCFile readFile(0);
+  int32_t nId;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nTitleId;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/tongtianpaihang.txt") )
@@ -21162,19 +19096,10 @@ void CfgData::InitTongTianChiRanTable()
 //#####################################
 int32_t CfgData::GetTongTianChiReward(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,int> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,int> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,int>::lower_bound(&this->m_TongTianChiRankReward, &nIda)._M_node;
-  __x._M_node = std::map<int,int>::end(&thisa->m_TongTianChiRankReward)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,int>>::operator!=(&it, &__x) )
-    return std::_Rb_tree_iterator<std::pair<int const,int>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_TongTianChiRewardMap.find(nId);
+	if (it != m_TongTianChiRewardMap.end())
+		return it->second;
+	return 0;
 }
 
 //#####################################
@@ -21183,26 +19108,22 @@ int32_t CfgData::GetTongTianChiReward(int32_t nId)
 void CfgData::InitTrailerTable()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  int64_t v4; // rax
-  CDBCFile TabFile(0); // [rsp+60h] [rbp-150h] BYREF
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  CDBCFile TabFile(0);
   CfgTrailerInfo stu; // [rsp+F0h] [rbp-C0h] OVERLAPPED BYREF
-  std::list<AddAttribute> __x; // [rsp+140h] [rbp-70h] BYREF
-  _BYTE v8[15]; // [rsp+150h] [rbp-60h] BYREF
-  char v9; // [rsp+15Fh] [rbp-51h] BYREF
-  int32_t v10[3]; // [rsp+160h] [rbp-50h] BYREF
-  char v11; // [rsp+16Fh] [rbp-41h] BYREF
-  std::string strItem; // [rsp+170h] [rbp-40h] BYREF
-  char v13; // [rsp+17Ah] [rbp-36h] BYREF
-  int32_t iBaseTableCount; // [rsp+17Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+180h] [rbp-30h]
-  int32_t i; // [rsp+184h] [rbp-2Ch]
-  int32_t nIndex; // [rsp+188h] [rbp-28h]
-  int32_t iBaseTableCount_0; // [rsp+190h] [rbp-20h]
-  int32_t iBaseColumnCount_0; // [rsp+194h] [rbp-1Ch]
-  int32_t i_0; // [rsp+198h] [rbp-18h]
-  int32_t nIndex_0; // [rsp+19Ch] [rbp-14h]
+  std::list<AddAttribute> __x;
+  _BYTE v8[15];
+  int32_t v10[3];
+  std::string strItem;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t nIndex_0;
   ItemData v24; // 0:kr00_12.12
 
   
@@ -21220,24 +19141,23 @@ void CfgData::InitTrailerTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         memset(&stu, 0, 36);
-        std::list<AddAttribute>::list((std::list<AddAttribute> *const)&stu.nRand);
+        std::list<AddAttribute>::list(&stu.nRand);
         nIndex = 0;
         stu.nIndex = TabFile.Search_Posistion( i, 0)->iValue;
         ++nIndex;
         LOBYTE(stu.FullWeiWang) = TabFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         
-        std::string::string(v8, "./ServerConfig/Tables/cfg_trailer.txt", &v9);
+        std::string v8("./ServerConfig/Tables/cfg_trailer.txt");
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v10, v2->pString, &v11);
+        std::string v10(v2->pString);
         CfgData::parseAddAttribues(
-          (CfgData *const)&__x,
-          (const std::string *const)this,
+          &__x,
+          this,
           (int32_t)v10,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<AddAttribute>::operator=((std::list<AddAttribute> *const)&stu.nRand, &__x);
-        std::list<AddAttribute>::~list(&__x);
+          (unsigned int)nIndex);
+        std::list<AddAttribute>::operator=(&stu.nRand, &__x);
         
         ++nIndex;
         nIndex += 5;
@@ -21285,9 +19205,9 @@ void CfgData::InitTrailerTable()
           ++nIndex_0;
           
           v3 = TabFile.Search_Posistion( i_0, nIndex_0);
-          strItem.assign(v3->pString);
+          strItem = v3->pString;
           v24 = CItemHelper::parseItemDataString(&strItem);
-          LODWORD(v4) = v24.m_nId;
+          v4 = v24.m_nId;
           BYTE4(v4) = v24.m_nClass;
           *(_QWORD *)&stu.CostItem.m_nId = v4;
           stu.CostItem.m_nCount = v24.m_nCount;
@@ -21310,13 +19230,13 @@ void CfgData::InitTrailerTable()
 //#####################################
 void CfgData::InitTrigSkillTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-F0h] BYREF
-  CfgTrigSkill stu; // [rsp+A0h] [rbp-60h] BYREF
-  int32_t iBaseTableCount; // [rsp+E0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+E4h] [rbp-1Ch]
-  int32_t i; // [rsp+E8h] [rbp-18h]
-  int32_t nIndex; // [rsp+ECh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile readFile(0);
+  CfgTrigSkill stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/SkillTrig.txt") )
@@ -21332,7 +19252,6 @@ void CfgData::InitTrigSkillTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTrigSkill::CfgTrigSkill(&stu);
         stu.id = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.groupid = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.trigType = readFile.Search_Posistion( i, nIndex++)->iValue;
@@ -21346,8 +19265,8 @@ void CfgData::InitTrigSkillTable()
         stu.specialParam = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.IsPvp = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
-        CfgSkillTable::AddTrigSkill(&this->m_cfgSkillTable, &stu);
-        /* CfgTrigSkill::~CfgTrigSkill(&stu); - auto cleanup */
+        m_cfgSkillTable.AddTrigSkill(stu);
+
       }
     }
   }
@@ -21356,27 +19275,22 @@ void CfgData::InitTrigSkillTable()
 //#####################################
 void CfgData::InitUltimateChallengeCfg()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  UltimateChallengeCfg *v4; // rax
-  int64_t v5; // rax
-  CDBCFile readFile(0); // [rsp+10h] [rbp-170h] BYREF
-  UltimateChallengeCfg stu; // [rsp+A0h] [rbp-E0h] BYREF
-  std::string strItem; // [rsp+F0h] [rbp-90h] BYREF
-  char v9; // [rsp+FFh] [rbp-81h] BYREF
-  MemChrBagVector __x; // [rsp+100h] [rbp-80h] BYREF
-  std::string strItems; // [rsp+120h] [rbp-60h] BYREF
-  char v12; // [rsp+12Fh] [rbp-51h] BYREF
-  std::list<Param2> v13; // [rsp+130h] [rbp-50h] BYREF
-  _BYTE v14[15]; // [rsp+140h] [rbp-40h] BYREF
-  char v15; // [rsp+14Fh] [rbp-31h] BYREF
-  int32_t v16[3]; // [rsp+150h] [rbp-30h] BYREF
-  char v17; // [rsp+15Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+160h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+164h] [rbp-1Ch]
-  int32_t i; // [rsp+168h] [rbp-18h]
-  int32_t nIndex; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  UltimateChallengeCfg *v4;
+  CDBCFile readFile(0);
+  UltimateChallengeCfg stu;
+  std::string strItem;
+  MemChrBagVector __x;
+  std::string strItems;
+  std::list<Param2> v13;
+  _BYTE v14[15];
+  int32_t v16[3];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
   ItemData v23; // 0:kr00_12.12
 
   
@@ -21397,16 +19311,15 @@ void CfgData::InitUltimateChallengeCfg()
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
         /* std::vector<MemChrBag>::vector(&stu.GetItems); */
-        std::list<Param2>::list(&stu.DropRateList);
         stu.CurMapId = readFile.Search_Posistion( i, nIndex++)->iValue;
         stu.NextMapId = readFile.Search_Posistion( i, nIndex++)->iValue;
         nIndex += 2;
         stu.Floor = readFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = readFile.Search_Posistion( i, nIndex);
-        strItem.assign(v1->pString);
+        strItem = v1->pString;
         v23 = CItemHelper::parseItemDataString(&strItem);
-        LODWORD(v5) = v23.m_nId;
+        v5 = v23.m_nId;
         BYTE4(v5) = v23.m_nClass;
         *(_QWORD *)&stu.CostItems.m_nId = v5;
         stu.CostItems.m_nCount = v23.m_nCount;
@@ -21414,33 +19327,31 @@ void CfgData::InitUltimateChallengeCfg()
         ++nIndex;
         
         v2 = readFile.Search_Posistion( i, nIndex);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.GetItems, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.GetItems = __x;
         
         stu.MailId = readFile.Search_Posistion( i, ++nIndex)->iValue;
         stu.Score = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         
-        std::string::string(v14, "./ServerConfig/Tables/limitChallenge.txt", &v15);
+        std::string v14("./ServerConfig/Tables/limitChallenge.txt");
         
         v3 = readFile.Search_Posistion( i, nIndex);
-        std::string::string(v16, v3->pString, &v17);
+        std::string v16(v3->pString);
         CfgData::paraseParam2List(
-          (CfgData *const)&v13,
-          (const std::string *const)this,
+          &v13,
+          this,
           (int32_t)v16,
-          (const std::string *const)(unsigned int)nIndex);
-        std::list<Param2>::operator=(&stu.DropRateList, &v13);
-        std::list<Param2>::~list(&v13);
+          (unsigned int)nIndex);
+        stu.DropRateList = v13;
         
         ++nIndex;
         stu.DoubleConst = readFile.Search_Posistion( i, ++nIndex)->iValue;
         ++nIndex;
         v4 = std::map<int,UltimateChallengeCfg>::operator[](&this->m_UltimateChallengeCfgMap, &stu.CurMapId);
         UltimateChallengeCfg::operator=(v4, &stu);
-        /* UltimateChallengeCfg::~UltimateChallengeCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -21450,62 +19361,48 @@ void CfgData::InitUltimateChallengeCfg()
 //#####################################
 UltimateChallengeCfg *CfgData::GetUltimateChallengeCfgMap(int32_t MapId)
 {
-  int32_t MapIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,UltimateChallengeCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,UltimateChallengeCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  MapIda = MapId;
-  it._M_node = std::map<int,UltimateChallengeCfg>::find(&this->m_UltimateChallengeCfgMap, &MapIda)._M_node;
-  __x._M_node = std::map<int,UltimateChallengeCfg>::end(&thisa->m_UltimateChallengeCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,UltimateChallengeCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,UltimateChallengeCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_UltimateChallengeCfgMap.find(MapId);
+	if (it != m_UltimateChallengeCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 #endif // replaced by hand-written version
 
 //#####################################
 void CfgData::InitVplanTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  const CDBCFile::FIELD *v5; // rax
-  CDBCFile VplanEveryRevard(0); // [rsp+10h] [rbp-3B0h] BYREF
-  CDBCFile VplanLevelRevard(0); // [rsp+A0h] [rbp-320h] BYREF
-  CDBCFile VplanRevard(0); // [rsp+130h] [rbp-290h] BYREF
-  VplanReward stu; // [rsp+1C0h] [rbp-200h] BYREF
-  MemChrBagVector __x; // [rsp+200h] [rbp-1C0h] BYREF
-  std::string strItems; // [rsp+220h] [rbp-1A0h] BYREF
-  char v12; // [rsp+22Fh] [rbp-191h] BYREF
-  MemChrBagVector v13; // [rsp+230h] [rbp-190h] BYREF
-  std::string v14; // [rsp+250h] [rbp-170h] BYREF
-  char v15; // [rsp+25Fh] [rbp-161h] BYREF
-  VplanReward p_stu; // [rsp+260h] [rbp-160h] BYREF
-  MemChrBagVector v17; // [rsp+2A0h] [rbp-120h] BYREF
-  std::string v18; // [rsp+2C0h] [rbp-100h] BYREF
-  char v19; // [rsp+2CFh] [rbp-F1h] BYREF
-  VplanLevelReward v20; // [rsp+2D0h] [rbp-F0h] BYREF
-  MemChrBagVector v21; // [rsp+2F0h] [rbp-D0h] BYREF
-  std::string v22; // [rsp+310h] [rbp-B0h] BYREF
-  char v23; // [rsp+31Fh] [rbp-A1h] BYREF
-  MemChrBagVector v24; // [rsp+320h] [rbp-A0h] BYREF
-  std::string v25; // [rsp+340h] [rbp-80h] BYREF
-  char v26; // [rsp+34Fh] [rbp-71h] BYREF
-  VplanEveryDayReward v27; // [rsp+350h] [rbp-70h] BYREF
-  bool ret; // [rsp+38Bh] [rbp-35h]
-  int32_t iBaseTableCount; // [rsp+38Ch] [rbp-34h]
-  int32_t iBaseColumnCount; // [rsp+390h] [rbp-30h]
-  int32_t VplanLeveTableCount; // [rsp+394h] [rbp-2Ch]
-  int32_t VplanLeveColumnCount; // [rsp+398h] [rbp-28h]
-  int32_t VplanEveryRevardTableCount; // [rsp+39Ch] [rbp-24h]
-  int32_t VplanEveryRevardColumnCount; // [rsp+3A0h] [rbp-20h]
-  int32_t i; // [rsp+3A4h] [rbp-1Ch]
-  int32_t i_0; // [rsp+3A8h] [rbp-18h]
-  int32_t i_1; // [rsp+3ACh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  const CDBCFile::FIELD *v5;
+  CDBCFile VplanEveryRevard(0);
+  CDBCFile VplanLevelRevard(0);
+  CDBCFile VplanRevard(0);
+  VplanReward stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v13;
+  std::string v14;
+  VplanReward p_stu;
+  MemChrBagVector v17;
+  std::string v18;
+  VplanLevelReward v20;
+  MemChrBagVector v21;
+  std::string v22;
+  MemChrBagVector v24;
+  std::string v25;
+  VplanEveryDayReward v27;
+  bool ret;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t VplanLeveTableCount;
+  int32_t VplanLeveColumnCount;
+  int32_t VplanEveryRevardTableCount;
+  int32_t VplanEveryRevardColumnCount;
+  int32_t i;
+  int32_t i_0;
+  int32_t i_1;
 
   
   ret = VplanRevard.OpenFromTXT( "./ServerConfig/Tables/VplanReward.txt");
@@ -21527,21 +19424,19 @@ void CfgData::InitVplanTable()
         stu.Index = VplanRevard.Search_Posistion( i, 0)->iValue;
         
         v1 = VplanRevard.Search_Posistion( i, 1);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Reward, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.Reward = __x;
         
         v2 = VplanRevard.Search_Posistion( i, 2);
-        v14.assign(v2->pString);
+        v14 = v2->pString;
         CItemHelper::parseItemVectorString(&v13, &v14);
-        std::vector<MemChrBag>::operator=(&stu.YearVipReward, &v13);
-        std::vector<MemChrBag>::~vector(&v13);
+        stu.YearVipReward = v13;
         
-        VplanReward::VplanReward(&p_stu, &stu);
-        CfgVplan::AddVplanReward(&this->m_CfgVplan, &p_stu);
-        /* VplanReward::~VplanReward(&p_stu); - auto cleanup */
-        /* VplanReward::~VplanReward(&stu); - auto cleanup */
+        p_stu = stu;
+        m_CfgVplan.AddVplanReward(p_stu);
+
+
       }
       
       ret = VplanLevelRevard.OpenFromTXT( "./ServerConfig/Tables/VplanLevelReward.txt");
@@ -21558,19 +19453,17 @@ void CfgData::InitVplanTable()
           for ( i_0 = 0; i_0 < VplanLeveTableCount; ++i_0 )
           {
             memset(&stu, 0, 32);
-            std::vector<MemChrBag>::vector(&stu.Reward);
             stu.Index = VplanLevelRevard.Search_Posistion( i_0, 0)->iValue;
             *(&stu.Index + 1) = VplanLevelRevard.Search_Posistion( i_0, 1)->iValue;
             
             v3 = VplanLevelRevard.Search_Posistion( i_0, 2);
-            v18.assign(v3->pString);
+            v18 = v3->pString;
             CItemHelper::parseItemVectorString(&v17, &v18);
-            std::vector<MemChrBag>::operator=(&stu.Reward, &v17);
-            std::vector<MemChrBag>::~vector(&v17);
+            stu.Reward = v17;
             
             VplanLevelReward::VplanLevelReward(&v20, (const VplanLevelReward *const)&stu);
-            CfgVplan::AddVplanLevelReward(&this->m_CfgVplan, &v20);
-            /* VplanLevelReward::~VplanLevelReward(&v20); - auto cleanup */
+            m_CfgVplan.AddVplanLevelReward(v20);
+
             VplanLevelReward::~VplanLevelReward((VplanLevelReward *const)&stu);
           }
           
@@ -21590,26 +19483,22 @@ void CfgData::InitVplanTable()
               for ( i_1 = 0; i_1 < VplanEveryRevardTableCount; ++i_1 )
               {
                 memset(&stu, 0, sizeof(stu));
-                std::vector<MemChrBag>::vector(&stu.Reward);
-                std::vector<MemChrBag>::vector(&stu.YearVipReward);
                 stu.Index = VplanEveryRevard.Search_Posistion( i_1, 0)->iValue;
                 *(&stu.Index + 1) = VplanEveryRevard.Search_Posistion( i_1, 1)->iValue;
                 
                 v4 = VplanEveryRevard.Search_Posistion( i_1, 2);
-                v22.assign(v4->pString);
+                v22 = v4->pString;
                 CItemHelper::parseItemVectorString(&v21, &v22);
-                std::vector<MemChrBag>::operator=(&stu.Reward, &v21);
-                std::vector<MemChrBag>::~vector(&v21);
+                stu.Reward = v21;
                 
                 v5 = VplanEveryRevard.Search_Posistion( i_1, 3);
-                v25.assign(v5->pString);
+                v25 = v5->pString;
                 CItemHelper::parseItemVectorString(&v24, &v25);
-                std::vector<MemChrBag>::operator=(&stu.YearVipReward, &v24);
-                std::vector<MemChrBag>::~vector(&v24);
+                stu.YearVipReward = v24;
                 
                 VplanEveryDayReward::VplanEveryDayReward(&v27, (const VplanEveryDayReward *const)&stu);
-                CfgVplan::AddVplanEveryDayReward(&this->m_CfgVplan, &v27);
-                /* VplanEveryDayReward::~VplanEveryDayReward(&v27); - auto cleanup */
+                m_CfgVplan.AddVplanEveryDayReward(v27);
+
                 VplanEveryDayReward::~VplanEveryDayReward((VplanEveryDayReward *const)&stu);
               }
             }
@@ -21627,105 +19516,39 @@ void CfgData::InitVplanTable()
 //#####################################
 WingEquipPolish *CfgData::GetWingEquipPolishCfg(int32_t nType, int32_t nLevel)
 {
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,WingEquipPolish> > it; // [rsp+10h] [rbp-30h] BYREF
-  std::pair<int,int> __x; // [rsp+20h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,WingEquipPolish> > v6; // [rsp+30h] [rbp-10h] BYREF
-
-  __x = std::make_pair<int,int>(nType, nLevel);
-  it._M_node = std::map<std::pair<int,int>,WingEquipPolish>::find(&this->m_WingEquipPolishCfgMap, &__x)._M_node;
-  v6._M_node = std::map<std::pair<int,int>,WingEquipPolish>::end(&this->m_WingEquipPolishCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,WingEquipPolish>>::operator!=(&it, &v6) )
-    return (WingEquipPolish *)((char *)std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,WingEquipPolish>>::operator->(&it)
-                             + 8);
-  else
-    return 0;
+	auto it = m_WingEquipPolishMap.find(std::make_pair(nType, nLevel));
+	if (it != m_WingEquipPolishMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 AddAttrList CfgData::GetWingEquipPolishSuitAttr(int32_t nId)
 {
-  int32_t v2; // edx
-  std::pair<const int,std::list<AddAttribute> > *v3; // rax
-  AddAttrList result; // rax
-  int32_t nIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  std::_Rb_tree_iterator<std::pair<const int,std::list<AddAttribute> > > it; // [rsp+10h] [rbp-40h] BYREF
-  AddAttrList Attrs; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<AddAttribute> > > __x; // [rsp+30h] [rbp-20h] BYREF
-
-  thisa = *(CfgData **)&nId;
-  nIda = v2;
-  std::list<AddAttribute>::list(&Attrs);
-  std::list<AddAttribute>::clear(&Attrs);
-  it._M_node = std::map<int,std::list<AddAttribute>>::find(
-                 (std::map<int,std::list<AddAttribute>> *const)(*(_QWORD *)&nId + 11400LL),
-                 &nIda)._M_node;
-  __x._M_node = std::map<int,std::list<AddAttribute>>::end(&thisa->m_WingEquipPolishSuitMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<AddAttribute>>>::operator!=(&it, &__x) )
-  {
-    v3 = std::_Rb_tree_iterator<std::pair<int const,std::list<AddAttribute>>>::operator->(&it);
-    std::list<AddAttribute>::list((std::list<AddAttribute> *const)this, &v3->second);
-  }
-  else
-  {
-    std::list<AddAttribute>::list((std::list<AddAttribute> *const)this, &Attrs);
-  }
-  std::list<AddAttribute>::~list(&Attrs);
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	AddAttrList result;
+	auto it = m_WingEquipPolishSuitMap.find(nId);
+	if (it != m_WingEquipPolishSuitMap.end())
+		result = it->second;
+	return result;
 }
 
 //#####################################
 WinRefiningCfg *CfgData::GetWingEquipRefiningCfg(int32_t nType, int32_t nLevel)
 {
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,WinRefiningCfg> > it; // [rsp+10h] [rbp-30h] BYREF
-  std::pair<int,int> __x; // [rsp+20h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const std::pair<int,int>,WinRefiningCfg> > v6; // [rsp+30h] [rbp-10h] BYREF
-
-  __x = std::make_pair<int,int>(nType, nLevel);
-  it._M_node = std::map<std::pair<int,int>,WinRefiningCfg>::find(&this->m_WinRefiningCfgMap, &__x)._M_node;
-  v6._M_node = std::map<std::pair<int,int>,WinRefiningCfg>::end(&this->m_WinRefiningCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,WinRefiningCfg>>::operator!=(&it, &v6) )
-    return (WinRefiningCfg *)((char *)std::_Rb_tree_iterator<std::pair<std::pair const<int,int>,WinRefiningCfg>>::operator->(&it)
-                            + 8);
-  else
-    return 0;
+	auto it = m_WinRefiningCfgMap.find(std::make_pair(nType, nLevel));
+	if (it != m_WinRefiningCfgMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 AddAttrList CfgData::GetWingEquipRefiningSuitAttr(int32_t nId)
 {
-  int32_t v2; // edx
-  std::pair<const int,std::list<AddAttribute> > *v3; // rax
-  AddAttrList result; // rax
-  int32_t nIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  std::_Rb_tree_iterator<std::pair<const int,std::list<AddAttribute> > > it; // [rsp+10h] [rbp-40h] BYREF
-  AddAttrList Attrs; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<AddAttribute> > > __x; // [rsp+30h] [rbp-20h] BYREF
-
-  thisa = *(CfgData **)&nId;
-  nIda = v2;
-  std::list<AddAttribute>::list(&Attrs);
-  std::list<AddAttribute>::clear(&Attrs);
-  it._M_node = std::map<int,std::list<AddAttribute>>::find(
-                 (std::map<int,std::list<AddAttribute>> *const)(*(_QWORD *)&nId + 11496LL),
-                 &nIda)._M_node;
-  __x._M_node = std::map<int,std::list<AddAttribute>>::end(&thisa->m_WingEquipRefiningSuitMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<AddAttribute>>>::operator!=(&it, &__x) )
-  {
-    v3 = std::_Rb_tree_iterator<std::pair<int const,std::list<AddAttribute>>>::operator->(&it);
-    std::list<AddAttribute>::list((std::list<AddAttribute> *const)this, &v3->second);
-  }
-  else
-  {
-    std::list<AddAttribute>::list((std::list<AddAttribute> *const)this, &Attrs);
-  }
-  std::list<AddAttribute>::~list(&Attrs);
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	AddAttrList result;
+	auto it = m_WinRefiningSuitMap.find(nId);
+	if (it != m_WinRefiningSuitMap.end())
+		result = it->second;
+	return result;
 }
 
 //#####################################
@@ -21733,29 +19556,23 @@ AddAttrList CfgData::GetWingEquipRefiningSuitAttr(int32_t nId)
 //#####################################
 void CfgData::InitWuHunCreateTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  const CDBCFile::FIELD *v3; // rax
-  const CDBCFile::FIELD *v4; // rax
-  CreateWuHun *v5; // rax
-  int64_t v6; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-170h] BYREF
-  CreateWuHun stu; // [rsp+A0h] [rbp-E0h] BYREF
-  std::list<ItemData> strItems; // [rsp+F0h] [rbp-90h] BYREF
-  bool bCombi[15]; // [rsp+100h] [rbp-80h] BYREF
-  char v11; // [rsp+10Fh] [rbp-71h] BYREF
-  std::list<RateItem> v12; // [rsp+110h] [rbp-70h] BYREF
-  _BYTE v13[15]; // [rsp+120h] [rbp-60h] BYREF
-  char v14; // [rsp+12Fh] [rbp-51h] BYREF
-  std::string strItem; // [rsp+130h] [rbp-50h] BYREF
-  char v16; // [rsp+13Fh] [rbp-41h] BYREF
-  std::list<RateItem> v17; // [rsp+140h] [rbp-40h] BYREF
-  _BYTE v18[14]; // [rsp+150h] [rbp-30h] BYREF
-  char v19; // [rsp+15Eh] [rbp-22h] BYREF
-  int32_t iBaseTableCount; // [rsp+160h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+164h] [rbp-1Ch]
-  int32_t i; // [rsp+168h] [rbp-18h]
-  int32_t nIndex; // [rsp+16Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  const CDBCFile::FIELD *v3;
+  const CDBCFile::FIELD *v4;
+  CreateWuHun *v5;
+  CDBCFile TabFile(0);
+  CreateWuHun stu;
+  std::list<ItemData> strItems;
+  std::list<RateItem> v12;
+  _BYTE v13[15];
+  std::string strItem;
+  std::list<RateItem> v17;
+  _BYTE v18[14];
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
   ItemData v25; // 0:kr00_12.12
 
   
@@ -21773,33 +19590,28 @@ void CfgData::InitWuHunCreateTable()
       {
         nIndex = 0;
         memset(&stu, 0, sizeof(stu));
-        std::list<ItemData>::list(&stu.ConstItem);
-        std::list<RateItem>::list(&stu.GetItemRate);
-        std::list<RateItem>::list(&stu.GetItemRate2);
         stu.nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         nIndex += 2;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(bCombi, v1->pString, &v11);
-        CItemHelper::parseItemDataListString((const std::string *const)&strItems, (bool)bCombi);
-        std::list<ItemData>::operator=(&stu.ConstItem, &strItems);
-        std::list<ItemData>::~list(&strItems);
+        std::string bCombi(v1->pString);
+        CItemHelper::parseItemDataListString(&strItems, (bool)bCombi);
+        stu.ConstItem = strItems;
         
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v13, v2->pString, &v14);
-        CItemHelper::parseRateItemDataListString((const std::string *const)&v12);
-        std::list<RateItem>::operator=(&stu.GetItemRate, &v12);
-        std::list<RateItem>::~list(&v12);
+        std::string v13(v2->pString);
+        CItemHelper::parseRateItemDataListString(&v12);
+        stu.GetItemRate = v12;
         
         ++nIndex;
         nIndex += 3;
         
         v3 = TabFile.Search_Posistion( i, nIndex);
-        strItem.assign(v3->pString);
+        strItem = v3->pString;
         v25 = CItemHelper::parseItemDataString(&strItem);
-        LODWORD(v6) = v25.m_nId;
+        v6 = v25.m_nId;
         BYTE4(v6) = v25.m_nClass;
         *(_QWORD *)&stu.SpecialCost.m_nId = v6;
         stu.SpecialCost.m_nCount = v25.m_nCount;
@@ -21807,15 +19619,14 @@ void CfgData::InitWuHunCreateTable()
         ++nIndex;
         
         v4 = TabFile.Search_Posistion( i, nIndex);
-        std::string::string(v18, v4->pString, &v19);
-        CItemHelper::parseRateItemDataListString((const std::string *const)&v17);
-        std::list<RateItem>::operator=(&stu.GetItemRate2, &v17);
-        std::list<RateItem>::~list(&v17);
+        std::string v18(v4->pString);
+        CItemHelper::parseRateItemDataListString(&v17);
+        stu.GetItemRate2 = v17;
         
         ++nIndex;
         v5 = std::map<int,CreateWuHun>::operator[](&this->m_CreateWuHunMap, &stu.nId);
         CreateWuHun::operator=(v5, &stu);
-        /* CreateWuHun::~CreateWuHun(&stu); - auto cleanup */
+
       }
     }
   }
@@ -21824,19 +19635,10 @@ void CfgData::InitWuHunCreateTable()
 //#####################################
 CreateWuHun *CfgData::GetCreateWuHun(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CreateWuHun> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CreateWuHun> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,CreateWuHun>::find(&this->m_CreateWuHunMap, &nIda)._M_node;
-  __x._M_node = std::map<int,CreateWuHun>::end(&thisa->m_CreateWuHunMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CreateWuHun>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CreateWuHun>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_CreateWuHunMap.find(nId);
+	if (it != m_CreateWuHunMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
@@ -21844,56 +19646,23 @@ CreateWuHun *CfgData::GetCreateWuHun(int32_t nId)
 //#####################################
 WuHunItem *CfgData::GetWuHunItem(int32_t nId)
 {
-  int32_t nIda; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,WuHunItem> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,WuHunItem> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIda = nId;
-  it._M_node = std::map<int,WuHunItem>::find(&this->m_WuHunItemMap, &nIda)._M_node;
-  __x._M_node = std::map<int,WuHunItem>::end(&thisa->m_WuHunItemMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,WuHunItem>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,WuHunItem>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_WuHunItemMap.find(nId);
+	if (it != m_WuHunItemMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 #if 0 // replaced by hand-written version at end of file
 CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
 {
-  int32_t v2; // edx
-  CfgWuHunShopList result; // rax
-  std::pair<const int,std::list<CfgWuHunShop> > *v4; // rax
-  int32_t ShopIda; // [rsp+4h] [rbp-4Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-48h]
-  CfgWuHunShopList list; // [rsp+10h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<CfgWuHunShop> > > it; // [rsp+20h] [rbp-30h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,std::list<CfgWuHunShop> > > __x; // [rsp+30h] [rbp-20h] BYREF
-
-  thisa = *(CfgData **)&ShopId;
-  ShopIda = v2;
-  it._M_node = std::map<int,std::list<CfgWuHunShop>>::find(
-                 (std::map<int,std::list<CfgWuHunShop>> *const)(*(_QWORD *)&ShopId + 10680LL),
-                 &ShopIda)._M_node;
-  __x._M_node = std::map<int,std::list<CfgWuHunShop>>::end(&thisa->m_CfgWuHunShopMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,std::list<CfgWuHunShop>>>::operator==(&it, &__x) )
-  {
-    std::list<CfgWuHunShop>::list(&list);
-    std::list<CfgWuHunShop>::list((std::list<CfgWuHunShop> *const)this, &list);
-    std::list<CfgWuHunShop>::~list(&list);
-  }
-  else
-  {
-    v4 = std::_Rb_tree_iterator<std::pair<int const,std::list<CfgWuHunShop>>>::operator->(&it);
-    std::list<CfgWuHunShop>::list((std::list<CfgWuHunShop> *const)this, &v4->second);
-  }
-  result._M_impl._M_node._M_next = &this->m_emptyEvents._M_impl._M_node;
-  return result;
+	CfgWuHunShopList result;
+	auto it = m_CfgWuHunShopMap.find(ShopId);
+	if (it != m_CfgWuHunShopMap.end())
+		result = it->second;
+	return result;
 }
 #endif // replaced by hand-written version
 
@@ -21901,31 +19670,22 @@ CfgWuHunShopList CfgData::GetWuHunShopItemList(int32_t ShopId)
 //#####################################
 CfgWuHunShop *CfgData::GetWuHunShopItem(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CfgWuHunShop> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgWuHunShop> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIndexa = nIndex;
-  it._M_node = std::map<int,CfgWuHunShop>::find(&this->m_CfgWuHunShopItemMap, &nIndexa)._M_node;
-  __x._M_node = std::map<int,CfgWuHunShop>::end(&thisa->m_CfgWuHunShopItemMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CfgWuHunShop>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CfgWuHunShop>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_CfgWuHunShopItemMap.find(nIndex);
+	if (it != m_CfgWuHunShopItemMap.end())
+		return &it->second;
+	return NULL;
 }
 #endif // replaced by hand-written version
 
 //#####################################
 void CfgData::InitXianYaoTaskTable()
 {
-  CDBCFile readFile(0); // [rsp+10h] [rbp-D0h] BYREF
-  XiangYaoTaskCfg stu; // [rsp+A0h] [rbp-40h] BYREF
-  int32_t iBaseTableCount; // [rsp+C0h] [rbp-20h]
-  int32_t iBaseColumnCount; // [rsp+C4h] [rbp-1Ch]
-  int32_t i; // [rsp+C8h] [rbp-18h]
-  int32_t nIndex; // [rsp+CCh] [rbp-14h]
+  CDBCFile readFile(0);
+  XiangYaoTaskCfg stu;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
 
   
   if ( !readFile.OpenFromTXT( "./ServerConfig/Tables/XiangYaoTask.txt") )
@@ -21956,112 +19716,65 @@ void CfgData::InitXianYaoTaskTable()
 //#####################################
 int32_t CfgData::RandXiangYaoTaskId(int32_t Level, bool bBest)
 {
-  bool v3; // al
-  XiangYaoTaskCfg *v4; // rax
-  int *v5; // rbx
-  XiangYaoTaskCfg *v6; // rax
-  int32_t first; // ebx
-  Answer::Random *v8; // rax
-  std::pair<const int,int> *v9; // rax
-  std::pair<const int,int> *v10; // rax
-  Int32Int32Map TaskIdRate; // [rsp+10h] [rbp-A0h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,int> > itMap; // [rsp+40h] [rbp-70h] BYREF
-  std::_List_iterator<XiangYaoTaskCfg> it; // [rsp+50h] [rbp-60h] BYREF
-  std::_List_iterator<XiangYaoTaskCfg> __x; // [rsp+60h] [rbp-50h] BYREF
-  std::_List_iterator<XiangYaoTaskCfg> v17; // [rsp+70h] [rbp-40h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,int> > v18; // [rsp+80h] [rbp-30h] BYREF
-  int32_t MaxRate; // [rsp+94h] [rbp-1Ch]
-  int32_t SpareId; // [rsp+98h] [rbp-18h]
-  int32_t nRand; // [rsp+9Ch] [rbp-14h]
+	Int32Int32Map TaskIdRate;
+	int32_t MaxRate = 0;
+	int32_t SpareId = 0;
 
-  std::map<int,int>::map(&TaskIdRate);
-  MaxRate = 0;
-  SpareId = 0;
-  it._M_node = std::list<XiangYaoTaskCfg>::begin(&this->m_XiangYaoTaskCfgList)._M_node;
-  __x._M_node = std::list<XiangYaoTaskCfg>::end(&this->m_XiangYaoTaskCfgList)._M_node;
-  if ( std::_List_iterator<XiangYaoTaskCfg>::operator!=(&it, &__x) )
-    SpareId = std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->TaskId;
-  while ( 1 )
-  {
-    v17._M_node = std::list<XiangYaoTaskCfg>::end(&this->m_XiangYaoTaskCfgList)._M_node;
-    if ( !std::_List_iterator<XiangYaoTaskCfg>::operator!=(&it, &v17) )
-      break;
-    v3 = std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->MinLevel <= Level
-      && std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->MaxLevel >= Level;
-    if ( v3 && (!bBest || std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->Star == 4) )
-    {
-      v4 = std::_List_iterator<XiangYaoTaskCfg>::operator->(&it);
-      v5 = std::map<int,int>::operator[](&TaskIdRate, &v4->TaskId);
-      *v5 = std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->Rate;
-      v6 = std::_List_iterator<XiangYaoTaskCfg>::operator->(&it);
-      MaxRate += v6->Rate;
-    }
-    std::_List_iterator<XiangYaoTaskCfg>::operator++(&it, 0);
-  }
-  if ( MaxRate > 0 )
-  {
-    v8 = Answer::Singleton<Answer::Random>::instance();
-    nRand = Answer::Random::generate(v8, 1, MaxRate);
-    for ( itMap._M_node = std::map<int,int>::begin(&TaskIdRate)._M_node;
-          std::_Rb_tree_iterator<std::pair<int const,int>>::operator++(&itMap, 0) )
-    {
-      v18._M_node = std::map<int,int>::end(&TaskIdRate)._M_node;
-      if ( !std::_Rb_tree_iterator<std::pair<int const,int>>::operator!=(&itMap, &v18) )
-        break;
-      v9 = std::_Rb_tree_iterator<std::pair<int const,int>>::operator->(&itMap);
-      if ( v9->second >= nRand )
-      {
-        first = std::_Rb_tree_iterator<std::pair<int const,int>>::operator->(&itMap)->first;
-        goto LABEL_21;
-      }
-      v10 = std::_Rb_tree_iterator<std::pair<int const,int>>::operator->(&itMap);
-      nRand -= v10->second;
-    }
-    first = SpareId;
-  }
-  else
-  {
-    first = SpareId;
-  }
-LABEL_21:
-  std::map<int,int>::~map(&TaskIdRate);
-  return first;
+	auto it = m_XiangYaoTaskCfgList.begin();
+	if (it != m_XiangYaoTaskCfgList.end())
+		SpareId = it->TaskId;
+
+	while (it != m_XiangYaoTaskCfgList.end())
+	{
+		if (it->MinLevel <= Level && it->MaxLevel >= Level)
+		{
+			if (!bBest || it->Star == 4)
+			{
+				TaskIdRate[it->TaskId] = it->Rate;
+				MaxRate += it->Rate;
+			}
+		}
+		++it;
+	}
+
+	if (MaxRate > 0)
+	{
+		auto* rand = Answer::Singleton<Answer::Random>::instance();
+		int32_t nRand = rand->generate(1, MaxRate);
+		for (auto itMap = TaskIdRate.begin(); itMap != TaskIdRate.end(); ++itMap)
+		{
+			if (itMap->second >= nRand)
+				return itMap->first;
+			nRand -= itMap->second;
+		}
+	}
+
+	return SpareId;
 }
 
 //#####################################
 int32_t CfgData::getXiangYaoStart(int32_t TaskId)
 {
-  std::_List_iterator<XiangYaoTaskCfg> it; // [rsp+10h] [rbp-20h] BYREF
-  std::_List_iterator<XiangYaoTaskCfg> __x; // [rsp+20h] [rbp-10h] BYREF
-
-  for ( it._M_node = std::list<XiangYaoTaskCfg>::begin(&this->m_XiangYaoTaskCfgList)._M_node;
-        std::_List_iterator<XiangYaoTaskCfg>::operator++(&it, 0) )
-  {
-    __x._M_node = std::list<XiangYaoTaskCfg>::end(&this->m_XiangYaoTaskCfgList)._M_node;
-    if ( !std::_List_iterator<XiangYaoTaskCfg>::operator!=(&it, &__x) )
-      break;
-    if ( std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->TaskId == TaskId )
-      return std::_List_iterator<XiangYaoTaskCfg>::operator->(&it)->Star;
-  }
-  return 0;
+	auto it = m_XiangYaoTaskMap.find(TaskId);
+	if (it != m_XiangYaoTaskMap.end())
+		return it->second.nStart;
+	return 0;
 }
 
 //#####################################
 
 //#####################################
-// local variable allocation has failed, the output may be wrong!
 void CfgData::InitXunLeiTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  XunLeiCfg *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-110h] BYREF
-  XunLeiCfg stu; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v7; // [rsp+102h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+104h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+108h] [rbp-18h]
-  int32_t i; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  XunLeiCfg *v2;
+  CDBCFile TabFile(0);
+  XunLeiCfg stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/XunLeiBox.txt") )
@@ -22082,15 +19795,14 @@ void CfgData::InitXunLeiTable()
         stu.nType = TabFile.Search_Posistion( i, 1)->iValue;
         
         v1 = TabFile.Search_Posistion( i, 3);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.vRewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.vRewards = __x;
         
         stu.nCondition = TabFile.Search_Posistion( i, 5)->iValue;
         v2 = std::map<int,XunLeiCfg>::operator[](&this->m_XunLeiCfgMap, &stu.nIndex);
         XunLeiCfg::operator=(v2, &stu);
-        /* XunLeiCfg::~XunLeiCfg(&stu); - auto cleanup */
+
       }
     }
   }
@@ -22099,34 +19811,24 @@ void CfgData::InitXunLeiTable()
 //#####################################
 XunLeiCfg *CfgData::GetXunLeiCfg(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,XunLeiCfg> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,XunLeiCfg> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIndexa = nIndex;
-  it._M_node = std::map<int,XunLeiCfg>::find(&this->m_XunLeiCfgMap, &nIndexa)._M_node;
-  __x._M_node = std::map<int,XunLeiCfg>::end(&thisa->m_XunLeiCfgMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,XunLeiCfg>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,XunLeiCfg>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_XunLeiMap.find(nIndex);
+	if (it != m_XunLeiMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitYYDaTing()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CfgYYGameApp *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-110h] BYREF
-  CfgYYGameApp stu; // [rsp+A0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+D0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+F0h] [rbp-30h] BYREF
-  char v7; // [rsp+102h] [rbp-1Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+104h] [rbp-1Ch]
-  int32_t iBaseColumnCount; // [rsp+108h] [rbp-18h]
-  int32_t i; // [rsp+10Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CfgYYGameApp *v2;
+  CDBCFile TabFile(0);
+  CfgYYGameApp stu;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/YYDaTing.txt") )
@@ -22142,20 +19844,18 @@ void CfgData::InitYYDaTing()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         memset(&stu, 0, 36);
-        std::vector<MemChrBag>::vector(&stu.Rewards);
         stu.nIndex = TabFile.Search_Posistion( i, 0)->iValue;
         stu.nType = TabFile.Search_Posistion( i, 1)->iValue;
         
         v1 = TabFile.Search_Posistion( i, 3);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Rewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.Rewards = __x;
         
         stu.nCondition = TabFile.Search_Posistion( i, 4)->iValue;
         v2 = std::map<int,CfgYYGameApp>::operator[](&this->m_CfgYYGameAppMap, &stu.nIndex);
         CfgYYGameApp::operator=(v2, &stu);
-        /* CfgYYGameApp::~CfgYYGameApp(&stu); - auto cleanup */
+
       }
     }
   }
@@ -22164,44 +19864,34 @@ void CfgData::InitYYDaTing()
 //#####################################
 CfgYYGameApp *CfgData::GetYYGameApp(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CfgYYGameApp> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgYYGameApp> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIndexa = nIndex;
-  it._M_node = std::map<int,CfgYYGameApp>::find(&this->m_CfgYYGameAppMap, &nIndexa)._M_node;
-  __x._M_node = std::map<int,CfgYYGameApp>::end(&thisa->m_CfgYYGameAppMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CfgYYGameApp>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CfgYYGameApp>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_YYGameAppMap.find(nIndex);
+	if (it != m_YYGameAppMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 void CfgData::InitYYVip()
 {
   int v1; // ebx
-  const CDBCFile::FIELD *v2; // rax
-  CfgYYVip *v3; // rax
+  const CDBCFile::FIELD *v2;
+  CfgYYVip *v3;
   int v4; // ebx
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-150h] BYREF
-  CfgYYVip stu; // [rsp+A0h] [rbp-C0h] BYREF
-  CfgYYSuperBuff stu_1; // [rsp+D0h] [rbp-90h] BYREF
-  CfgYYSuperBuff stu_0; // [rsp+E0h] [rbp-80h] BYREF
-  MemChrBagVector __x; // [rsp+F0h] [rbp-70h] BYREF
-  std::string strItems; // [rsp+110h] [rbp-50h] BYREF
-  char v11; // [rsp+122h] [rbp-3Eh] BYREF
-  int32_t iBaseTableCount; // [rsp+124h] [rbp-3Ch]
-  int32_t iBaseColumnCount; // [rsp+128h] [rbp-38h]
-  int32_t i; // [rsp+12Ch] [rbp-34h]
-  int32_t iBaseTableCount_0; // [rsp+134h] [rbp-2Ch]
-  int32_t iBaseColumnCount_0; // [rsp+138h] [rbp-28h]
-  int32_t i_0; // [rsp+13Ch] [rbp-24h]
-  int32_t iBaseTableCount_1; // [rsp+144h] [rbp-1Ch]
-  int32_t iBaseColumnCount_1; // [rsp+148h] [rbp-18h]
-  int32_t i_1; // [rsp+14Ch] [rbp-14h]
+  CDBCFile TabFile(0);
+  CfgYYVip stu;
+  CfgYYSuperBuff stu_1;
+  CfgYYSuperBuff stu_0;
+  MemChrBagVector __x;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t iBaseTableCount_0;
+  int32_t iBaseColumnCount_0;
+  int32_t i_0;
+  int32_t iBaseTableCount_1;
+  int32_t iBaseColumnCount_1;
+  int32_t i_1;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/YYHuiYuan.txt") )
@@ -22218,22 +19908,20 @@ void CfgData::InitYYVip()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         memset(&stu, 0, 44);
-        std::vector<MemChrBag>::vector(&stu.Rewards);
         stu.nIndex = TabFile.Search_Posistion( i, 0)->iValue;
         stu.nType = TabFile.Search_Posistion( i, 1)->iValue;
         
         v2 = TabFile.Search_Posistion( i, 3);
-        strItems.assign(v2->pString);
+        strItems = v2->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&stu.Rewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        stu.Rewards = __x;
         
         stu.nCondition = TabFile.Search_Posistion( i, 4)->iValue;
         stu.nPric = TabFile.Search_Posistion( i, 5)->iValue;
         stu.nLimit = TabFile.Search_Posistion( i, 6)->iValue;
         v3 = std::map<int,CfgYYVip>::operator[](&this->m_CfgYYVipMap, &stu.nIndex);
         CfgYYVip::operator=(v3, &stu);
-        /* CfgYYVip::~CfgYYVip(&stu); - auto cleanup */
+
       }
       v1 = 1;
     }
@@ -22258,7 +19946,7 @@ void CfgData::InitYYVip()
       {
         for ( i_0 = 0; i_0 < iBaseTableCount_0; ++i_0 )
         {
-          *(_QWORD *)&stu_0.SuperVipLevel = 0;
+          memset(&stu_0.SuperVipLevel, 0, sizeof(int64_t));
           stu_0.AttrType = 0;
           stu_0.SuperVipLevel = TabFile.Search_Posistion( i_0, 1)->iValue;
           stu_0.AttrRate = TabFile.Search_Posistion( i_0, 3)->iValue;
@@ -22287,7 +19975,7 @@ void CfgData::InitYYVip()
         {
           for ( i_1 = 0; i_1 < iBaseTableCount_1; ++i_1 )
           {
-            *(_QWORD *)&stu_1.SuperVipLevel = 0;
+            memset(&stu_1.SuperVipLevel, 0, sizeof(int64_t));
             stu_1.AttrType = 0;
             stu_1.SuperVipLevel = TabFile.Search_Posistion( i_1, 1)->iValue;
             stu_1.AttrRate = TabFile.Search_Posistion( i_1, 3)->iValue;
@@ -22303,31 +19991,22 @@ void CfgData::InitYYVip()
 //#####################################
 CfgYYVip *CfgData::GetYYVip(int32_t nIndex)
 {
-  int32_t nIndexa; // [rsp+4h] [rbp-2Ch] BYREF
-  CfgData *thisa; // [rsp+8h] [rbp-28h]
-  std::_Rb_tree_iterator<std::pair<const int,CfgYYVip> > it; // [rsp+10h] [rbp-20h] BYREF
-  std::_Rb_tree_iterator<std::pair<const int,CfgYYVip> > __x; // [rsp+20h] [rbp-10h] BYREF
-
-  thisa = this;
-  nIndexa = nIndex;
-  it._M_node = std::map<int,CfgYYVip>::find(&this->m_CfgYYVipMap, &nIndexa)._M_node;
-  __x._M_node = std::map<int,CfgYYVip>::end(&thisa->m_CfgYYVipMap)._M_node;
-  if ( std::_Rb_tree_iterator<std::pair<int const,CfgYYVip>>::operator!=(&it, &__x) )
-    return &std::_Rb_tree_iterator<std::pair<int const,CfgYYVip>>::operator->(&it)->second;
-  else
-    return 0;
+	auto it = m_YYVipMap.find(nIndex);
+	if (it != m_YYVipMap.end())
+		return &it->second;
+	return NULL;
 }
 
 //#####################################
 const CfgYYSuperBuff *CfgData::GetSuperBuff(int32_t SuperLevel)
 {
-  std::_List_const_iterator<CfgYYSuperBuff> iter; // [rsp+10h] [rbp-20h] BYREF
-  std::_List_const_iterator<CfgYYSuperBuff> __x; // [rsp+20h] [rbp-10h] BYREF
+  std::_List_const_iterator<CfgYYSuperBuff> iter;
+  std::_List_const_iterator<CfgYYSuperBuff> __x;
 
-  for ( iter._M_node = std::list<CfgYYSuperBuff>::begin(&this->m_CfgYYSuperBuffList)._M_node;
+  for (iter = m_CfgYYSuperBuffList.begin();
         std::_List_const_iterator<CfgYYSuperBuff>::operator++(&iter) )
   {
-    __x._M_node = std::list<CfgYYSuperBuff>::end(&this->m_CfgYYSuperBuffList)._M_node;
+    __x = m_CfgYYSuperBuffList.end();
     if ( !std::_List_const_iterator<CfgYYSuperBuff>::operator!=(&iter, &__x) )
       break;
     if ( std::_List_const_iterator<CfgYYSuperBuff>::operator->(&iter)->SuperVipLevel <= SuperLevel )
@@ -22336,44 +20015,25 @@ const CfgYYSuperBuff *CfgData::GetSuperBuff(int32_t SuperLevel)
   return 0;
 }
 
-//#####################################
-const CfgYYSuperBuff *CfgData::Get37wanSuperBuff(int32_t SuperLevel)
-{
-  std::_List_const_iterator<CfgYYSuperBuff> iter; // [rsp+10h] [rbp-20h] BYREF
-  std::_List_const_iterator<CfgYYSuperBuff> __x; // [rsp+20h] [rbp-10h] BYREF
-
-  for ( iter._M_node = std::list<CfgYYSuperBuff>::begin(&this->m_Cfg37wanSuperBuffList)._M_node;
-        std::_List_const_iterator<CfgYYSuperBuff>::operator++(&iter) )
-  {
-    __x._M_node = std::list<CfgYYSuperBuff>::end(&this->m_Cfg37wanSuperBuffList)._M_node;
-    if ( !std::_List_const_iterator<CfgYYSuperBuff>::operator!=(&iter, &__x) )
-      break;
-    if ( std::_List_const_iterator<CfgYYSuperBuff>::operator->(&iter)->SuperVipLevel <= SuperLevel )
-      return std::_List_const_iterator<CfgYYSuperBuff>::operator*(&iter);
-  }
-  return 0;
-}
 
 //#####################################
 void CfgData::InitYellowDailyRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  const CDBCFile::FIELD *v2; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-1A0h] BYREF
-  CfgTencentGift year; // [rsp+A0h] [rbp-110h] BYREF
-  CfgTencentGift daily; // [rsp+E0h] [rbp-D0h] BYREF
-  MemChrBagVector __x; // [rsp+120h] [rbp-90h] BYREF
-  std::string strItems; // [rsp+140h] [rbp-70h] BYREF
-  char v8; // [rsp+14Fh] [rbp-61h] BYREF
-  MemChrBagVector v9; // [rsp+150h] [rbp-60h] BYREF
-  std::string v10; // [rsp+170h] [rbp-40h] BYREF
-  char v11; // [rsp+186h] [rbp-2Ah] BYREF
-  int32_t iBaseTableCount; // [rsp+188h] [rbp-28h]
-  int32_t iBaseColumnCount; // [rsp+18Ch] [rbp-24h]
-  int32_t i; // [rsp+190h] [rbp-20h]
-  int32_t nIndex; // [rsp+194h] [rbp-1Ch]
-  int32_t nId; // [rsp+198h] [rbp-18h]
-  int32_t nLevel; // [rsp+19Ch] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  const CDBCFile::FIELD *v2;
+  CDBCFile TabFile(0);
+  CfgTencentGift year;
+  CfgTencentGift daily;
+  MemChrBagVector __x;
+  std::string strItems;
+  MemChrBagVector v9;
+  std::string v10;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
+  int32_t nLevel;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/YellowEverydayReward.txt") )
@@ -22391,30 +20051,26 @@ void CfgData::InitYellowDailyRewardTable()
       for ( i = 0; i < iBaseTableCount; ++i )
       {
         nIndex = 0;
-        CfgTencentGift::CfgTencentGift(&daily);
-        CfgTencentGift::CfgTencentGift(&year);
         nId = TabFile.Search_Posistion( i, nIndex++)->iValue;
         nLevel = TabFile.Search_Posistion( i, nIndex++)->iValue;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&__x, &strItems);
-        std::vector<MemChrBag>::operator=(&daily.vRewards, &__x);
-        std::vector<MemChrBag>::~vector(&__x);
+        daily.vRewards = __x;
         
         ++nIndex;
         
         v2 = TabFile.Search_Posistion( i, nIndex);
-        v10.assign(v2->pString);
+        v10 = v2->pString;
         CItemHelper::parseItemVectorString(&v9, &v10);
-        std::vector<MemChrBag>::operator=(&year.vRewards, &v9);
-        std::vector<MemChrBag>::~vector(&v9);
+        year.vRewards = v9;
         
         ++nIndex;
         daily.nLevel = nLevel;
         year.nLevel = nLevel;
-        CfgTencentTable::AddYellowDailyGift(&this->m_cfgTencentTable, &daily);
-        CfgTencentTable::AddYellowYearGift(&this->m_cfgTencentTable, &year);
+        m_cfgTencentTable.AddYellowDailyGift(daily);
+        m_cfgTencentTable.AddYellowYearGift(year);
         CfgTencentGift::~CfgTencentGift(&year);
         CfgTencentGift::~CfgTencentGift(&daily);
       }
@@ -22427,16 +20083,15 @@ void CfgData::InitYellowDailyRewardTable()
 //#####################################
 void CfgData::InitYellowRewardTable()
 {
-  const CDBCFile::FIELD *v1; // rax
-  CDBCFile TabFile(0); // [rsp+10h] [rbp-E0h] BYREF
-  MemChrBagVector vReward; // [rsp+A0h] [rbp-50h] BYREF
-  std::string strItems; // [rsp+C0h] [rbp-30h] BYREF
-  char v5; // [rsp+CAh] [rbp-26h] BYREF
-  int32_t iBaseTableCount; // [rsp+CCh] [rbp-24h]
-  int32_t iBaseColumnCount; // [rsp+D0h] [rbp-20h]
-  int32_t i; // [rsp+D4h] [rbp-1Ch]
-  int32_t nIndex; // [rsp+D8h] [rbp-18h]
-  int32_t nId; // [rsp+DCh] [rbp-14h]
+  const CDBCFile::FIELD *v1;
+  CDBCFile TabFile(0);
+  MemChrBagVector vReward;
+  std::string strItems;
+  int32_t iBaseTableCount;
+  int32_t iBaseColumnCount;
+  int32_t i;
+  int32_t nIndex;
+  int32_t nId;
 
   
   if ( !TabFile.OpenFromTXT( "./ServerConfig/Tables/YellowReward.txt") )
@@ -22456,12 +20111,11 @@ void CfgData::InitYellowRewardTable()
         ++nIndex;
         
         v1 = TabFile.Search_Posistion( i, nIndex);
-        strItems.assign(v1->pString);
+        strItems = v1->pString;
         CItemHelper::parseItemVectorString(&vReward, &strItems);
         
         ++nIndex;
-        CfgTencentTable::SetYellowNewerGift(&this->m_cfgTencentTable, &vReward);
-        std::vector<MemChrBag>::~vector(&vReward);
+        m_cfgTencentTable.SetYellowNewerGift(vReward);
       }
     }
   }
@@ -22608,8 +20262,10 @@ void CfgData::InitGuiGuDaoRenTable()
 
 GuiGuDaoRenCfg* CfgData::GetGuiGuDaoRenCfg(int32_t nNpcId)
 {
-	auto it = m_GuiGuDaoRenCfgMap.find(nNpcId);
-	return it != m_GuiGuDaoRenCfgMap.end() ? &it->second : nullptr;
+	auto it = m_GuiGuDaoRenMap.find(NpcId);
+	if (it != m_GuiGuDaoRenMap.end())
+		return &it->second;
+	return NULL;
 }
 
 void CfgData::InitEquipBackTable()
@@ -23159,7 +20815,9 @@ void CfgData::InitDamnationTable()
 DamnationCfg* CfgData::GetDamnationCfg(int32_t Level)
 {
 	auto it = m_DamnationCfgTable.find(Level);
-	return it != m_DamnationCfgTable.end() ? &it->second : nullptr;
+	if (it != m_DamnationCfgTable.end())
+		return &it->second;
+	return NULL;
 }
 
 void CfgData::InitMingGeTable()
@@ -23601,7 +21259,7 @@ void CfgData::InitPassiveSkillTable()
 		stu.type = readFile.Search_Posistion(i, nIndex++)->iValue;
 		++nIndex; // skip name
 		std::string addonAttr = readFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(stu.vAttrs, addonAttr, i, "./ServerConfig/Tables/SkillPassiveAttr.txt");
+		parseAttrAddon(stu.vAttrs, addonAttr, i, "./ServerConfig/Tables/SkillPassiveAttr.txt");
 		std::string talentStr = readFile.Search_Posistion(i, nIndex++)->pString;
 		parseAddAttribues(stu.lTalentAddon, talentStr, i, "./ServerConfig/Tables/SkillPassiveAttr.txt");
 		++nIndex;
@@ -23628,7 +21286,7 @@ void CfgData::InitPetAttrTable()
 		CfgPetData pet;
 		pet.m_nPetId = readFile.Search_Posistion(i, nIndex++)->iValue;
 		std::string addonAttr = readFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(pet.m_vBaseAttr, addonAttr, i, "./ServerConfig/Tables/PetAttr.txt");
+		parseAttrAddon(pet.m_vBaseAttr, addonAttr, i, "./ServerConfig/Tables/PetAttr.txt");
 		m_cfgPetTable.AddAttr(pet);
 	}
 }
@@ -23657,7 +21315,7 @@ void CfgData::InitPetUpStarTable()
 		CItemHelper::parseItemVectorString(stu.vCostItems, strItems);
 		++nIndex;
 		std::string addonAttr = readFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(stu.vAttrs, addonAttr, i, "./ServerConfig/Tables/PetUpStar.txt");
+		parseAttrAddon(stu.vAttrs, addonAttr, i, "./ServerConfig/Tables/PetUpStar.txt");
 		std::string skillStr = readFile.Search_Posistion(i, nIndex++)->pString;
 		CItemHelper::parseItemString(stu.vSkill, skillStr);
 		std::string skillLevelStr = readFile.Search_Posistion(i, nIndex++)->pString;
@@ -23933,7 +21591,7 @@ void CfgData::InitShunWangTable()
 			stu.nIndex = SwVipBuff.Search_Posistion(i, nIndex++)->iValue;
 			stu.nType = SwVipBuff.Search_Posistion(i, nIndex++)->iValue;
 			std::string strAttr = SwVipBuff.Search_Posistion(i, nIndex++)->pString;
-			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShunWangVIPBuff.txt");
+			parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShunWangVIPBuff.txt");
 			stu.nLevel = SwVipBuff.Search_Posistion(i, nIndex++)->iValue;
 			m_CfgVplan.AddSwVipBuff(stu);
 		}
@@ -23988,7 +21646,7 @@ void CfgData::InitSpeciaEquipCfgMap()
 		stu.nPos = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/SpecialEquip.txt");
+		parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/SpecialEquip.txt");
 		stu.nSuitId = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		m_SpeciaEquipCfgMap[stu.nId] = stu;
 	}
@@ -24039,7 +21697,7 @@ void CfgData::InitLevelRefiningTable()
 		CfgLevelRefining stu;
 		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/LvRefining.txt");
+		parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/LvRefining.txt");
 		stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nCostItem = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nCostCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
@@ -24068,7 +21726,7 @@ void CfgData::InitCachetCfg()
 		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nPos = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/Cachet.txt");
+		parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/Cachet.txt");
 		stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nCostItem = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nCostCount = TabFile.Search_Posistion(i, nIndex++)->iValue;
@@ -24255,7 +21913,7 @@ void CfgData::InitShouHuRefining()
 			CfgShouHuRefiningLevel stu;
 			stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
 			std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
-			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/StarSpaceLevel.txt");
+			parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/StarSpaceLevel.txt");
 			stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
 			m_ShouHuRefiningLevelMap[stu.nLevel] = stu;
 		}
@@ -24280,7 +21938,7 @@ void CfgData::InitShouHuRefining()
 			stu.nSuitId = TabFile2.Search_Posistion(i, nIndex++)->iValue;
 			stu.nCount = TabFile2.Search_Posistion(i, nIndex++)->iValue;
 			std::string strAttr = TabFile2.Search_Posistion(i, nIndex++)->pString;
-			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/StarSpaceSuit.txt");
+			parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/StarSpaceSuit.txt");
 			m_ShouHuRefiningSuitMap[stu.nSuitId] = stu;
 		}
 	}
@@ -24307,7 +21965,7 @@ void CfgData::InitShiZhuangTable()
 			stu.nId = TabFile.Search_Posistion(i, nIndex++)->iValue;
 			stu.nType = TabFile.Search_Posistion(i, nIndex++)->iValue;
 			std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
-			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuang.txt");
+			parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuang.txt");
 			stu.nSuitId = TabFile.Search_Posistion(i, nIndex++)->iValue;
 			m_ShiZhuangTable[stu.nId] = stu;
 		}
@@ -24332,7 +21990,7 @@ void CfgData::InitShiZhuangTable()
 			stu.nSuitId = TabFile2.Search_Posistion(i, nIndex++)->iValue;
 			stu.nCount = TabFile2.Search_Posistion(i, nIndex++)->iValue;
 			std::string strAttr = TabFile2.Search_Posistion(i, nIndex++)->pString;
-			paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuangSuit.txt");
+			parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuangSuit.txt");
 			m_ShiZhuangSuitTable[stu.nSuitId] = stu;
 		}
 	}
@@ -24624,7 +22282,7 @@ void CfgData::InitShiZhuLevelUp()
 		stu.nLevel = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		stu.nCostGold = TabFile.Search_Posistion(i, nIndex++)->iValue;
 		std::string strAttr = TabFile.Search_Posistion(i, nIndex++)->pString;
-		paraseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuangUpGrade.txt");
+		parseAttrAddon(stu.vAttr, strAttr, i, "./ServerConfig/Tables/ShiZhuangUpGrade.txt");
 		m_ShiZhuLevelUpMap[stu.nId] = stu;
 	}
 }
@@ -24682,4 +22340,67 @@ void CfgData::InitNationalDayTask()
 			m_NationalDayPassportTable[stu.nLevel] = stu;
 		}
 	}
+}
+
+// ===== LuckDropTable Methods =====
+
+LuckDropTable::LuckDropTable()
+{
+	m_LuckDropMap.clear();
+}
+
+void LuckDropTable::AddLuckDrop( LuckDrop* p_stu )
+{
+	std::pair<int,int> key = std::make_pair( p_stu->Type, p_stu->VipLevel );
+	m_LuckDropMap[key] = *p_stu;
+}
+
+int32_t LuckDropTable::GetLuckRate( int32_t Type, int32_t VipLevel ) const
+{
+	std::pair<int,int> key = std::make_pair( Type, VipLevel );
+	std::map<std::pair<int,int>, LuckDrop>::const_iterator it = m_LuckDropMap.find( key );
+	if ( it != m_LuckDropMap.end() )
+		return it->second.Rate;
+	return 0;
+}
+
+void LuckDropTable::GetItem( MemChrBag* pItem, int32_t Type, int32_t VipLevel ) const
+{
+	if ( !pItem ) return;
+	std::pair<int,int> key = std::make_pair( Type, VipLevel );
+	std::map<std::pair<int,int>, LuckDrop>::const_iterator it = m_LuckDropMap.find( key );
+	if ( it == m_LuckDropMap.end() )
+		return;
+
+	// 计算总概率
+	int32_t MaxRate = 0;
+	for ( SpecialItemDropList::const_iterator iter = it->second.ItemList.begin();
+	      iter != it->second.ItemList.end(); ++iter )
+	{
+		MaxRate += iter->Rate;
+	}
+
+	if ( MaxRate <= 0 ) return;
+
+	int32_t nRand = RANDOM->generate( 1, MaxRate );
+	for ( SpecialItemDropList::const_iterator iter = it->second.ItemList.begin();
+	      iter != it->second.ItemList.end(); ++iter )
+	{
+		if ( iter->Rate >= nRand )
+		{
+			pItem->itemId = iter->Item.itemId;
+			pItem->itemClass = iter->Item.itemClass;
+			pItem->itemCount = iter->Item.itemCount;
+			pItem->bind = iter->Item.bind;
+			return;
+		}
+		nRand -= iter->Rate;
+	}
+}
+
+// ===== CfgData::GetLuckDropTableTable =====
+
+LuckDropTable& CfgData::GetLuckDropTableTable()
+{
+	return m_LuckDropTable;
 }

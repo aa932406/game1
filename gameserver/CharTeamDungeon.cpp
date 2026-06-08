@@ -257,6 +257,42 @@ int32_t CExtCharTeamDungeon::onSocialTeamDungeonCost( Answer::NetPacket* inPacke
 	{
 		return ERR_SYETEM_ERR;
 	}
+
+	int32_t nDungeonId = inPacket->readInt32();
+	CfgDungeon* pCfgDungeon = CFG_DATA.getDungeon( nDungeonId );
+	if ( NULL == pCfgDungeon )
+		return 10002;
+
+	int8_t nResult = 0;
+	// 检查物品消耗
+	if ( pCfgDungeon->costItem.m_nCount > 0 )
+	{
+		if ( !m_pPlayer->GetBag().HasItem( pCfgDungeon->costItem ) )
+			nResult = 1;
+	}
+	// 检查金币消耗
+	if ( pCfgDungeon->costMoney > 0 )
+	{
+		if ( m_pPlayer->GetCurrency( CURRENCY_MONEY ) < pCfgDungeon->costMoney )
+			nResult = 2;
+	}
+	// 检查元宝消耗
+	if ( pCfgDungeon->costGold > 0 )
+	{
+		if ( m_pPlayer->GetCurrency( CURRENCY_GOLD ) < pCfgDungeon->costGold )
+			nResult = 3;
+	}
+
+	// 发送结果
+	int8_t connid = m_pPlayer->getConnId();
+	NetPacket* packet = GAME_SERVICE.popNetpacket( connid, PACK_DISPATCH, 0x4EAC );
+	if ( !packet )
+		return 10002;
+
+	packet->writeInt32( m_pPlayer->getGateIndex() );
+	packet->writeInt8( nResult );
+	packet->setSize( packet->getWOffset() );
+	GAME_SERVICE.sendPacket( connid, packet );
 	return ERR_OK;
 }
 

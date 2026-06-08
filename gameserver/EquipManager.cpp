@@ -91,7 +91,7 @@ MemEquip CEquipManager::CreateMemEquip( int32_t nBaseId, int32_t nServerId, Char
 			RwLockWrGuard lock( m_rwEquipLock );
 			m_mEquipTable[equip.id] = equip;
 		}
-		DB_SERVICE.insertMemEquip( 0, equip );
+		DB_SERVICE.insertMemEquip( connid, equip );
 	}
 	return equip;
 }

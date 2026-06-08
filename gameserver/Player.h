@@ -140,11 +140,12 @@ public:
 
 public:
 	static void initNetPacketHandlers();
+	static void initNetPacketHandlers2019();
 	static int32_t enterDungeon( Player* player, int32_t nDungeonId, ProcId_t nProc, int32_t nBuffId, int32_t nLevel, int8_t nHard, int8_t nQuality, int32_t nEvent );
 	void init( PlayerDBData& dbData );
 
 	int16_t getGateIndex() const;
-	int16_t getConnId() const { return m_cgindex; }
+	int8_t getConnId() const { return m_connid; }
 	void setGateIndex(int16_t index);
 	void appendInfo(Answer::NetPacket *packet);
 	//int32_t getFamilyContribute() const;
@@ -778,6 +779,8 @@ private:
 
 public:
 	CFaBao&				GetPlayerFaBao(){ return m_PlayerFaBao;}
+	CFaBao*				GetPlayerFaBaoPtr(){ return &m_PlayerFaBao;}
+	CSpecialEquip*		GetCSpecialEquip();
 private:
 	CFaBao				m_PlayerFaBao;
 	friend				class CFaBao;
@@ -864,15 +867,21 @@ public:
 	int64_t			GetStartGather();
 	void			sendEndGather(int32_t err);
 	void			BreakGather( bool IsNotify = true );
+	void			SetPlantState( bool bState );
 private:
 	int32_t			onBeginGather(Answer::NetPacket *inPacket);
 	int32_t			onEndGather(Answer::NetPacket *inPacket);
 	int32_t			OnKaiFuHuoDongOperator( Answer::NetPacket *inPacket );
 	int32_t			OnEquipBackOperator( Answer::NetPacket *inPacket );
 
-	EntityId_t m_plantId;				//���ڲɼ��Ĳɼ���
-	int64_t	   m_startGatherTick;	
+	EntityId_t m_plantId;				//采集物ID
+	int64_t	   m_startGatherTick;
+	int8_t	   m_connid;				//2019多连接ID
+	bool	   m_PlantState;			//采集状态
+	bool	   m_isBackCity;			//回城标记	
 public:
+	void				SetNeedSyncAround();			// 标记需要同步周围
+	bool				canAttackTarget( CfgSkill* pCfg, Unit* pTarget );	// 攻击目标验证
 	int32_t				GetStartProtect();
 	void				TiShiInfo( int32_t TiShiId, int32_t Pos = 0 );
 	void				onDropItem( Player *pKiller, int32_t Mid = 0 );
@@ -886,6 +895,8 @@ private:
 	void				SendHDIcon();
 	int32_t				OnRandPos( int32_t BagSlot );				//ʹ���������
 	int32_t				OnBackCity( int32_t BagSlot );				//ʹ�ûسǾ�
+	int32_t				OnBackCity( int32_t BagSlot, bool bXinMo );		//使用回城卷(心魔版)
+	void				BroadcastYanHua( int32_t nType );			//广播烟花效果
 	void				PayedDispose( int32_t AddGold );			//��ֵ�Ժ�Ĵ���
 
 	int32_t				OnEnterBossHome( Answer::NetPacket *inPacket );
@@ -898,6 +909,7 @@ private:
 	int32_t				OnUsemMultiItem( Answer::NetPacket *inPacket );
 public:
 	void				LevelUped();
+	void				LevelUped( int32_t OldLevel, int32_t NewLevel );
 	void				SetLvelStartTime();
 	void				LeaveVipGuaJiMap();
 	bool				SubPkValues( int32_t Addon );
@@ -905,6 +917,92 @@ public:
 	int32_t				GetTodayPayGold(){ return m_todayGoldCharge; }
 	bool				HasSkill( int32_t SkillId );
 	void				AddAppendAttr();
+
+	// 2019新增网络包处理器
+	int32_t				OnSubPkValus( Answer::NetPacket *inPacket );
+	int32_t				OnLevelPrison( Answer::NetPacket *inPacket );
+	int32_t				OnOpenBetaOperator( Answer::NetPacket *inPacket );
+	int32_t				OnFestivalActivityOperator( Answer::NetPacket *inPacket );
+	int32_t				OnAskLastFullHpTime( Answer::NetPacket *inPacket );
+	int32_t				OnFullHp( Answer::NetPacket *inPacket );
+	int32_t				OnGetMiniClientReward( Answer::NetPacket *inPacket );
+	int32_t				OnGetMapBossInfo( Answer::NetPacket *inPacket );
+	int32_t				OnGetLevelBossInfo( Answer::NetPacket *inPacket );
+	int32_t				OnPaiMaiHangHanHua( Answer::NetPacket *inPacket );
+	int32_t				OnEnterSpecialBossMap( Answer::NetPacket *inPacket );
+	int32_t				OnLeaveSpecialBossMap( Answer::NetPacket *inPacket );
+	int32_t				OnRollTheDice( Answer::NetPacket *inPacket );
+	int32_t				OnCycleTowerEvent( Answer::NetPacket *inPacket );
+	int32_t				ChatValidateed( Answer::NetPacket *inPacket );
+	int32_t				onBuyXuWuValue( Answer::NetPacket *inPacket );
+	int32_t				OnChristmasDuiHuan( Answer::NetPacket *inPacket );
+	int32_t				onDungeonRandom( Answer::NetPacket *inPacket );
+	int32_t				OnBuyRandomPosTimes( Answer::NetPacket *inPacket );
+	int32_t				OnBuyJingLiValue( Answer::NetPacket *inPacket );
+	int32_t				onComBackCity( Answer::NetPacket *inPacket );
+	int32_t				onDungeonNpc( Answer::NetPacket *inPacket );
+	int32_t				OnActivityWorldBossGuWu( Answer::NetPacket *inPacket );
+	int32_t				OnActivityApplyCityWar( Answer::NetPacket *inPacket );
+	int32_t				OnRequestActivityRankInfo( Answer::NetPacket *inPacket );
+	int32_t				OnUniteServerRequestInfo( Answer::NetPacket *inPacket );
+	int32_t				OnUniteServerGetRechargeGift( Answer::NetPacket *inPacket );
+	int32_t				OnUniteServerBuyDistinctGift( Answer::NetPacket *inPacket );
+	int32_t				OnUniteServerHuoYueduGift( Answer::NetPacket *inPacket );
+	int32_t				OnUniteBuyChangeNameCard( Answer::NetPacket *inPacket );
+	int32_t				OnGetUniteWingLevelUpReward( Answer::NetPacket *inPacket );
+	int32_t				OnUniteServerGetLianRechargeGift( Answer::NetPacket *inPacket );
+	int32_t				OnUniteServerGetChouJiangTimesReward( Answer::NetPacket *inPacket );
+	int32_t				OnGetKaiFuREcharge( Answer::NetPacket *inPacket );
+	int32_t				OnGetKaiFuChouJiang( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenRequestInfo( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetLandGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetDrawGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetOnlineGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetWishGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetLandSumGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenBuyDailyLimitShopItem( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetHuoYueDuSumGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetDailyRechargeGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetRechargeSumGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetPetIllusionItemGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetXiaoFeiSumGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenBuyGiftShopItem( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetFaBaoCritBackItem( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenBuyGiftShopItem2( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenBuyGiftItem( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetEquipUpStarBackItem( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenBuyPetGift( Answer::NetPacket *inPacket );
+	int32_t				OnFengHao( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetRechargeBack( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetEquipQingYiGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenGetFriendQingYiGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenRandScoreDrawGift( Answer::NetPacket *inPacket );
+	int32_t				OnDoubleElevenRandGouWuChe( Answer::NetPacket *inPacket );
+	int32_t				OnGetLianRechargeReward( Answer::NetPacket *inPacket );
+	int32_t				OnRequestMoYuShiJieRecord( Answer::NetPacket *inPacket );
+	int32_t				OnSetFcmTime( Answer::NetPacket *inPacket );
+	int32_t				OnCheckAccelerator( Answer::NetPacket *inPacket );
+	int32_t				OnZHYYHDRequestInfo( Answer::NetPacket *inPacket );
+	int32_t				OnZHYYHDGetRechargeDailyReward( Answer::NetPacket *inPacket );
+	int32_t				OnZHYYHDGetRechargeTeamShopDailyReward( Answer::NetPacket *inPacket );
+	int32_t				OnZHYYHDBuyOnceShopItem( Answer::NetPacket *inPacket );
+	int32_t				onSetGuaJi( Answer::NetPacket *inPacket );
+	int32_t				onCrossPrivateChat( Answer::NetPacket *inPacket );
+	int32_t				onActivityChangeMap( Answer::NetPacket *inPacket );
+	int32_t				onFamilyWarActivePillar( Answer::NetPacket *inPacket );
+	int32_t				onSpecialPlant( Answer::NetPacket *inPacket );
+	int32_t				onDungeonBuildTower( Answer::NetPacket *inPacket );
+	int32_t				onDungeonBuyTower( Answer::NetPacket *inPacket );
+	int32_t				onDungeonStart( Answer::NetPacket *inPacket );
+	int32_t				onDungeonSummonBoss( Answer::NetPacket *inPacket );
+	int32_t				onBuyDungeonEnterTime( Answer::NetPacket *inPacket );
+	int32_t				onDungeonSummon( Answer::NetPacket *inPacket );
+	int32_t				onDungeonQuickDone( Answer::NetPacket *inPacket );
+	int32_t				onDungeonSaoDang( Answer::NetPacket *inPacket );
+	int32_t				onDungeonReset( Answer::NetPacket *inPacket );
+	int32_t				onGuessTheSize( Answer::NetPacket *inPacket );
+	int32_t				onEnterChargeDungeon( Answer::NetPacket *inPacket );
+	int32_t				onDungeonYJSKGuWu( Answer::NetPacket *inPacket );
 private:
 	int32_t				m_InBossHomeTime;
 public:
@@ -919,10 +1017,16 @@ private:
 	int64_t				m_LastAddPPTick;
 public:
 	bool				GetSysSettingInfo( int32_t Index );
+	int32_t				getCreatedDays() const;
 private:
 	void				InitSysSetting();
 	std::string			GetSysSetting();
 	std::map<int32_t, int32_t> m_SystemSetting;
+	int32_t				m_Battle;
+	int8_t				m_nCamp;
+	int8_t				m_nGuaJi;
+	bool				m_needRecalAttr;
+	std::map<int32_t, int32_t> m_BeiGongAttr;
 };
 
 #include "CharExchange.h"

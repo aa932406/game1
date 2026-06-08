@@ -43,7 +43,7 @@ public:
 	// 开服装备回购
 	void KiaFuEquipBack( int32_t Index, int32_t EquipId, int32_t Mid, Player* pPlayer );
 
-	// 发送信息
+	// 发送信息（多连接感知）
 	void SendEquipBackInfo( Player* pPlayer );
 	void SendEquipBackOnRecord( Player* pPlayer, BackRecord* p_stu );
 	void SendEquipBackCountChange( Player* pPlayer, int32_t nId );
@@ -59,11 +59,11 @@ public:
 	void UpdateEquipBackInfo( int32_t nId, int8_t nType, int32_t nCount, std::string* p_Name );
 
 private:
-	std::list<BackRecord>		m_BackRecord;
-	std::map<int32_t, BackDepot>	m_BackDepotMap;
+	std::list<BackRecord>				m_BackRecord;
+	std::map<int32_t, BackDepot>		m_BackDepotMap;
 	std::map<int32_t, BackLimitInfo>	m_BackLimitInfoMap;
-	Answer::Mutex				m_RecordLock;
-	Answer::Mutex				m_DepotLock;
+	Answer::Mutex						m_RecordLock;
+	Answer::Mutex						m_DepotLock;
 };
 
 #define EQUIP_BACK Answer::Singleton<CEquipBack>::instance()

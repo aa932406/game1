@@ -35,9 +35,11 @@ public:
 	CPet*			GetPet( PetId_t nPetId );
 	CPet*			CreateNewPetFromEgg( int32_t nEggId, Player* pCreater, int32_t nFromWay = PFW_NORMAL );
 	CPet*			CreateNewPet( int32_t nBaseId, Player* pCreater, int8_t nFromWay = PFW_NORMAL );
-	void			AddPet( CPet* pPet );
-	void			DelPet( CPet* pPet );
-	void			UpdatePet( CPet* pPet );
+	void			AddPet( int8_t connid, CPet* pPet );
+	void			DelPet( int8_t connid, CPet* pPet );
+	void			UpdatePet( int8_t connid, CPet* pPet );
+	// 兼容旧版本，使用默认connid=0
+	void			UpdatePet( CPet* pPet ) { UpdatePet(0, pPet); }
 	void			GetPlayerPetList( CharId_t nCharId, PetList& pets );
 	void			ChangeOwner( PetId_t nPetId, CharId_t nOwner );
 	void			UpdataChangedPet();

@@ -1288,6 +1288,7 @@ struct SysUser
 	int32_t sid;
 	int32_t gold;
 	int32_t sys_gold;
+	int32_t gold_pay;			// 未领取充值金额
 	int32_t gold_pay_total;
 	int32_t prepay_gold;
 	int32_t gold_cost_total;
@@ -1403,6 +1404,21 @@ inline CURRENCY_TYPE TranseCurrency( CURRENCY_ITEM_ID id )
 	default:	break;
 	}
 	return CURRENCY_INVALID;
+}
+
+inline CURRENCY_ITEM_ID TranseCurrencyItem( CURRENCY_TYPE type )
+{
+	switch( type )
+	{
+	case CURRENCY_MONEY:		return CURRENCY_MONEY_ID;
+	case CURRENCY_GOLD:		return CURRENCY_GOLD_ID;
+	case CURRENCY_CASH:		return CURRENCY_CASH_ID;
+	case CURRENCY_VIGOUR_ID:	return CURRENCY_VIGOUR_ID;
+	case CURRENCY_BIND_MONEY:	return CURRENCY_BIND_MONEY_ID;
+	case CURRENCY_HONOR:		return CURRENCY_HORNOR_ID;
+	default:	break;
+	}
+	return CURRENCY_INVALID_ID;
 }
 
 struct KillMonsterInfo

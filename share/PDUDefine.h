@@ -1381,6 +1381,7 @@ SM_NATIONAL_DAY_HD_INFO			= 10309,
 	// boss֮��
 	SM_SEND_BOSS_HOME_INFO				= 11485,		//����boss֮����Ϣ
 	SM_SEND_BOSS_CHANGE					= 11486,		//boss change
+	SM_FAMILY_SOCIAL_FINISH_BOSS			= 20048,		//family social finish boss
 	SM_SEND_DROP_RECORD					= 11990,		//drop record
 	SM_SEND_RUINS_BOSS_INFO				= 11991,		//ruins boss info placeholder
 	SM_SEND_RUINS_BOSS_CHANGE				= 11992,	//ruins boss change

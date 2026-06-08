@@ -36,6 +36,7 @@ int32_t CGongMing::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inPack
 
 void CGongMing::OnCleanUp()
 {
+    // 功名数据存储在 OperateLimit record 1161/1162 中，无需额外清理
 }
 
 void CGongMing::OnUpdate( int64_t curTick )

@@ -31,6 +31,7 @@ public:
 	static Direction tileDirection(int32_t cx, int32_t cy, int32_t tx, int32_t ty);
 	static Direction UnitDirection( const Position& src, const Position& tar );
 	static Position getAroundTile(int32_t tx, int32_t ty, Direction direction);
+	static Position GetDirTileByDistance(int32_t tx, int32_t ty, Direction direction, int32_t distance);
 
 public:
 	virtual void init( const CfgMap &cfgmap );//��ͼ���ݳ�ʼ��

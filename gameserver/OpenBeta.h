@@ -5,55 +5,61 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <mutex>
 
-// 公测活动类型
-enum OpenBetaActivityType
+// 公测活动时间索引（用于 m_vStartDay/m_vEndDay 数组下标）
+enum OpenBetaTimeType
 {
-	OB_HUO_YUE_DU		= 1,	// 活跃度
-	OB_DAILY_RECHARGE	= 2,	// 每日充值
-	OB_DAILY_LIMIT_SHOP	= 3,	// 每日限购
-	OB_CHOU_JIANG		= 4,	// 抽奖
-	OB_XIAO_FEI_SUM_DRAW= 5,	// 消费抽奖
-	OB_BOSS				= 6,	// 世界BOSS
-	OB_COLLECT_DROP		= 7,	// 收集掉落
-	OB_XIAO_FEI_DRAW	= 8,	// 消费抽
-	OB_MYSTERY_SHOP		= 9,	// 神秘商店
-	OB_LIAN_RECHARGE	= 10,	// 连充
-	OB_CHOU_JIANG_TIMES	= 11,	// 抽奖次数
-	OB_WING_LEVEL_UP	= 12,	// 翅膀升级
+	OBTT_ONLINE_REWARD	= 1,	// 在线奖励 (RED_PACK)
+	OBTT_RECHARGE		= 2,	// 每日充值
+	OBTT_DAILY_LIMIT_SHOP	= 3,	// 每日限购
+	OBTT_CHOU_JIANG		= 4,	// 抽奖
+	OBTT_XIAO_FEI_SUM_RANK	= 5,	// 消费排行
+	OBTT_TITLE_SHOP		= 6,	// 称号商店
+	OBTT_SHI_ZHUANG_SHOP	= 7,	// 时装商店
+	OBTT_COLLECT_DROP	= 8,	// 收集掉落
+	OBTT_BOSS			= 9,	// 世界BOSS
+	OBTT_LI_QUAN		= 10,	// 礼券
+	OBTT_FLOP			= 11,	// 翻牌
+	OBTT_QIAN_DAO		= 12,	// 签到
+	OBTT_YAN_HUA		= 13,	// 烟花
+	OBTT_GUO_QING_TASK	= 16,	// 国庆任务
+	OBTT_GUO_QING_REWARD	= 17,	// 国庆奖励
+	OBTT_MAX			= 18,
 };
 
-// 商店物品
+// 商店物品（2019版）
 struct ShopGoods
 {
-	ShopGoods() : nId(0), nGold(0), nReGold(0), nCount(0), nLeftCount(0) {}
-	int32_t		nId;
-	int32_t		nGold;
-	int32_t		nReGold;
-	int32_t		nCount;
-	int32_t		nLeftCount;
+	ShopGoods() : nPrice(0) {}
+	int32_t			nPrice;
+	MemChrBagVector		vItem;
 };
 
-// 烟花排行榜
+// 排行榜条目（2019版，支持多连接）
 struct FestivalRank
 {
-	FestivalRank() : nCid(0), nValue(0) {}
-	CharId_t	nCid;
-	std::string	strName;
-	int32_t		nValue;
+	FestivalRank() : nCharId(0), nScore(0), nTime(0), bChange(false) {}
+	CharId_t		nCharId;
+	std::string		strName;
+	int32_t			nScore;
+	int32_t			nTime;
+	bool			bChange;
 
 	void PackageData(Answer::NetPacket* packet) const
 	{
-		packet->writeInt64(nCid);
+		packet->writeInt64(nCharId);
 		packet->writeUTF8(strName);
-		packet->writeInt32(nValue);
+		packet->writeInt32(nScore);
 	}
 };
 
+typedef std::vector<FestivalRank> FestivalRankVector;
+
 inline bool GreaterFestivalRank(const FestivalRank& a, const FestivalRank& b)
 {
-	if (a.nValue != b.nValue) return a.nValue > b.nValue;
-	return a.nCid < b.nCid;
+	if (a.nScore != b.nScore) return a.nScore > b.nScore;
+	return a.nCharId < b.nCharId;
 }
 
 class COpenBeta
@@ -119,7 +125,10 @@ public:
 	void			AddYanHuaPoint(int32_t Values);
 	int32_t			GetYanHuaPointReward(Player* player, int8_t nIndex);
 
-	// XiaoFei sum rank
+	// QianDao (check-in)
+	int32_t			GetQianDaoReward(Player* player, int8_t nIndex, int8_t nType);
+
+	// XiaoFei sum rank (multi-conn aware)
 	void			loadXiaoFeiSumRank();
 	void			updateXiaoFeiSumRank(Player* player, int32_t AddValues);
 	void			checkXiaoFeiSumRankInvalid(int8_t connid);
@@ -132,6 +141,10 @@ public:
 private:
 	void			updateStartTime();
 	void			sendBroadcast(int32_t nBroadId, CharId_t cid, const std::string* name);
+	void			broadcastBossStart();
+	void			broadcastBossEnd();
+	void			getIconState(ShowIcon* pIcon, Player* player);
+	void			getBossIconState(ShowIcon* pIcon);
 
 private:
 	// General config
@@ -140,50 +153,84 @@ private:
 	int32_t			m_nIcon;
 	int32_t			m_nDay;
 	int32_t			m_nMinute;
-
-	// Activity time areas
-	TimeArea		m_vTimeArea[12];
+	int32_t			m_vStartDay[OBTT_MAX];
+	int32_t			m_vEndDay[OBTT_MAX];
 
 	// Boss
+	int32_t			m_nBossIcon;
 	int32_t			m_nBossStartBroadcast;
 	int32_t			m_nBossEndBroadcast;
 	int32_t			m_nBossKillBroadcast;
-	int32_t			m_BossMapId;
-	int32_t			m_BossX;
-	int32_t			m_BossY;
-	int32_t			m_BossMid;
-	int32_t			m_BossMonsterId;
-	bool			m_bBossDie;
+	int32_t			m_MapId;
+	int32_t			m_X;
+	int32_t			m_Y;
+	int32_t			m_Mid;
+	int32_t			m_MonsterId;
+	bool			m_bDie;
 	std::vector<TimeArea>	m_vBossMinute;
 
-	// Shop
-	std::vector<ShopGoods>	m_GiftShop;
-	std::vector<ShopGoods>	m_TitleShop;
-	std::vector<ShopGoods>	m_ShiZhuangShop;
-	std::vector<ShopGoods>	m_LiQuanShop;
+	// Daily limit shop
+	int32_t			m_nDailyLimitShopSize;
+	std::vector<ShopGoods>	m_vDailyLimitShopGoods;
+	std::vector<int32_t>	m_vDailyLimitShopBroadcast;
 
-	// Online
-	int32_t			m_nOnlineSize;
-	std::vector<int32_t>	m_vOnlineValue;
-	std::vector<MemChrBagVector>	m_vOnlineGift;
+	// Title shop
+	int32_t			m_nTitleShopSize;
+	std::vector<ShopGoods>	m_vTitleShopGoods;
+	std::vector<int32_t>	m_vTitleShopBroadcast;
+
+	// ShiZhuang shop
+	int32_t			m_nShiZhuangShopSize;
+	std::vector<ShopGoods>	m_vShizhuangShopGoods;
+	std::vector<int32_t>	m_vShiZhuangShopBroadcast;
+
+	// Online reward
+	int32_t			m_nOnlineStartMinute;
+	int32_t			m_nOnlineEndMinute;
+	int32_t			m_nOnlineTimeArea;
+	MemChrBagVector		m_vOnlineReward;
+	int32_t			m_nMaxCount;
 
 	// Recharge
 	int32_t			m_nRechargeDaysSize;
 	std::vector<int32_t>	m_vRechargeValue;
 	std::vector<MemChrBagVector>	m_vRechargeGift;
 
-	// YanHua
-	int32_t			m_CurrYanHuaPoint;
-	std::vector<FestivalRank>	m_YanHuaRank;
-	std::vector<MemChrBagVector>	m_YanHuaReward;
-
-	// XiaoFei sum
-	std::vector<FestivalRank>	m_XiaoFeiSumRank;
-	std::vector<MemChrBagVector>	m_XiaoFeiSumReward;
-
 	// ChouJiang
 	int32_t			m_ChouJiangType;
-	int32_t			m_ChouJiangCount;
+
+	// XiaoFei sum rank (multi-conn)
+	int32_t			m_nShowSize;
+	int32_t			m_nXiaoFeiSumRankSize;
+	int32_t			m_nXiaoFeiSumRankLimit;
+	std::vector<int32_t>	m_vXiaoFeiSumRankMail;
+	std::vector<MemChrBagVector>	m_vXiaoFeiSumRankReward;
+	std::map<int8_t, FestivalRankVector>	m_mXiaoFeiSumRank;
+	std::mutex		m_lock;
+
+	// Flop
+	int32_t			m_FlopSize;
+	std::vector<int32_t>	m_FlopType;
+	std::vector<ItemData>	m_FlopCost;
+
+	// LiQuan
+	int32_t			m_LiQuanSize;
+	std::vector<MemChrBag>	m_LiQuanItem;
+	std::vector<ItemData>	m_ItemDataVector;
+	std::vector<int32_t>	m_LiQuanPriceVt;
+	std::vector<int32_t>	m_LiQuanLimitCount;
+
+	// QianDao
+	int32_t			m_QianDaoSize;
+	std::vector<MemChrBag>	m_QianDaoReward;
+	std::vector<int32_t>	m_BuQianPrice;
+
+	// YanHua
+	int32_t			m_CurrYanHuaPoint;
+	int32_t			m_YanHuaSize;
+	std::vector<MemChrBag>	m_YanHuaReward;
+	std::vector<int32_t>	m_YanHuaPointVt;
+	std::vector<FestivalRank>	m_YanHuaRank;
 };
 
 #define OPEN_BETA Answer::Singleton<COpenBeta>::instance()
