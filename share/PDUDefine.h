@@ -508,15 +508,6 @@ enum MSG_CM_CODE
 	CM_MING_GE_DRESS					= 539,			// 装备命格
 	CM_MING_GE_UNDRESS					= 540,			// 卸下命格
 	CM_MING_GE_BUY_NPC					= 541,			// 购买猎命NPC
-	// depot password
-	CM_SET_DEPOT_PASSWORD				= 407,			// set depot password
-	CM_ENTER_DEPOT_PASSWORD				= 408,			// enter depot password
-	CM_MODIFY_DEPOT_PASSWORD				= 409,			// modify depot password
-	CM_CANCEL_DEPOT_PASSWORD				= 410,			// cancel depot password
-	CM_SET_DEPOT_SECOND_PASSWORD			= 503,			// set second password
-	CM_ENTER_DEPOT_SECOND_PASSWORD			= 504,			// enter second password
-	CM_MODIFY_DEPOT_SECOND_PASSWORD			= 505,			// modify second password
-	CM_CANCEL_DEPOT_SECOND_PASSWORD			= 506,			// cancel second password
 	//�ɾ�
 	CM_ACHIEVEMENT_GET_REWARD					= 510,			//��ȡ�ɾͽ���
 	CM_ACHIEVEMENT_UP_XUN_ZHANG					= 511,			//����ѫ��

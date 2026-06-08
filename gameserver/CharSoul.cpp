@@ -9,9 +9,9 @@
 #include "DBService.h"
 #include "PDUDefine.h"
 
-#define EXP_SOUL_RATE				5000		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-#define EXP_MIN_VALUE				10000000	// ï¿½ï¿½Ð¡ï¿½Ò»ï¿½Öµ
-#define SOUL_PLAYER_LEVEL_RATE		10			// ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½Ó³É±ï¿½ï¿½ï¿½ 
+#define EXP_SOUL_RATE				5000		// ¾­Ñé»êÁ¦±ÈÂÊ
+#define EXP_MIN_VALUE				10000000	// ×îÐ¡¶Ò»»Öµ
+#define SOUL_PLAYER_LEVEL_RATE		10			// »êÁ¦µÈ¼¶¶ÔÈËÎï×î´óµÈ¼¶¼Ó³É±ÈÂÊ 
 
 
 using namespace Answer;
@@ -96,7 +96,7 @@ int32_t CExtCharSoul::onAddSoul( Answer::NetPacket* inPacket )
 	m_pPlayer->delExp( nValue );
 	m_nExp += nValue / EXP_SOUL_RATE;
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPlayer->getExp() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPlayer->getExp() );
 	return ERR_OK;
 }
 
@@ -125,7 +125,7 @@ int32_t CExtCharSoul::onUpgradeSoulLevel( Answer::NetPacket* inPacket )
 	m_pPlayer->FillHP();
 	m_pPlayer->FillMP();
 	SendSoulInfo();
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPlayer->getExp() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_pPlayer->getExp() );
 	return ERR_OK;
 }
 
@@ -160,7 +160,7 @@ void CExtCharSoul::SendSoulInfo()
 	packet->writeInt32( m_nLevel );
 	packet->writeInt64( m_nExp );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtCharSoul::broadcastLevelUp()

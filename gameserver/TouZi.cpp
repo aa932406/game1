@@ -3,15 +3,15 @@
 #include "Player.h"
 #include "GameService.h"
 using namespace Answer;
-#define MOON_CARD_NEED_GOLD				 500	//ï¿½Â¿ï¿½Í¶ï¿½ï¿½500
-#define MAX_LEVEL_UP_TOU_ZI_COUNT		 10000  //ï¿½È¼ï¿½Í¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#define MOON_CARD_NEED_GOLD				 500	//ÔÂ¿¨Í¶×Ê500
+#define MAX_LEVEL_UP_TOU_ZI_COUNT		 10000  //µÈ¼¶Í¶×Ê×î´ó½ð¶î
 
 enum Record_Typ
 {
-	MOON_CARD_TOU_ZI		= 1,		//ï¿½Â¿ï¿½Í¶ï¿½ï¿½
-	LEVEL_UP_TOU_ZI			= 2,		//ï¿½È¼ï¿½Í¶ï¿½ï¿½
-	GET_MOON_CARD_REWARD	= 3,		//ï¿½ï¿½È¡ï¿½Â¿ï¿½Í¶ï¿½Ê½ï¿½ï¿½ï¿½
-	GET_LEVEL_UP_REWARD		= 4,		//ï¿½ï¿½È¡ï¿½È¼ï¿½Í¶ï¿½ï¿½
+	MOON_CARD_TOU_ZI		= 1,		//ÔÂ¿¨Í¶×Ê
+	LEVEL_UP_TOU_ZI			= 2,		//µÈ¼¶Í¶×Ê
+	GET_MOON_CARD_REWARD	= 3,		//ÁìÈ¡ÔÂ¿¨Í¶×Ê½±Àø
+	GET_LEVEL_UP_REWARD		= 4,		//ÁìÈ¡µÈ¼¶Í¶×Ê
 };
 
 CTouZi::CTouZi()
@@ -140,7 +140,7 @@ int32_t	CTouZi::OnTouZi( Answer::NetPacket *inPacket )
 		broadcastTouZi( BCI_TOU_ZI_LEVEL_UP );
 		SendLevelUpTouZiInfo();
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(),inPacket->getProc(), Type );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(),inPacket->getProc(), Type );
 	SendTouZiIcon();
 	return ERR_OK;
 }
@@ -317,7 +317,7 @@ void CTouZi::SendMoonCardTouZiInfo()
 		}
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CTouZi::SendLevelUpTouZiInfo()
@@ -341,7 +341,7 @@ void CTouZi::SendLevelUpTouZiInfo()
 		}
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CTouZi::SendGetRewardSucceed( int8_t Type, int16_t Index )
@@ -354,7 +354,7 @@ void CTouZi::SendGetRewardSucceed( int8_t Type, int16_t Index )
 	packet->writeInt8( Type );
 	packet->writeInt16( Index );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 int32_t	CTouZi::GetMoonCardStartTime()
@@ -441,7 +441,7 @@ void CTouZi::SendTouZiIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 int32_t CTouZi::GetRewardCount()

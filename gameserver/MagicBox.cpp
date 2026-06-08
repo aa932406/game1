@@ -123,7 +123,7 @@ int32_t CExtMagicBox::onItemDecompose( Answer::NetPacket* inPacket )
 
 	// Send reply
 	uint16_t Proc = inPacket->getProc();
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), Proc, 0 );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), Proc, 0 );
 	return 0;
 }
 
@@ -672,7 +672,7 @@ void CExtMagicBox::SendMagicBoxInfo()
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_MAGIC_BOX_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_MAGIC_BOX_INFO );
 	if ( !packet )
 	{
 		return;
@@ -691,7 +691,7 @@ void CExtMagicBox::SendMagicBoxInfo()
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtMagicBox::SendItemCombiPoint()
@@ -701,7 +701,7 @@ void CExtMagicBox::SendItemCombiPoint()
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_MAGIC_BOX_COMBI_POINT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_MAGIC_BOX_COMBI_POINT );
 	if ( !packet )
 	{
 		return;
@@ -709,7 +709,7 @@ void CExtMagicBox::SendItemCombiPoint()
 
 	packet->writeInt32( m_nCombiPoints );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtMagicBox::sendItemCombiResult( int32_t nId, int32_t nSuccessTimes, int32_t nFailTimes )
@@ -719,7 +719,7 @@ void CExtMagicBox::sendItemCombiResult( int32_t nId, int32_t nSuccessTimes, int3
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_MAGIC_BOX_COMBI_RESULT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_MAGIC_BOX_COMBI_RESULT );
 	if ( !packet )
 	{
 		return;
@@ -729,7 +729,7 @@ void CExtMagicBox::sendItemCombiResult( int32_t nId, int32_t nSuccessTimes, int3
 	packet->writeInt32( nSuccessTimes );
 	packet->writeInt32( nFailTimes );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtMagicBox::broadcastItemCombi( int32_t ItemId, int8_t ItemClass )
@@ -739,7 +739,7 @@ void CExtMagicBox::broadcastItemCombi( int32_t ItemId, int8_t ItemClass )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_ITEM_COMBINE_BROADCAST );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_ITEM_COMBINE_BROADCAST );
 	if ( !packet )
 	{
 		return;
@@ -751,7 +751,7 @@ void CExtMagicBox::broadcastItemCombi( int32_t ItemId, int8_t ItemClass )
 	packet->writeInt32( ItemId );
 	packet->writeInt8( ItemClass );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.broadcast( m_pPlayer->getConnId(), packet );
+	GAME_SERVICE.broadcast( packet );
 }
 
 std::string CExtMagicBox::saveString( const Int32List& lst )

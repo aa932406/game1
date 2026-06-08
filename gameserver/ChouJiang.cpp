@@ -3,8 +3,8 @@
 #include "GameService.h"
 #include "DataStruct.h"
 #include "EquipManager.h"
-#define MAX_LUCK_POINT	500 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
-#define CHOU_JIANG_RECORD_MAX_COUT	50 //ï¿½é½±ï¿½ï¿½Â¼ï¿½ï¿½ï¿½50ï¿½ï¿½
+#define MAX_LUCK_POINT	500 //×î´óÐÒÔËÖµ
+#define CHOU_JIANG_RECORD_MAX_COUT	50 //³é½±¼ÇÂ¼×î¶à50Ìõ
 
 
 enum ChouJiangTimes
@@ -118,7 +118,7 @@ int32_t	ChouJiang::OnAskChouJiang( Answer::NetPacket *inPacket )
 	BindBagSlotVt.clear();
 	UnBindBagSlotVt.clear();
 	CheckChouJiangItemList( pCJCost, BindTimes, AllTimes, BindBagSlotVt, UnBindBagSlotVt );
-	if ( BindTimes < ChouJiangTimes && ( AllTimes - BindTimes ) < ChouJiangTimes )//ï¿½ï¿½ï¿½ï¿½Æ·,ï¿½Ç°ï¿½ï¿½ï¿½Æ·,ï¿½ï¿½ï¿½Ü»ï¿½ï¿½Ê¹ï¿½ï¿½
+	if ( BindTimes < ChouJiangTimes && ( AllTimes - BindTimes ) < ChouJiangTimes )//°ó¶¨ÎïÆ·,·Ç°ó¶¨ÎïÆ·,²»ÄÜ»ìºÏÊ¹ÓÃ
 	{
 		int64_t HaveGold = m_pPlayer->GetCurrency( CURRENCY_GOLD );
 		int32_t NeedGold = 0;
@@ -172,7 +172,7 @@ int32_t ChouJiang::OnChouJiang( Answer::NetPacket *inPacket )
 	CheckChouJiangItemList( pCJCost, BindTimes, AllTimes, BindBagSlotVt, UnBindBagSlotVt );
 	int64_t HaveGold = m_pPlayer->GetCurrency( CURRENCY_GOLD );
 	int32_t NeedGold = 0;
-	if ( BindTimes < ChouJiangTimes && ( AllTimes - BindTimes ) < ChouJiangTimes )//ï¿½ï¿½ï¿½ï¿½Æ·,ï¿½Ç°ï¿½ï¿½ï¿½Æ·,ï¿½ï¿½ï¿½Ü»ï¿½ï¿½Ê¹ï¿½ï¿½
+	if ( BindTimes < ChouJiangTimes && ( AllTimes - BindTimes ) < ChouJiangTimes )//°ó¶¨ÎïÆ·,·Ç°ó¶¨ÎïÆ·,²»ÄÜ»ìºÏÊ¹ÓÃ
 	{
 		if ( ChouJiangTimes == CJT_ONE_TIME )
 		{
@@ -373,7 +373,7 @@ int32_t ChouJiang::OnTidy( Answer::NetPacket *inPacket )
 			}
 			else
 			{
-				if ( m_ItemList[i].itemClass == IC_EQUIP || m_ItemList[i].itemClass == IC_PET_EGG ) // ×°ï¿½ï¿½ï¿½ï¿½ï¿½Üµï¿½ï¿½ï¿½
+				if ( m_ItemList[i].itemClass == IC_EQUIP || m_ItemList[i].itemClass == IC_PET_EGG ) // ×°±¸²»ÄÜµø¼Ó
 				{
 					continue;
 				}
@@ -415,7 +415,7 @@ void ChouJiang::SendChouJiangRecord()
 		packet->writeInt32( it->Time );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void ChouJiang::AddChouJiangRecord( MemChrBag& CJItem, int32_t Time, int8_t IsRecord )
@@ -464,7 +464,7 @@ void ChouJiang::SendNewRecord( MemChrBag& CJItem, int32_t Time )
 	packet->writeInt32( CJItem.itemCount );
 	packet->writeInt32( Time );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void ChouJiang::CheckGlobalPoint( int8_t ChouJiangType, int8_t ChouJiangTimes )
@@ -566,7 +566,7 @@ void ChouJiang::SendChouJiangItemChang( std::list<int32_t>& ItemList )
 		packet->writeInt64( m_ItemList[*it].srcId );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void ChouJiang::SendGetItem( std::list<int32_t>& ItemList )
@@ -599,7 +599,7 @@ void ChouJiang::SendGetItem( std::list<int32_t>& ItemList )
 		packet->writeInt64( m_ItemList[*it].srcId );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void ChouJiang::SendChouJiangItem()
@@ -636,7 +636,7 @@ void ChouJiang::SendChouJiangItem()
 	packet->writeInt32( Count );
 	packet->setWOffset( NewOffet );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 bool ChouJiang::AddItem( CJCfgList& CJCfgItem, int8_t IsBind )

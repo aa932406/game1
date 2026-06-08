@@ -239,7 +239,7 @@ void CJueWei::SendRankInfo()
 	packet->writeInt32( m_Rank );
 	packet->writeInt8( GetJueWei() );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CJueWei::SendDonateMoney()
@@ -255,7 +255,7 @@ void CJueWei::SendDonateMoney()
 	}
 	packet->writeInt64( m_DonateMoney );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CJueWei::SendDonateMoneyToGlobal()
@@ -447,7 +447,7 @@ void CJueWei::sendJueWeiInfo()
 	}
 	packet->writeInt8( static_cast<int8_t>( m_nJueWei ) );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CJueWei::AddCharAttr()

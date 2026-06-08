@@ -7,12 +7,12 @@
 #include "FamilyManager.h"
 #include "ActivityManager.h"
 
-#define HORSE_RACING_END_MAP_ID					10003		// ï¿½Õµï¿½ï¿½Í¼
-#define HORSE_RACING_END_POS_X					20			// ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½X
-#define HORSE_RACING_END_POS_Y					57			// ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½Y
-#define HORSE_RACING_END_SIZE					6			// ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡
-#define HORSE_RACING_ACTIVITY_SCORE_RANK_SIZE	3			// ï¿½ï¿½ï¿½Ð°ï¿½ï¿½Ð¡
-#define HORSE_RACING_BOOS_MAP_ID				90017		// BOSSï¿½ï¿½Í¼
+#define HORSE_RACING_END_MAP_ID					10003		// ÖÕµãµØÍ¼
+#define HORSE_RACING_END_POS_X					20			// ÖÕµã×ø±êX
+#define HORSE_RACING_END_POS_Y					57			// ÖÕµã×ø±êY
+#define HORSE_RACING_END_SIZE					6			// ÖÕµãÇøÓò´óÐ¡
+#define HORSE_RACING_ACTIVITY_SCORE_RANK_SIZE	3			// ÅÅÐÐ°ñ´óÐ¡
+#define HORSE_RACING_BOOS_MAP_ID				90017		// BOSSµØÍ¼
 
 using namespace Answer;
 
@@ -62,7 +62,7 @@ void CHorseRacing::OnUpdate( CActivityMap* pMap )
 
 		if ( player->getMapId() == pMap->GetId() )
 		{
-			// ï¿½Õµï¿½ï¿½ï¿½
+			// ÖÕµã¼ì²â
 			if ( player->getCurrentTile().tileDistance( Position( HORSE_RACING_END_POS_X, HORSE_RACING_END_POS_Y ) ) <= HORSE_RACING_END_SIZE )
 			{
 				m_racing.erase( iter++ );
@@ -82,7 +82,7 @@ void CHorseRacing::SendPlayerActivityInfo( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -91,7 +91,7 @@ void CHorseRacing::SendPlayerActivityInfo( Player* player )
 	packet->writeInt32( getNextStartTime() );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 
@@ -108,7 +108,7 @@ void CHorseRacing::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 		return;
 	}
 
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CHorseRacing::removePlayer( Player* player, bool islogout )
@@ -297,7 +297,7 @@ void CHorseRacing::sendActivityResult( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 	if ( NULL == packet )
 	{
 		return;
@@ -307,13 +307,13 @@ void CHorseRacing::sendActivityResult( Player* player )
 	packet->writeInt32( m_nIndex );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CHorseRacing::onTimeEnd()
 {
 	m_nState = AS_NOT_START;
-	delayKickAll( 0 );	// ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ß³ï¿½
+	delayKickAll( 0 );	// Á¢¼´È«²¿Ìß³ö
 }
 
 bool CHorseRacing::CanUseXP() const
@@ -332,7 +332,7 @@ bool CHorseRacing::CanUsePet( MapId_t mid ) const
 
 Answer::NetPacket* CHorseRacing::packetActivityScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -365,26 +365,26 @@ Answer::NetPacket* CHorseRacing::packetActivityScore()
 
 void CHorseRacing::broadcastReady()
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if (NULL == packet)
 	{
 		return;
 	}
 	packet->writeInt32( BCI_HORSE_RACING_READY );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast(0, packet);
+	GAME_SERVICE.worldBroadcast(packet);
 }
 
 void CHorseRacing::broadcastStart()
 {
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if (NULL == packet)
 	{
 		return;
 	}
 	packet->writeInt32( BCI_HORSE_RACING_START );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.worldBroadcast(0, packet);
+	GAME_SERVICE.worldBroadcast(packet);
 }
 
 void CHorseRacing::broadcastWin( Player* player )
@@ -410,7 +410,7 @@ void CHorseRacing::broadcastWin( Player* player )
 
 	if ( nBroadCastId > 0 )
 	{
-		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+		Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 		if (NULL == packet)
 		{
 			return;
@@ -419,6 +419,6 @@ void CHorseRacing::broadcastWin( Player* player )
 		packet->writeUTF8( player->getName() );
 		packet->writeInt64( player->getCid() );
 		packet->setSize(packet->getWOffset());
-		GAME_SERVICE.worldBroadcast(player->getConnId(), packet);
+		GAME_SERVICE.worldBroadcast(packet);
 	}
 }

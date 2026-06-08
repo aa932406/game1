@@ -3,12 +3,6 @@
 #include "Currency.h"
 #include "GameService.h"
 #include "DBService.h"
-#include "ShenWei.h"
-#include "FestivalDoubleEleven.h"
-#include "OpenBeta.h"
-#include "UniteServer.h"
-#include "CKiaFuRecharge.h"
-#include "OperateLimit.h"
 #include <sstream>
 
 using namespace Answer;
@@ -103,20 +97,19 @@ int32_t CExtCurrency::DispatchNetDatas( ProcId_t nProcId, Answer::NetPacket *inP
 
 int32_t CExtCurrency::onSocialAddCurrency( Answer::NetPacket *inPacket )
 {
-	if ( NULL == inPacket || NULL == m_pPlayer )
+	if ( NULL == inPacket )
 	{
 		return ERR_INVALID_DATA;
 	}
 	int8_t nCurrency = inPacket->readInt8();
 	int32_t nCount = inPacket->readInt32();
-	int32_t nReason = inPacket->readInt32();
-	if ( nCount < 0 )
+	if ( nCount >= 0 )
 	{
-		DecCurrency( static_cast<CURRENCY_TYPE>( nCurrency ), -1*nCount, nReason, 0 );
+		AddCurrency( static_cast<CURRENCY_TYPE>( nCurrency ), nCount );
 	}
 	else
 	{
-		AddCurrency( static_cast<CURRENCY_TYPE>( nCurrency ), nCount, nReason, 0 );
+		DecCurrency( static_cast<CURRENCY_TYPE>( nCurrency ), -1*nCount );
 	}
 	return ERR_OK;
 }
@@ -131,24 +124,33 @@ int64_t CExtCurrency::GetMoneyBindAndNoBind()
 bool CExtCurrency::DecMoneyAndNoBind( int64_t nVal, int32_t opWay, int64_t nParam )
 {
 	int64_t BindMoney	= GetCurrency( CURRENCY_BIND_MONEY );
-	int64_t Money		= GetCurrency( CURRENCY_MONEY );
-	if ( BindMoney + Money < nVal )
-	{
-		return false;
-	}
 	if ( BindMoney >= nVal )
 	{
 		return DecCurrency( CURRENCY_BIND_MONEY, nVal, opWay, nParam);
 	}
+	
+	if ( BindMoney > 0 )
+	{
+		if ( !DecCurrency( CURRENCY_BIND_MONEY, BindMoney, opWay, nParam) )
+		{
+			return false;
+		}
+		if ( !DecCurrency( CURRENCY_MONEY, nVal - BindMoney, opWay, nParam)  )
+		{
+			return false;
+		}
+		return true;
+	}
+
 	if ( BindMoney <= 0 )
 	{
-		return DecCurrency( CURRENCY_MONEY, nVal, opWay, nParam);
+		if ( !DecCurrency( CURRENCY_MONEY, nVal, opWay, nParam)  )
+		{
+			return false;
+		}
+		return true;
 	}
-	if ( !DecCurrency( CURRENCY_MONEY, nVal - BindMoney, opWay, nParam) )
-	{
-		return false;
-	}
-	return DecCurrency( CURRENCY_BIND_MONEY, BindMoney, opWay, nParam);
+	return false;
 }
 
 int64_t CExtCurrency::GetCurrency( CURRENCY_TYPE const nType ) const
@@ -168,113 +170,6 @@ bool CExtCurrency::AddCurrency( CURRENCY_TYPE const nType, int64_t nVal, int32_t
 		LOG_ERROR( "CExtCurrency::AddCurrency() wrong value!!! nType=%d, nVal=%d, opWay=%d, nParam=%lld\n", nType, nVal, opWay, nParam );
 		return false;
 	}
-
-	int64_t nMaxAddVal = getMaxVal( nType ) - GetCurrency( nType );
-	if ( nVal > nMaxAddVal )
-	{
-		nVal = nMaxAddVal;
-	}
-
-	if ( nVal <= 0 )
-	{
-		return true;
-	}
-	switch( nType )
-	{
-	case CURRENCY_MONEY:
-		{
-			if ( opWay != GCR_DEPOT_GET && opWay != MCR_MAIL_CURRENCY_ITEM
-				&& opWay != MCR_TRADE_GET_MONEY && opWay != GCR_AUCTION_SELL
-				&& opWay != MCR_MONEY_GAIN_ITEM )
-			{
-				nVal = static_cast<int32_t>( nVal * m_pPlayer->benefitRatio() );
-			}
-			if ( nVal <= 0 )
-			{
-				return true;
-			}
-			m_pPlayer->sendGainInfo( GT_MONEY, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_GOLD:
-		{
-			m_pPlayer->sendGainInfo( GT_GOLD, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_CASH:
-		{
-			m_pPlayer->sendGainInfo( GT_CASH, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_VIGOUR:
-		{
-			m_pPlayer->sendGainInfo( GT_VIGOUR, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_CHOUJINAG:
-		{
-			m_pPlayer->sendGainInfo( GT_CHOU_JINAG, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_BOSS:
-		{
-			m_pPlayer->sendGainInfo( GT_BOSS_SCORE, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_BIND_MONEY:
-		{
-			if ( opWay != GCR_DEPOT_GET && opWay != MCR_MAIL_CURRENCY_ITEM
-				&& opWay != MCR_TRADE_GET_MONEY && opWay != GCR_AUCTION_SELL
-				&& opWay != MCR_MONEY_GAIN_ITEM )
-			{
-				nVal = static_cast<int32_t>( nVal * m_pPlayer->benefitRatio() );
-			}
-			if ( nVal <= 0 )
-			{
-				return true;
-			}
-			m_pPlayer->sendGainInfo( GT_BIND_MONEY, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_HONOR:
-		{
-			CShenWei* pShenWei = m_pPlayer->GetShenWei();
-			int32_t OldLevel = pShenWei->GetShenWeiLevel();
-			int64_t newHonor = nVal + GetCurrency( CURRENCY_HONOR );
-			int32_t NewLevel = CFG_DATA.GetCachetLevel( newHonor );
-			if ( OldLevel != NewLevel )
-			{
-				CfgCachet* pCfg = CFG_DATA.GetCfgCachet( NewLevel );
-				if ( pCfg && pCfg->nGongGaoId > 0 )
-				{
-					NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
-					if ( packet )
-					{
-						packet->writeInt32( pCfg->nGongGaoId );
-						packet->writeUTF8( m_pPlayer->getName() );
-						packet->writeInt64( m_pPlayer->getCid() );
-						packet->writeInt32( OldLevel );
-						packet->writeInt32( NewLevel );
-						packet->setSize( packet->getWOffset() );
-						GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
-					}
-				}
-				m_pPlayer->RecalcAttr();
-			}
-			m_pPlayer->sendGainInfo( GT_HONOR, nVal, m_pPlayer->benefitType() );
-			m_pPlayer->sendUpdateSocialPlayerInfo( PII_SHEN_WEI, nVal + GetCurrency( CURRENCY_HONOR ) );
-			break;
-		}
-	case CURRENCY_AC_SOCRE:
-		{
-			m_pPlayer->sendGainInfo( GT_AC_SOCRE, nVal, m_pPlayer->benefitType() );
-			break;
-		}
-	default:
-		break;
-	}
-	return changeCurrency( nType, nVal, opWay, nParam );
-}
 
 	int64_t nMaxAddVal = getMaxVal( nType ) - GetCurrency( nType );
 	if ( nVal > nMaxAddVal )
@@ -360,88 +255,60 @@ bool CExtCurrency::DecCurrency( CURRENCY_TYPE const nType, int64_t nVal, int32_t
 	{
 		return false;
 	}
-
-	int64_t nRealValue = -nVal;
-	if ( !changeCurrency( nType, -nVal, opWay, nParam ) )
-	{
-		return false;
-	}
-
+	nVal *= -1;
 	switch( nType )
 	{
 	case CURRENCY_MONEY:
 		{
-			if ( opWay != MCR_PK_DROP )
-			{
-				m_pPlayer->sendGainInfo( GT_MONEY, nRealValue, m_pPlayer->benefitType() );
-			}
+			m_pPlayer->sendGainInfo( GT_MONEY, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	case CURRENCY_GOLD:
 		{
-			m_pPlayer->sendGainInfo( GT_GOLD, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->sendGainInfo( GT_GOLD, nVal, m_pPlayer->benefitType() );
+			m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_COST_GOLD,  -1 * static_cast<int32_t>(nVal) );
 			break;
 		}
 	case CURRENCY_CASH:
 		{
-			m_pPlayer->sendGainInfo( GT_CASH, nRealValue, m_pPlayer->benefitType() );
-			break;
-		}
-	case CURRENCY_VIGOUR:
-		{
-			m_pPlayer->sendGainInfo( GT_VIGOUR, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_COST_CASH, -1 *  static_cast<int32_t>( nVal ) );
+			m_pPlayer->sendGainInfo( GT_CASH, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	case CURRENCY_CHOUJINAG:
 		{
-			m_pPlayer->sendGainInfo( GT_CHOU_JINAG, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->sendGainInfo( GT_CHOU_JINAG, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	case CURRENCY_BOSS:
 		{
-			m_pPlayer->sendGainInfo( GT_BOSS_SCORE, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->sendGainInfo( GT_BOSS_SCORE, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	case CURRENCY_BIND_MONEY:
 		{
-			m_pPlayer->sendGainInfo( GT_BIND_MONEY, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->sendGainInfo( GT_BIND_MONEY, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	case CURRENCY_HONOR:
 		{
-			m_pPlayer->sendGainInfo( GT_HONOR, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->sendGainInfo( GT_HONOR, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	case CURRENCY_AC_SOCRE:
 		{
-			m_pPlayer->sendGainInfo( GT_AC_SOCRE, nRealValue, m_pPlayer->benefitType() );
+			m_pPlayer->sendGainInfo( GT_AC_SOCRE, nVal, m_pPlayer->benefitType() );
 			break;
 		}
 	default:
 		break;
 	}
-
-	if ( nType == CURRENCY_GOLD
-		&& opWay != GCR_TRADE_CONST_GOLD && opWay != GCR_AUCTION_BUY && opWay != GCR_AUCTION_SELL
-		&& opWay != GCR_FAMILY_SEND_RED_PACKET && opWay != GCR_RANSOM_ITEM && opWay != GCR_DEPOT_GET
-		&& (opWay != GCR_BUY_SHANG_CHENG_ITEM || (nParam != 3062 && nParam != 3063 && nParam != 3064)) )
-	{
-		m_pPlayer->GetOperateLimit().AddLimitCount( 2031, static_cast<int32_t>(nVal) );
-		CFestivalDoubleEleven::instance()->AddXiaoFeiRecord( m_pPlayer, static_cast<int32_t>(nVal) );
-		CFestivalDoubleEleven::instance()->UpdateXiaoFeiRank( m_pPlayer );
-		OPEN_BETA->updateXiaoFeiSumRank( m_pPlayer, static_cast<int32_t>(nVal) );
-		UNITE_SERVER->AddXiaoFeiValue( m_pPlayer, static_cast<int32_t>(nVal) );
-		KIA_FU_RECHARGE->OnXiaoFeiSum( m_pPlayer, static_cast<int32_t>(nVal) );
-		m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_COST_GOLD, static_cast<int32_t>(nVal), 0 );
+	
+	if ( nType == CURRENCY_GOLD && opWay != GCR_TRADE_CONST_GOLD && opWay != GCR_AUCTION_BUY && opWay != GCR_AUCTION_SELL )
+	{																	
+		m_pPlayer->GetPlayerVip().AddVipExp( -1* static_cast<int32_t>(nVal) );
 	}
-
-	if ( nType == CURRENCY_GOLD )
-	{
-		int32_t oldRecord = m_pPlayer->getRecord( 2117 );
-		m_pPlayer->updateRecord( 2117, static_cast<int32_t>(nVal) + oldRecord );
-	}
-
-	return true;
+	return changeCurrency( nType, nVal, opWay, nParam );
 }
 
 bool CExtCurrency::changeCurrency( CURRENCY_TYPE const nType, int64_t nVal, int32_t opWay, int64_t nParam )
@@ -496,7 +363,7 @@ void CExtCurrency::SendCurrencyInfo( bool bAll )
 	packet->setWOffset( newOffset );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 bool CExtCurrency::checkCurrencyType( CURRENCY_TYPE const nType ) const
@@ -515,7 +382,7 @@ int32_t CExtCurrency::syncGold( Answer::NetPacket *inPacket )
 		return 2;
 	}
 	int32_t Gold = inPacket->readInt32();
-	m_pPlayer->syncGold( Gold );
+	// syncGold removed: m_pPlayer->syncGold( Gold );
 	return 0;
 }
 
@@ -575,7 +442,7 @@ int32_t CExtCurrency::OnCurrencyDuiHuan( Answer::NetPacket *inPacket )
 	}
 
 	m_pPlayer->updateRecord( PR_CURRENCY_DUIHUAN_COUNT, nCount + 1 );
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), CM_CURRENCY_DUIHUAN );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), CM_CURRENCY_DUIHUAN );
 	return 0;
 }
 

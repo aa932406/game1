@@ -68,7 +68,7 @@ void CPeerlessWar::OnUpdate( CActivityMap* pMap )
 		Answer::NetPacket* packet = packetActivityScore();
 		if ( packet != NULL )
 		{
-			GAME_SERVICE.worldBroadcast( 0, packet );
+			GAME_SERVICE.worldBroadcast( packet );
 		}
 	}
 }
@@ -86,13 +86,13 @@ void CPeerlessWar::reset()
 void CPeerlessWar::SendPlayerActivityInfo( Player* player )
 {
 	if ( NULL == player ) return;
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
 	if ( NULL == packet ) return;
 	packet->writeInt32( m_cfgActivity.id );
 	packet->writeInt64( m_nWinner );
 	packet->writeInt32( getNextStartTime() );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CPeerlessWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
@@ -106,7 +106,7 @@ void CPeerlessWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 		nPersonalScore = iter->second.nKillCount;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -115,7 +115,7 @@ void CPeerlessWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 	packet->writeInt32( nLeftTime );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 Position CPeerlessWar::GetRandBornPos( Player* player )
@@ -457,7 +457,7 @@ void CPeerlessWar::addWinnerReward()
 
 void CPeerlessWar::broadcastResult()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -481,53 +481,53 @@ void CPeerlessWar::broadcastResult()
 	packet->setWOffset( oldOffset );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::broadcastReady()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 176 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::broadcastStart()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 177 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::broadcastKnockout( CharId_t nCharId, const std::string& name )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 178 );
 	packet->writeInt64( nCharId );
 	packet->writeUTF8( name );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::broadcastConstKill( CharId_t nCharId, const std::string& name, int32_t nContKill )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 180 );
 	packet->writeInt64( nCharId );
 	packet->writeUTF8( name );
 	packet->writeInt32( nContKill );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::broadcastBreakConst( CharId_t nCharId, const std::string& name, CharId_t nKillerId, const std::string& killerName, int32_t nContKill )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 181 );
 	packet->writeInt64( nKillerId );
@@ -536,16 +536,16 @@ void CPeerlessWar::broadcastBreakConst( CharId_t nCharId, const std::string& nam
 	packet->writeUTF8( name );
 	packet->writeInt32( nContKill );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::broadcastDraw()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 179 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CPeerlessWar::checkWin()
@@ -634,7 +634,7 @@ void CPeerlessWar::sendPlayerScore( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -651,12 +651,12 @@ void CPeerlessWar::sendPlayerScore( Player* player )
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 Answer::NetPacket* CPeerlessWar::packetActivityScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_SEND_ONE_ICON );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -694,7 +694,7 @@ void CPeerlessWar::sendActivityResult( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -712,7 +712,7 @@ void CPeerlessWar::sendActivityResult( Player* player )
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CPeerlessWar::addPlayerKillCount( Player* player, int32_t nKillCount )

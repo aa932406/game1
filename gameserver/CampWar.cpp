@@ -49,12 +49,12 @@ void CCampWar::OnUpdate( CActivityMap* pMap )
 	m_nLastTime = curTick;
 
 	// Broadcast activity status (ID 421)
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( packet != NULL )
 	{
 		packet->writeInt32( 421 );
 		packet->setSize( packet->getWOffset() );
-		worldBroadcast( 0, packet );
+		GAME_SERVICE.worldBroadcast( packet );
 		setNeedBroadcastActivityScore();
 	}
 
@@ -128,12 +128,12 @@ bool CCampWar::checkWeek()
 void CCampWar::SendPlayerActivityInfo( Player* player )
 {
 	if ( NULL == player ) return;
-	NetPacket* packet = popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
 	if ( NULL == packet ) return;
 	packet->writeInt32( m_cfgActivity.id );
 	packet->writeInt32( getNextStartTime() );
 	packet->setSize( packet->getWOffset() );
-	sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CCampWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
@@ -149,7 +149,7 @@ void CCampWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 		nCampId = scoreIter->second.nCamp;
 	}
 
-	NetPacket* packet = popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -160,7 +160,7 @@ void CCampWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 	packet->writeInt32( nLeftTime );
 
 	packet->setSize( packet->getWOffset() );
-	sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 Position CCampWar::GetRandBornPos( Player* player )
@@ -404,7 +404,7 @@ void CCampWar::onPlantGather( PlantActivity* pPlant, Player* player )
 	notifyAddScore( player, nPoints, 0 );
 
 	// Broadcast gather event (ID 422)
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 422 );
 	packet->writeInt64( player->getCid() );
@@ -412,7 +412,7 @@ void CCampWar::onPlantGather( PlantActivity* pPlant, Player* player )
 	packet->writeInt8( (int8_t)nCamp );
 	packet->writeInt32( pPlant->getPlantId() );
 	packet->setSize( packet->getWOffset() );
-	worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CCampWar::addPlayerScore( Player* player, int32_t nPoint, int32_t nKillCount )
@@ -592,7 +592,7 @@ void CCampWar::broadcastCampResult()
 	}
 	std::sort( vSorted.begin(), vSorted.end(), std::greater<ScorePair>() );
 
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( BCI_CAMP_WAR_RESULT );
 	packet->writeInt8( (int8_t)nWinnerCamp );
@@ -620,42 +620,42 @@ void CCampWar::broadcastCampResult()
 	packet->setWOffset( oldOffset );
 
 	packet->setSize( packet->getWOffset() );
-	worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CCampWar::broadcastReady()
 {
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 99 );
 	packet->setSize( packet->getWOffset() );
-	worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CCampWar::broadcastStart()
 {
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 100 );
 	packet->setSize( packet->getWOffset() );
-	worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CCampWar::broadcastContKill( CharId_t nCharId, const std::string& name, int32_t nContKill )
 {
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 97 );
 	packet->writeUTF8( name );
 	packet->writeInt32( nContKill );
 	packet->setSize( packet->getWOffset() );
-	worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CCampWar::broadcastBreakContKill( const std::string& victimName, CharId_t nVictimId,
 	const std::string& killerName, CharId_t nKillerId, int32_t nContKill )
 {
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 98 );
 	packet->writeUTF8( victimName );
@@ -664,7 +664,7 @@ void CCampWar::broadcastBreakContKill( const std::string& victimName, CharId_t n
 	packet->writeInt64( nKillerId );
 	packet->writeInt32( nContKill );
 	packet->setSize( packet->getWOffset() );
-	worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CCampWar::RefreshBuff( int32_t nBuffId, int8_t nCampId )
@@ -715,14 +715,14 @@ void CCampWar::notifyAddScore( Player* player, int32_t nPoint, int32_t nType )
 {
 	if ( NULL == player ) return;
 
-	NetPacket* packet = popNetpacket( player->getConnId(), PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 423 );
 	packet->writeInt64( player->getCid() );
 	packet->writeInt8( (int8_t)nType );
 	packet->writeInt32( nPoint );
 	packet->setSize( packet->getWOffset() );
-	sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CCampWar::refreshRankIndex( CharId_t nCharId )
@@ -747,13 +747,13 @@ void CCampWar::sendPlayerScore( Player* player )
 		nScore = iter->second.nPoints;
 	}
 
-	NetPacket* packet = popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet ) return;
 	packet->writeInt32( m_cfgActivity.id );
 	packet->writeInt32( nScore );
 	packet->writeInt32( getLeftTime() );
 	packet->setSize( packet->getWOffset() );
-	sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CCampWar::SendPlayerRankInfo( Player* player )
@@ -774,18 +774,18 @@ void CCampWar::SendPlayerRankInfo( Player* player )
 		}
 	}
 
-	NetPacket* packet = popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 	if ( NULL == packet ) return;
 	packet->writeInt32( m_cfgActivity.id );
 	packet->writeInt32( nRank );
 	packet->writeInt32( nScore );
 	packet->setSize( packet->getWOffset() );
-	sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 Answer::NetPacket* CCampWar::packetActivityScore()
 {
-	NetPacket* packet = popNetpacket( 0, PACK_DISPATCH, SM_SEND_ONE_ICON );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SEND_ONE_ICON );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -840,13 +840,13 @@ void CCampWar::broadcastActivityResult()
 			continue;
 		}
 
-		NetPacket* packet = popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 		if ( NULL == packet ) return;
 
 		packet->writeInt32( m_cfgActivity.id );
 		packet->writeInt32( score.nRankIndex );
 		packet->writeInt32( score.nKillCount );
 		packet->setSize( packet->getWOffset() );
-		sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 	}
 }

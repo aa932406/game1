@@ -317,8 +317,6 @@ enum CurrencyChangeReason
 	GCR_WING_POLISH			= 2101,
 	GCR_WING_REFINING		= 2102,
 	GCR_VIP_BUY_DROP_TIMES		= 2103,		// VIP购买Club掉落次数
-	GCR_FAMILY_SEND_RED_PACKET	= 2106,
-		GCR_CROSS_TOWER			= 2107,		// 家族发红包
 	MCR_VIP_CARD			= 2104,		// VIP卡奖励
 	MCR_EQUIP_GEM_LEVEL_UP		= 2105,
 	IDCR_EQUIP_GEM_LEVEL_UP		= 2104,
@@ -683,10 +681,6 @@ enum GainType
 	GT_BIND_MONEY	= 10,		// �󶨽��
 	GT_HONOR		= 11,		// ����
 	GT_AC_SOCRE		= 12,		// �ɾͻ���
-	GT_CONTRIBUTION	= 13,
-	GT_DUST		= 15,
-	GT_VIGOUR	= 16,
-	GT_BLOOD	= 17,
 };
 
 enum NpcFunc
@@ -1700,10 +1694,7 @@ enum ICR_MING_GE
 	ICR_TEST_SERVER        = 918,	// 武魂商店购买
 	ICR_VIP_GIFT           = 919,	// VIP礼包
 	ICR_CLUB_DROP          = 920,	// VIP Club掉落
-	ICR_LUCK_DROP          = 921,
-	ICR_WISH               = 922,
-	ICR_EXCHANGE            = 923,
-	ICR_DRAW_GET_REWARD2    = 924,	// VIP幸运掉落
+	ICR_LUCK_DROP          = 921,	// VIP幸运掉落
 };
 
 typedef int32_t ITEM_CHANGE_REASON;

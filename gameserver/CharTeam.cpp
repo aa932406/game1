@@ -201,7 +201,7 @@ void CExtCharTeam::Broadcast( Answer::NetPacket* inPacket )
 	}
 	else
 	{
-		NetPacket *packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), inPacket->getType(), inPacket->getProc(), (nsize+1)*sizeof(int16_t) + inPacket->getSize());
+		NetPacket *packet = GAME_SERVICE.popNetpacket(inPacket->getType(), inPacket->getProc(), (nsize+1)*sizeof(int16_t) + inPacket->getSize());
 		if (NULL == packet)
 		{
 			return;
@@ -231,7 +231,7 @@ void CExtCharTeam::LeaveTeam()
 	}
 
 	// 将消息发送到到社会服务器
-	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_LEAVE_TEAM );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_LEAVE_TEAM );
 	if (NULL == packet)
 	{
 		return;
@@ -269,7 +269,7 @@ void CExtCharTeam::BroadcastBasicData()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_TEAM_MEMBER_BASIC_DATA );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_TEAM_MEMBER_BASIC_DATA );
 	if (NULL == packet)
 	{
 		return;
@@ -296,7 +296,7 @@ void CExtCharTeam::UpdateTeamSetting()
 	int8_t bCanInvite		 = (int8_t)m_pPlayer->GetSysSettingInfo( SS_TEAM );
 	int8_t bCanAddFriend	 = (int8_t)m_pPlayer->GetSysSettingInfo( SS_FRIEND );	//好友的设置放这里一起同步
 	// 组队设置同步到社会服务器
-	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_SET_TEAM_AUTO_OPERATE );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_SET_TEAM_AUTO_OPERATE );
 	if (NULL == packet)
 	{
 		return;

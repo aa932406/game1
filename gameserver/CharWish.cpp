@@ -83,7 +83,7 @@ int32_t CExtCharWish::OnWish( Answer::NetPacket* inPacket )
 	}
 
 	--slotData.itemCount;
-	m_pPlayer->GetBag().SetSlotData( nBagSlot, slotData, ICR_WISH, 0 );
+	m_pPlayer->GetBag().SetSlotData( nBagSlot, slotData, IDCR_BAG_USE, 0 );
 
 	int32_t Now = m_pPlayer->getNow();
 	int32_t itemId = slotData.itemId;
@@ -98,9 +98,6 @@ int32_t CExtCharWish::OnWish( Answer::NetPacket* inPacket )
 
 	sendWishInfo();
 	SendWishIcon();
-
-	int16_t Proc = inPacket->getProc();
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), Proc, 0 );
 	return 0;
 }
 
@@ -143,7 +140,7 @@ int32_t CExtCharWish::OnGetWishReward( Answer::NetPacket* inPacket )
 				return ERR_INVALID_DATA;
 			}
 
-			if ( !m_pPlayer->GetBag().AddItem( pReward->vReward, IACR_WISH ) )
+			if ( !m_pPlayer->GetBag().AddItem( pReward->vReward, IACR_NONE ) )
 			{
 				return ERR_INVALID_DATA;
 			}
@@ -170,7 +167,7 @@ void CExtCharWish::sendWishInfo()
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_WISH_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_WISH_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -188,7 +185,7 @@ void CExtCharWish::sendWishInfo()
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtCharWish::SendWishIcon()
@@ -213,7 +210,7 @@ void CExtCharWish::SendWishIcon()
 		}
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_WISH_ICON );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_WISH_ICON );
 	if ( NULL == packet )
 	{
 		return;
@@ -223,7 +220,7 @@ void CExtCharWish::SendWishIcon()
 	packet->writeInt32( nLeftTime );
 	packet->writeInt32( nItemId );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtCharWish::AppendWishInfo( Answer::NetPacket* packet )

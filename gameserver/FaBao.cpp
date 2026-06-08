@@ -192,7 +192,7 @@ int32_t	CFaBao::OnUpFaBaoLevel( Answer::NetPacket *inPacket )
 	m_FaBaoId[pFaBao->FaBaoType] = pFaBao->NextFaBaoId;
 	if ( pFaBao->FaBaoLevel == 0 )
 	{
-		m_FaBaoDress[pFaBao->FaBaoType] = 1;	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		m_FaBaoDress[pFaBao->FaBaoType] = 1;	//ÁìÈ¡·¨±¦Ê±±ä³ÉÅå´÷
 	}
 	SendFaBaoInfo();
 	if ( m_FaBaoDress[pFaBao->FaBaoType] == 1 )
@@ -204,7 +204,7 @@ int32_t	CFaBao::OnUpFaBaoLevel( Answer::NetPacket *inPacket )
 		GongGao( pFaBao->NextFaBaoId );
 	}
 	m_pPlayer->GetAchievemnet().AddAchievement( AT_FA_BAO, pFaBao->FaBaoType );
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(),pFaBao->FaBaoId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(),pFaBao->FaBaoId );
 	return ERR_OK;
 }
 
@@ -282,7 +282,7 @@ void CFaBao::SendFaBaoInfo()
 		packet->writeInt32( m_UpFaBaoResource[i] );
 	}
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 bool CFaBao::AddFaBaoRes( FaBaoResourceType Type, int32_t AddValues )
@@ -387,7 +387,7 @@ int32_t CFaBao::GetFaBaoCount( int32_t& FaBaoSumLevel )
 
 int32_t CFaBao::GetBattleFaBaoInfo( int8_t& FaBaoLevel, int32_t& FaBaoBattle )
 {
-	if ( m_FaBaoDress[FA_BAO_TYPE_FU_WEN] != 1 )		//Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ½ï¿½ï¿½ï¿½ï¿½
+	if ( m_FaBaoDress[FA_BAO_TYPE_FU_WEN] != 1 )		//Ã»ÓÐÅå´÷²»¼ÓÕ½¶·Á¦
 	{
 		return ERR_SYETEM_ERR;
 	}

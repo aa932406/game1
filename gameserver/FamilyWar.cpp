@@ -338,7 +338,7 @@ void CFamilyWar::SendPlayerActivityInfo( Player* player )
 
 	if ( m_nGuidFamily > 0 )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, IM_GAME_SOCIAL_NOTIFY_FAMILYWAR_INFO );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_NOTIFY_FAMILYWAR_INFO );
 		if ( NULL == packet )
 		{
 			return;
@@ -355,7 +355,7 @@ void CFamilyWar::SendPlayerActivityInfo( Player* player )
 	}
 	else
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
 		if ( NULL == packet )
 		{
 			return;
@@ -368,7 +368,7 @@ void CFamilyWar::SendPlayerActivityInfo( Player* player )
 		packet->writeInt8( isShowDoubleReward() ? 1 : 0 );
 
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 	}
 }
 
@@ -379,7 +379,7 @@ void CFamilyWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
 	if ( NULL == packet )
 	{
 		return;
@@ -399,7 +399,7 @@ void CFamilyWar::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
 	packet->writeInt32( nLeftTime );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 
 	NetPacket* familyPacket = packetActivityFamilyScore();
 	if ( familyPacket != NULL )
@@ -655,7 +655,7 @@ void CFamilyWar::broadcastActivityResult()
 			Player* pPlayer = GAME_SERVICE.getPlayer( score.nCharId, 0, false );
 			if ( pPlayer != NULL )
 			{
-				NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
+				NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
 				if ( NULL == packet )
 				{
 					return;
@@ -669,7 +669,7 @@ void CFamilyWar::broadcastActivityResult()
 				packet->writeInt8( isDoubleReward() ? 1 : 0 );
 
 				packet->setSize( packet->getWOffset() );
-				GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
+				GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
 			}
 		}
 	}
@@ -768,7 +768,7 @@ int32_t	CFamilyWar::getNextStartTime()
 
 Answer::NetPacket* CFamilyWar::packetActivityScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2E26 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E26 );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -802,7 +802,7 @@ Answer::NetPacket* CFamilyWar::packetActivityScore()
 
 Answer::NetPacket* CFamilyWar::packetActivityFamilyScore()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_FAMILY_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_FAMILY_SCORE );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -858,7 +858,7 @@ Answer::NetPacket* CFamilyWar::packetActivityPlayerScore( Player* player )
 		return NULL;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_ACTIVITY_PLAYER_SCORE );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_ACTIVITY_PLAYER_SCORE );
 	if ( NULL == packet )
 	{
 		return NULL;
@@ -978,7 +978,7 @@ void CFamilyWar::SendPlayerPillarInfo( Player* player )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_PILLAR_INFP );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_PILLAR_INFP );
 	if ( NULL == packet )
 	{
 		return;
@@ -995,7 +995,7 @@ void CFamilyWar::SendPlayerPillarInfo( Player* player )
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 int32_t CFamilyWar::GiveDailyReward( Player* player )
@@ -1043,72 +1043,72 @@ bool CFamilyWar::CanUseXP() const
 
 void CFamilyWar::broadcastReady()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 2 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CFamilyWar::broadcastStart()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 3 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CFamilyWar::broadcastPillerKilled( FamilyId_t nFamilyId )
 {
 	if ( nFamilyId > 0 )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 		if ( NULL == packet ) return;
 		packet->writeInt32( 6 );
 		FamilyInfo familyInfo = FAMILY_MANAGER.GetFamilyInfo( nFamilyId );
 		packet->writeUTF8( familyInfo.strName );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( 0, packet );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 	else
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 		if ( NULL == packet ) return;
 		packet->writeInt32( 7 );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( 0, packet );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 }
 
 void CFamilyWar::broadcastStoneKilled()
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 	if ( NULL == packet ) return;
 	packet->writeInt32( 8 );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( 0, packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CFamilyWar::broadcastWin()
 {
 	if ( m_nGuidFamily > 0 )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 		if ( NULL == packet ) return;
 		packet->writeInt32( 9 ); // BCI_WORLD_FAMILYWAR_WIN
 		FamilyInfo familyInfo = FAMILY_MANAGER.GetFamilyInfo( m_nGuidFamily );
 		packet->writeUTF8( familyInfo.strName );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( 0, packet );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 	else
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2CD6 );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2CD6 );
 		if ( NULL == packet ) return;
 		packet->writeInt32( 10 ); // BCI_WORLD_FAMILYWAR_FAIL
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( 0, packet );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 }
 
@@ -1196,25 +1196,25 @@ void CFamilyWar::NotifyActivityInfo( Player* pPlayer )
 {
 	if ( NULL == pPlayer )
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
 		if (NULL == packet)
 		{
 			return;
 		}
 		packet->writeInt64( m_nGuidFamily );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.worldBroadcast( 0, packet );
+		GAME_SERVICE.worldBroadcast( packet );
 	}
 	else
 	{
-		NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
+		NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_NOTIFY_FAMILY_WAR_WIN_FAMILY );
 		if (NULL == packet)
 		{
 			return;
 		}
 		packet->writeInt64( m_nGuidFamily );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( pPlayer->getGateIndex(), packet );
 	}
 }
 
@@ -1549,7 +1549,7 @@ void CFamilyWar::sendPlayerScore( Player* player )
 		}
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( 0, PACK_DISPATCH, 0x2E24 );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, 0x2E24 );
 	if ( NULL == packet ) return;
 
 	packet->writeInt32( m_cfgActivity.id );
@@ -1559,5 +1559,5 @@ void CFamilyWar::sendPlayerScore( Player* player )
 	packet->writeInt32( nFamilyScore );
 	packet->writeInt8( nTaskCount );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }

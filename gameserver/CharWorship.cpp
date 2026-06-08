@@ -37,7 +37,7 @@ void CExtCharWorship::OnSaveToDB( PlayerDBData& dbData )
 
 void CExtCharWorship::OnDaySwitch( int32_t nDiffDays )
 {
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ³ï¿½Ý¼ï¿½Â¼
+	// ¿çÌìÇå¿Õ³ç°Ý¼ÇÂ¼
 	m_nWorshipTimes = 0;
 	m_lstChars.clear();
 
@@ -46,7 +46,7 @@ void CExtCharWorship::OnDaySwitch( int32_t nDiffDays )
 
 void CExtCharWorship::GetInterestsProtocol( ProcIdList& procList )
 {
-	procList.push_back( IM_SOCIAL_GAME_WORSHIP );					// ï¿½ï¿½ï¿½
+	procList.push_back( IM_SOCIAL_GAME_WORSHIP );					// ³ç°Ý
 }
 
 int32_t CExtCharWorship::DispatchNetDatas( ProcId_t nProcId, NetPacket *inPacket )
@@ -83,21 +83,21 @@ int32_t CExtCharWorship::onSocialWorship( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( isTimesLimit() )				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	if ( isTimesLimit() )				// ´ÎÊýÉÏÏÞ
 	{
 		return ERR_INVALID_DATA;
 	}
 
-	if ( isWorshiped( nCharId ) )		// ï¿½Ñ¾ï¿½ï¿½ï¿½Ý¹ï¿½ï¿½ï¿½
+	if ( isWorshiped( nCharId ) )		// ÒÑ¾­³ç°Ý¹ýÁË
 	{
 		return ERR_INVALID_DATA;
 	}
 
 	m_lstChars.push_back( nCharId );
 	++m_nWorshipTimes;
-	m_pPlayer->addExp( 10000, 0, 1 );			// ï¿½ï¿½Ê±ï¿½ï¿½1w
+	m_pPlayer->addExp( 10000 );			// ÔÝÊ±¶¨1w
 
-	// Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// Í¬²½µ½Éç»á·þÎñÆ÷
 	sendSocialWorship( nCharId );
 	return ERR_OK;
 }
@@ -109,7 +109,7 @@ void CExtCharWorship::sendSocialWorship( CharId_t nCharId )
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, IM_GAME_SOCIAL_WORSHIP );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, IM_GAME_SOCIAL_WORSHIP );
 	if (NULL == packet)
 	{
 		return;
@@ -117,7 +117,7 @@ void CExtCharWorship::sendSocialWorship( CharId_t nCharId )
 	packet->writeInt32( m_pPlayer->getGateIndex() );
 	packet->writeInt64( nCharId );
 	packet->setSize( packet->getWOffset() ); 
-	GAME_SERVICE.sendPacket( m_pPlayer->getConnId(), packet );
+	GAME_SERVICE.sendPacket( packet );
 }
 
 void CExtCharWorship::SendWorshipInfo()
@@ -127,7 +127,7 @@ void CExtCharWorship::SendWorshipInfo()
 		return;
 	}
 
-	NetPacket *packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_SELF_WORSHIP_INFO );
+	NetPacket *packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_SELF_WORSHIP_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -139,7 +139,7 @@ void CExtCharWorship::SendWorshipInfo()
 		packet->writeInt64( *iter );
 	}
 	packet->setSize( packet->getWOffset() ); 
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 bool CExtCharWorship::isFunctionOpen() const

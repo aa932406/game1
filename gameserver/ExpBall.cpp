@@ -3,7 +3,7 @@
 #include "ExpBall.h"
 #include "GameService.h"
 #include "DBService.h"
-#define  MAX_EXP			10000000		//ï¿½ï¿½ï¿½ï¿½ï¿½
+#define  MAX_EXP			10000000		//×î´ó¾­Ñé
 
 void CExpBall::OnLoadFromDB( const PlayerDBData& dbData )
 {
@@ -143,5 +143,5 @@ void CExpBall::SendExpBallInfo()
 	packet->writeInt32( m_CurExp );
 	packet->writeInt32( m_MaxExp );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }

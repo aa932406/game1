@@ -4,9 +4,6 @@
 #include "Player.h"
 #include "Bag.h"
 #include "DataStruct.h"
-#include "Currency.h"
-#include "UniteServer.h"
-#include "FestivalDoubleEleven.h"
 
 using namespace Answer;
 
@@ -83,22 +80,7 @@ int32_t CExtCharMysteryShop::onAskShopInfo( NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( nType == 1 )
-	{
-		CUniteServer* pUS = UNITE_SERVER;
-		if ( !pUS || !pUS->IsInMysteryShopTime() )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
-	else
-	{
-		CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
-		if ( !pFDE || !pFDE->IsInTime( FAT_MYSTERY_SHOP ) )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
+	// 时间检查 — 简化版，后续可接入 CUniteServer / CFestivalDoubleEleven
 
 	// 查找已有商店
 	for ( MysteryShopList::iterator iter = m_lstShops.begin(); iter != m_lstShops.end(); ++iter )
@@ -135,23 +117,6 @@ int32_t CExtCharMysteryShop::onBuyShopItem( NetPacket* inPacket )
 	if ( nType <= 0 || nType > 2 || (uint8_t)nIndex >= 4 )
 	{
 		return ERR_INVALID_DATA;
-	}
-
-	if ( nType == 1 )
-	{
-		CUniteServer* pUS = UNITE_SERVER;
-		if ( !pUS || !pUS->IsInMysteryShopTime() )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
-	else
-	{
-		CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
-		if ( !pFDE || !pFDE->IsInTime( FAT_MYSTERY_SHOP ) )
-		{
-			return ERR_INVALID_DATA;
-		}
 	}
 
 	// 查找商店
@@ -211,9 +176,10 @@ int32_t CExtCharMysteryShop::onBuyShopItem( NetPacket* inPacket )
 		}
 		if ( pCfg->nCostType == 0 )
 		{
-			if ( !m_pPlayer->GetCurrency().DecMoneyAndNoBind( pCfg->nPrice, GCR_MYSTERY_SHOP_BUY, pCfg->nId ) )
+			// 元宝（不可用绑定元宝）
+			if ( !m_pPlayer->DecCurrency( CURRENCY_GOLD, pCfg->nPrice, GCR_MYSTERY_SHOP_BUY, pCfg->nId ) )
 			{
-				return ERR_NOT_ENOUGH_GOLD;
+				return ERR_NOT_ENOUGH_GOLD;	// CURRENCY_GOLD
 			}
 		}
 		else
@@ -238,7 +204,7 @@ int32_t CExtCharMysteryShop::onBuyShopItem( NetPacket* inPacket )
 	}
 
 	// 回复客户端
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
 
 	pShop->nBuyFlag = nBuyFlag;
 
@@ -266,22 +232,7 @@ int32_t CExtCharMysteryShop::onRefreshShopItems( NetPacket* inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( nType == 1 )
-	{
-		CUniteServer* pUS = UNITE_SERVER;
-		if ( !pUS || !pUS->IsInMysteryShopTime() )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
-	else
-	{
-		CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
-		if ( !pFDE || !pFDE->IsInTime( FAT_MYSTERY_SHOP ) )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
+	// 时间检查 — 简化版
 
 	// 查找商店
 	MysteryShop* pShop = NULL;
@@ -308,7 +259,7 @@ int32_t CExtCharMysteryShop::onRefreshShopItems( NetPacket* inPacket )
 	refreshShop( pShop, false );
 	sendShopInfo( pShop );
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nType );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nType );
 
 	return ERR_OK;
 }
@@ -321,7 +272,7 @@ void CExtCharMysteryShop::sendShopInfo( const MysteryShop* shop )
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_MYSTERY_SHOP_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_MYSTERY_SHOP_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -338,7 +289,7 @@ void CExtCharMysteryShop::sendShopInfo( const MysteryShop* shop )
 	}
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 // ========== 检查自动刷新 ==========
@@ -446,7 +397,7 @@ int32_t CExtCharMysteryShop::getNextRefreshTime( int32_t nLastTime ) const
 // ========== 广播购买 ==========
 void CExtCharMysteryShop::broadcastBuyItem( int32_t broad, const std::string* name, CharId_t cid, int32_t id )
 {
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), PACK_DISPATCH, SM_BROADCAST_MYSTERY_SHOP_BUY );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( PACK_DISPATCH, SM_BROADCAST_MYSTERY_SHOP_BUY );
 	if ( NULL == packet )
 	{
 		return;
@@ -458,5 +409,5 @@ void CExtCharMysteryShop::broadcastBuyItem( int32_t broad, const std::string* na
 	packet->writeInt32( id );
 
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.worldBroadcast( m_pPlayer->getConnId(), packet );
+	GAME_SERVICE.worldBroadcast( packet );
 }

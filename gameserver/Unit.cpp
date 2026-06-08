@@ -176,7 +176,7 @@ Position Unit::getTargetTile()
 
 void Unit::onArriveTarget()
 {
-	// ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½
+	// µ½´ïÄ¿±ê
 }
 
 bool Unit::isBoss() const
@@ -542,24 +542,6 @@ int32_t Unit::AddBuffAttrValue( CObjAttrs::Index_T const nIdx, int32_t nAddVal )
 	m_buffAttrValue.SetAttr( nIdx, m_buffAttrValue.GetAttr( nIdx ) + nAddVal );
 	setNeedSync();
 	return nAddVal;
-}
-
-int32_t Unit::AddSpeedBuffRatio( int32_t nRate )
-{
-	if (nRate == 0)
-		return 0;
-	m_buffAttrRatio.SetAttr(CObjAttrs::ATTR_MOVE_SPEED, m_buffAttrRatio.GetAttr(CObjAttrs::ATTR_MOVE_SPEED) + nRate);
-	setNeedSync();
-	return nRate;
-}
-
-int32_t Unit::RemoveSpeedBuffRatio( int32_t nRate )
-{
-	if (nRate == 0)
-		return 0;
-	m_buffAttrRatio.SetAttr(CObjAttrs::ATTR_MOVE_SPEED, m_buffAttrRatio.GetAttr(CObjAttrs::ATTR_MOVE_SPEED) - nRate);
-	setNeedSync();
-	return nRate;
 }
 
 bool Unit::HasBuffState( CObjState::Index_T const nIdx ) const
@@ -1334,10 +1316,10 @@ void Unit::broadcastBasicData()
 		packet->writeInt32( GetMaxHP() );
 		if ( getType() == ET_PLAYER )
 		{
-			packet->writeInt32( GetMP() );										//  ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Öµ
-			packet->writeInt32( GetMaxMP() );									// ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
-			packet->writeInt32( GetPP() );										// ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Öµ
-			packet->writeInt32( GetMaxPP() );									// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+			packet->writeInt32( GetMP() );										//  µ±Ç°·¨Á¦Öµ
+			packet->writeInt32( GetMaxMP() );									// ×î´ó·¨Á¦Öµ
+			packet->writeInt32( GetPP() );										// µ±Ç°ÌåÁ¦Öµ
+			packet->writeInt32( GetMaxPP() );									// ×î´óÌåÁ¦Öµ
 		}
 		packet->writeInt16( GetMoveSpeed() );
 		packet->writeInt8( nflag );

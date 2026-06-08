@@ -650,7 +650,7 @@ int32_t CKunExt::OnKunLingLevelUp(Answer::NetPacket* inPacket)
         }
     }
 
-    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), pKunLevelUpCfg->nExp);
+    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), pKunLevelUpCfg->nExp);
     return 0;
 }
 
@@ -762,7 +762,7 @@ int32_t CKunExt::OnRecoveryLingZhu(Answer::NetPacket* inPacket)
     RemoveLingZhuItem(changeList, IDCR_BAO_ZHU_HUI_SHOU);
     m_nExp += NeedAddExp;
     SendKunLingInfo();
-    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), NeedAddExp);
+    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), NeedAddExp);
     return 0;
 }
 
@@ -916,7 +916,7 @@ int32_t CKunExt::OnLingZhuLevelUp(Answer::NetPacket* inPacket)
     CheckSuit();
     m_pPlayer->RecalcAttr();
 
-    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
 
     // Broadcast level up announcement
     const LingZhuCfg* pNewLingZhuCfg = CFG_DATA.GetKunLingTable()->GetLingZhuCfg(nId);
@@ -1016,7 +1016,7 @@ int32_t CKunExt::OnKunWeiYang(Answer::NetPacket* inPacket)
     m_nExp += AddValues;
     SendKunLingInfo();
 
-    replySuccess(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
+    GAME_SERVICE.replySuccess(m_pPlayer->getGateIndex(), inPacket->getProc(), 0);
     return 0;
 }
 

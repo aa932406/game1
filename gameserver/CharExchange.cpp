@@ -3,8 +3,6 @@
 #include "Player.h"
 #include "GameService.h"
 #include "CfgData.h"
-#include "FestivalDoubleEleven.h"
-#include "UniteServer.h"
 
 using namespace Answer;
 
@@ -87,15 +85,6 @@ int32_t CExtCharExchange::onAskExchangeInfo( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( nType == 1 )
-	{
-		CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
-		if ( !pFDE || !pFDE->IsInTime( FAT_EXCHANGE ) )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
-
 	sendExchangeInfo( nType );
 	return ERR_OK;
 }
@@ -117,23 +106,6 @@ int32_t CExtCharExchange::onExchange( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( nType == 1 )
-	{
-		CFestivalDoubleEleven* pFDE = FESTIVAL_DOUBLE_ELEVEN;
-		if ( !pFDE || !pFDE->IsInTime( FAT_EXCHANGE ) )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
-	else if ( nType == 3 )
-	{
-		CUniteServer* pUS = UNITE_SERVER;
-		if ( !pUS || !pUS->IsInTime( US_COLLECT_DROP ) )
-		{
-			return ERR_INVALID_DATA;
-		}
-	}
-
 	const CfgExchangeTable* pExchangeTable = CFG_DATA.GetExchangeTable();
 	const CfgExchange* pCfg = pExchangeTable->GetExchange( nType, nIndex );
 	if ( NULL == pCfg )
@@ -147,7 +119,7 @@ int32_t CExtCharExchange::onExchange( Answer::NetPacket *inPacket )
 		return ERR_INVALID_DATA;
 	}
 
-	if ( !m_pPlayer->GetBag().AddAndRemoveItem( pCfg->vReward, ICR_EXCHANGE, vSlot, pCfg->vCost, ICR_EXCHANGE ) )
+	if ( !m_pPlayer->GetBag().AddAndRemoveItem( pCfg->vReward, IACR_ACTIVITY, vSlot, pCfg->vCost, IDCR_BAG_USE ) )
 	{
 		return ERR_INVALID_DATA;
 	}
@@ -155,7 +127,7 @@ int32_t CExtCharExchange::onExchange( Answer::NetPacket *inPacket )
 	addExchangeRecord( nType, nIndex, 1 );
 	sendExchangeInfo( nType );
 
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), nIndex );
 	return ERR_OK;
 }
 
@@ -166,7 +138,7 @@ void CExtCharExchange::sendExchangeInfo( int8_t nType )
 		return;
 	}
 
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_EXCHANGE_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_EXCHANGE_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -176,7 +148,7 @@ void CExtCharExchange::sendExchangeInfo( int8_t nType )
 
 	int16_t nCount = 0;
 	uint32_t oldOffset = packet->getWOffset();
-	packet->writeInt16( 0 );
+	packet->writeInt16( 0 ); // placeholder for count
 
 	for ( std::list<ExchangeRecord>::const_iterator iter = m_lstExchangeRecords.begin();
 		iter != m_lstExchangeRecords.end(); ++iter )
@@ -195,7 +167,7 @@ void CExtCharExchange::sendExchangeInfo( int8_t nType )
 	packet->setWOffset( newOffset );
 	packet->setSize( packet->getWOffset() );
 
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CExtCharExchange::getExchangeRecord( int8_t nType, int16_t nIndex )

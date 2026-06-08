@@ -125,14 +125,14 @@ void CDaTingReward::SendDaTingInfo()
     if (!m_pPlayer || !HaveDaTingReward())
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), PACK_DISPATCH, 0x2D17);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2D17);
     if (packet)
     {
         packet->writeInt32(m_pPlayer->GetContinueLoginCount());
         packet->writeInt32(GetPlatformVipLevel());
         packet->writeInt32(m_pPlayer->getRecord(1106));
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 
@@ -305,13 +305,13 @@ void CDaTingReward::SendPlatformVipInfo()
     if (!m_pPlayer || !HavePlatformVipReward())
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), PACK_DISPATCH, 0x2D18);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2D18);
     if (packet)
     {
         packet->writeInt32(GetPlatformVipLevel());
         packet->writeInt32(m_pPlayer->getRecord(1107));
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 
@@ -517,14 +517,14 @@ void CDaTingReward::SendMiniClientInfo()
     if (!m_pPlayer || !HaveMiniClientReward())
         return;
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(m_pPlayer->getConnId(), PACK_DISPATCH, 0x2D19);
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket(PACK_DISPATCH, 0x2D19);
     if (packet)
     {
         packet->writeInt32(m_pPlayer->GetContinueLoginCount());
         packet->writeInt32(GetPlatformVipLevel());
         packet->writeInt32(m_pPlayer->getRecord(1108));
         packet->setSize(packet->getWOffset());
-        GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+        GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
     }
 }
 

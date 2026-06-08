@@ -125,7 +125,7 @@ void CGuardPrivilege::sendIconState()
         packet->writeInt32( stu.IconRight );
         packet->writeInt8( stu.Effects );
         packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+        GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
     }
 }
 
@@ -180,7 +180,7 @@ int32_t CGuardPrivilege::onDBGetReward( Answer::NetPacket *inPacket )
         return 10002;
 
     m_pPlayer->GetOperateLimit().UpdateLimitCount( nRecord, nNewRecord );
-    GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
+    GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
     return 0;
 }
 
@@ -210,5 +210,5 @@ void CGuardPrivilege::sendInfo()
     }
 
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+    GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }

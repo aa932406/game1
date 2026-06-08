@@ -146,7 +146,7 @@ int32_t CVplan::GetExpRatio()
 void CVplan::SendVplanInfo()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_VPLAN_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_VPLAN_INFO );
 	if ( packet )
 	{
 		packet->writeInt32( m_VplanLevel );
@@ -157,7 +157,7 @@ void CVplan::SendVplanInfo()
 		packet->writeInt32( m_pPlayer->getRecord( 1097 ) );
 		packet->writeInt32( m_pPlayer->getRecord( 1098 ) );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 
@@ -252,13 +252,13 @@ bool CVplan::IsGetAllXunLeiReward()
 void CVplan::SendXunLieInfo()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_XUN_LEI_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_XUN_LEI_INFO );
 	if ( packet )
 	{
 		packet->writeInt32( m_XlNxLevel );
 		packet->writeInt32( m_pPlayer->getRecord( 1156 ) );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 void CVplan::SendXunLeiIcon()
@@ -306,19 +306,19 @@ int32_t CVplan::GetXunLeiDaTingIcon()
 void CVplan::SendYYInfo()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_YY_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_YY_INFO );
 	if ( packet )
 	{
 		packet->writeInt32( m_YyLevel );
 		packet->writeInt32( m_pPlayer->getRecord( 1100 ) );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 void CVplan::SendYYVipInfo()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_YY_VIP_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_YY_VIP_INFO );
 	if ( packet )
 	{
 		packet->writeInt32( m_YyVipLevel );
@@ -332,7 +332,7 @@ void CVplan::SendYYVipInfo()
 			}
 		}
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 void CVplan::SendYYVipIcon()
@@ -404,7 +404,7 @@ int32_t CVplan::OnLoginFromYYgameApp( Answer::NetPacket* inPacket )
 void CVplan::SendLuDaShiVipInfo()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_VPLAN_ICON );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_VPLAN_ICON );
 	if ( packet )
 	{
 		packet->writeInt32( m_PlatformVip );
@@ -419,7 +419,7 @@ void CVplan::SendLuDaShiVipInfo()
 			}
 		}
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 void CVplan::SendLuDaShiIcon()
@@ -456,13 +456,13 @@ int32_t CVplan::OnGetLuDaShiVipGift( Answer::NetPacket* inPacket )
 void CVplan::SendSgGameAppInfo()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SG_GAME_APP_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SG_GAME_APP_INFO );
 	if ( packet )
 	{
 		packet->writeInt32( m_SgHallLevel );
 		packet->writeInt32( m_pPlayer->getRecord( 1091 ) );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 void CVplan::SendSgDownLoadIcon()
@@ -504,7 +504,7 @@ int32_t CVplan::OnGetSgGameApp( Answer::NetPacket* inPacket )
 void CVplan::SendSwVipReward()
 {
 	if ( !m_pPlayer ) return;
-	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SW_VIP_REWARD_INFO );
+	Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SW_VIP_REWARD_INFO );
 	if ( packet )
 	{
 		packet->writeInt8( (int8_t)m_nSwVipLevel );
@@ -514,7 +514,7 @@ void CVplan::SendSwVipReward()
 		packet->writeInt32( m_pPlayer->getRecord( 1094 ) );
 		packet->writeInt32( m_pPlayer->getRecord( 1095 ) );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }
 void CVplan::SendSwVipIcon()

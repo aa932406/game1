@@ -18,7 +18,6 @@ class Random { public: int generate(int,int) { return 0; } };
 #include "../share/DataStruct.h"
 #include "DataStructs.h"
 #include "actStructs.h"
-#include "TencentTable.h"
 #include "CDaTingReward.h"
 #include "XinMoTable.h"
 #include "KunLingTable.h"
@@ -523,29 +522,15 @@ struct BuffAttr //���ܹ������ԡ�����С֮���
 	int32_t addon_ratio;
 };
 
-struct CfgBuff //buff effect
+struct CfgBuff //����Ч��
 {
 	int32_t id;
-	int32_t groupid;
-	int32_t attack_type;
-	int32_t level;
 	int32_t beneficial;
 	int32_t special;
-	int32_t modify;
-	int32_t hpValue;
-	int32_t hpPecent;
-	int32_t control;
-	int32_t duration;
-	int32_t interval;
+	int32_t duration;//����
+	int32_t interval;//���
 	BuffAttr buffAttr[2];
-	int8_t	isShow;
-	int32_t shieldValue;
-	int32_t shieldRatio;
-	int32_t effectType;
-	int32_t effectTimes;
-	int8_t canRemove;
-	int8_t canRecover;
-	int32_t battle;
+	int8_t	isShow;	//�Ƿ�Ҫ�����ͻ�����ʾ
 };
 typedef std::map<int32_t, CfgBuff> CfgBuffTable;
 
@@ -4612,7 +4597,6 @@ struct CfgCachet
 	AddAttrList	lAttrList;	// Attr (parsed from string)
 	int32_t		nDeduct;	// Deduct (daily honor deduction)
 	int32_t		nLanguage;	// Language
-	int32_t		nGongGaoId; // GongGao broadcast id
 };
 typedef std::map<int32_t, CfgCachet> CachetCfgMap;
 
@@ -6978,40 +6962,40 @@ private:
 
 
 	CfgSkillTable				m_cfgSkillTable;
-	int32_t m_cfgAttrBattle[50];
+	int m_cfgAttrBattle;  // placeholder
 	CfgBFZLEnterCostTable		m_cfgBFZLEnterCostTable;
 	// ===== Decompiled-port members (names matching CfgData.cpp usage) =====
 	int32_t m_MapMonsterId;
 	int32_t m_serverType;
 	int32_t m_kaiFuTime;
 	int32_t m_heFuTime;
-	CfgTencentTable m_cfgTencentTable;
+	int m_cfgTencentTable;       // placeholder — needs TencentTable type
 	CfgTitleTable m_cfgTitleTable;
-	BossDistribution m_BossDistribution;
-	CfgActivityTaskTable m_cfgActivityTaskTable;
-	CfgBeastShrineTable m_CfgBeastShrineTable;
+	int m_BossDistribution;      // placeholder
+	int m_cfgActivityTaskTable;  // placeholder
+	int m_CfgBeastShrineTable;   // placeholder
 	std::map<int32_t, CfgBossFirstKilled> m_CfgBossFirstKilledMap;
-	CfgDropRecordMap m_cfgDropRecordTable;
-	std::map<std::pair<int32_t,int32_t>, CfgDungeonSummon> m_cfgDungeonSummon;
-	CfgEquipBlessTable m_cfgEquipBlessTable;
-	CfgEquipBoxTable m_cfgEquipBoxTalbe;
-	cfgEquipUpPhaseTable m_cfgEquipUpPhaseTable;
-	CfgFamilyDungeonTable m_cfgFamilyDungeonTable;
-	cfgGoblinTableData m_cfgGoblinTableData;
-	CfgGoldEggTable m_cfgGoldEggTable;
+	int m_cfgDropRecordTable;    // placeholder
+	int m_cfgDungeonSummon;      // placeholder
+	int m_cfgEquipBlessTable;    // placeholder
+	int m_cfgEquipBoxTalbe;      // placeholder
+	int m_cfgEquipUpPhaseTable;  // placeholder
+	int m_cfgFamilyDungeonTable; // placeholder
+	int m_cfgGoblinTableData;    // placeholder
+	int m_cfgGoldEggTable;       // placeholder
 	std::map<int32_t, CfgGroupIcon> m_cfgGroupIcons;
 	CfgJueWeiTable m_cfgJueWeiTable;
-	std::map<int32_t, int32_t> m_cfgLevelChatTable;
-	CfgLimitTimeTable m_cfgLimitTimeTable;
-	CfgMaintainCompensateTable m_cfgMaintainCompensateTable;
-	CfgMapRoadTable m_cfgMapRoadTable;
-	CfgMonsterRandTable m_cfgMonsterRandTable;
-	CfgMYSJRewardTable m_cfgMYSJRewardTable;
+	int m_cfgLevelChatTable;     // placeholder
+	int m_cfgLimitTimeTable;     // placeholder
+	int m_cfgMaintainCompensateTable; // placeholder
+	int m_cfgMapRoadTable;       // placeholder
+	int m_cfgMonsterRandTable;   // placeholder
+	int m_cfgMYSJRewardTable;    // placeholder
 	CfgShiZhuangTable m_cfgShiZhuangTable_member; // note: m_cfgShiZhuang already exists above
-	cfgSpecialMonsterTable m_cfgSpecialMonsterTable;
+	int m_cfgSpecialMonsterTable; // placeholder
 	CfgTalentTable m_cfgTalentTable;
-	CfgTouZiTable m_cfgTouZiTable;
-	CfgTrailerTable m_cfgTrailerTable;
+	int m_cfgTouZiTable;         // placeholder
+	int m_cfgTrailerTable;       // placeholder
 	CfgVplanMap m_CfgVplan;
 	CfgYYGameAppMap m_CfgYYGameAppMap;
 	CfgYYSuperBuffMap m_CfgYYSuperBuffList;
@@ -7022,14 +7006,14 @@ private:
 	CMingGeTable m_CMingGeTable; // duplicate of m_MingGeTable for decompiled compat
 	ContributionCfgMap m_ContributionCfgMap;
 	CVipClubLuckyDropMap m_CVipClubLuckyDropMap;
-	CycleTowerTable m_CycleTowerTable;
+	int m_CycleTowerTable;       // placeholder
 	DamnationCfgMap m_DamnationCfgTable;
 	DiligenceCfgMap m_DiligenceCfgMap;
 	DuiHuanLimitMap m_DuiHuanLimit;
-	std::map<int32_t, CfgDungeonNpc> m_dungeonNpcs;
-	EnergyCfg m_EnergyCfg;
+	int m_dungeonNpcs;           // placeholder
+	int m_EnergyCfg;             // placeholder
 	EquipBackTaskCfgMap m_EquipBackTaskCfgMap;
-	std::map<int32_t, std::map<int32_t, std::list<Param2>>> m_EquipBackTaskRate;
+	int m_EquipBackTaskRate;     // placeholder
 	CfgEquipBlessMap m_EquipBlessMap;
 	CfgEquipBoxTable m_EquipBoxTable;
 	EquipRongHeCfgMap m_EquipRongHeCfgMap;
@@ -7048,15 +7032,15 @@ private:
 	CVipClubLuckyDropMap m_CVipClubLuckyDropMap;
 	LuDaShiVipMap m_LuDaShiVipMap;
 	CfgMingGeMap m_MingGeCfgMap;
-	std::map<int32_t, CfgMapPlant> m_mMapPlants;
+	int m_mMapPlants;            // placeholder
 	std::map<std::pair<int,int>, CfgMonsterAdjust> m_mMonsterAdjust;
 	std::map<int32_t, CfgMonsterAI> m_mMonsterAI;
 	std::map<int32_t, CfgMonsterAddAttr> m_MonstAddAttrMap;
-	std::map<int32_t, QuestionsVector> m_mQuestions;
-	CfgDungeonTable m_mUpTowerDungeon;
+	int m_mQuestions;            // placeholder
+	int m_mUpTowerDungeon;       // placeholder
 	RongHeCfgMap m_RongHeCfgMap;
 	std::map<int32_t, RefreshMonsterCfgList> m_RefreshMonsterCfgListMap;
-	ShiQuCfgMap m_ShiQuCfgMap;
+	int m_ShiQuCfgMap;           // placeholder
 	SpecialBossMapCfgMap m_SpecialBossMapCfgMap;
 	CfgTalentMap m_TalentCfgMap;
 	CfgTalentActiveMap m_TalentActiveCfgMap;
@@ -7067,13 +7051,13 @@ private:
 	CfgWingPolishMap m_WingPolishCfgMap;
 	CfgXingMaiMap m_XingMaiCfgMap;
 	CfgXingMaiSlotMap m_XingMaiSlotCfgMap;
-	std::map<int32_t, int32_t> m_TongTianChiRankReward;
+	int m_TongTianChiRankReward; // placeholder
 	UltimateChallengeCfgMap m_UltimateChallengeCfgMap;
 	VipEquipPosLevelUpMap m_VipEquipPosLevelUpMap;
 	VipEQuipPosSuitMap m_VipEQuipPosSuitList;
 	WingEquipPolishMap m_WingEquipPolishCfgMap;
-	std::map<int32_t, AddAttrList> m_WingEquipPolishSuitMap;
-	std::map<int32_t, AddAttrList> m_WingEquipRefiningSuitMap;
+	int m_WingEquipPolishSuitMap; // placeholder
+	int m_WingEquipRefiningSuitMap; // placeholder
 	WinRefiningCfgMap m_WinRefiningCfgMap;
 	std::list<XiangYaoTaskCfg> m_XiangYaoTaskCfgList;
 	XunLeiCfgMap m_XunLeiCfgMap;
@@ -8162,444 +8146,6 @@ struct CfgBlackMarketGoods
 	int32_t nPrice;
 	int32_t nRate;
 	int32_t nCondition;
-};
-
-
-// ============================================================================
-// Sub-type definitions for placeholder table types
-// ============================================================================
-
-struct BossLevelInfo
-{
-	int32_t BossLevel;
-	std::list<int32_t> BossMapList;
-};
-
-struct MapBossInfo
-{
-	int32_t nId;
-	std::list<int32_t> BossMapList;
-};
-
-struct CfgActivityTask
-{
-	int32_t nTaskId;
-	int32_t nMinLevel;
-	int32_t nMaxLevel;
-	int32_t nRatio;
-};
-
-struct cfgEquipUpPhase
-{
-	int32_t m_CostEquip;
-	std::list<ItemData> m_CostItems;
-	int32_t m_CostMoney;
-	int32_t m_GiveEquip;
-	int32_t m_GongGaoId;
-};
-
-struct CfgFamilyDungeon
-{
-	int8_t  nHard;
-	int32_t nDungeonId;
-	int32_t nFamilyLevel;
-	int32_t nCostMoney;
-	int32_t nBaoKuFuBen;
-	int32_t nNpcId;
-	int32_t X;
-	int32_t Y;
-	int32_t nTime;
-};
-
-struct CurrentData
-{
-	int32_t nId;
-	int32_t nValue;
-};
-
-struct cfgGoblinData
-{
-	int32_t m_nIndex;
-	int32_t m_nRefreshTime;
-	std::vector<CurrentData> m_RefreshMonsters;
-	int32_t m_mapId;
-	std::vector<Position> m_RevivePosVector;
-};
-
-struct CfgMonsterRand
-{
-	int32_t nId;
-	std::vector<AttrAddon> vAttrValue;
-	std::vector<AttrAddon> vAttrRatio;
-	int32_t nSkill;
-};
-
-struct CfgMYSJReward
-{
-	int32_t nId;
-	int32_t nClass;
-	int32_t nCount;
-	int32_t nBind;
-	int32_t nWeight;
-	int32_t nShow;
-	int32_t nGroup;
-	int32_t nMin;
-	int32_t nMax;
-	int32_t nBroad;
-	int32_t nSpecial;
-};
-
-struct cfgSpecialMonster
-{
-	int32_t m_mid;
-	int32_t Type;
-	int32_t Value;
-	int32_t Portal;
-	int32_t Award;
-	int32_t HurtDrop;
-	int32_t EscapeOdds;
-};
-
-struct SevenTouZi
-{
-	int32_t nId;
-	int32_t nType;
-	int32_t nCondition;
-	std::vector<MemChrBag> vItem;
-};
-
-struct MonthTouZi
-{
-	int32_t nDay;
-	std::vector<MemChrBag> vItem;
-	int32_t nGongGaoId;
-};
-
-struct CycleTowerMapCfg
-{
-	int32_t Floor;
-	int32_t FloorType;
-	int32_t MonsterId;
-};
-
-struct CycleTowerCost
-{
-	ItemData CostData;
-	int32_t CostGold;
-};
-
-struct CfgMaintainCompensate
-{
-	int32_t nIndex;
-	int32_t nTime;
-	std::vector<MemChrBag> vItems;
-	CfgMaintainCompensate() : nIndex(0), nTime(0) {}
-};
-
-struct CfgMapRoad
-{
-	int32_t nIndex;
-	int32_t nNextIndex;
-	int32_t nMapId;
-	std::list<Position> road;
-};
-
-struct CfgDungeonNpc
-{
-	int32_t id;
-	int32_t NpcId;
-	int32_t x;
-	int32_t y;
-};
-
-struct EnergyCfg
-{
-	int32_t MaxEnergy;
-	int32_t EnergyTime;
-	std::vector<int32_t> EnergyPrice;
-	int32_t BuyAddEnergy;
-	EnergyCfg() : MaxEnergy(0), EnergyTime(0), BuyAddEnergy(0) {}
-};
-
-// ============================================================================
-// Table/container class definitions for placeholder types
-// ============================================================================
-
-class BossDistribution
-{
-public:
-	std::map<int32_t, BossLevelInfo> m_BossLevelInfoMap;
-	std::map<int32_t, MapBossInfo>   m_MapBossInfoMap;
-
-	void AddBossLevelInfo(const BossLevelInfo* p_stu)
-	{
-		m_BossLevelInfoMap[p_stu->BossLevel] = *p_stu;
-	}
-	void AddMapBossInfo(const MapBossInfo* p_stu)
-	{
-		m_MapBossInfoMap[p_stu->nId] = *p_stu;
-	}
-};
-
-class CfgActivityTaskTable
-{
-public:
-	std::map<int32_t, CfgActivityTask> m_mTasks;
-	void AddTask(int32_t nId, int32_t nMinLevel, int32_t nMaxLevel, int32_t nRatio)
-	{
-		CfgActivityTask stu;
-		stu.nTaskId = nId;
-		stu.nMinLevel = nMinLevel;
-		stu.nMaxLevel = nMaxLevel;
-		stu.nRatio = nRatio;
-		m_mTasks[nId] = stu;
-	}
-};
-
-class CfgBeastShrineTable
-{
-public:
-	std::map<int32_t, std::list<ItemData>> m_mEnterCost;
-	bool AddEnterCost(int32_t nTimes, const std::list<ItemData>& vItem)
-	{
-		m_mEnterCost[nTimes] = vItem;
-		return true;
-	}
-	const std::list<ItemData>* GetEnterCost(int32_t nTimes) const
-	{
-		auto it = m_mEnterCost.find(nTimes);
-		if (it != m_mEnterCost.end()) return &it->second;
-		return nullptr;
-	}
-};
-
-class CfgEquipBlessTable
-{
-public:
-	std::list<CfgEquipBless> m_lstBless;
-	bool Add(const CfgEquipBless* stu)
-	{
-		m_lstBless.push_back(*stu);
-		return true;
-	}
-};
-
-class cfgEquipUpPhaseTable
-{
-public:
-	std::list<cfgEquipUpPhase> m_cfgEquipUpPhase;
-	void AddData(const cfgEquipUpPhase* stu)
-	{
-		m_cfgEquipUpPhase.push_back(*stu);
-	}
-};
-
-class CfgFamilyDungeonTable
-{
-public:
-	std::map<int8_t, CfgFamilyDungeon> m_mDungeon;
-	void AddDungeon(const CfgFamilyDungeon* stu)
-	{
-		m_mDungeon[stu->nHard] = *stu;
-	}
-	const CfgFamilyDungeon* GetDungeon(int8_t nHard) const
-	{
-		auto it = m_mDungeon.find(nHard);
-		if (it != m_mDungeon.end()) return &it->second;
-		return nullptr;
-	}
-};
-
-class cfgGoblinTableData
-{
-public:
-	std::map<int32_t, cfgGoblinData> m_GoblinDataMap;
-	void Add(cfgGoblinData* stu)
-	{
-		m_GoblinDataMap[stu->m_nIndex] = *stu;
-	}
-};
-
-class CfgMonsterRandTable
-{
-public:
-	std::map<int32_t, CfgMonsterRand> m_mMonsterRand;
-	std::vector<int32_t>              m_vId;
-	void AddMonsterRand(const CfgMonsterRand* stu)
-	{
-		m_mMonsterRand[stu->nId] = *stu;
-		m_vId.push_back(stu->nId);
-	}
-};
-
-class CfgMYSJRewardTable
-{
-public:
-	std::map<int32_t, std::list<CfgMYSJReward>> m_mReward;
-	std::map<int32_t, std::list<CfgMYSJReward>> m_mGroupReward;
-	std::map<int32_t, int32_t>                   m_mDungeonGroup;
-	bool Add(int32_t nId, const CfgMYSJReward* reward)
-	{
-		m_mReward[nId].push_back(*reward);
-		if (reward->nGroup > 0)
-		{
-			m_mGroupReward[reward->nGroup].push_back(*reward);
-			m_mDungeonGroup[nId] = reward->nGroup;
-		}
-		return true;
-	}
-};
-
-class cfgSpecialMonsterTable
-{
-public:
-	std::map<int32_t, cfgSpecialMonster> m_specialMonster;
-	void Add(cfgSpecialMonster* stu)
-	{
-		m_specialMonster[stu->m_mid] = *stu;
-	}
-};
-
-class CfgTouZiTable
-{
-public:
-	std::map<int32_t, SevenTouZi> m_SevenTouZiMap;
-	std::map<int32_t, MonthTouZi> m_MonthTouZiMap;
-	void AddSevenTouZi(SevenTouZi* p_stu)
-	{
-		m_SevenTouZiMap[p_stu->nId] = *p_stu;
-	}
-	void AddMonthTouZi(MonthTouZi* p_stu)
-	{
-		m_MonthTouZiMap[p_stu->nDay] = *p_stu;
-	}
-};
-
-class CycleTowerTable
-{
-public:
-	std::map<int32_t, CycleTowerCost>  m_CycleTowerCostMap;
-	std::map<int32_t, CycleTowerMapCfg> m_CycleTowerMapCfgMap;
-	std::map<int32_t, int32_t>         m_CycleTowerFloor;
-	void AddCycleTowerMapCfg(int32_t MapId, const CycleTowerMapCfg& stu)
-	{
-		m_CycleTowerMapCfgMap[MapId] = stu;
-		m_CycleTowerFloor[stu.Floor] = MapId;
-	}
-	void AddCycleTowerCost(int32_t Times, const CycleTowerCost& stu)
-	{
-		m_CycleTowerCostMap[Times] = stu;
-	}
-};
-
-class CfgMaintainCompensateTable
-{
-public:
-	std::map<int32_t, CfgMaintainCompensate> m_mMap;
-	bool Add(const CfgMaintainCompensate* stu)
-	{
-		m_mMap[stu->nIndex] = *stu;
-		return true;
-	}
-};
-
-class CfgMapRoadTable
-{
-public:
-	std::map<int32_t, CfgMapRoad> m_mMapRoad;
-	void Add(const CfgMapRoad* road)
-	{
-		m_mMapRoad[road->nIndex] = *road;
-	}
-};
-
-
-struct CfgCampWarContKill
-{
-	int32_t nLevel;
-	int32_t nKillCount;
-	int32_t nKillPoint;
-	int32_t nBroadcast;
-	int32_t nBreakBroadcast;
-	int32_t nTitle;
-};
-
-struct CfgCampWarReward
-{
-	int32_t nIndex;
-	int32_t nMaxIndex;
-	int32_t nFailMailId;
-	int32_t nWinMailId;
-	std::vector<MemChrBag> FailItems;
-	std::vector<MemChrBag> WinItems;
-};
-
-struct CfgCityWarContReward
-{
-	int32_t id;
-	std::vector<MemChrBag> vBreakReward;
-	int32_t nBreakMailId;
-};
-
-struct CfgDungeonScore
-{
-	int32_t nDungeonId;
-	int32_t nKillCount;
-	MemChrBag Item;
-};
-
-struct CfgEquipDecompose
-{
-	int32_t m_nClass;
-	int32_t m_nId;
-	std::vector<MemChrBag> m_vGiveItems;
-	int32_t m_nCostMoney;
-	int32_t m_nLimitType;
-	int32_t m_nLimitValue;
-	int32_t m_NpcId;
-};
-
-struct CfgEquipPosSuit
-{
-	int32_t m_nLevel;
-	std::vector<AttrAddon> m_vAttrAddon;
-};
-
-struct CfgGemOpenHole
-{
-	int32_t m_nSlot;
-	int32_t m_nCostMoney;
-	std::list<ItemData> m_lCostItem;
-};
-
-struct CfgGemSuit
-{
-	int32_t m_nLevel;
-	std::vector<AttrAddon> m_vAttrAddon;
-};
-
-struct ChouJiangLuckyCfg
-{
-	int32_t MaxLucky;
-	int32_t MinQuality;
-	int32_t MaxQuality;
-};
-
-struct ChouJiangWeekReward
-{
-	int32_t Index;
-	int32_t Times;
-	std::vector<MemChrBag> Items;
-};
-
-struct FamilyMedal
-{
-	int32_t nLevel;
-	int32_t nNeedFamilyLevel;
-	int32_t nNeedFamilyExp;
-	std::list<AddAttribute> lAttrList;
-	int32_t nGongGaoId;
-	int32_t DefRdc;
 };
 
 #define CFG_DATA Answer::Singleton<CfgData>::instance()

@@ -120,31 +120,31 @@ int32_t CKaiFuBoss::getNextStartTime()
 
 void CKaiFuBoss::broadcastReady()
 {
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
     if ( NULL == packet )
     {
         return;
     }
     packet->writeInt32( BCI_KF_BOSS_READY );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.worldBroadcast( 0, packet );
+    GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CKaiFuBoss::broadcastStart()
 {
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
     if ( NULL == packet )
     {
         return;
     }
     packet->writeInt32( BCI_KF_BOSS_START );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.worldBroadcast( 0, packet );
+    GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CKaiFuBoss::broadcastTimeEnd()
 {
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
     if ( NULL == packet )
     {
         return;
@@ -158,7 +158,7 @@ void CKaiFuBoss::broadcastTimeEnd()
 
     packet->writeInt32( nNoticeId );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.worldBroadcast( 0, packet );
+    GAME_SERVICE.worldBroadcast( packet );
 }
 
 void CKaiFuBoss::sendPlayerScore( Player* player )
@@ -168,7 +168,7 @@ void CKaiFuBoss::sendPlayerScore( Player* player )
         return;
     }
 
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
     if ( NULL == packet )
     {
         return;
@@ -177,7 +177,7 @@ void CKaiFuBoss::sendPlayerScore( Player* player )
     packet->writeInt32( m_cfgActivity.id );
     packet->writeInt32( getLeftTime() );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+    GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CKaiFuBoss::onTimeEnd()

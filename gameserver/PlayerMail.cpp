@@ -106,7 +106,7 @@ int32_t	CPlayerMail::OnGetFuJian( Answer::NetPacket *inPacket )
 	{
 		return ERR_SYETEM_ERR;
 	}
-	if ( it->second.Extract != 1 ) //Ã»ï¿½Ð¸ï¿½ï¿½ï¿½ï¿½ò¸½¼ï¿½ï¿½ï¿½ï¿½ï¿½È¡
+	if ( it->second.Extract != 1 ) //Ã»ÓÐ¸½¼þ»ò¸½¼þÒÔÌáÈ¡
 	{
 		return ERR_SYETEM_ERR;
 	}
@@ -142,10 +142,10 @@ int32_t	CPlayerMail::OnGetFuJian( Answer::NetPacket *inPacket )
 		return ERR_SYETEM_ERR;
 	}
 
-	it->second.HasRead	 = 1;	//ï¿½ï¿½Îªï¿½Ñ¶ï¿½
-	it->second.Extract	 = 2;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡
+	it->second.HasRead	 = 1;	//±êÎªÒÑ¶Á
+	it->second.Extract	 = 2;	//¸½¼þÒÔÁìÈ¡
 	SendMailContent( MailId );
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc());
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc());
 	return ERR_OK;
 }
 
@@ -258,7 +258,7 @@ void CPlayerMail::SendMailList()
 	}
 	*(int32_t*)packet->getBuffer() = nSize;
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CPlayerMail::SendMailContent( int32_t MailId )
@@ -312,7 +312,7 @@ void CPlayerMail::SendMailContent( int32_t MailId )
 	}
 	PackParam( it->second.Param, packet );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CPlayerMail::PackParam( std::string Param, Answer::NetPacket *inPacket )
@@ -349,5 +349,5 @@ void CPlayerMail::SendNewMail()
 	}
 	packet->writeInt8( 0 );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }

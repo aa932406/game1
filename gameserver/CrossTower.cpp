@@ -7,10 +7,8 @@
 #include "MapManager.h"
 #include "Map.h"
 #include "Monster.h"
-#include "OperateLimit.h"
 #include <algorithm>
 #include <cmath>
-#include <sstream>
 
 using namespace Answer;
 
@@ -41,24 +39,15 @@ void CCrossTower::Init()
     m_sWinerName = "";
     m_pMonster = NULL;
 
-    if ( GAME_SERVICE.getLine() == 9 )
+    // 从数据库加载跨服塔胜者信息
+    MySqlDBGuard db( DBPOOL );
+    MySqlQuery result = db.query( "SELECT * FROM `mem_cross_tower` WHERE id=1" );
+    if ( !result.eof() )
     {
-        DB_SERVICE.onLoadCrossTowerInfo();
-    }
-    else
-    {
-        MySqlDBGuard db( DBPOOL );
-        MySqlQuery result = db.query( "SELECT * FROM `mem_cross_tower` where id=1" );
-        if ( !result.eof() )
-        {
-            m_nWinerId    = result.getInt64Value( "cid", 0 );
-            m_sWinerName  = result.getStringValue( "name", "" );
-            m_nBattle     = result.getIntValue( "battle", 0 );
-            if ( m_nWinerId > 0 )
-            {
-                ACTIVITY_MANAGER.SetCrossTowerWinner( m_nWinerId, m_nBattle, m_sWinerName );
-            }
-        }
+        m_nWinerId    = result.getIntValue( "winner" );
+        m_sWinerName  = result.getStringValue( "name" );
+        m_nBattle     = result.getIntValue( "battle" );
+        m_nConnId     = (int8_t)result.getIntValue( "connid" );
     }
 }
 
@@ -170,14 +159,14 @@ void CCrossTower::SendPlayerActivityInfo( Player* player )
 {
     if ( NULL == player ) return;
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
     if ( NULL == packet ) return;
 
     packet->writeInt32( m_cfgActivity.id );
     packet->writeInt64( m_nWinerId );
     packet->writeInt32( getNextStartTime() );
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+    GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CCrossTower::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
@@ -191,7 +180,7 @@ void CCrossTower::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
         nPersonalScore = iter->second.nScore;
     }
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
     if ( NULL == packet ) return;
 
     packet->writeInt32( m_cfgActivity.id );
@@ -201,7 +190,7 @@ void CCrossTower::SendPlayerActivityScore( Player* player, int32_t nLeftTime )
     packet->writeInt32( m_nBattle );
 
     packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+    GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 Position CCrossTower::GetRandBornPos( Player* player )
@@ -211,26 +200,6 @@ Position CCrossTower::GetRandBornPos( Player* player )
 
 int32_t CCrossTower::GetRevive( Player* player )
 {
-    if ( NULL == player )
-    {
-        return CActivity::GetRevive( player );
-    }
-    int32_t nMapId = player->getMapId();
-    const CrossTowerCfg* pCfg = CFG_DATA.GetCrossTowerCfg( nMapId );
-    if ( NULL == pCfg )
-    {
-        return CActivity::GetRevive( player );
-    }
-    int32_t nTargetMapId = pCfg->LastMapId;
-    if ( pCfg->Floor <= 5 )
-    {
-        nTargetMapId = pCfg->MapId;
-    }
-    Map* pTargetMap = MAP_MANAGER.GetMap( nTargetMapId );
-    if ( pTargetMap != NULL )
-    {
-        return pTargetMap->getReive( player );
-    }
     return CActivity::GetRevive( player );
 }
 
@@ -241,7 +210,10 @@ void CCrossTower::SetWinnerInfo( CharId_t nWinnerId, const std::string& sName )
 
     if ( m_pMonster != NULL )
     {
-        m_pMonster->SetFamilyId( 0, m_sWinerName );
+        if ( m_pMonster != NULL )
+        {
+            m_pMonster->SetFamilyId( 0 );
+        }
     }
 }
 
@@ -302,11 +274,6 @@ void CCrossTower::addPlayer( Player* player )
         score.nScoreTime  = player->getNow();
         score.nCurMapId   = nMapId;
         score.bInActivity = 1;
-        score.nKillCount  = 0;
-        score.nIsMoBai    = 0;
-        score.nBattle     = player->getBattle();
-        score.nSid        = player->getSid();
-        score.strName     = player->getName();
         m_mPlayerScore[nCid] = score;
     }
 
@@ -348,13 +315,13 @@ void CCrossTower::onTimeEnd()
     m_nState = AS_END;
     delayKickAll( 30 );
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
     if ( packet != NULL )
     {
-        packet->writeInt32( 513 );
+        packet->writeInt32( m_cfgActivity.id );
         packet->writeInt32( GetId() );
         packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.worldBroadcast( 0, packet );
+        GAME_SERVICE.worldBroadcast( packet );
     }
 
     CActivity::onTimeEnd();
@@ -362,26 +329,10 @@ void CCrossTower::onTimeEnd()
 
 void CCrossTower::addRewards()
 {
-    if ( m_nWinerId > 0 )
-    {
-        GAME_SERVICE.onRemoveTitle( m_nWinerId, 9 );
-    }
-
-    m_nWinerId = m_nNewWinerId;
-    m_sWinerName = m_sNewWinerName;
-
-    if ( m_nNewWinerId > 0 )
-    {
-        GAME_SERVICE.onCheckTitle( m_nNewWinerId, 9, 1 );
-    }
-
+    // 通知 ActivityManager
     ACTIVITY_MANAGER.SetCrossTowerResult( m_nNewWinerId, m_nBattle, m_sNewWinerName );
 
-    int32_t nNow = TIMER.GetNow();
-    DB_SERVICE.SaveCrossTowerResult( GetId(), m_nNewWinerId, m_sNewWinerName, m_nBattle, m_nConnId, nNow );
-
-    CActivity::reset();
-
+    // 发放邮件奖励
     for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
     {
         const PlayerScore& score = iter->second;
@@ -389,10 +340,11 @@ void CCrossTower::addRewards()
         const CrossTowerCfg* pCfg = CFG_DATA.GetCrossTowerCfg( nCurMapId );
         if ( pCfg != NULL && score.bInActivity )
         {
-            DB_SERVICE.OnSendSysMail( score.nConnId, score.nCharId, pCfg->MailId, pCfg->RewardVt, "" );
+            DB_SERVICE.OnSendSysMail( score.nCharId, pCfg->nMailId, pCfg->RewardVt, "" );
         }
     }
 
+    // 清理排行数据
     m_mPlayerScore.clear();
     m_nNewWinerId = 0;
     m_sNewWinerName = "";
@@ -441,59 +393,55 @@ int32_t CCrossTower::callAddScore( int32_t nMaxPlayer, int32_t nMaxScore,
 
 void CCrossTower::checkWin( bool bForce )
 {
-    if ( m_nNewWinerId > 0 || m_nState != 3 )
+    bool bHasActivePlayer = false;
+    for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
+    {
+        if ( iter->second.bInActivity )
+        {
+            bHasActivePlayer = true;
+            break;
+        }
+    }
+
+    if ( !bHasActivePlayer && !bForce )
     {
         return;
     }
 
-    struct PlayerScoreGreater
-    {
-        bool operator()( const PlayerScore* a, const PlayerScore* b ) const
-        {
-            return a->nScore > b->nScore;
-        }
-    };
-    typedef std::set<PlayerScore*, PlayerScoreGreater> PlayerScoreSet;
+    CharId_t nWinnerId = 0;
+    std::string sWinnerName;
+    int32_t nMaxScore = 0;
+    int32_t nBattle = 0;
 
-    PlayerScoreSet scoreRank;
-    for ( PlayerScoreMap::iterator it = m_mPlayerScore.begin(); it != m_mPlayerScore.end(); ++it )
+    for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
     {
-        if ( it->second.nCurMapId == 60029 && it->second.bInActivity )
+        if ( iter->second.nScore > nMaxScore )
         {
-            scoreRank.insert( &it->second );
+            nMaxScore = iter->second.nScore;
+            nWinnerId = iter->first;
         }
     }
 
-    if ( bForce )
+    if ( nWinnerId > 0 )
     {
-        if ( !scoreRank.empty() )
+        Player* pWinner = GAME_SERVICE.getPlayer( nWinnerId, 0, false );
+        if ( pWinner != NULL )
         {
-            PlayerScore* pTop = *scoreRank.begin();
-            std::stringstream ss;
-            ss << "s" << pTop->nSid << "." << pTop->strName;
-            m_nNewWinerId = pTop->nCharId;
-            m_sNewWinerName = ss.str();
-            m_nConnId = pTop->nConnId;
-            m_nBattle = pTop->nBattle;
+            sWinnerName = pWinner->getName();
+            nBattle = pWinner->getBattle();
         }
     }
-    else if ( scoreRank.size() == 1 )
-    {
-        PlayerScore* pTop = *scoreRank.begin();
-        std::stringstream ss;
-        ss << "s" << pTop->nSid << "." << pTop->strName;
-        m_nNewWinerId = pTop->nCharId;
-        m_sNewWinerName = ss.str();
-        m_nConnId = pTop->nConnId;
-        m_nBattle = pTop->nBattle;
-    }
+
+    m_nNewWinerId   = nWinnerId;
+    m_sNewWinerName = sWinnerName;
+    m_nBattle       = nBattle;
 }
 
 Answer::NetPacket* CCrossTower::packetActivityMapInfo( CActivityMap* pMap )
 {
     if ( NULL == pMap ) return NULL;
 
-    NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_INFO );
     if ( NULL == packet ) return NULL;
 
     packet->writeInt32( m_cfgActivity.id );
@@ -525,332 +473,34 @@ Answer::NetPacket* CCrossTower::packetActivityMapInfo( CActivityMap* pMap )
     return packet;
 }
 
-void CCrossTower::onPlayerKilled( Player* pDier, Player* pKiller )
+Answer::NetPacket* CCrossTower::packetActivityScore()
 {
-    if ( NULL == pDier || NULL == pKiller )
-    {
-        return;
-    }
-
-    m_NeedSysMap.insert( pDier->getMapId() );
-
-    int32_t nMapId = pKiller->getMapId();
-    const CrossTowerCfg* pCfg = CFG_DATA.GetCrossTowerCfg( nMapId );
-    if ( pCfg == NULL )
-    {
-        return;
-    }
-
-    if ( pCfg->KillCount > pKiller->getRecord( 3 ) )
-    {
-        pKiller->GetOperateLimit().AddLimitCount( 3, 1 );
-        pKiller->SetNeedSyncAround();
-    }
-
-    SendPlayerActivityScore( pKiller, getLeftTime() );
-
-    CharId_t nCid = pKiller->getCid();
-    PlayerScoreMap::iterator it = m_mPlayerScore.find( nCid );
-    if ( it == m_mPlayerScore.end() )
-    {
-        return;
-    }
-
-    bool bGongGao = false;
-    ++it->second.nKillCount;
-    int32_t nKillCount = it->second.nKillCount;
-
-    if ( nKillCount == 5 || nKillCount == 15 || nKillCount == 30
-        || nKillCount == 50 || nKillCount == 100 || nKillCount == 150 )
-    {
-        bGongGao = true;
-    }
-    if ( nKillCount > 150 && nKillCount % 50 == 0 )
-    {
-        bGongGao = true;
-    }
-
-    if ( bGongGao )
-    {
-        NetPacket* packet = GAME_SERVICE.popNetpacket( pKiller->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-        if ( packet != NULL )
-        {
-            packet->writeInt32( 514 );
-            packet->writeUTF8( pKiller->getName() );
-            packet->writeInt64( pKiller->getCid() );
-            packet->writeInt32( it->second.nKillCount );
-            packet->setSize( packet->getWOffset() );
-            GAME_SERVICE.worldBroadcast( pKiller->getConnId(), packet );
-        }
-    }
-}
-
-void CCrossTower::onMonsterAdd( MonsterActivity* pMonster )
-{
-    if ( pMonster != NULL )
-    {
-        if ( pMonster->getMid() == 2033 )
-        {
-            pMonster->SetFamilyId( 0, m_sWinerName );
-            m_pMonster = pMonster;
-        }
-    }
-}
-
-void CCrossTower::onMonsterDie( MonsterActivity* pMonster, Player* pKiller )
-{
-    if ( NULL == pKiller || NULL == pMonster )
-    {
-        return;
-    }
-
-    int32_t nMapId = pKiller->getMapId();
-    const CrossTowerCfg* pCfg = CFG_DATA.GetCrossTowerCfg( nMapId );
-    if ( pCfg == NULL )
-    {
-        return;
-    }
-
-    if ( pCfg->KillCount > pKiller->getRecord( 3 ) )
-    {
-        pKiller->GetOperateLimit().AddLimitCount( 3, 1 );
-        pKiller->SetNeedSyncAround();
-        SendPlayerActivityScore( pKiller, getLeftTime() );
-    }
-}
-
-void CCrossTower::onPlayerRevive( Player* player, bool bSafe )
-{
-    if ( player != NULL )
-    {
-        m_NeedSysMap.insert( player->getMapId() );
-    }
-}
-
-int32_t CCrossTower::onBeginGather( Plant* plant, Player* player )
-{
-    if ( NULL == plant || NULL == player )
-    {
-        return 10002;
-    }
-    if ( player->getRecord( 2110 ) <= 3 )
-    {
-        return 0;
-    }
-    return 10002;
-}
-
-void CCrossTower::onPlantGather( Plant* pPlant, Player* player )
-{
-    if ( pPlant != NULL && player != NULL )
-    {
-        player->GetOperateLimit().AddLimitCount( 2110, 1 );
-    }
-}
-
-void CCrossTower::broadcastReady()
-{
-    NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-    if ( packet != NULL )
-    {
-        packet->writeInt32( 511 );
-        packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.worldBroadcast( 0, packet );
-    }
-}
-
-void CCrossTower::broadcastStart()
-{
-    NetPacket* packet = GAME_SERVICE.popNetpacket( 0, Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
-    if ( packet != NULL )
-    {
-        packet->writeInt32( 512 );
-        packet->writeInt32( GetId() );
-        packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.worldBroadcast( 0, packet );
-    }
-}
-
-void CCrossTower::broadcastActivityResult()
-{
-    for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
-    {
-        const PlayerScore& score = iter->second;
-        if ( !score.bInActivity )
-        {
-            continue;
-        }
-
-        Player* pPlayer = GAME_SERVICE.getPlayer( score.nCharId, 0, false );
-        if ( pPlayer == NULL )
-        {
-            continue;
-        }
-
-        NetPacket* packet = GAME_SERVICE.popNetpacket( pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_RESULT );
-        if ( packet == NULL )
-        {
-            return;
-        }
-
-        packet->writeInt32( m_cfgActivity.id );
-        packet->writeInt32( score.nCurMapId );
-        packet->writeUTF8( m_sNewWinerName );
-        packet->setSize( packet->getWOffset() );
-        GAME_SERVICE.sendPacketTo( pPlayer->getConnId(), pPlayer->getGateIndex(), packet );
-    }
-}
-
-void CCrossTower::sendPlayerScore( Player* player )
-{
-    if ( NULL == player )
-    {
-        return;
-    }
-
-    CharId_t nCid = player->getCid();
-    PlayerScoreMap::iterator it = m_mPlayerScore.find( nCid );
-    if ( it == m_mPlayerScore.end() )
-    {
-        return;
-    }
-
-    NetPacket* packet = GAME_SERVICE.popNetpacket( player->getConnId(), Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
-    if ( packet == NULL )
-    {
-        return;
-    }
+    NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_SCORE );
+    if ( NULL == packet ) return NULL;
 
     packet->writeInt32( m_cfgActivity.id );
-    packet->writeInt32( it->second.nScore );
-    packet->writeInt32( player->getRecord( 3 ) );
-    packet->writeInt8( it->second.nIsMoBai );
-    packet->setSize( packet->getWOffset() );
-    GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
-}
+    packet->writeInt64( m_nWinerId );
+    packet->writeInt32( m_nBattle );
 
-int32_t CCrossTower::GiveDailyReward( Player* player )
-{
-    if ( NULL == player )
-    {
-        return 10002;
-    }
+    int32_t nCount = 0;
+    uint32_t nCountPos = packet->getWOffset();
+    packet->writeInt16( 0 );
 
-    CharId_t nCid = player->getCid();
-    PlayerScoreMap::iterator it = m_mPlayerScore.find( nCid );
-    if ( it == m_mPlayerScore.end() )
+    for ( PlayerScoreMap::iterator iter = m_mPlayerScore.begin(); iter != m_mPlayerScore.end(); ++iter )
     {
-        return 10002;
+        Player* player = GAME_SERVICE.getPlayer( iter->first, 0, false );
+        if ( NULL == player ) continue;
+
+        packet->writeInt64( iter->first );
+        packet->writeInt32( iter->second.nScore );
+        ++nCount;
     }
 
-    if ( it->second.nIsMoBai > 0 )
-    {
-        return 10002;
-    }
+    uint32_t nEndPos = packet->getWOffset();
+    packet->setWOffset( nCountPos );
+    packet->writeInt16( (int16_t)nCount );
+    packet->setWOffset( nEndPos );
 
-    it->second.nIsMoBai = 1;
-    player->AddCurrency( CURRENCY_DUST, 10000, GCR_CROSS_TOWER );
-    SendPlayerActivityScore( player, getLeftTime() );
-    return 0;
-}
-
-void CCrossTower::ActUpdate( int64_t CurTick )
-{
-    int32_t nNow = TIMER.GetNow();
-    m_nLastUpdateTime = CurTick;
-
-    if ( m_nLastAddScoreTime > 0 && nNow - m_nLastAddScoreTime > 19 )
-    {
-        m_nNeedAddScore = 1;
-        m_nLastAddScoreTime = nNow;
-        setNeedBroadcastActivityScore();
-    }
-
-    if ( m_nState == 1 )
-    {
-        if ( getLeftTime() > 300 )
-        {
-            if ( nNow - m_nStateTime > 119 )
-            {
-                PlayerList tList = m_players;
-                for ( PlayerList::iterator iter = tList.begin(); iter != tList.end(); ++iter )
-                {
-                    if ( *iter != NULL )
-                    {
-                        (*iter)->setPkMode( 6, false );
-                    }
-                }
-                m_nState = 2;
-                m_nStateTime = nNow;
-                m_nLastAddScoreTime = nNow;
-                setNeedBroadcastActivityScore();
-            }
-        }
-        else
-        {
-            m_nState = 3;
-            m_nLastAddScoreTime = nNow;
-            setNeedBroadcastActivityScore();
-        }
-    }
-    else if ( m_nState <= 1 )
-    {
-        if ( m_nState == 0 )
-        {
-            m_nState = 1;
-            m_nStateTime = nNow;
-            setNeedBroadcastActivityScore();
-        }
-    }
-    else if ( m_nState == 2 )
-    {
-        if ( getLeftTime() <= 300 )
-        {
-            m_nState = 3;
-            setNeedBroadcastActivityScore();
-        }
-        if ( nNow - m_nStateTime > 59 )
-        {
-            m_nNeedChangeMap = 1;
-            m_nStateTime = nNow;
-            setNeedBroadcastActivityScore();
-        }
-    }
-    else if ( m_nState == 3 )
-    {
-        if ( nNow - m_nStateTime > 59 )
-        {
-            m_nNeedChangeMap = 1;
-            m_nStateTime = nNow;
-            setNeedBroadcastActivityScore();
-        }
-    }
-}
-
-int32_t CCrossTower::GetEnterMapId( Player* player )
-{
-    if ( NULL == player )
-    {
-        return CActivity::GetEnterMapId( player );
-    }
-
-    CharId_t nCid = player->getCid();
-    PlayerScoreMap::iterator it = m_mPlayerScore.find( nCid );
-    if ( it == m_mPlayerScore.end() )
-    {
-        return CActivity::GetEnterMapId( player );
-    }
-
-    int32_t nCurMapId = it->second.nCurMapId;
-    const CrossTowerCfg* pCfg = CFG_DATA.GetCrossTowerCfg( nCurMapId );
-    if ( pCfg == NULL )
-    {
-        return CActivity::GetEnterMapId( player );
-    }
-
-    if ( pCfg->LastMapId > 0 )
-    {
-        return pCfg->LastMapId;
-    }
-    return nCurMapId;
+    packet->setSize( nEndPos );
+    return packet;
 }

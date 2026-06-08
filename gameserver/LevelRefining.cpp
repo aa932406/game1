@@ -93,7 +93,7 @@ int32_t CLevelRefining::OnRefining( Answer::NetPacket* inPacket )
 
 	m_pPlayer->updateRecord( 2081, nTime + 1 );
 	SendRefinInfo();
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	SendIcon();
 	return 0;
 }
@@ -114,7 +114,7 @@ void CLevelRefining::SendRefinInfo()
 	packet->writeInt32( m_pPlayer->getRecord( 2081 ) );
 	packet->writeInt32( GetLeftTime() );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 int32_t CLevelRefining::GetLeftTime()
@@ -177,7 +177,7 @@ void CLevelRefining::SendIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CLevelRefining::GetIconStu( ShowIcon* stu )

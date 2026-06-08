@@ -322,7 +322,7 @@ void CAchievement::SendAchievementInfo()
 	packet->writeInt32( nSize );
 	packet->setWOffset( NewOffset );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);		
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);		
 }
 
 void CAchievement::SendFinishAchievement( std::list<int32_t> FinishList )
@@ -353,5 +353,5 @@ void CAchievement::SendFinishAchievement( std::list<int32_t> FinishList )
 	packet->writeInt32( nSize );
 	packet->setWOffset( NewOffset );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }

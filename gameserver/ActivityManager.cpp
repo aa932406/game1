@@ -280,7 +280,7 @@ void CActivityManager::OnTerritoryWarInfo( Player* player )
 		return;
 	}
 
-	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( player->getConnId(), PACK_DISPATCH, SM_NOTIFY_ACTIVITY_TERRITORY_INFO );
+	Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_NOTIFY_ACTIVITY_TERRITORY_INFO );
 	if (NULL == packet)
 	{
 		return;
@@ -306,7 +306,7 @@ void CActivityManager::OnTerritoryWarInfo( Player* player )
 	packet->setWOffset( offset );
 	packet->setSize( offset );
 
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 int8_t CActivityManager::GetTerritoryWarState()

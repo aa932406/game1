@@ -314,7 +314,7 @@ void CExtCharWing::SendWingInfo()
 		return;
 	}
 
-	NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_SEND_WING_INFO );
+	NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_WING_INFO );
 	if ( NULL == packet )
 	{
 		return;
@@ -325,7 +325,7 @@ void CExtCharWing::SendWingInfo()
 	packet->writeInt32( m_HuanHua );
 	packet->setSize( packet->getWOffset() );
 
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtCharWing::AddCharAttr()

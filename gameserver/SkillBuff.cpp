@@ -12,7 +12,7 @@ using namespace Answer;
 SkillBuff::SkillBuff(Unit &unit, CfgBuff &cfgBuff)
 	: Buff(unit, cfgBuff), m_skillid(0), m_skilllevel(0)
 {
-
+	bzero(&m_restore, sizeof(m_restore));
 }
 
 SkillBuff::~SkillBuff()
@@ -22,7 +22,6 @@ SkillBuff::~SkillBuff()
 
 void SkillBuff::effect()
 {
-	m_restore.resize(2);
 	for (int32_t i = 0; i < 2; ++i)
 	{
 		if (m_cfgBuff.buffAttr[i].attr > 0)

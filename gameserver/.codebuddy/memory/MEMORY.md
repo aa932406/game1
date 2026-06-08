@@ -116,19 +116,158 @@
 - 遗留问题：FamilyWar.cpp 中3处 OnSendSysMail 调用传递邮件ID而非玩家ID（疑似bug）
 - GameService.cpp: onNewMinuteCome 调用保持 connid=0（系统级别定时器）
 
-### 任务 E：未实现函数补全 — **进行中**（2026-06-08）
-- Player.cpp: 1415→2523行（+1108行），实现核心getter/Unit虚函数/PK系统/背包/记录/canAttackTarget
+### ~~任务 E：未实现函数补全~~ — ✅ 第一轮完成（2026-06-08）
+- Player.cpp: 1415→2751行（+1336行），实现核心getter/Unit虚函数/PK系统/背包/记录/canAttackTarget/switchMap/leaveDungeon/leaveActivity/safeRevive
 - Player.h: 新增成员 m_Battle/m_nCamp/m_nGuaJi/m_needRecalAttr/m_BeiGongAttr/SetNeedSyncAround/canAttackTarget
 - CharSkill.cpp: addSkillBuffTo完整实现、canAttackTarget委托checkSkillTarget、召唤逻辑实现
 - DungeonBuff.cpp: effect()/interval() 恢复注释掉的buff效果逻辑
 - FightChecker.cpp: UpdateFightState() 恢复并适配2019多连接
 - CharTeamDungeon.cpp: onSocialTeamDungeonCost完整实现
-- Shared.h: SysUser新增gold_pay字段
+- Vip.cpp: SendVipGiftIcon完整实现（SM_SEND_ONE_ICON 11459）
+- Dungeon.cpp/h: GetBackMapId/StayPosition/GetBackPos + CfgDungeon新增字段
+- IsFunctionOpen: 3处硬编码true改为条件检查，CanUseXP确认正确
 - 确认：GongMing/GuardPrivilege/YunYingHD DB持久化通过OperateLimit自动完成，空实现正确
-- 遗留：Player约50+复杂方法未实现、Vip::SendVipGiftIcon/Curse::OnCurseLevelUp未实现
 
 ### 任务 D：编译错误修复（优先级：最终阶段）
 - 统一修复缺少头文件、API名称不匹配、类型转换等问题
+
+---
+
+## 第三阶段全量任务清单（2026-06-08 全审计）
+
+> **审计结论**：除 Player.cpp 外，所有模块的 .h 声明与 .cpp 实现数量匹配。
+> 差距主要体现在：Player 有~45个方法完全未实现（链接错误），其他模块实现偏简化（功能不完整但不会编译报错）。
+
+---
+
+### P0 — Player.cpp 核心补全（~45个方法未实现，将导致链接错误）
+
+| ID | 任务 | 数量 | 说明 | 状态 |
+|----|------|------|------|------|
+| P0-a | Player 构造/析构/初始化 | 7 | `Player()`, `~Player()`, `init()`, `initNetPacketHandlers()`, `InitExtSystems()`, `SaveDBData()`, `enterDungeon(static)` | ⏳ |
+| P0-b | Player 网络包处理器 on*() | ~30 | onMove/onHit/onSwitchMap/onEnterDungeon/onUseItem/onUpgradeSkill/onReceiveTask/onTeleport 等全部 | ⏳ |
+| P0-c | Player 信息发送器 send*() | ~15 | sendBasicInfo/sendLoginInfo/sendChrInfo/sendEquipInfo/sendSkillList/sendGainInfo 等 | ⏳ |
+| P0-d | Player OnXXX空壳处理函数补全 | 20+ | OnKaiFuHuoDongOperator/OnUniteServerGetInfo/OnDoubleElevenRequestInfo/OnZHYYHD* 等 | ⏳ |
+| P0-e | Player 充值回调注释恢复 | 6+ | CKiaFuRecharge/CFestivalDoubleEleven/CUniteServer/CZongHeYunYingHD/CKiaFuHuoDong 注释掉的调用 | ⏳ |
+| P0-f | Player 其他缺失方法 | ~10 | verifyBagInfo/queryBagInfo/RecalcAttr/GetCurrency/AddCurrency/DecCurrency/moveToReviveRegion/doTeleport/防沉迷等 | ⏳ |
+| P0-g | Player 空壳函数实现 | 27 | setTaskCanSubmit/taskTalkWithNpc/onKillMonster/sendJungongChangeInfo/sendPvpInfo 等空体函数 | ⏳ |
+
+**P0 执行顺序**：P0-e(充值回调恢复) → P0-a(构造/初始化) → P0-b(网络包处理) → P0-c(信息发送) → P0-d(OnXXX补全) → P0-f(其他缺失) → P0-g(空壳补全)
+
+---
+
+### P1 — 体积差距 <30% 的模块（严重不足，需大幅补全）
+
+| ID | 模块 | 当前 | 反编译 | 比例 | 状态 |
+|----|------|------|--------|------|------|
+| P1-1 | Buff.cpp | 0.6KB | 7.9KB | 8% | ⏳ |
+| P1-2 | CharCarrier.cpp | 1.9KB | 10KB | 19% | ⏳ |
+| P1-3 | CharWuHun.cpp | 9.5KB | 49KB | 19% | ⏳ |
+| P1-4 | CharWish.cpp | 5.4KB | 22KB | 24% | ⏳ |
+| P1-5 | CMonthlyChouJiang.cpp | 8KB | 34KB | 24% | ⏳ |
+| P1-6 | CrossTower.cpp | 14KB | 49KB | 29% | ⏳ |
+| P1-7 | CharPortal.cpp | 6KB | 20KB | 30% | ⏳ |
+| P1-8 | ChrDepot.cpp | 17KB | 55KB | 30% | ⏳ |
+| P1-9 | Curse.cpp | 2.4KB | 7.9KB | 31% | ⏳ |
+| P1-10 | CharWorship.cpp | 3.8KB | 12KB | 33% | ⏳ |
+| P1-11 | BossKilledReward.cpp | 7.6KB | 23KB | 33% | ⏳ |
+| P1-12 | CharMysteryShop.cpp | 8.6KB | 26KB | 33% | ⏳ |
+| P1-13 | Currency.cpp | 10KB | 39KB | 26% | ⏳ |
+
+### P2 — 体积差距 30%~50% 的模块（需补全）
+
+| ID | 模块 | 当前 | 反编译 | 比例 | 状态 |
+|----|------|------|--------|------|------|
+| P2-1 | ActivityMap.cpp | 21KB | 76KB | 28% | ⏳ |
+| P2-2 | CityWar.cpp | 27KB | 76KB | 36% | ⏳ |
+| P2-3 | EquipBack.cpp | 16KB | 44KB | 35% | ⏳ |
+| P2-4 | ActivityManager.cpp | 12KB | 34KB | 36% | ⏳ |
+| P2-5 | CharFamily.cpp | 32KB | 89KB | 36% | ⏳ |
+| P2-6 | CharTitle.cpp | 14KB | 37KB | 37% | ⏳ |
+| P2-7 | CharExchange.cpp | 4.3KB | 11KB | 40% | ⏳ |
+| P2-8 | CharAuction.cpp | 6.5KB | 16KB | 41% | ⏳ |
+| P2-9 | CharDraw.cpp | 2.9KB | 7KB | 42% | ⏳ |
+| P2-10 | DailyActivity.cpp | 40KB | 99KB | 40% | ⏳ |
+| P2-11 | DropItem.cpp | 12KB | 25KB | 46% | ⏳ |
+| P2-12 | CharSkill.cpp | 40KB | 93KB | 43% | ⏳ |
+| P2-13 | CKiaFuRecharge.cpp | 16KB | 36KB | 45% | ⏳ |
+| P2-14 | ActivityWorldBoss.cpp | 12KB | 26KB | 45% | ⏳ |
+| P2-15 | CDaTingReward.cpp | 16KB | 42KB | 39% | ⏳ |
+
+### P3 — 体积差距 50%~70% 的模块（需适度补全）
+
+| ID | 模块 | 当前 | 反编译 | 比例 | 状态 |
+|----|------|------|--------|------|------|
+| P3-1 | Bag.cpp | 70KB | 124KB | 56% | ⏳ |
+| P3-2 | CMingGeExt.cpp | 20KB | 36KB | 56% | ⏳ |
+| P3-3 | BlackMarket.cpp | 6.5KB | 11KB | 59% | ⏳ |
+| P3-4 | CKunExt.cpp | 28KB | 47KB | 60% | ⏳ |
+| P3-5 | CharTeam.cpp | 7.3KB | 12KB | 63% | ⏳ |
+| P3-6 | CLittleHelper.cpp | 7.6KB | 12KB | 63% | ⏳ |
+| P3-7 | Activity.cpp | 17KB | 33KB | 51% | ⏳ |
+| P3-8 | CampWar.cpp | 21KB | 42KB | 50% | ⏳ |
+| P3-9 | CharInsidePet.cpp | 28KB | 58KB | 49% | ⏳ |
+| P3-10 | CharTeamDungeon.cpp | 7.7KB | 15KB | 51% | ⏳ |
+| P3-11 | CharHallOfFame.cpp | 9.4KB | 18KB | 52% | ⏳ |
+| P3-12 | CharWing.cpp | 7.1KB | 25KB | 28%→P2 | ⏳ |
+
+### P4 — 大型模块深化（体积差距50%以下但绝对体量大）
+
+| ID | 模块 | 当前 | 反编译 | 比例 | 状态 |
+|----|------|------|--------|------|------|
+| P4-1 | Map.cpp | — | 142KB+ | — | ⏳ |
+| P4-2 | UniteServer.cpp | — | 79KB | — | ⏳ |
+| P4-3 | OpenBeta.cpp | — | 122KB | — | ⏳ |
+
+### P5 — 其他零散任务
+
+| ID | 任务 | 说明 | 状态 |
+|----|------|------|------|
+| P5-1 | Map.cpp IsXinMoMap/IsXinMoCun | return false 占位，"not yet ported" | ⏳ |
+| P5-2 | CfgData #if 0 禁用块 | 大段功能被禁用，待移植 | ⏳ |
+| P5-3 | CfgData 93函数重写 | 反编译风格→干净版 | ⏳ |
+| P5-4 | FamilyWar.cpp 补尾 | 33/36KB (~94%) | ⏳ |
+| P5-5 | connid签名更新遗留 | FamilyWar.cpp 3处 OnSendSysMail 疑似bug | ⏳ |
+
+### P6 — 编译错误修复（最终阶段）
+
+| ID | 任务 | 说明 | 状态 |
+|----|------|------|------|
+| P6-1 | 全量编译错误修复 | 统一修复缺少头文件、API名称不匹配、类型转换等 | ⏳ |
+| P6-2 | 链接错误修复 | Player ~45个未实现方法导致的链接错误 | ⏳ |
+
+---
+
+### 全局执行顺序
+
+```
+阶段1: P0 (Player.cpp — 链接错误 + 核心功能)
+  P0-e → P0-a → P0-b → P0-c → P0-d → P0-f → P0-g
+
+阶段2: P1 (体积<30% 的严重不足模块)
+  P1-1~P1-13 按依赖关系排序
+
+阶段3: P2 (体积30~50% 模块)
+  P2-1~P2-15
+
+阶段4: P3 (体积50~70% 模块)
+
+阶段5: P4 (大型模块深化)
+
+阶段6: P5 (零散) + P6 (编译/链接)
+```
+
+### 预估工作量
+
+| 阶段 | 模块数 | 新增代码估算 |
+|------|--------|-------------|
+| P0 Player | 1文件7子任务 | ~5000行 |
+| P1 严重不足 | 13模块 | ~800行/模块 ≈ 10000行 |
+| P2 中等不足 | 15模块 | ~400行/模块 ≈ 6000行 |
+| P3 适度补全 | 12模块 | ~200行/模块 ≈ 2400行 |
+| P4 大型深化 | 3模块 | ~2000行/模块 ≈ 6000行 |
+| P5+P6 | 零散 | ~1000行 |
+| **合计** | — | **~24400行** |
 
 ---
 

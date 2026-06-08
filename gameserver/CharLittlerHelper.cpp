@@ -151,7 +151,7 @@ int32_t CharLittlerHelper::OnWork( Answer::NetPacket *inPacket )
     {
         uint16_t Proc = inPacket->getProc();
         int16_t GateIndex = m_pPlayer->getGateIndex();
-        GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), GateIndex, Proc, nId );
+        GAME_SERVICE.replySuccess( GateIndex, Proc, nId );
     }
     return 0;
 }
@@ -167,7 +167,7 @@ int32_t CharLittlerHelper::OnRest( Answer::NetPacket *inPacket )
     m_LittleHelperId = 0;
     uint16_t Proc = inPacket->getProc();
     int16_t GateIndex = m_pPlayer->getGateIndex();
-    GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), GateIndex, Proc, 0 );
+    GAME_SERVICE.replySuccess( GateIndex, Proc, 0 );
     return 0;
 }
 
@@ -274,7 +274,7 @@ int32_t CharLittlerHelper::OnBuyLittlerHelper( Answer::NetPacket *inPacket )
     
     uint16_t Proc = inPacket->getProc();
     int16_t GateIndex = m_pPlayer->getGateIndex();
-    GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), GateIndex, Proc, nId );
+    GAME_SERVICE.replySuccess( GateIndex, Proc, nId );
     
     if ( pCfg->nGongGaoId > 0 )
     {
@@ -312,7 +312,7 @@ void CharLittlerHelper::SendCharLittlerhelper()
     }
     packet->setSize( packet->getWOffset() );
     int16_t GateIndex = m_pPlayer->getGateIndex();
-    GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), GateIndex, packet );
+    GAME_SERVICE.sendPacketTo( GateIndex, packet );
 }
 
 void CharLittlerHelper::SetTargetTile( int32_t tx, int32_t ty, Direction dir )

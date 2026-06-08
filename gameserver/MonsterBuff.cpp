@@ -6,7 +6,7 @@
 MonsterBuff::MonsterBuff(Unit &unit, CfgBuff &cfgBuff)
 	: Buff(unit, cfgBuff)
 {
-
+	bzero(&m_restore, sizeof(m_restore));
 }
 
 MonsterBuff::~MonsterBuff()
@@ -20,7 +20,6 @@ bool MonsterBuff::expire()
 
 void MonsterBuff::effect()
 {
-	m_restore.resize(2);
 	for (int32_t i = 0; i < 2; ++i)
 	{
 		m_restore[i].index = m_cfgBuff.buffAttr[i].attr;

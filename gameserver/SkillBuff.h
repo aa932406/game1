@@ -31,6 +31,7 @@ private:
 private:
 	int32_t m_skillid;
 	int32_t m_skilllevel;
-
+	UnitHandle m_launcher;
+	BuffAttrAddon m_restore[2];
 };
 

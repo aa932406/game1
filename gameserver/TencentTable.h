@@ -3,12 +3,6 @@
 #include "Shared.h"
 #include "DataStructs.h"
 
-struct CfgTencentGift
-{
-	MemChrBagVector vRewards;
-	MemChrBagVector vVipRewards;
-};
-
 // ===== Yellow Gift Types =====
 struct CfgYellowNewerGift
 {

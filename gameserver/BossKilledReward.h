@@ -68,7 +68,7 @@ public:
 	int32_t		OnGetBossKilledReward( Answer::NetPacket* inPacket );
 	void		AddBossKilled( int32_t nBossId );
 	void		SendBossKilledInfo();
-	void		GetBossKilledIcon( IconStateList& IconList );
+	void		GetBossKilledIcon( ShowIcon& icon );
 	void		SendBossKilledIcon();
 	bool		IsAllRewardGet();
 	int32_t		CanGetRewardCount();

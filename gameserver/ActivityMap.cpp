@@ -664,14 +664,14 @@ void CActivityMap::triggerEvent( CfgMapEvent &mapEvent, Unit* pUnit )
 				if ( pKiller != NULL )
 				{
 					int32_t bcid = atoi( mapEvent.effect.c_str() );
-					Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( pKiller->getConnId(), Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
+					Answer::NetPacket *packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_SEND_NOTICE_PARAM );
 					if ( packet != NULL )
 					{
 						packet->writeInt32( bcid );
 						packet->writeUTF8( pKiller->getName() );
 						packet->writeInt64( pKiller->getCid() );
 						packet->setSize(packet->getWOffset());
-						GAME_SERVICE.worldBroadcast(pKiller->getConnId(), packet);
+						GAME_SERVICE.worldBroadcast(packet);
 					}
 				}
 			}

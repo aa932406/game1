@@ -165,7 +165,7 @@ void CLittleHelper::SynsAreaAround()
 {
     if ( !m_pPlayer || !m_pMap )
         return;
-    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( m_pPlayer->getConnId(), Answer::PACK_DISPATCH, SM_LITTLE_HELPER_SYNS );
+    Answer::NetPacket* packet = GAME_SERVICE.popNetpacket( Answer::PACK_DISPATCH, SM_LITTLE_HELPER_SYNS );
     if ( packet )
     {
         packet->writeInt64( getEntityId() );

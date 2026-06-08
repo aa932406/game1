@@ -87,11 +87,7 @@ public:
 		OBS_FREEDOM			= 5,			// ����
 		OBS_MIANYI			= 6,			// ����
 		OBS_CHENMO			= 7,			// ��Ĭ
-		OBS_DIVIDE			= 8,			// damage divide
-		OBS_SLEEP			= 9,			// sleep
-		OBS_SHIELD			= 10,			// shield
-		OBS_PLYSIS			= 11,			// paralysis
-		OBS_FROZEN			= 12,			// frozen
+		OBS_DIVIDE			= 8,			// �˺�ƽ�ָ�����״̬
 		MAX_INDEX,
 	} Index_T;
 

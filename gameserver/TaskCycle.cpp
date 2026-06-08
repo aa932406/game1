@@ -163,7 +163,7 @@ int32_t CExtChrTaskCycle::onReceiveTask( Answer::NetPacket* inPacket )
 
 	m_nState = TS_DOING;
 	sendTaskInfo();
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_nTaskId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nTaskId );
 	Map *pTargetMap = MAP_MANAGER.GetMap( MapId );
 	if ( pTargetMap != NULL )
 	{
@@ -206,9 +206,9 @@ int32_t CExtChrTaskCycle::onSubmitTask( Answer::NetPacket* inPacket )
 
 	switch ( nRadio )
 	{
-	case 1:	break;																	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡
-	case 2:	nNeedMoney = incInt( static_cast<double>( nLevel - 60 ) / 60 ) * 200000;	break;	// Ë«ï¿½ï¿½ï¿½ï¿½È¡
-	case 3:																			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡
+	case 1:	break;																	// µ¥±¶ÁìÈ¡
+	case 2:	nNeedMoney = incInt( static_cast<double>( nLevel - 60 ) / 60 ) * 200000;	break;	// Ë«±¶ÁìÈ¡
+	case 3:																			// Èý±¶ÁìÈ¡
 		{
 			if ( nPayType == CURRENCY_MONEY )
 			{
@@ -265,7 +265,7 @@ int32_t CExtChrTaskCycle::onSubmitTask( Answer::NetPacket* inPacket )
 
 	sendTaskInfo();
 	m_pPlayer->GetPlayerHuoYueDu().AddHuoYueDuRecord( HYDT_CYCLE_TASK );
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_nTaskId );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nTaskId );
 	return ERR_OK;
 }
 
@@ -291,7 +291,7 @@ int32_t CExtChrTaskCycle::onRefreshStar( Answer::NetPacket* inPacket )
 	}
 
 	refreshStar();
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc(), m_nStar );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc(), m_nStar );
 	return ERR_OK;
 }
 
@@ -315,7 +315,7 @@ void CExtChrTaskCycle::SendTaskCycle()
 
 bool CExtChrTaskCycle::IsFunctionOpen()
 {
-	// ï¿½Õ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½50ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ò¿ª·ï¿½(ï¿½ï¿½ï¿½å¿ªï¿½ÅµÈ¼ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½
+	// ÈÕ³£ÈÎÎñ»áÔÚ50¼¶µÄÊ±ºò¿ª·Å(¾ßÌå¿ª·ÅµÈ¼¶ÐèÒªÔÚÐÂÊÖÒýµ¼µÄÊ±ºò¼ÓÈë)¡£
 	return true;
 }
 
@@ -327,7 +327,7 @@ void CExtChrTaskCycle::OpenCycleTask()
 	}
 
 	refreshTask();
-	m_nStar = 7;			//ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
+	m_nStar = 7;			//¿ªÆôÑ­»·ÈÎÎñÊ±ÆßÐÇ
 	sendTaskInfo();
 }
 
@@ -359,7 +359,7 @@ void CExtChrTaskCycle::sendTaskInfo()
 	}
 	packet->writeInt32( m_pPlayer->GetOperateLimit().GetLimitCount( PR_BUY_CYCLE_TIMES ) );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CExtChrTaskCycle::refreshTask()
@@ -458,9 +458,4 @@ int32_t	CExtChrTaskCycle::GetSurplusTimes()
 {
 	int32_t BuyTimes = m_pPlayer->GetOperateLimit().GetLimitCount( PR_BUY_CYCLE_TIMES );
 	return GetTaskCycleTimes() + m_pPlayer->GetPlayerVip().AddDailyTaskTimes() - m_nFinishTimes;
-}
-
-int32_t	CExtChrTaskCycle::GetDrawTimes()
-{
-	return GetSurplusTimes();
 }

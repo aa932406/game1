@@ -420,7 +420,7 @@ int32_t	CYunYingHD::OnGetThreePetGift( Answer::NetPacket *inPacket )
 			GongGao( it->GongGaoId );
 		}
 	}
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	SendThreePetGiftIcon();
 	return ERR_OK;
 }
@@ -530,7 +530,7 @@ void CYunYingHD::SendShouChongInfo()
 	}
 	packet->writeInt8( GetShouChongState() );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);		
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);		
 }
 
 void CYunYingHD::SendShouChongIcon()
@@ -556,7 +556,7 @@ void CYunYingHD::SendShouChongIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void CYunYingHD::GetShouChongIconState( IconStateList& IconList )
@@ -606,7 +606,7 @@ void CYunYingHD::SendTeHuiInfo()
 	}
 	packet->writeInt32( m_pPlayer->getRecord( RP_BUY_TE_HUI_RECORD ) );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void CYunYingHD::SendTeHuiIcon()
@@ -632,7 +632,7 @@ void CYunYingHD::SendTeHuiIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void CYunYingHD::GetTeHuiIconState( IconStateList& IconList )
@@ -714,7 +714,7 @@ void CYunYingHD::SendEveryDayChongZhiInfo( int8_t nType )
 	packet->writeInt32( m_pPlayer->GetTodayPayGold() );
 	packet->writeInt32( nRecord );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);
 }
 
 void CYunYingHD::SendEveryDayChongZhiIcon( int8_t nType )
@@ -837,7 +837,7 @@ void CYunYingHD::SendThreePetGiftIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void CYunYingHD::GetThreePetGiftIconState( IconStateList& IconList )
@@ -910,7 +910,7 @@ void CYunYingHD::SendTotalChongZhiIcon()
 	packet->writeInt32( stu.IconRight );
 	packet->writeInt8( stu.Effects );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void CYunYingHD::SendTotalChongZhiInfo()
@@ -927,7 +927,7 @@ void CYunYingHD::SendTotalChongZhiInfo()
 	packet->writeInt32( m_pPlayer->getRecord( RP_TOTAL_CHI_ZHI_VALUES ) );
 	packet->writeInt32( m_pPlayer->getRecord( RP_TOTAL_CHI_ZHI_REWARD ) );
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet);	
+	GAME_SERVICE.sendPacketTo(m_pPlayer->getGateIndex(), packet);	
 }
 
 void CYunYingHD::GetTotalChongZhiIconState( IconStateList& IconList )
@@ -1149,7 +1149,7 @@ int32_t CYunYingHD::OnDBGetMobilePhoneGift( Answer::NetPacket *inPacket )
 		return ERR_SYETEM_ERR;
 	}
 	m_pPlayer->updateRecord( 37010, 1 );
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 
@@ -1292,7 +1292,7 @@ int32_t CYunYingHD::OnGetZeroBuyPetGift( Answer::NetPacket *inPacket )
 	m_pPlayer->DecCurrency( CURRENCY_GOLD, pCfg->nGold, GCR_BUY_THREE_PET_LI_BAO, 0 );
 	int32_t Now = m_pPlayer->getNow();
 	m_pPlayer->updateRecord( 37503, Now + 259200 );
-	GAME_SERVICE.replySuccess( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), inPacket->getProc() );
+	GAME_SERVICE.replySuccess( m_pPlayer->getGateIndex(), inPacket->getProc() );
 	return ERR_OK;
 }
 

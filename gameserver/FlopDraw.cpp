@@ -229,7 +229,7 @@ void CExtFlopDraw::SendFlopRecord( Player* player, int32_t nType )
 		packet->writeInt32( itFlop->second );
 	}
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }
 
 void CExtFlopDraw::SendFlopOneRecord( Player* player, int32_t nType, int32_t FlopId, int32_t FlopResult )
@@ -249,5 +249,5 @@ void CExtFlopDraw::SendFlopOneRecord( Player* player, int32_t nType, int32_t Flo
 	packet->writeInt32( FlopId );
 	packet->writeInt32( FlopResult );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( player->getConnId(), player->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( player->getGateIndex(), packet );
 }

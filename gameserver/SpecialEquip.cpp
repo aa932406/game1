@@ -196,7 +196,7 @@ void CSpecialEquip::SendActivationInfo()
 	packet->writeInt32( m_pPlayer->getRecord( 1011 ) );
 	packet->writeInt32( m_pPlayer->getRecord( 1149 ) );
 	packet->setSize( packet->getWOffset() );
-	GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+	GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 }
 
 void CSpecialEquip::GetSpecialEquipIcon( IconStateList& IconList )
@@ -249,6 +249,6 @@ void CSpecialEquip::SendSpecialEquipIcon()
 		packet->writeInt8( stu.nState );
 		packet->writeInt32( stu.nLeftTime );
 		packet->setSize( packet->getWOffset() );
-		GAME_SERVICE.sendPacketTo( m_pPlayer->getConnId(), m_pPlayer->getGateIndex(), packet );
+		GAME_SERVICE.sendPacketTo( m_pPlayer->getGateIndex(), packet );
 	}
 }

@@ -1583,7 +1583,7 @@ void Dungeon::sendDungeonResult(Player *player, int32_t param)
 	packet->writeInt32(param);
 	packet->writeInt32(1);
 	packet->setSize(packet->getWOffset());
-	GAME_SERVICE.sendPacketTo(player->getConnId(), player->getGateIndex(), packet);
+	GAME_SERVICE.sendPacketTo(player->getGateIndex(), packet);
 }
 
 void Dungeon::broadcastDungeonEvent(int32_t evtId)

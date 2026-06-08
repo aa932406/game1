@@ -82,9 +82,8 @@ void CExtCharCarrier::EnterCarrier( int32_t nId )
 	if ( m_pCarrier )
 	{
 		m_pCarrier->Init( m_pPlayer, nId );
-		m_pPlayer->clearDebuff( 0 );
+		m_pPlayer->clearDebuff();
 		m_pPlayer->setNeedSyncSelf();
-		m_pPlayer->SetNeedSyncAround();
 	}
 }
 
@@ -98,7 +97,6 @@ void CExtCharCarrier::LeaveCarrier()
 		POOL_MANAGER.push( m_pCarrier );
 		m_pCarrier = NULL;
 		m_pPlayer->setNeedSyncSelf();
-		m_pPlayer->SetNeedSyncAround();
 	}
 }
 
