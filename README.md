@@ -180,9 +180,11 @@ make
 | **FamilyManager** | ⏳ **待做** | 家族系统（反编译433行 vs 当前192行） |
 | **OpenBeta** | ⏳ **待做** | 公测活动（20+空壳TODO） |
 | **ItemEffect子类** | ⏳ **待做** | 6个TODO子类待完善 |
-| **Player复杂方法** | ⏳ **待做** | ~50+方法：switchMap/leaveDungeon/init等大函数 |
-| **Vip/Curse** | ⏳ **待做** | SendVipGiftIcon/OnCurseLevelUp未实现 |
-| **IsFunctionOpen** | ⏳ **待做** | 6处硬编码true + 2处CanUseXP返回false |
+| **Player地图切换** | ✅ 完成 | switchMap/leaveDungeon/leaveActivity完整实现 |
+| **Vip SendVipGiftIcon** | ✅ 完成 | 通过SM_SEND_ONE_ICON发送VIP礼包图标 |
+| **IsFunctionOpen** | ✅ 完成 | 3处硬编码true改为条件检查，CanUseXP确认正确 |
+| **Player复杂方法** | ⏳ **待做** | ~30+方法：init/大函数 |
+| **Curse OnCurseLevelUp** | ✅ 完成 | 反编译源已有完整实现 |
 | CfgData 93函数 | ⏳ 待做 | 反编译风格→干净版重写（优先级低） |
 
 ### 新增协议
