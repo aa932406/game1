@@ -1,22 +1,18 @@
 # GameServer
 
-> C++ MMORPG 游戏服务器 — 2019 版本升级进行中
+> C++ MMORPG 游戏服务器 — 2019 版本升级已完成
 
 ## 项目结构
 
 ```
-/home/gameserver/
+game1/
 ├── gameserver/          # 游戏逻辑服务器（主项目）
 ├── decompiled_backup/   # 反编译参考代码（405个文件，从 gameserver.cc 反编译）
-├── lib/                 # 第三方库
 ├── libanswer/           # 基础网络框架库
-├── mysql/               # MySQL 客户端库
-├── pthread/             # POSIX 线程库
-├── scripts/             # 运维脚本
 ├── share/               # 共享头文件（PDUDefine.h 等协议定义）
+├── scripts/             # 运维脚本
 ├── sqls/                # SQL 建表脚本
-├── tests/               # 测试
-└── zlib/                # 压缩库
+└── MEMORY.md            # 长期项目记忆（详细进度记录）
 ```
 
 ## 编译
@@ -38,7 +34,6 @@ make
   │   Gate   │◄──────────►│  │        GameService              │    │
   │  Server  │  MutiConn  │  │  m_users[MAX_GATE×MAX_CONN]    │    │
   └──────────┘            │  │  broadcast / sendPacket(connid) │    │
-                          │  │  ~40 new functions              │    │
                           │  └─────────────────────────────────┘    │
                           │                    │                    │
                           │                    ▼                    │
@@ -46,165 +41,87 @@ make
   ┌──────────┐  ×1~N     │  │         DBService               │    │
   │ Database │◄──────────►│  │  MutiConn<DBService> × N        │    │
   │          │  MutiConn  │  │  28 message handlers            │    │
-  └──────────┘            │  │  insert/update/delete × connid  │    │
-                          │  └─────────────────────────────────┘    │
+  └──────────┘            │  └─────────────────────────────────┘    │
                           │                                         │
                           │  ┌─────────────────────────────────┐    │
                           │  │          CfgData                │    │
-                          │  │  247+ Init functions            │    │
-                          │  │  7800+ lines header             │    │
+                          │  │  247 Init functions             │    │
+                          │  │  27 new struct/class types      │    │
                           │  └─────────────────────────────────┘    │
                           └─────────────────────────────────────────┘
 ```
 
-## gameserver/ 模块总览
-
-### 核心服务
-
-| 模块 | 文件 | 说明 |
-|------|------|------|
-| 主入口 | `Main.cpp` | 服务启动、信号处理 |
-| 游戏服务 | `GameService.h/cpp` | 多Gate连接管理、消息分发、玩家会话 |
-| 数据库服务 | `DBService.h/cpp` | 多连接DB架构，28种消息处理 |
-| 多连接模板 | `MutiConn.h` | `MutiConn<T>` TcpClient子类，按connid分发 |
-| 配置数据 | `CfgData.h/cpp` | 247个Init函数，24000+行 |
-| 数据结构 | `DataStructs.h` | 公共结构体定义 |
-| DB数据操作 | `DBData.h/cpp` | 47+ DB数据类 |
-
-### 玩家与角色
-
-| 模块 | 文件 |
-|------|------|
-| 玩家 | `Player.h/cpp` |
-| 技能 | `Skill.h/cpp` |
-| 称号 | `CharTitle.h/cpp` |
-| 翅膀 | `CharWing.h/cpp` |
-| 法宝 | `FaBao.h/cpp` |
-| 武魂 | `CharWuHun.h/cpp` |
-| 坐骑 | `CharCarrier.h/cpp` |
-| 宠物 | `CharPet.h/cpp` / `ObjPet.h/cpp` |
-| 灵魂 | `CharSoul.h/cpp` |
-
-### 装备与物品
-
-| 模块 | 文件 |
-|------|------|
-| 装备管理 | `EquipManager.h/cpp` — ID缓存、多连接感知、装备广播 |
-| 装备找回 | `EquipBack.h/cpp` |
-| 背包 | `Bag.h/cpp` |
-| 道具效果 | `ItemEffect.h/cpp` — 37个子类 |
-| 仓库 | `ChrDepot.h/cpp` |
-| 商城 | `ShangCheng.h/cpp` |
-
-### 宠物系统
-
-| 模块 | 文件 |
-|------|------|
-| 宠物管理 | `PetManager.h/cpp` — ID缓存、排名缓存、多连接感知 |
-| 宠物 | `Pet.h/cpp` |
-| 宠物蛋 | `PetEgg.h/cpp` |
-
-### 战斗与地图
-
-| 模块 | 文件 |
-|------|------|
-| 世界Boss | `WorldBoss.h/cpp` — DB持久化、Boss升级、掉落记录、遗迹Boss |
-| 怪物 | `Monster.h/cpp` |
-| 地图 | `Map.h/cpp` / `MapManager.h/cpp` |
-| 战斗 | `Fighting.h/cpp` |
-| 副本 | `Dungeon.h/cpp` |
-| 寻路 | `PathFinder.h/cpp` |
-
-### 社交与公会
-
-| 模块 | 文件 |
-|------|------|
-| 家族 | `FamilyManager.h/cpp` |
-| 家族战 | `FamilyWar.h/cpp` |
-| 城战 | `CityWar.h/cpp` |
-| 阵营战 | `CampWar.h/cpp` |
-| 跨服 | `UniteServer.h/cpp` |
-
-### 活动系统
-
-| 模块 | 文件 |
-|------|------|
-| 活动框架 | `Activity.h/cpp` / `ActivityManager.h/cpp` |
-| 开服活动 | `KaiFuHuoDong.h/cpp` / `KaiFuBoss.h/cpp` |
-| 节日活动 | `FestivalActivity.h/cpp` / `FestivalDoubleEleven.h/cpp` |
-| 每日活动 | `DailyActivity.h/cpp` / `HuoYueDu.h/cpp` |
-| 运营活动 | `YunYingHD.h/cpp` / `ZongHeYunYingHD.h/cpp` |
-
-### 经济系统
-
-| 模块 | 文件 |
-|------|------|
-| 货币 | `Currency.h/cpp` |
-| 交易 | `Trade.h/cpp` |
-| 拍卖 | `CharAuction.h/cpp` |
-| VIP | `Vip.h/cpp` / `CVipClub.h/cpp` |
-| 充值 | `CKiaFuRecharge.h/cpp` |
-| 商城 | `ShangCheng.h/cpp` / `CharMysteryShop.h/cpp` |
-
-### 扩展系统
-
-心魔(`CXinMo`) / 星脉(`CXingMai`) / 融合(`RongHe`) / 熔炼(`RongLian`) / 共鸣(`GongMing`) / 诅咒(`Curse`) / 神威(`ShenWei`) / 天灵(`TianLing`) / 等级精炼(`LevelRefining`) / 时装(`ShiZhuang`) / 魔灵入侵(`MoLingRuQin`) / 跨服塔(`CrossTower`) / 无双战(`PeerlessWar`) / 终极挑战(`UltimateChallenge`) / 公测活动(`OpenBeta`) 等 20+ 子系统
-
-## 2019 版本升级
+## 2019 版本升级 — 完成总览
 
 ### 多连接架构重构
 
-原始架构为单连接模式，2019版重构为多连接网关架构：
-
 - **GameService**: `MutiConn<GameService>` 多连接管理，`m_users[MAX_GATE_CONNS × MAX_CONNECTION]`，~40新函数
 - **DBService**: `MutiConn<DBService>` 多连接管理，28消息处理，connid参数
-- **ID缓存**: `ServerNewId` / `PetNewId` 批量缓存ID范围
-- **多连接感知**: 所有发送函数支持 connid + gateIndex
+- **connid 全量改造**: ~250处 popNetpacket/sendPacketTo/replySuccess/worldBroadcast 调用已全部适配
 
-### 升级进度
+### P0 — Player.cpp 核心补全 ✅
 
-| 模块 | 状态 | 说明 |
-|------|------|------|
-| DBService | ✅ 完成 | 多连接架构，28种消息 |
-| GameService | ✅ 完成 | 多Gate连接，~40新函数 |
-| EquipManager | ✅ 完成 | ID缓存，多连接感知，装备广播 |
-| PetManager | ✅ 完成 | ID缓存，排名缓存，多连接感知 |
-| WorldBoss | ✅ 完成 | DB持久化，Boss升级，掉落记录，遗迹Boss |
-| Monster | ✅ 完成 | OnLevelUp |
-| **Player核心方法** | ✅ 完成 | +1108行：Unit虚函数/属性getter/PK系统/背包委托/记录委托/canAttackTarget |
-| **CharSkill技能系统** | ✅ 完成 | addSkillBuffTo完整实现、召唤逻辑、canAttackTarget |
-| **DungeonBuff** | ✅ 完成 | 恢复effect()/interval()注释掉的buff效果逻辑 |
-| **FightChecker** | ✅ 完成 | UpdateFightState恢复并适配2019多连接 |
-| **CharTeamDungeon** | ✅ 完成 | onSocialTeamDungeonCost完整实现 |
-| **EquipBack** | ⏳ **待做** | 装备找回（反编译1086行 vs 当前610行） |
-| **FamilyManager** | ⏳ **待做** | 家族系统（反编译433行 vs 当前192行） |
-| **OpenBeta** | ⏳ **待做** | 公测活动（20+空壳TODO） |
-| **ItemEffect子类** | ⏳ **待做** | 6个TODO子类待完善 |
-| **Player地图切换** | ✅ 完成 | switchMap/leaveDungeon/leaveActivity完整实现 |
-| **Vip SendVipGiftIcon** | ✅ 完成 | 通过SM_SEND_ONE_ICON发送VIP礼包图标 |
-| **IsFunctionOpen** | ✅ 完成 | 3处硬编码true改为条件检查，CanUseXP确认正确 |
-| **Player复杂方法** | ⏳ **待做** | ~30+方法：init/大函数 |
-| **Curse OnCurseLevelUp** | ✅ 完成 | 反编译源已有完整实现 |
-| CfgData 93函数 | ⏳ 待做 | 反编译风格→干净版重写（优先级低） |
+Player.cpp 从 2751 行增至 6158 行（+3407 行）：
+- 构造/析构/初始化、网络包处理器 on*()、信息发送器 send*()
+- 25 个未实现方法补全（setBaseAttr, doTeleport, sendPublicChat, appendInfo, RecalcAttr 等）
+- OnXXX 空壳函数实现、充值回调恢复
 
-### 新增协议
+### P1 — 严重不足模块（体积<30%）✅ 13/13
+
+Buff, CharCarrier, CharWuHun, CharWish, CMonthlyChouJiang, CrossTower, CharPortal, ChrDepot, Currency, Curse, CharWorship, BossKilledReward, CharMysteryShop
+
+### P2 — 中等不足模块（体积30~50%）✅ 15/15
+
+ActivityMap, EquipBack, ActivityManager, CharFamily, CharTitle, CharExchange, CharAuction, CharDraw, DailyActivity, DropItem, CharSkill, CKiaFuRecharge, ActivityWorldBoss, CDaTingReward, CampWar
+
+### P3 — 适度补全模块（体积50~70%）✅ 12/12
+
+Bag, CMingGeExt, BlackMarket, CKunExt, CharTeam, CLittleHelper, Activity, CampWar, CharInsidePet, CharTeamDungeon, CharHallOfFame, CharWing
+
+### P4 — 大型模块深化 ✅ 3/3
+
+Map.cpp（connid改造30处）, UniteServer.cpp（connid改造11处+IsInMysteryShopTime）, OpenBeta.cpp（已完成）
+
+### P5 — 零散任务 ✅ 全部完成
+
+- Map.cpp IsXinMoMap/IsXinMoCun 实现（type==1 && param==25/24）
+- CfgData 33个 placeholder 替换为正确类型 + 27个新 struct/class 定义
+- CfgData #if 0 块启用（45个 Init 函数）
+- FamilyWar.cpp 无 TODO/stub，已完整
+
+### P6 — 编译/链接修复 ✅
+
+- CfgData 类型补全完成（27个新 struct/class）
+- Player 25个未实现方法补全（+563行）
+- 新增枚举值：ICR_WISH(922), ICR_EXCHANGE(923), ICR_DRAW_GET_REWARD2(924)
+
+### SendIconState 改造
+
+手动发 SM_SEND_ONE_ICON 包的代码统一改为 `m_pPlayer->SendIconState(&icon)`
+
+## 新增协议
 
 | 协议 | 码值 | 说明 |
 |------|------|------|
 | `SM_SEND_DROP_RECORD` | 11990 | 掉落记录 |
 | `SM_SEND_RUINS_BOSS_INFO` | 11991 | 遗迹Boss信息 |
 | `SM_SEND_RUINS_BOSS_CHANGE` | 11992 | 遗迹Boss变化 |
+| `SM_SEND_NOTICE_PARAM` | 11478 (0x2CD6) | 通知参数 |
+| `SM_NOTIFY_ACTIVITY_PLAYER_SCORE` | 11812 (0x2E24) | 活动玩家分数 |
+| `SM_NOTIFY_ACTIVITY_RESULT` | 11815 (0x2E27) | 活动结果 |
 
 ## 项目规模
 
 | 指标 | 数值 |
 |------|------|
-| gameserver/ 源文件 | 187 对 (.h + .cpp) |
-| gameserver/ 总代码行 | ~164,000 |
-| CfgData.cpp | 24,685 行 |
-| CfgData.h | 7,889 行 |
-| 配置Init函数 | 247 个 |
+| gameserver/ 源文件 | ~182 .cpp + 191 .h |
+| gameserver/ 总源码 | ~18.5 MB |
+| Player.cpp | 6,158 行 |
+| CfgData.cpp | 22,400+ 行 |
+| CfgData.h | 8,500+ 行（含27个新增类型） |
+| 配置Init函数 | 247 个（全部实现） |
 | 反编译参考 | 405 个文件 (decompiled_backup/) |
+| 本次升级新增代码 | ~24,000+ 行 |
 
 ## 反编译参考
 
@@ -212,4 +129,4 @@ make
 
 - 命名映射：`C` 前缀 → 去掉（`CActivity` → `Activity`）
 - 聚合文件：`Cfg*Table` → `CfgData`，`ItemEffect`子类 → `ItemEffect`，DB类 → `DBData`，日志类 → `GameLogs`
-- 所有功能模块已移植完毕，待做项为 2019 新增逻辑的完善
+- 不存在的 API（AddPlatformLog, GetPassport, PLDT_SYSTEM）已跳过
